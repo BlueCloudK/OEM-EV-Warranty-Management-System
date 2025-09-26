@@ -33,7 +33,7 @@ spec:
       port: 8081          
       targetPort: 8081
       nodePort: 30081     
-
+  type: NodePort   
 ---
 # Frontend Deployment
 apiVersion: apps/v1
