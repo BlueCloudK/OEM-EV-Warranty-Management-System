@@ -33,7 +33,6 @@ spec:
       port: 8081          
       targetPort: 8081
       nodePort: 30081     
-  type: ClusterIP
 
 ---
 # Frontend Deployment
