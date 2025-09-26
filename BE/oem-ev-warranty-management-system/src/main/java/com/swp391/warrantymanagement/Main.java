@@ -1,6 +1,5 @@
 package com.swp391.warrantymanagement;
 
-import com.swp391.warrantymanagement.entity.Customer;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
@@ -13,7 +12,7 @@ import java.util.List;
 public class Main {
 
 	public static void main(String[] args) {
-
+        SpringApplication.run(Main.class, args);
 	}
 
     public static void insertCustomer() {
@@ -41,8 +40,6 @@ public class Main {
 
         // tạo ra 1 Object để quản lý các entity class ~ map ngang sang table trong CSDL
         EntityManager em = emf.createEntityManager();
-
-        List<Customer> result = em.createQuery("FROM Customer", Customer.class).getResultList();
 
         // bắt buộc phải có 1 transaction để thực hiện các thao tác với CSDL
         em.getTransaction().begin();
