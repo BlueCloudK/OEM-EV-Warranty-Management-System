@@ -4,6 +4,7 @@ import com.swp391.warrantymanagement.entity.Customers;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
+// class đứng giữa Controller và Repository, nó sẽ đưa Object từ Repository lên Controller và ngược lại
 @Service
 public interface CustomersService {
     public Customers getById(int id);

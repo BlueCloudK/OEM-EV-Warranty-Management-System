@@ -1,6 +1,6 @@
 package com.swp391.warrantymanagement.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.*; // ipmort anatation jpa này là các code entity đã được viết sẵn để làm việc với database
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,28 +8,27 @@ import lombok.NoArgsConstructor;
 import java.util.ArrayList;
 import java.util.List;
 
-@Entity
-@Table(name = "vehicles")
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-
+@Entity // map/ánh xạ class này với bảng trong database
+@Table(name = "vehicles") // đặt tên bảng trong database
+@Data // tự động tạo getter, setter, toString, hashCode, equals
+@AllArgsConstructor // tự động tạo constructor với tất cả các tham số
+@NoArgsConstructor // tự động tạo constructor không tham số
 public class Vehicles {
     @Id
-    @GeneratedValue(strategy = jakarta.persistence.GenerationType.IDENTITY)
-    @jakarta.persistence.Column(name = "vehicle_id")
+    @GeneratedValue(strategy = GenerationType.IDENTITY) // tự gen id tăng từ 1
+    @Column(name = "vehicle_id")
     private int vehicleId;
 
-    @jakarta.persistence.Column(name = "verhicle_name", nullable = false, length = 100)
+    @Column(name = "verhicle_name", nullable = false, length = 100, columnDefinition = "nvarchar(100)")
     private String verhicleName;
 
-    @jakarta.persistence.Column(name = "verhicle_Model", nullable = false, length = 100)
+    @Column(name = "verhicle_Model", nullable = false, length = 100)
     private String verhicleModel;
 
-    @jakarta.persistence.Column(name = "verhicle_year", nullable = false)
+    @Column(name = "verhicle_year", nullable = false)
     private int verhicleYear;
 
-    @jakarta.persistence.Column(name = "car_vin", nullable = false, length = 50, unique = true)
+    @Column(name = "car_vin", nullable = false, length = 50, unique = true)
     private String vehicleVin;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -6,5 +6,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface PartsRepository extends JpaRepository<Parts, Integer> {
+    // Spring Boot đã tự động cung cấp các phương thức CRUD cơ bản
 }
 
