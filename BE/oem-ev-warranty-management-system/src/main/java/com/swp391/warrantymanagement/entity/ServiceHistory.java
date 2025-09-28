@@ -14,7 +14,7 @@ public class ServiceHistory {
     @Id
     @GeneratedValue(strategy = jakarta.persistence.GenerationType.IDENTITY)
     @jakarta.persistence.Column(name = "service_history_id")
-    private Long serviceHistoryId;
+    private int serviceHistoryId;
 
     @jakarta.persistence.Column(name = "warranty_id", nullable = false)
     private String serviceDate;

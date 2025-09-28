@@ -11,7 +11,7 @@ import java.util.List;
 @Service
 public class RoleServiceImpl implements RoleService {
 
-    @Autowired
+    @Autowired // Automatically injects VehiclesRepository dependency
     private RoleRepository roleRepository;
 
     @Override

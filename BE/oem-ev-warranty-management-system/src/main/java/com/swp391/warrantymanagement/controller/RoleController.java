@@ -22,8 +22,8 @@ public class RoleController {
     }
 
     @GetMapping("/roleId")
-    public ResponseEntity<Role> getRoleById(@RequestParam int roleId) {
-        Role role = roleService.getById(roleId);
+    public ResponseEntity<Role> getRoleById(@RequestParam String roleId) {
+        Role role = roleService.findByRoleName(roleId);
         if (role != null) {
             return ResponseEntity.ok(role);
         } else {
