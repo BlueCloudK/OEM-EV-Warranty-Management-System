@@ -1,0 +1,44 @@
+package com.swp391.warrantymanagement.entity;
+
+import jakarta.persistence.*; // ipmort anatation jpa này là các code entity đã được viết sẵn để làm việc với database
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+@Entity // map/ánh xạ class này với bảng trong database
+@Table(name = "customers") // đặt tên bảng trong database
+@Data // tự động tạo getter, setter, toString, hashCode, equals
+@AllArgsConstructor // tự động tạo constructor với tất cả các tham số
+@NoArgsConstructor // tự động tạo constructor không tham số
+public class Customers {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY) // tự gen id tăng từ 1
+    @Column(name = "customer_id")
+    private int customerId;
+
+    @Column(name = "name", nullable = false, length = 100, columnDefinition = "nvarchar(100)")
+    private String name;
+
+    @Column(name = "email", nullable = false, length = 100, unique = true)
+    private String email;
+
+    @Column(name = "phone", nullable = false, length = 15, unique = true)
+    private String phone;
+
+    @Column(name = "address", nullable = false, length = 255)
+    private String address;
+
+    @Column(name = "created_at", nullable = false)
+    private Date CreatedAt;
+
+    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Vehicles> vehicles = new ArrayList<>();
+
+    @ManyToOne(fetch = FetchType.LAZY) // fetch là lấy dữ liệu liên quan khi cần thiết, với LAZY thì chỉ lấy khi truy cập
+    @JoinColumn(name = "user_id", nullable = false)
+    private Users user;
+}
