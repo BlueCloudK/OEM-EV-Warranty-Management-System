@@ -1,5 +1,6 @@
 package com.swp391.warrantymanagement.service;
 
+import com.swp391.warrantymanagement.dto.CreateRoleRequestDTO;
 import com.swp391.warrantymanagement.entity.Role;
 import com.swp391.warrantymanagement.repository.RoleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,8 +25,10 @@ public class RoleServiceImpl implements RoleService {
     }
 
     @Override
-    public Role createRole(Role role) {
-        return roleRepository.save(role);
+    public Role createRole(CreateRoleRequestDTO role) {
+        Role newRole = new Role();
+        newRole.setRoleName(role.getRoleName());
+        return roleRepository.save(newRole);
     }
 
     @Override

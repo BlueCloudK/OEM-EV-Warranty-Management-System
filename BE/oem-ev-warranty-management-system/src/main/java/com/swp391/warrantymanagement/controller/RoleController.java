@@ -1,5 +1,6 @@
 package com.swp391.warrantymanagement.controller;
 
+import com.swp391.warrantymanagement.dto.CreateRoleRequestDTO;
 import com.swp391.warrantymanagement.entity.Role;
 import com.swp391.warrantymanagement.service.RoleService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +32,7 @@ public class RoleController {
     }
 
     @PostMapping("/")
-    public ResponseEntity<Role> createRole(@RequestBody Role role) {
+    public ResponseEntity<Role> createRole(@RequestBody CreateRoleRequestDTO role) {
         return ResponseEntity.ok(roleService.createRole(role));
     }
 
