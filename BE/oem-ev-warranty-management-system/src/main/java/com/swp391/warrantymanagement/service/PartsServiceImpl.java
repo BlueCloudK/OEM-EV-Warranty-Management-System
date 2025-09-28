@@ -10,7 +10,7 @@ import java.util.List;
 @Service
 public class PartsServiceImpl implements PartsService {
 
-    @Autowired // Automatically injects VehiclesRepository dependency
+    @Autowired // này là dùng reflection để tự động inject cái PartsRepository vào đây
     private PartsRepository partsRepository;
 
     @Override

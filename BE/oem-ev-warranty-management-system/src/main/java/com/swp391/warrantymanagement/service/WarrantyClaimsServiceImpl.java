@@ -10,7 +10,7 @@ import java.util.List;
 @Service
 public class WarrantyClaimsServiceImpl implements WarrantyClaimsService {
 
-    @Autowired // Automatically injects VehiclesRepository dependency
+    @Autowired // nay là dùng reflection để tự động inject cái WarrantyClaimsRepository vào đây
     private WarrantyClaimsRepository warrantyClaimsRepository;
 
     @Override
