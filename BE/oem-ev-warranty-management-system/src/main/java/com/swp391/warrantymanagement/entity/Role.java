@@ -18,13 +18,15 @@ import java.util.List;
 public class Role {
 
     @Id
-    @GeneratedValue (strategy = GenerationType.IDENTITY)
-    @Column(name = "role_id")
+    @GeneratedValue (strategy = jakarta.persistence.GenerationType.IDENTITY)
+    @jakarta.persistence.Column(name = "role_id")
     private int roleId;
-    @Column(name = "role_name", nullable = false, length = 50)
+
+    @jakarta.persistence.Column(name = "role_name", nullable = false, length = 50)
     @Nationalized // hỗ trợ unicode
     private String roleName;
 
     @OneToMany(mappedBy = "role")
-    private List<User> users = new ArrayList<>();
+    private List<Users> users = new ArrayList<>();
 }
+
