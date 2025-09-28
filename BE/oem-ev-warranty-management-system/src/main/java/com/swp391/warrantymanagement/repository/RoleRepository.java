@@ -6,5 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface RoleRepository extends JpaRepository<Role, Integer> {
-    Role findByRoleName(String roleName);
+    // Spring Boot đã tự động cung cấp các phương thức CRUD cơ bản
 }
