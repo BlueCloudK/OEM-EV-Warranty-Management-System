@@ -11,7 +11,7 @@ import java.util.List;
 @Service
 public class RoleServiceImpl implements RoleService {
 
-    @Autowired // Automatically injects VehiclesRepository dependency
+    @Autowired // này là dùng reflection để tự động inject cái RoleRepository vào đây
     private RoleRepository roleRepository;
 
     @Override

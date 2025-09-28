@@ -10,7 +10,7 @@ import java.util.List;
 @Service
 public class ServiceHistoryServiceImpl implements ServiceHistoryService {
 
-    @Autowired // Automatically injects VehiclesRepository dependency
+    @Autowired // này là dùng reflection để tự động inject cái ServiceHistoryRepository vào đây
     private ServiceHistoryRepository serviceHistoryRepository;
 
     @Override
