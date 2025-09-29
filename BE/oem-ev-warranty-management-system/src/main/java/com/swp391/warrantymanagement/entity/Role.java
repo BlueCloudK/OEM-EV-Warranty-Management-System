@@ -18,12 +18,12 @@ public class Role {
     @Id
     @GeneratedValue (strategy = GenerationType.IDENTITY) // tự gen id tăng từ 1
     @Column(name = "role_id")
-    private int roleId;
+    private Long roleId;
 
     @Column(name = "role_name", nullable = false, length = 50)
     @Nationalized // hỗ trợ unicode
     private String roleName;
 
     @OneToMany(mappedBy = "role")
-    private List<Users> users = new ArrayList<>();
+    private List<User> users = new ArrayList<>();
 }

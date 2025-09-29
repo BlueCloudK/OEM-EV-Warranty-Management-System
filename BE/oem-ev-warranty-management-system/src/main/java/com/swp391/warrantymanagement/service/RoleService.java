@@ -8,11 +8,10 @@ import java.util.List;
 
 @Service
 public interface RoleService {
-    public Role findByRoleName(String roleName);
-    public Role getById(int id);
-    public Role createRole(CreateRoleRequestDTO role);
-    public Role updateRole(Role role);
-    public void deleteRole(int id);
-
-    public List<Role> getRoles();
+    Role findByRoleName(String roleName);
+    Role getById(Long id);
+    Role createRole(CreateRoleRequestDTO role);
+    Role updateRole(Role role);
+    void deleteRole(Long id);
+    List<Role> getRoles();
 }

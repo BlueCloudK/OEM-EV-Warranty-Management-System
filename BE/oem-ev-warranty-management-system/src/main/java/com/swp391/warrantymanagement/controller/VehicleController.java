@@ -1,7 +1,7 @@
 package com.swp391.warrantymanagement.controller;
 
-import com.swp391.warrantymanagement.entity.ServiceHistory;
-import com.swp391.warrantymanagement.service.ServiceHistoryService;
+import com.swp391.warrantymanagement.entity.Vehicle;
+import com.swp391.warrantymanagement.service.VehicleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -9,11 +9,11 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("api/service-history")
+@RequestMapping("api/vehicles")
 @CrossOrigin
-public class ServiceHistoryController {
+public class VehicleController {
     @Autowired
-    private ServiceHistoryService serviceHistoryService;
+    private VehicleService vehiclesService;
 
 
 }

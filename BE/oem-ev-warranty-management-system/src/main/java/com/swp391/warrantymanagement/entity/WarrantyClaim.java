@@ -2,7 +2,6 @@ package com.swp391.warrantymanagement.entity;
 
 import jakarta.persistence.*; // ipmort anatation jpa này là các code entity đã được viết sẵn để làm việc với database
 import lombok.AllArgsConstructor;
-import lombok.Cleanup;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -13,11 +12,11 @@ import java.util.Date;
 @Data // tự động tạo getter, setter, toString, hashCode, equals
 @AllArgsConstructor // tự động tạo constructor với tất cả các tham số
 @NoArgsConstructor // tự động tạo constructor không tham số
-public class WarrantyClaims {
+public class WarrantyClaim {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY) // tự gen id tăng từ 1
     @Column(name = "warranty_claim_id")
-    private int warrantyClaimId;
+    private Long warrantyClaimId;
 
     @Column(name = "claim_date", nullable = false)
     private Date claimDate;
@@ -33,9 +32,9 @@ public class WarrantyClaims {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "part_id", nullable = false)
-    private Parts part;
+    private Part part;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vehicle_id", nullable = false)
-    private Vehicles vehicle;
+    private Vehicle vehicle;
 }
