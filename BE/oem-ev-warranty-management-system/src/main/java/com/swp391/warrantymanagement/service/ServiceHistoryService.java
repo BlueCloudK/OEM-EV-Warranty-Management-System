@@ -9,6 +9,14 @@ public interface ServiceHistoryService {
     ServiceHistory getById(Long id);
     ServiceHistory createServiceHistory(ServiceHistory serviceHistory);
     ServiceHistory updateServiceHistory(ServiceHistory serviceHistory);
-    void deleteServiceHistory(Long id);
+    boolean deleteServiceHistory(Long id);
     List<ServiceHistory> getServiceHistories();
+
+    // custom method
+    ServiceHistory addServiceHisoty(ServiceHistory history);
+    ServiceHistory editServiceHistory(ServiceHistory history);
+    ServiceHistory removeServiceHistory(Long id);
+    List<ServiceHistory> getByVehicleId(Long vehicleId);
+    //ServiceHistory getById(Long id);
+
 }

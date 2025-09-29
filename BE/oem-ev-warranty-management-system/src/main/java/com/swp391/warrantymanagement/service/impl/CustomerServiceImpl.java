@@ -1,14 +1,15 @@
-package com.swp391.warrantymanagement.service;
+package com.swp391.warrantymanagement.service.impl;
 
 import com.swp391.warrantymanagement.entity.Customer;
 import com.swp391.warrantymanagement.repository.CustomerRepository;
+import com.swp391.warrantymanagement.service.CustomerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
-public class CustomerServiceImpl implements CustomerService{
+public class CustomerServiceImpl implements CustomerService {
 
     @Autowired // này là dùng reflection để tự động inject cái CustomerRepository vào đây
     private CustomerRepository customersRepository;
