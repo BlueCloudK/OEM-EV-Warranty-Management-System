@@ -15,11 +15,11 @@ import java.util.List;
 @Data // tự động tạo getter, setter, toString, hashCode, equals
 @AllArgsConstructor // tự động tạo constructor với tất cả các tham số
 @NoArgsConstructor // tự động tạo constructor không tham số
-public class Users {
+public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY) // tự gen id tăng từ 1
     @Column(name = "user_id")
-    private int userId;
+    private Long userId;
 
     @Column(name = "username", nullable = false, length = 50, columnDefinition = "nvarchar(50)")
     private String username;
@@ -32,12 +32,12 @@ public class Users {
     private String address;
 
     @Column(name = "created_at", nullable = false)
-    private Date CreatedAt;
+    private Date createdAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "role_id", nullable = false)
     private Role role;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Customers> customers = new ArrayList<>();
+    private List<Customer> customers = new ArrayList<>();
 }

@@ -14,7 +14,7 @@ public class ServiceHistory {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY) //tự gen id tăng từ 1
     @Column(name = "service_history_id")
-    private int serviceHistoryId;
+    private Long serviceHistoryId;
 
     @Column(name = "warranty_id", nullable = false)
     private String serviceDate;
@@ -24,9 +24,9 @@ public class ServiceHistory {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "part_id", nullable = false)
-    private Parts part;
+    private Part part;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vehicle_id", nullable = false)
-    private Vehicles vehicle;
+    private Vehicle vehicle;
 }

@@ -14,11 +14,11 @@ import java.util.List;
 @Data // tự động tạo getter, setter, toString, hashCode, equals
 @AllArgsConstructor // tự động tạo constructor với tất cả các tham số
 @NoArgsConstructor // tự động tạo constructor không tham số
-public class Customers {
+public class Customer {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY) // tự gen id tăng từ 1
     @Column(name = "customer_id")
-    private int customerId;
+    private Long customerId;
 
     @Column(name = "name", nullable = false, length = 100, columnDefinition = "nvarchar(100)")
     private String name;
@@ -33,12 +33,12 @@ public class Customers {
     private String address;
 
     @Column(name = "created_at", nullable = false)
-    private Date CreatedAt;
+    private Date createdAt;
 
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Vehicles> vehicles = new ArrayList<>();
+    private List<Vehicle> vehicles = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY) // fetch là lấy dữ liệu liên quan khi cần thiết, với LAZY thì chỉ lấy khi truy cập
     @JoinColumn(name = "user_id", nullable = false)
-    private Users user;
+    private User user;
 }

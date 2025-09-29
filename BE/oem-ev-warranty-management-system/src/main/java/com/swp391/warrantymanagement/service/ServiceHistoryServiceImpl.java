@@ -14,7 +14,7 @@ public class ServiceHistoryServiceImpl implements ServiceHistoryService {
     private ServiceHistoryRepository serviceHistoryRepository;
 
     @Override
-    public ServiceHistory getById(int id) {
+    public ServiceHistory getById(Long id) {
         return serviceHistoryRepository.findById(id).orElse(null);
     }
 
@@ -33,7 +33,7 @@ public class ServiceHistoryServiceImpl implements ServiceHistoryService {
     }
 
     @Override
-    public void deleteServiceHistory(int id) {
+    public void deleteServiceHistory(Long id) {
         serviceHistoryRepository.deleteById(id);
     }
 
