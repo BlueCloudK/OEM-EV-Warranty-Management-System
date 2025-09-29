@@ -11,4 +11,9 @@ public interface VehicleService {
     Vehicle updateVehicle(Vehicle vehicle);
     void deleteVehicle(Long id);
     List<Vehicle> getVehicles();
+
+    // custom method
+    Vehicle addPartIntoVehicle(Long vehicleId, Long partId);
+    Vehicle removePartFromVehicle(Long partId);
+    Vehicle editPartVehicle(Long partId);
 }

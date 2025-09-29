@@ -1,7 +1,8 @@
-package com.swp391.warrantymanagement.service;
+package com.swp391.warrantymanagement.service.impl;
 
 import com.swp391.warrantymanagement.entity.ServiceHistory;
 import com.swp391.warrantymanagement.repository.ServiceHistoryRepository;
+import com.swp391.warrantymanagement.service.ServiceHistoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

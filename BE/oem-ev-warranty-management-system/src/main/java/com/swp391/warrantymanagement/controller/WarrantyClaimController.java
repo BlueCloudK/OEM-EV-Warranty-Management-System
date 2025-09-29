@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.*;
 @CrossOrigin
 public class WarrantyClaimController {
     @Autowired
-    private WarrantyClaimService warrantyClaimsService;
-
+    private WarrantyClaimService warrantyClaimService;
 
 }

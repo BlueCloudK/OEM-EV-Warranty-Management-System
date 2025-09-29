@@ -1,8 +1,9 @@
-package com.swp391.warrantymanagement.service;
+package com.swp391.warrantymanagement.service.impl;
 
 import com.swp391.warrantymanagement.dto.CreateRoleRequestDTO;
 import com.swp391.warrantymanagement.entity.Role;
 import com.swp391.warrantymanagement.repository.RoleRepository;
+import com.swp391.warrantymanagement.service.RoleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
