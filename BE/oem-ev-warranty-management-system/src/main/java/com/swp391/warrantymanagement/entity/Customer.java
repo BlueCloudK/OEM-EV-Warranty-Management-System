@@ -8,6 +8,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.Type;
+import org.hibernate.annotations.UuidGenerator;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -22,8 +24,8 @@ import java.util.UUID;
 public class Customer {
     @Id
     @GeneratedValue(generator = "UUID")
-    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
-    @Column(name = "customer_id", columnDefinition = "BINARY(16)")
+    @UuidGenerator
+    @Column(name = "customer_id", updatable = false, nullable = false, columnDefinition = "VarChar(36)")
     private UUID customerId;
 
     @Column(name = "name", nullable = false, length = 100, columnDefinition = "nvarchar(100)")

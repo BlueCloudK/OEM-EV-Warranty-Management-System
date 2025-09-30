@@ -20,21 +20,21 @@ public class Vehicle {
     @Column(name = "vehicle_id")
     private Long vehicleId;
 
-    @Column(name = "verhicle_name", nullable = false, length = 100, columnDefinition = "nvarchar(100)")
+    @Column(name = "vehicle_name", nullable = false, length = 100, columnDefinition = "nvarchar(100)")
     @NotBlank(message = "Vehicle name is required")
     @Size(min = 2, max = 100, message = "Vehicle name must be between 2 and 100 characters")
-    private String verhicleName;
+    private String vehicleName;
 
-    @Column(name = "verhicle_Model", nullable = false, length = 100)
+    @Column(name = "vehicle_model", nullable = false, length = 100)
     @NotBlank(message = "Vehicle model is required")
     @Size(min = 2, max = 100, message = "Vehicle model must be between 2 and 100 characters")
-    private String verhicleModel;
+    private String vehicleModel;
 
-    @Column(name = "verhicle_year", nullable = false)
-//    @NotNull(message = "Vehicle year is required")
-    private int verhicleYear;
+    @Column(name = "vehicle_year", nullable = false)
+    @NotNull(message = "Vehicle year is required")
+    private int vehicleYear;
 
-    @Column(name = "car_vin", nullable = false, length = 50, unique = true)
+    @Column(name = "vehicle_vin", nullable = false, length = 50, unique = true)
     @NotBlank(message = "VIN is required")
     @Size(min = 17, max = 17, message = "VIN must be exactly 17 characters")
     @Pattern(regexp = "^[0-9]{2}(?:[A-Z]{2}|MĐ)[- ]?[0-9]{5}$", message = "VIN must follow the format: 2 digits, 2 uppercase letters or 'MĐ', optional hyphen or space, followed by 5 digits")
