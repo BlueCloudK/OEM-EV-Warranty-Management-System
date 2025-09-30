@@ -1,6 +1,7 @@
 package com.swp391.warrantymanagement.entity;
 
-import jakarta.persistence.*; // ipmort anatation jpa này là các code entity đã được viết sẵn để làm việc với database
+import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -20,20 +21,29 @@ public class User {
     private Long userId;
 
     @Column(name = "username", nullable = false, length = 50, columnDefinition = "nvarchar(50)")
+    @NotBlank(message = "Username is required")
+    @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
+    @Pattern(regexp = "^[a-zA-Z0-9_]+$", message = "Username can only contain letters, numbers and underscore")
     private String username;
 
     @Column(name = "password", nullable = false, length = 255)
+    @NotBlank(message = "Password is required")
+    @Size(min = 6, max = 255, message = "Password must be at least 6 characters")
     @Nationalized
     private String password;
 
     @Column(name = "address", nullable = false, length = 255, columnDefinition = "nvarchar(255)")
+    @NotBlank(message = "Address is required")
+    @Size(min = 10, max = 255, message = "Address must be between 10 and 255 characters")
     private String address;
 
     @Column(name = "created_at", nullable = false)
+    @NotNull(message = "Created date is required")
     private Date createdAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "role_id", nullable = false)
+    @NotNull(message = "Role is required")
     private Role role;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
