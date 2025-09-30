@@ -13,10 +13,10 @@ public interface ServiceHistoryService {
     List<ServiceHistory> getServiceHistories();
 
     // custom method
-    ServiceHistory addServiceHisoty(ServiceHistory history);
-    ServiceHistory editServiceHistory(ServiceHistory history);
-    ServiceHistory removeServiceHistory(Long id);
-    List<ServiceHistory> getByVehicleId(Long vehicleId);
+//    ServiceHistory addServiceHisoty(ServiceHistory history);
+//    ServiceHistory editServiceHistory(ServiceHistory history);
+//    ServiceHistory removeServiceHistory(Long id);
+//    List<ServiceHistory> getByVehicleId(Long vehicleId);
     //ServiceHistory getById(Long id);
 
 }
