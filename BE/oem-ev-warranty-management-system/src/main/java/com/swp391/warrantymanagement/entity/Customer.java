@@ -7,8 +7,6 @@ import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.GenericGenerator;
-import org.hibernate.annotations.Type;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.util.ArrayList;
@@ -49,7 +47,7 @@ public class Customer {
     @NotBlank(message = "Phone number is required")
     private String phone;
 
-    @Column(name = "address", nullable = false, length = 255)
+    @Column(name = "address", nullable = false)
     @NotBlank(message = "Address is required")
     private String address;
 
