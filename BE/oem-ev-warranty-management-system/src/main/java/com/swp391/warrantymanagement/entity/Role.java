@@ -1,6 +1,7 @@
 package com.swp391.warrantymanagement.entity;
 
 import jakarta.persistence.*; // ipmort anatation jpa này là các code entity đã được viết sẵn để làm việc với database
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -23,6 +24,9 @@ public class Role {
     private Long roleId;
 
     @Column(name = "role_name", nullable = false, length = 50)
+    @NotBlank(message = "Role name is required")
+    @Size(min = 3, max = 50, message = "Role name must be between 3 and 50 characters")
+    @Pattern(regexp = "^[A-Z_]+$", message = "Role name must contain only uppercase letters and underscores")
     @Nationalized // hỗ trợ unicode
     private String roleName;
 
