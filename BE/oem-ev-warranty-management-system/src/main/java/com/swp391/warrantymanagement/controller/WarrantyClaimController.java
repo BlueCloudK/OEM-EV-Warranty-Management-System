@@ -15,6 +15,8 @@ public class WarrantyClaimController {
     @Autowired
     private WarrantyClaimService warrantyClaimService;
 
+    // Learning
+
     @GetMapping("/all") // http://localhost:8080/api/warranty-claims/all
     public String showList(@RequestParam(name = "kw", required = false, defaultValue = "") String keyword, Model model) { // Model là thùng chứa dữ liệu trả về view
 

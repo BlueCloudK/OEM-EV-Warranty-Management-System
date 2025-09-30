@@ -20,35 +20,5 @@ public class PartController {
     @Autowired
     private PartService partService; // tự IoC Container của Spring inject(tiêm)
 
-    @GetMapping
-    public ResponseEntity<List<Part>> getParts() {
-        return ResponseEntity.ok(partService.getParts());
-    }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<Part> getPartById(@PathVariable String id) {
-        Part part = partService.getById(id);
-        if (part == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
-        return ResponseEntity.ok(part);
-    }
-
-    @PostMapping
-    public ResponseEntity<Part> create(@RequestBody Part part) {
-        Part created = partService.createPart(part);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
-    }
-
-    @PutMapping
-    public ResponseEntity<Part> update(@RequestBody Part part) {
-        Part updated = partService.updatePart(part);
-        return ResponseEntity.ok(updated);
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable String id) {
-        partService.deletePart(id);
-        return ResponseEntity.noContent().build();
-    }
 }
