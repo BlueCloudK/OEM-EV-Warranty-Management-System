@@ -6,9 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Nationalized;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 @Entity // map/ánh xạ class này với bảng trong database
 @Table(name = "users") // đặt tên bảng trong database
@@ -17,7 +15,7 @@ import java.util.List;
 @NoArgsConstructor // tự động tạo constructor không tham số
 public class User {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // tự gen id tăng từ 1
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
     private Long userId;
 
@@ -40,4 +38,5 @@ public class User {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Customer> customers = new ArrayList<>();
+
 }

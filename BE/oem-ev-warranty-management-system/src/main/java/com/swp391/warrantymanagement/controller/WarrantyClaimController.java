@@ -16,8 +16,19 @@ public class WarrantyClaimController {
     private WarrantyClaimService warrantyClaimService;
 
     @GetMapping("/all") // http://localhost:8080/api/warranty-claims/all
-    public String showList(Model model) { // Model là thùng chứa dữ liệu trả về view
-        model.addAttribute("parts", warrantyClaimService.getWarrantyClaims()); // thêm dữ liệu vào model
+    public String showList(@RequestParam(name = "kw", required = false, defaultValue = "") String keyword, Model model) { // Model là thùng chứa dữ liệu trả về view
+
+        //kiểm tra keyword có hay ko, có thì search gần đúng - LIKE, RELATIVE SEARCH
+        if (!keyword.equals("")) {
+            // serach
+            //model.addAttribute("products", warrantyClaimService.searchWarrantyClaimByName(keyword));
+
+        }
+        else {
+            //ko có thì show full
+            //                List<Product> products = productService.getAllProducts()
+            model.addAttribute("parts", warrantyClaimService.getWarrantyClaims()); // thêm dữ liệu vào model
+        }
         return "parts"; // trả view parts.html có thung chứa dữ liệu trong model
     }
 
@@ -42,14 +53,20 @@ public class WarrantyClaimController {
             model.addAttribute("formMode", (warrantyClaim.getWarrantyClaimId() == null) ? "create" : "edit");
             return "part-form"; // nếu có lỗi thì trả về form để sửa
         }
-        // Kiểm tra id để quyết định tạo mới hay cập nhật
-        if (warrantyClaim.getWarrantyClaimId() == null) {
-            // Tạo mới warranty claim
-            warrantyClaimService.createWarrantyClaim(warrantyClaim);
-        } else {
-            // Cập nhật warranty claim có sẵn
-            warrantyClaimService.updateWarrantyClaim(warrantyClaim);
+
+        if(formMode.equals("new")){
+            // check key trùng
+            if(warrantyClaimService.existsById(warrantyClaim.getWarrantyClaimId())){
+                // gừi lại formMode và message lỗi
+                model.addAttribute("formMode", formMode);
+                model.addAttribute("duplicated", "Duplicated Id. Input another one!");
+                return "part-form";
+            }
         }
+
+        // save lại
+        warrantyClaimService.saveWarrantyClaim(warrantyClaim);
+
         return "redirect:/api/warranty-claims/all"; // redirect về trang danh sách
     }
 

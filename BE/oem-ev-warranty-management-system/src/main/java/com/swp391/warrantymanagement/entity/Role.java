@@ -7,7 +7,9 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Nationalized;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity // map/ ánh xạ class này với bảng trong database
 @Table (name = "roles") // đặt tên bảng trong database
@@ -16,7 +18,7 @@ import java.util.List;
 @NoArgsConstructor // tự động tạo constructor không tham số
 public class Role {
     @Id
-    @GeneratedValue (strategy = GenerationType.IDENTITY) // tự gen id tăng từ 1
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "role_id")
     private Long roleId;
 
@@ -24,6 +26,6 @@ public class Role {
     @Nationalized // hỗ trợ unicode
     private String roleName;
 
-    @OneToMany(mappedBy = "role")
-    private List<User> users = new ArrayList<>();
+    @OneToMany(mappedBy = "role") //, cascade = CascadeType.ALL, orphanRemoval = true) // cascade là khi xóa role thì xóa luôn user liên quan, orphanRemoval là khi user không còn liên kết với role thì cũng bị xóa
+    private Set<User> users = new HashSet<>();
 }

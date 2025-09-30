@@ -10,7 +10,6 @@ import java.util.List;
 
 @Service
 public class WarrantyClaimServiceImpl implements WarrantyClaimService {
-
     @Autowired // nay là dùng reflection để tự động inject cái WarrantyClaimRepository vào đây
     private WarrantyClaimRepository warrantyClaimsRepository;
 
@@ -42,4 +41,20 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
     public List<WarrantyClaim> getWarrantyClaims() {
         return warrantyClaimsRepository.findAll();
     }
+
+    @Override
+    public void saveWarrantyClaim(WarrantyClaim warrantyClaim) {
+        warrantyClaimsRepository.save(warrantyClaim);
+    }
+
+    @Override
+    public void deleteWarrantyClaim(WarrantyClaim warrantyClaim) {
+        warrantyClaimsRepository.delete(warrantyClaim);
+    }
+
+    @Override
+    public boolean existsById(Long id) {
+        return warrantyClaimsRepository.existsById(id);
+    }
+
 }

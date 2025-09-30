@@ -6,8 +6,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
-    // Spring Boot đã tự động sinh các phương thức CRUD cơ bản
-    // Spring Boot đã tự động sinh các phương thức CRUD cơ bản
-    // Này là Query method, tự động sinh câu truy vấn dựa trên tên phương thức
+    // Spring Boot đã tự động sinh các phương thức CRUD cơ bản với Long ID
+    User findByUsername(String username);
 }
-
