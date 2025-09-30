@@ -7,10 +7,12 @@ import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.GenericGenerator;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 @Entity // map/ánh xạ class này với bảng trong database
 @Table(name = "customers") // đặt tên bảng trong database
@@ -19,9 +21,10 @@ import java.util.List;
 @NoArgsConstructor // tự động tạo constructor không tham số
 public class Customer {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // tự gen id tăng từ 1
-    @Column(name = "customer_id")
-    private Long customerId;
+    @GeneratedValue(generator = "UUID")
+    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
+    @Column(name = "customer_id", columnDefinition = "BINARY(16)")
+    private UUID customerId;
 
     @Column(name = "name", nullable = false, length = 100, columnDefinition = "nvarchar(100)")
     // chặn từ form

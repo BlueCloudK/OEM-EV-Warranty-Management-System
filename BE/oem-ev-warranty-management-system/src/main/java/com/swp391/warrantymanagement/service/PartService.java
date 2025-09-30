@@ -6,9 +6,9 @@ import org.springframework.stereotype.Service;
 
 @Service
 public interface PartService {
-    Part getById(Long id);
+    Part getById(String id);
     Part createPart(Part part);
     Part updatePart(Part part);
-    void deletePart(Long id);
+    void deletePart(String id);
     List<Part> getParts();
 }

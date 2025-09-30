@@ -1,6 +1,6 @@
 package com.swp391.warrantymanagement.entity;
 
-import jakarta.persistence.*; // ipmort anatation jpa này là các code entity đã được viết sẵn để làm việc với database
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -16,9 +16,8 @@ import java.util.List;
 @NoArgsConstructor // tự động tạo constructor không tham số
 public class Part {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // tự gen id tăng từ 1
-    @Column(name = "part_id")
-    private Long partId;
+    @Column(name = "part_id", length = 50)
+    private String partId;
 
     @Column(name = "part_name", nullable = false, length = 100, columnDefinition = "nvarchar(100)")
     private String partName;

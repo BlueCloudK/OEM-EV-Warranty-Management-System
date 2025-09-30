@@ -10,12 +10,11 @@ import java.util.List;
 
 @Service
 public class PartServiceImpl implements PartService {
-
-    @Autowired // này là dùng reflection để tự động inject cái PartRepository vào đây
+    @Autowired
     private PartRepository partRepository;
 
     @Override
-    public Part getById(Long id) {
+    public Part getById(String id) {
         return partRepository.findById(id).orElse(null);
     }
 
@@ -34,7 +33,7 @@ public class PartServiceImpl implements PartService {
     }
 
     @Override
-    public void deletePart(Long id) {
+    public void deletePart(String id) {
         partRepository.deleteById(id);
     }
 

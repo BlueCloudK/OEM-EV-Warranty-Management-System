@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Entity //map/ánh xạ class này với bảng trong database
 @Table(name = "tokens") //đặt tên bảng trong database
 @Data //tự động tạo getter, setter, toString, hashCode, equals
@@ -12,8 +14,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor //tự động tạo constructor không tham số
 public class Token {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private Long id;
+    @Column(name = "token_id", length = 100)
+    private String id;
 
     @Column(name = "token", nullable = false, unique = true, length = 500)
     private String token;
@@ -40,5 +42,3 @@ public class Token {
     @JoinColumn(name = "user_id", insertable = false, updatable = false)
     private User user;
 }
-
-

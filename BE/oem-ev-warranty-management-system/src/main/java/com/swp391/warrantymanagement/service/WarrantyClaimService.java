@@ -11,10 +11,7 @@ public interface WarrantyClaimService {
     WarrantyClaim updateWarrantyClaim(WarrantyClaim warrantyClaim);
     void deleteWarrantyClaim(Long id);
     List<WarrantyClaim> getWarrantyClaims();
-
-    // custom method
-//    WarrantyClaim addWarrantyClaim(WarrantyClaim claim);
-//    WarrantyClaim editWarrantyClaim(WarrantyClaim claim);
-//    WarrantyClaim removeWarrantyClaim(Long id);
-//    List<WarrantyClaim> getByVehicleId(Long vehicleId);
+    void deleteWarrantyClaim(WarrantyClaim warrantyClaim);
+    void saveWarrantyClaim(WarrantyClaim warrantyClaim);
+    boolean existsById(Long id);
 }

@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class CustomerServiceImpl implements CustomerService {
@@ -15,7 +16,7 @@ public class CustomerServiceImpl implements CustomerService {
     private CustomerRepository customersRepository;
 
     @Override
-    public Customer getById(Long id) {
+    public Customer getById(UUID id) {
         return customersRepository.findById(id).orElse(null);
     }
 
@@ -34,7 +35,7 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     @Override
-    public void deleteCustomer(Long id) {
+    public void deleteCustomer(UUID id) {
         customersRepository.deleteById(id);
     }
 
