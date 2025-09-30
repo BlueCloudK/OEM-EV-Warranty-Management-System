@@ -13,8 +13,8 @@ public interface WarrantyClaimService {
     List<WarrantyClaim> getWarrantyClaims();
 
     // custom method
-    WarrantyClaim addWarrantyClaim(WarrantyClaim claim);
-    WarrantyClaim editWarrantyClaim(WarrantyClaim claim);
-    WarrantyClaim removeWarrantyClaim(Long id);
-    List<WarrantyClaim> getByVehicleId(Long vehicleId);
+//    WarrantyClaim addWarrantyClaim(WarrantyClaim claim);
+//    WarrantyClaim editWarrantyClaim(WarrantyClaim claim);
+//    WarrantyClaim removeWarrantyClaim(Long id);
+//    List<WarrantyClaim> getByVehicleId(Long vehicleId);
 }

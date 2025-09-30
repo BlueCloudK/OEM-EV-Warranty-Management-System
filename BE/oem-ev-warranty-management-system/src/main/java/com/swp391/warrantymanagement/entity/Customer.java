@@ -1,6 +1,9 @@
 package com.swp391.warrantymanagement.entity;
 
 import jakarta.persistence.*; // ipmort anatation jpa này là các code entity đã được viết sẵn để làm việc với database
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -21,15 +24,28 @@ public class Customer {
     private Long customerId;
 
     @Column(name = "name", nullable = false, length = 100, columnDefinition = "nvarchar(100)")
+    // chặn từ form
+    @NotBlank(message = "Name is required")
+    @Size(min=5, max = 100, message = "Name must be between 5 and 100 characters")
+    @Pattern(
+            regexp = "^(\\p{Lu}\\p{Ll}+)(\\s\\p{Lu}\\p{Ll}+)*$",
+            message = "Each word must start with a capital letter, no numbers/special characters, no extra spaces"
+    )
     private String name;
 
     @Column(name = "email", nullable = false, length = 100, unique = true)
+    @NotBlank(message = "Email is required")
+    @Pattern(
+            regexp ="^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$" // may be 99% email hiện tại ^_^
+    )
     private String email;
 
     @Column(name = "phone", nullable = false, length = 15, unique = true)
+    @NotBlank(message = "Phone number is required")
     private String phone;
 
     @Column(name = "address", nullable = false, length = 255)
+    @NotBlank(message = "Address is required")
     private String address;
 
     @Column(name = "created_at", nullable = false)

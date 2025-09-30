@@ -19,10 +19,4 @@ public class PartController {
     @Autowired
     private PartService partService; // tự IoC Container của Spring inject(tiêm)
 
-    @GetMapping
-    public String showList(Model model) { // Model là thùng chứa dữ liệu trả về view
-        model.addAttribute("parts", partService.getParts()); // thêm dữ liệu vào model
-
-        return "parts"; // trả view parts.html có thung chứa dữ liệu trong model
-    }
 }
