@@ -9,4 +9,6 @@ import org.springframework.stereotype.Service;
 public interface AuthService {
     String login(String username, String rawPassword);
     User validateToken(String token);
+    String requestPasswordReset(String email);
+    void resetPassword(String token, String newPassword);
 }

@@ -21,6 +21,12 @@ public class ServiceHistory {
     @NotBlank(message = "Service date is required")
     private String serviceDate;
 
+    // Thêm field serviceType để sửa lỗi repository
+    @Column(name = "service_type", nullable = false, length = 100)
+    @NotBlank(message = "Service type is required")
+    @Size(max = 100, message = "Service type must be at most 100 characters")
+    private String serviceType;
+
     @Column(name = "description", length = 1000, columnDefinition = "nvarchar(1000)")
     @Size(max = 1000, message = "Description must be at most 1000 characters")
     private String description;

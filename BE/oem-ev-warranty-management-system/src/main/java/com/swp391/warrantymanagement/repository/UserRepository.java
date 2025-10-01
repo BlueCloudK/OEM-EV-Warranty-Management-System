@@ -8,4 +8,5 @@ import org.springframework.stereotype.Repository;
 public interface UserRepository extends JpaRepository<User, Long> {
     // Spring Boot đã tự động sinh các phương thức CRUD cơ bản với Long ID
     User findByUsername(String username);
+    User findByEmail(String email);
 }
