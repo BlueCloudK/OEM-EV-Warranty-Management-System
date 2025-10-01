@@ -44,8 +44,7 @@ public class User {
     private String address;
 
     @Column(name = "created_at", nullable = false)
-    @NotNull(message = "Created date is required")
-    private Date createdAt;
+    private Date createdAt; // Removed @NotNull validation - field is set automatically during registration
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "role_id", nullable = false)

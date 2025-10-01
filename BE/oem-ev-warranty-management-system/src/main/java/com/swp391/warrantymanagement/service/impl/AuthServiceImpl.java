@@ -128,4 +128,27 @@ public class AuthServiceImpl implements AuthService {
         token.setExpired(true);
         tokenRepository.save(token);
     }
+
+    // Đăng ký người dùng mới
+    @Override
+    public User registerUser(User user) {
+        // Kiểm tra username đã tồn tại chưa
+        if (userRepository.findByUsername(user.getUsername()) != null) {
+            throw new RuntimeException("Username already exists");
+        }
+
+        // Kiểm tra email đã tồn tại chưa
+        if (userRepository.findByEmail(user.getEmail()) != null) {
+            throw new RuntimeException("Email already exists");
+        }
+
+        // Mã hóa mật khẩu
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+
+        // Thiết lập thời gian tạo
+        user.setCreatedAt(new java.util.Date());
+
+        // Lưu user vào database
+        return userRepository.save(user);
+    }
 }

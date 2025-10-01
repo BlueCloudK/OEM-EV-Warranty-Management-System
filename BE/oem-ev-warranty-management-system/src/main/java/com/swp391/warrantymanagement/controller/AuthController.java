@@ -1,6 +1,9 @@
 package com.swp391.warrantymanagement.controller;
 
+import com.swp391.warrantymanagement.dto.UserRegistrationDTO;
+import com.swp391.warrantymanagement.entity.Role;
 import com.swp391.warrantymanagement.entity.User;
+import com.swp391.warrantymanagement.repository.RoleRepository;
 import com.swp391.warrantymanagement.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +21,9 @@ public class AuthController {
     @Autowired
     private AuthService authService;
 
+    @Autowired
+    private RoleRepository roleRepository;
+
     // Đăng nhập
     @PostMapping("/login")
     public ResponseEntity<Map<String, Object>> login(@RequestParam String username, @RequestParam String password) {
@@ -27,6 +33,24 @@ public class AuthController {
             response.put("success", true);
             response.put("token", token);
             response.put("message", "Login successful");
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        }
+    }
+
+    // Đăng nhập với GET method (chỉ để test)
+    @GetMapping("/login")
+    public ResponseEntity<Map<String, Object>> loginGet(@RequestParam String username, @RequestParam String password) {
+        try {
+            String token = authService.login(username, password);
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("token", token);
+            response.put("message", "Login successful via GET");
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             Map<String, Object> response = new HashMap<>();
@@ -106,14 +130,51 @@ public class AuthController {
         }
     }
 
-    // Đăng ký người dùng mới (nếu cần)
+    // Đăng ký người dùng mới
     @PostMapping("/register")
-    public ResponseEntity<Map<String, Object>> register(@Valid @RequestBody User user) {
+    public ResponseEntity<Map<String, Object>> register(@Valid @RequestBody UserRegistrationDTO registrationDTO) {
         try {
-            // Implement register logic in AuthService if needed
+            // Convert DTO to User entity
+            User user = new User();
+            user.setUsername(registrationDTO.getUsername());
+            user.setEmail(registrationDTO.getEmail());
+            user.setPassword(registrationDTO.getPassword());
+            user.setAddress(registrationDTO.getAddress());
+            user.setCreatedAt(new java.util.Date());
+
+            // Set default role hoặc role từ DTO
+            Role defaultRole;
+            if (registrationDTO.getRoleId() != null) {
+                defaultRole = roleRepository.findById(registrationDTO.getRoleId()).orElse(null);
+                if (defaultRole == null) {
+                    // Nếu roleId không tồn tại, dùng role mặc định
+                    defaultRole = roleRepository.findByRoleName("USER");
+                    if (defaultRole == null) {
+                        // Nếu không có role USER, tạo role với ID = 1
+                        defaultRole = roleRepository.findById(1L).orElse(null);
+                    }
+                }
+            } else {
+                // Không có roleId, dùng role mặc định "USER"
+                defaultRole = roleRepository.findByRoleName("USER");
+                if (defaultRole == null) {
+                    // Nếu không có role USER, tạo role với ID = 1
+                    defaultRole = roleRepository.findById(1L).orElse(null);
+                }
+            }
+
+            if (defaultRole == null) {
+                throw new RuntimeException("No default role found. Please contact administrator.");
+            }
+
+            user.setRole(defaultRole);
+
+            User registeredUser = authService.registerUser(user);
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", "User registered successfully");
+            response.put("userId", registeredUser.getUserId());
+            response.put("role", defaultRole.getRoleName());
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (RuntimeException e) {
             Map<String, Object> response = new HashMap<>();

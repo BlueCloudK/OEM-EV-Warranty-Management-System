@@ -11,4 +11,5 @@ public interface AuthService {
     User validateToken(String token);
     String requestPasswordReset(String email);
     void resetPassword(String token, String newPassword);
+    User registerUser(User user); // Thêm method đăng ký
 }
