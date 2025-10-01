@@ -1,12 +1,18 @@
 package com.swp391.warrantymanagement.service.impl;
 
+import com.swp391.warrantymanagement.entity.Token;
 import com.swp391.warrantymanagement.entity.User;
+import com.swp391.warrantymanagement.repository.TokenRepository;
 import com.swp391.warrantymanagement.repository.UserRepository;
 import com.swp391.warrantymanagement.service.AuthService;
 import com.swp391.warrantymanagement.service.JwtService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Service
 public class AuthServiceImpl implements AuthService {
@@ -28,6 +34,9 @@ public class AuthServiceImpl implements AuthService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private TokenRepository tokenRepository;
 
     // Login -> return JWT
     public String login(String username, String rawPassword) {
@@ -55,5 +64,68 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("User not found");
         }
         return user;
+    }
+
+    // Yêu cầu reset mật khẩu - tạo token reset
+    public String requestPasswordReset(String email) {
+        User user = userRepository.findByEmail(email);
+        if (user == null) {
+            throw new RuntimeException("User with email not found");
+        }
+
+        // Xóa token reset cũ nếu có
+        tokenRepository.deleteByUserIdAndTokenType(user.getUserId(), "PASSWORD_RESET");
+
+        // Tạo token reset mới
+        String resetToken = UUID.randomUUID().toString();
+        Token token = new Token();
+        token.setId(UUID.randomUUID().toString());
+        token.setToken(resetToken);
+        token.setUserId(user.getUserId());
+        token.setTokenType("PASSWORD_RESET");
+        token.setExpired(false);
+        token.setRevoked(false);
+        token.setCreatedAt(LocalDateTime.now());
+        token.setExpiresAt(LocalDateTime.now().plusHours(1)); // Token hết hạn sau 1 tiếng
+
+        tokenRepository.save(token);
+
+        // TODO: Gửi email với link reset chứa token này
+        // Tạm thời trả về token để test
+        return resetToken;
+    }
+
+    // Reset mật khẩu với token
+    @Transactional
+    public void resetPassword(String resetToken, String newPassword) {
+        Token token = tokenRepository.findByToken(resetToken);
+
+        if (token == null) {
+            throw new RuntimeException("Invalid reset token");
+        }
+
+        if (token.isExpired() || token.isRevoked()) {
+            throw new RuntimeException("Reset token has been expired or revoked");
+        }
+
+        if (token.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Reset token has expired");
+        }
+
+        if (!"PASSWORD_RESET".equals(token.getTokenType())) {
+            throw new RuntimeException("Invalid token type");
+        }
+
+        // Tìm user và cập nhật mật khẩu
+        User user = userRepository.findById(token.getUserId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        // Đánh dấu token đã sử dụng
+        token.setRevoked(true);
+        token.setExpired(true);
+        tokenRepository.save(token);
     }
 }

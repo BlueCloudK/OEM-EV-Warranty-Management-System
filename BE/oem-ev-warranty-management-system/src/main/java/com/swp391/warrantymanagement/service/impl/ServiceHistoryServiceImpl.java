@@ -42,4 +42,15 @@ public class ServiceHistoryServiceImpl implements ServiceHistoryService {
     public List<ServiceHistory> getServiceHistories() {
         return serviceHistoryRepository.findAll();
     }
+
+    // Implement methods mới sử dụng database queries hiệu quả
+    @Override
+    public List<ServiceHistory> getServiceHistoriesByVehicleId(Long vehicleId) {
+        return serviceHistoryRepository.findByVehicleVehicleId(vehicleId);
+    }
+
+    @Override
+    public List<ServiceHistory> getServiceHistoriesByServiceType(String serviceType) {
+        return serviceHistoryRepository.findByServiceTypeContainingIgnoreCase(serviceType);
+    }
 }
