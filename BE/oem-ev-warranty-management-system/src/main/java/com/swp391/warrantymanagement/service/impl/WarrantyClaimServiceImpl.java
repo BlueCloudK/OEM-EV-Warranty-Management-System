@@ -1,16 +1,18 @@
 package com.swp391.warrantymanagement.service.impl;
 
 import com.swp391.warrantymanagement.entity.WarrantyClaim;
+import com.swp391.warrantymanagement.entity.WarrantyClaimStatus;
 import com.swp391.warrantymanagement.repository.WarrantyClaimRepository;
 import com.swp391.warrantymanagement.service.WarrantyClaimService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.List;
 
 @Service
 public class WarrantyClaimServiceImpl implements WarrantyClaimService {
-    @Autowired // nay là dùng reflection để tự động inject cái WarrantyClaimRepository vào đây
+    @Autowired
     private WarrantyClaimRepository warrantyClaimsRepository;
 
     @Override
@@ -19,37 +21,18 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
     }
 
     @Override
-    public WarrantyClaim createWarrantyClaim(WarrantyClaim warrantyClaim) {
+    public WarrantyClaim save(WarrantyClaim warrantyClaim) {
         return warrantyClaimsRepository.save(warrantyClaim);
     }
 
     @Override
-    public WarrantyClaim updateWarrantyClaim(WarrantyClaim warrantyClaim) {
-        WarrantyClaim existingClaim = warrantyClaimsRepository.findById(warrantyClaim.getWarrantyClaimId()).orElse(null);
-        if (existingClaim != null) {
-            return warrantyClaimsRepository.save(warrantyClaim);
-        }
-        return null;
-    }
-
-    @Override
-    public void deleteWarrantyClaim(Long id) {
+    public void deleteById(Long id) {
         warrantyClaimsRepository.deleteById(id);
     }
 
     @Override
-    public List<WarrantyClaim> getWarrantyClaims() {
+    public List<WarrantyClaim> getAll() {
         return warrantyClaimsRepository.findAll();
-    }
-
-    @Override
-    public void saveWarrantyClaim(WarrantyClaim warrantyClaim) {
-        warrantyClaimsRepository.save(warrantyClaim);
-    }
-
-    @Override
-    public void deleteWarrantyClaim(WarrantyClaim warrantyClaim) {
-        warrantyClaimsRepository.delete(warrantyClaim);
     }
 
     @Override
@@ -57,4 +40,26 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
         return warrantyClaimsRepository.existsById(id);
     }
 
+    @Override
+    public List<WarrantyClaim> getClaimsByStatus(WarrantyClaimStatus status) {
+        return warrantyClaimsRepository.findByStatus(status);
+    }
+
+    @Override
+    public List<WarrantyClaim> getClaimsByVehicleId(Long vehicleId) {
+        return warrantyClaimsRepository.findByVehicleVehicleId(vehicleId);
+    }
+
+    @Override
+    public WarrantyClaim updateClaimStatus(Long id, WarrantyClaimStatus status) {
+        WarrantyClaim existingClaim = warrantyClaimsRepository.findById(id).orElse(null);
+        if (existingClaim != null) {
+            existingClaim.setStatus(status);
+            if (status == WarrantyClaimStatus.COMPLETED) {
+                existingClaim.setResolutionDate(new Date());
+            }
+            return warrantyClaimsRepository.save(existingClaim);
+        }
+        return null;
+    }
 }

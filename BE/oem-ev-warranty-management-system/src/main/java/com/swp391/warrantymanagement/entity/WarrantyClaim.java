@@ -23,12 +23,10 @@ public class WarrantyClaim {
     @NotNull(message = "Claim date is required")
     private Date claimDate;
 
-    @Column(name = "status", nullable = false, length = 50)
-    @NotBlank(message = "Status is required")
-    @Size(min = 3, max = 50, message = "Status must be between 3 and 50 characters")
-    @Pattern(regexp = "^(PENDING|APPROVED|REJECTED|IN_PROGRESS|COMPLETED)$",
-            message = "Status must be one of: PENDING, APPROVED, REJECTED, IN_PROGRESS, COMPLETED")
-    private String status;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    @NotNull(message = "Status is required")
+    private WarrantyClaimStatus status = WarrantyClaimStatus.SUBMITTED;
 
     @Column(name = "description", length = 255, columnDefinition = "nvarchar(255)")
     @Size(max = 255, message = "Description must be at most 255 characters")

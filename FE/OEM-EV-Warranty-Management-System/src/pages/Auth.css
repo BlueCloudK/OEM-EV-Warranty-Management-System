@@ -126,3 +126,132 @@
   }
   .auth-left, .auth-right { padding: 28px; }
 }
+
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0px 0px;
+}
+
+.auth-card {
+  display: flex;
+  width: 920px;
+  max-width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(21, 31, 38, 0.12);
+  background: #ffffff;
+}
+
+.auth-left,
+.auth-right {
+  flex: 1;
+  padding: 48px 40px;
+}
+
+.auth-left {
+  background: linear-gradient(180deg,#ffffff 0%, #fbfcfd 100%);
+}
+
+.brand {
+  position: absolute;
+  left: 24px;
+  top: 22px;
+  font-weight: 700;
+  color: #044835;
+  font-size: 18px;
+}
+
+.auth-title {
+  margin: 0 0 8px 0;
+  font-size: 26px;
+  color: #042f28;
+}
+
+.auth-sub {
+  margin: 0 0 22px 0;
+  color: #6b7576;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.form input[type="text"],
+.form input[type="password"],
+.form input[type="email"],
+.form input[type="number"] {
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid #dde6e6;
+  font-size: 14px;
+  outline: none;
+  background: #ffffff;
+}
+
+.form input:focus {
+  border-color: #88bfb2;
+  box-shadow: 0 4px 14px rgba(10, 90, 80, 0.06);
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+
+.btn-primary {
+  background: #044835;
+  color: #fff;
+  border: none;
+  padding: 12px 18px;
+  border-radius: 24px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-outline {
+  background: transparent;
+  color: #044835;
+  border: 1px solid #044835;
+  padding: 10px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+}
+
+.auth-right {
+  background: linear-gradient(180deg,#e8eaea 0%, #f1f4f3 100%);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.welcome-box {
+  text-align: center;
+  padding: 8px 24px;
+}
+
+.social-group button {
+  margin: 6px;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+  cursor: pointer;
+}
+
+@media (max-width: 880px) {
+  .auth-card {
+    flex-direction: column;
+  }
+  .auth-left, .auth-right { padding: 28px; }
+}
