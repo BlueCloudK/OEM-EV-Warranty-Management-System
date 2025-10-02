@@ -26,6 +26,12 @@ public class User {
     @Pattern(regexp = "^[a-zA-Z0-9_]+$", message = "Username can only contain letters, numbers and underscore")
     private String username;
 
+    // Thêm field email vào User entity
+    @Column(name = "email", nullable = false, length = 100, unique = true)
+    @NotBlank(message = "Email is required")
+    @Email(message = "Email should be valid")
+    private String email;
+
     @Column(name = "password", nullable = false, length = 255)
     @NotBlank(message = "Password is required")
     @Size(min = 6, max = 255, message = "Password must be at least 6 characters")
@@ -38,8 +44,7 @@ public class User {
     private String address;
 
     @Column(name = "created_at", nullable = false)
-    @NotNull(message = "Created date is required")
-    private Date createdAt;
+    private Date createdAt; // Removed @NotNull validation - field is set automatically during registration
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "role_id", nullable = false)
