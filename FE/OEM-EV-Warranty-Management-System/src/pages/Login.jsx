@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { FaCar, FaUser, FaLock } from "react-icons/fa";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -48,110 +49,172 @@ export default function Login() {
 
   return (
     <div
-      className="auth-page"
       style={{
         minHeight: "100vh",
+        backgroundImage:
+          "url('https://images.unsplash.com/photo-1615874959474-d609be9f0cda?auto=format&fit=crop&w=1920&q=80')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "linear-gradient(135deg, #325f65ff 0%, #e8f5e9 100%)",
+        position: "relative",
       }}
     >
+      {/* Overlay làm mờ nền */}
       <div
-        className="auth-card"
         style={{
+          position: "absolute",
+          inset: 0,
+          background: "rgba(0,0,0,0.55)",
+          backdropFilter: "blur(3px)",
+        }}
+      />
+
+      {/* Khung đăng nhập */}
+      <div
+        style={{
+          zIndex: 2,
+          width: "880px",
+          height: "520px",
           display: "flex",
-          width: "950px",
-          height: "560px",
-          borderRadius: "16px",
+          borderRadius: "20px",
           overflow: "hidden",
-          boxShadow: "0 8px 25px rgba(0,0,0,0.15)",
+          boxShadow: "0 12px 35px rgba(0,0,0,0.35)",
           background: "#fff",
         }}
       >
+        {/* Left side */}
         <div
-          className="auth-left"
-          style={{ flex: 1, padding: "50px 40px", overflowY: "hidden" }}
+          style={{
+            flex: 1,
+            padding: "60px 45px",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+          }}
         >
           <h1
             style={{
-              marginBottom: "30px",
               color: "#044835",
               fontWeight: "700",
+              fontSize: "32px",
+              marginBottom: "15px",
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
             }}
           >
-            EV Warranty
+            <FaCar /> EV Warranty Portal
           </h1>
-          <h2 style={{ margin: "0 0 10px 0", fontSize: "26px", color: "#333" }}>
-            Login
-          </h2>
-
           <form
-            style={{ display: "flex", flexDirection: "column", gap: "15px" }}
             onSubmit={handleLogin}
+            style={{ display: "flex", flexDirection: "column", gap: "18px" }}
           >
-            <input
-              type="text"
-              placeholder="Username"
-              required
-              style={inputStyle}
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-            />
-            <input
-              type="password"
-              placeholder="Password"
-              required
-              style={inputStyle}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <div style={inputWrapper}>
+              <FaUser color="#044835" />
+              <input
+                type="text"
+                placeholder="Username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                style={inputStyle}
+              />
+            </div>
 
-            {errorMessage && (
-              <p style={{ color: "red", fontSize: 14, margin: 0 }}>
-                {errorMessage}
-              </p>
-            )}
+            <div style={inputWrapper}>
+              <FaLock color="#044835" />
+              <input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                style={inputStyle}
+              />
+            </div>
 
-            <div style={{ display: "flex", gap: 12, marginTop: "10px" }}>
-              <button type="submit" style={btnPrimary} disabled={isLoading}>
-                {isLoading ? "Đang xử lý..." : "Login"}
-              </button>
-              <button
-                type="button"
-                style={btnOutline}
-                onClick={() => navigate("/register")}
-                disabled={isLoading}
+            <button
+              type="submit"
+              style={loginBtn}
+              onMouseOver={(e) =>
+                (e.currentTarget.style.background = "#06694e")
+              }
+              onMouseOut={(e) =>
+                (e.currentTarget.style.background = "#044835")
+              }
+            >
+              Đăng nhập
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate("/register")}
+              style={registerBtn}
+              onMouseOver={(e) => {
+                e.target.style.background = "#044835";
+                e.target.style.color = "#fff";
+              }}
+              onMouseOut={(e) => {
+                e.target.style.background = "#fff";
+                e.target.style.color = "#044835";
+              }}
+            >
+              Đăng ký
+            </button>
+
+            <div style={{ textAlign: "right", marginTop: "10px" }}>
+              <a
+                href="#"
+                onClick={(e) => e.preventDefault()}
+                style={{
+                  color: "#044835",
+                  fontSize: "13px",
+                  textDecoration: "none",
+                }}
               >
-                Register
-              </button>
+                Forgot password?
+              </a>
             </div>
           </form>
         </div>
 
-        <div className="auth-right" style={{ flex: 1, position: "relative" }}>
-          <img
-            style={{ width: "121%", height: "122%", objectFit: "cover" }}
-            src="https://image.made-in-china.com/2f0j00DAwhVupLMJzd/Fast-Charging-Electric-Vehicle-M-Nv-Remote-Unlocking-New-Electric-Car-SUV.jpg"
-            alt="EV"
-          />
+        {/* Right side (ảnh xe đẹp, overlay gradient) */}
+        <div
+          style={{
+            flex: 1,
+            position: "relative",
+            backgroundImage:
+              "url('https://image.made-in-china.com/2f0j00DAwhVupLMJzd/Fast-Charging-Electric-Vehicle-M-Nv-Remote-Unlocking-New-Electric-Car-SUV.jpg')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
         </div>
       </div>
     </div>
   );
 }
 
-// 🔹 Styles
-const inputStyle = {
+// Styles
+const inputWrapper = {
+  display: "flex",
+  alignItems: "center",
+  gap: "10px",
   padding: "12px 15px",
   borderRadius: "10px",
   border: "1px solid #ccc",
-  outline: "none",
-  fontSize: "14px",
-  transition: "0.2s",
+  background: "#fafafa",
 };
-const btnPrimary = {
+const inputStyle = {
+  border: "none",
+  outline: "none",
+  fontSize: "15px",
   flex: 1,
+  background: "transparent",
+};
+const loginBtn = {
   padding: "12px",
   border: "none",
   borderRadius: "10px",
@@ -161,164 +224,17 @@ const btnPrimary = {
   fontSize: "15px",
   cursor: "pointer",
   transition: "0.3s",
+  marginTop: "10px",
 };
-const btnOutline = {
-  flex: 1,
+const registerBtn = {
   padding: "12px",
-  borderRadius: "10px",
   border: "2px solid #044835",
+  borderRadius: "10px",
   background: "#fff",
   color: "#044835",
   fontWeight: "600",
+  fontSize: "15px",
   cursor: "pointer",
   transition: "0.3s",
 };
 
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import "./Auth.css";
-
-export default function Login() {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const navigate = useNavigate();
-
-  const handleLogin = (e) => {
-    e.preventDefault();
-    navigate("/customer/dashboard"); // demo
-  };
-
-  return (
-    <div className="auth-page" style={{ 
-      minHeight: "100vh", 
-      display: "flex", 
-      alignItems: "center", 
-      justifyContent: "center", 
-      background: "linear-gradient(135deg, #0a413fff 0%, #f1f8e9 100%)" 
-    }}>
-      <div className="auth-card" style={{
-        display: "flex",
-        width: "900px",
-        height: "520px",
-        borderRadius: "16px",
-        overflow: "hidden",
-        boxShadow: "0 8px 25px rgba(0,0,0,0.15)",
-        background: "#fff"
-      }}>
-        
-        {/* Left side (form) */}
-        <div className="auth-left" style={{ flex: 1, padding: "50px 40px" }}>
-          <h1 style={{ marginBottom: "30px", color: "#044835", fontWeight: "700" }}>
-            EV Warranty
-          </h1>
-          <form className="form" onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-            <input
-              type="text"
-              placeholder="Username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-              style={{
-                padding: "12px 15px",
-                borderRadius: "10px",
-                border: "1px solid #ccc",
-                outline: "none",
-                fontSize: "14px",
-                transition: "0.2s",
-              }}
-              onFocus={(e) => (e.target.style.border = "1px solid #044835")}
-              onBlur={(e) => (e.target.style.border = "1px solid #ccc")}
-            />
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              style={{
-                padding: "12px 15px",
-                borderRadius: "10px",
-                border: "1px solid #ccc",
-                outline: "none",
-                fontSize: "14px",
-              }}
-              onFocus={(e) => (e.target.style.border = "1px solid #044835")}
-              onBlur={(e) => (e.target.style.border = "1px solid #ccc")}
-            />
-
-            <div style={{ display: "flex", gap: 12, marginTop: "10px" }}>
-              <button
-                className="btn-primary"
-                type="submit"
-                style={{
-                  flex: 1,
-                  padding: "12px",
-                  border: "none",
-                  borderRadius: "10px",
-                  background: "#044835",
-                  color: "#fff",
-                  fontWeight: "600",
-                  fontSize: "15px",
-                  cursor: "pointer",
-                  transition: "0.3s",
-                }}
-                onMouseOver={(e) => (e.target.style.background = "#06694e")}
-                onMouseOut={(e) => (e.target.style.background = "#044835")}
-              >
-                Sign in
-              </button>
-              <button
-                type="button"
-                className="btn-outline"
-                onClick={() => navigate("/register")}
-                style={{
-                  flex: 1,
-                  padding: "12px",
-                  borderRadius: "10px",
-                  border: "2px solid #044835",
-                  background: "#fff",
-                  color: "#044835",
-                  fontWeight: "600",
-                  cursor: "pointer",
-                  transition: "0.3s",
-                }}
-                onMouseOver={(e) => {
-                  e.target.style.background = "#044835";
-                  e.target.style.color = "#fff";
-                }}
-                onMouseOut={(e) => {
-                  e.target.style.background = "#fff";
-                  e.target.style.color = "#044835";
-                }}
-              >
-                Register
-              </button>
-            </div>
-
-            <div style={{ marginTop: 12, textAlign: "right" }}>
-              <a
-                href="#"
-                onClick={(e) => e.preventDefault()}
-                style={{ color: "#120707ff", fontSize: 13, textDecoration: "none" }}
-              >
-                Forgot password?
-              </a>
-            </div>
-          </form>
-        </div>
-
-        {/* Right side (image) */}
-        <div className="auth-right" style={{ flex: 1, position: "relative" }}>
-          <img
-            style={{
-              width: "121%",
-              height: "123%",
-              objectFit: "cover",
-            }}
-            src="https://image.made-in-china.com/2f0j00DAwhVupLMJzd/Fast-Charging-Electric-Vehicle-M-Nv-Remote-Unlocking-New-Electric-Car-SUV.jpg"
-          />          
-        </div>
-      </div>
-    </div>
-  );
-}

@@ -7,9 +7,9 @@ export default function Navbar() {
       <div className="container nav-inner">
         <div className="logo">EV Warranty</div>
         <nav>
-          <Link to="/" className="nav-link">Home</Link>
-          <Link to="/login" className="nav-link">Login</Link>
-          <Link to="/register" className="nav-cta">Register</Link>
+          <Link to="/" className="nav-link">Trang chủ</Link>
+          <Link to="/login" className="nav-link">Đăng nhập</Link>
+          <Link to="/register" className="nav-cta">Đăng Ký</Link>
         </nav>
       </div>
     </header>
