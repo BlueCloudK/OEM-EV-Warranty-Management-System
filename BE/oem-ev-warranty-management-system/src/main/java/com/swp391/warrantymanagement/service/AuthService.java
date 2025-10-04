@@ -1,15 +1,21 @@
 package com.swp391.warrantymanagement.service;
 
-import com.swp391.warrantymanagement.entity.Token;
-import com.swp391.warrantymanagement.entity.User;
+import com.swp391.warrantymanagement.dto.request.auth.*;
+import com.swp391.warrantymanagement.dto.response.AuthResponseDTO;
 import org.springframework.stereotype.Service;
 
-// class đứng giữa Controller và Repository, nó sẽ đưa Object từ Repository lên Controller và ngược lại
+/**
+ * Service interface for authentication-related business logic.
+ * Handles user registration, login, token refresh, password reset, and logout.
+ * All methods use DTOs for API communication, following N-Layer architecture.
+ */
 @Service
 public interface AuthService {
-    String login(String username, String rawPassword);
-    User validateToken(String token);
-    String requestPasswordReset(String email);
-    void resetPassword(String token, String newPassword);
-    User registerUser(User user); // Thêm method đăng ký
+    AuthResponseDTO authenticateUser(LoginRequestDTO loginRequest);
+    AuthResponseDTO refreshUserToken(RefreshTokenRequestDTO refreshRequest);
+    AuthResponseDTO registerNewUser(UserRegistrationDTO registrationRequest);
+    void logoutUser(LogoutRequestDTO logoutRequest);
+    void processForgotPassword(ForgotPasswordRequestDTO forgotRequest);
+    void processResetPassword(ResetPasswordRequestDTO resetRequest);
+    AuthResponseDTO validateToken(String token);
 }
