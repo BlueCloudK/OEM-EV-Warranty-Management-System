@@ -1,19 +1,26 @@
 package com.swp391.warrantymanagement.service;
 
-import com.swp391.warrantymanagement.entity.ServiceHistory;
-import java.util.List;
+import com.swp391.warrantymanagement.dto.request.ServiceHistoryRequestDTO;
+import com.swp391.warrantymanagement.dto.response.ServiceHistoryResponseDTO;
+import com.swp391.warrantymanagement.dto.response.PagedResponse;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
+/**
+ * Service interface for service history-related business logic.
+ * Handles CRUD and search operations for service histories using DTOs.
+ */
 @Service
 public interface ServiceHistoryService {
-    // Core CRUD operations
-    ServiceHistory getById(Long id);
-    ServiceHistory createServiceHistory(ServiceHistory serviceHistory);
-    ServiceHistory updateServiceHistory(ServiceHistory serviceHistory);
-    void deleteServiceHistory(Long id);
-    List<ServiceHistory> getServiceHistories();
-
-    // Business logic methods - sử dụng database queries hiệu quả
-    List<ServiceHistory> getServiceHistoriesByVehicleId(Long vehicleId);
-    List<ServiceHistory> getServiceHistoriesByServiceType(String serviceType);
+    // Business logic methods - chỉ giao tiếp bằng DTO
+    PagedResponse<ServiceHistoryResponseDTO> getAllServiceHistoriesPage(Pageable pageable);
+    ServiceHistoryResponseDTO getServiceHistoryById(Long id);
+    ServiceHistoryResponseDTO createServiceHistory(ServiceHistoryRequestDTO requestDTO);
+    ServiceHistoryResponseDTO updateServiceHistory(Long id, ServiceHistoryRequestDTO requestDTO);
+    boolean deleteServiceHistory(Long id);
+    List<ServiceHistoryResponseDTO> getServiceHistoriesByPartId(String partId);
+    List<ServiceHistoryResponseDTO> getServiceHistoriesByVehicleId(Long vehicleId);
+    List<ServiceHistoryResponseDTO> searchServiceHistoriesByType(String serviceType);
 }

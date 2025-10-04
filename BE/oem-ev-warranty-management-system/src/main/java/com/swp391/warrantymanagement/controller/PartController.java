@@ -1,98 +1,70 @@
 package com.swp391.warrantymanagement.controller;
 
-import com.swp391.warrantymanagement.entity.Part;
+import com.swp391.warrantymanagement.dto.request.PartRequestDTO;
+import com.swp391.warrantymanagement.dto.response.PartResponseDTO;
+import com.swp391.warrantymanagement.dto.response.PagedResponse;
 import com.swp391.warrantymanagement.service.PartService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
+/**
+ * REST controller for Part APIs.
+ * Handles CRUD operations for parts using DTOs only.
+ */
 @RestController
 @RequestMapping("api/parts")
 @CrossOrigin
 public class PartController {
-    @Autowired
-    private PartService partService;
+    @Autowired private PartService partService;
 
-    // Lấy tất cả linh kiện
+    // Get all parts with pagination
     @GetMapping
-    public ResponseEntity<List<Part>> getAllParts() {
-        List<Part> parts = partService.getParts();
-        return ResponseEntity.ok(parts);
+    public ResponseEntity<PagedResponse<PartResponseDTO>> getAllParts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        PagedResponse<PartResponseDTO> partsPage = partService.getAllPartsPage(PageRequest.of(page, size));
+        return ResponseEntity.ok(partsPage);
     }
 
-    // Lấy linh kiện theo ID
+    // Get part by ID
     @GetMapping("/{id}")
-    public ResponseEntity<Part> getPartById(@PathVariable("id") String id) {
-        Part part = partService.getById(id);
+    public ResponseEntity<PartResponseDTO> getPartById(@PathVariable String id) {
+        PartResponseDTO part = partService.getPartById(id);
         if (part != null) {
             return ResponseEntity.ok(part);
         }
         return ResponseEntity.notFound().build();
     }
 
-    // Tạo linh kiện mới
+    // Create new part
     @PostMapping
-    public ResponseEntity<Part> createPart(@Valid @RequestBody Part part) {
-        Part savedPart = partService.createPart(part);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedPart);
+    public ResponseEntity<PartResponseDTO> createPart(@Valid @RequestBody PartRequestDTO requestDTO) {
+        PartResponseDTO responseDTO = partService.createPart(requestDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
     }
 
-    // Cập nhật linh kiện
+    // Update part
     @PutMapping("/{id}")
-    public ResponseEntity<Part> updatePart(@PathVariable("id") String id, @Valid @RequestBody Part part) {
-        Part existingPart = partService.getById(id);
-        if (existingPart == null) {
-            return ResponseEntity.notFound().build();
+    public ResponseEntity<PartResponseDTO> updatePart(@PathVariable String id,
+                                                     @Valid @RequestBody PartRequestDTO requestDTO) {
+        PartResponseDTO updatedPart = partService.updatePart(id, requestDTO);
+        if (updatedPart != null) {
+            return ResponseEntity.ok(updatedPart);
         }
-
-        part.setPartId(id);
-        Part updatedPart = partService.updatePart(part);
-        return ResponseEntity.ok(updatedPart);
+        return ResponseEntity.notFound().build();
     }
 
-    // Xóa linh kiện
+    // Delete part
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletePart(@PathVariable("id") String id) {
-        Part existingPart = partService.getById(id);
-        if (existingPart == null) {
-            return ResponseEntity.notFound().build();
+    public ResponseEntity<Void> deletePart(@PathVariable String id) {
+        boolean deleted = partService.deletePart(id);
+        if (deleted) {
+            return ResponseEntity.noContent().build();
         }
-
-        partService.deletePart(id);
-        return ResponseEntity.noContent().build();
-    }
-
-    // Tìm kiếm linh kiện theo tên
-    @GetMapping("/search")
-    public ResponseEntity<List<Part>> searchPartsByName(@RequestParam("name") String name) {
-        List<Part> parts = partService.getParts()
-                .stream()
-                .filter(p -> p.getPartName().toLowerCase().contains(name.toLowerCase()))
-                .toList();
-        return ResponseEntity.ok(parts);
-    }
-
-    // Lấy linh kiện theo nhà sản xuất
-    @GetMapping("/manufacturer/{manufacturer}")
-    public ResponseEntity<List<Part>> getPartsByManufacturer(@PathVariable("manufacturer") String manufacturer) {
-        List<Part> parts = partService.getParts()
-                .stream()
-                .filter(p -> p.getManufacturer().toLowerCase().contains(manufacturer.toLowerCase()))
-                .toList();
-        return ResponseEntity.ok(parts);
-    }
-
-    // Lấy linh kiện theo vehicle ID
-    @GetMapping("/vehicle/{vehicleId}")
-    public ResponseEntity<List<Part>> getPartsByVehicleId(@PathVariable("vehicleId") Long vehicleId) {
-        List<Part> parts = partService.getParts()
-                .stream()
-                .filter(p -> p.getVehicle().getVehicleId().equals(vehicleId))
-                .toList();
-        return ResponseEntity.ok(parts);
+        return ResponseEntity.notFound().build();
     }
 }

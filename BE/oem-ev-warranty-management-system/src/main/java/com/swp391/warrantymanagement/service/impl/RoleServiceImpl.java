@@ -1,6 +1,5 @@
 package com.swp391.warrantymanagement.service.impl;
 
-import com.swp391.warrantymanagement.dto.CreateRoleRequestDTO;
 import com.swp391.warrantymanagement.entity.Role;
 import com.swp391.warrantymanagement.repository.RoleRepository;
 import com.swp391.warrantymanagement.service.RoleService;
@@ -23,13 +22,6 @@ public class RoleServiceImpl implements RoleService {
     @Override
     public Role getById(Long id) {
         return roleRepository.findById(id).orElse(null);
-    }
-
-    @Override
-    public Role createRole(CreateRoleRequestDTO role) {
-        Role newRole = new Role();
-        newRole.setRoleName(role.getRoleName());
-        return roleRepository.save(newRole);
     }
 
     @Override

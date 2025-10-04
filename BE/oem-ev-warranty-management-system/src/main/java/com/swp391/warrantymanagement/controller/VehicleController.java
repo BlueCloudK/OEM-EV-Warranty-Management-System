@@ -1,79 +1,72 @@
 package com.swp391.warrantymanagement.controller;
 
-import com.swp391.warrantymanagement.entity.Vehicle;
+import com.swp391.warrantymanagement.dto.request.VehicleRequestDTO;
+import com.swp391.warrantymanagement.dto.response.VehicleResponseDTO;
+import com.swp391.warrantymanagement.dto.response.PagedResponse;
 import com.swp391.warrantymanagement.service.VehicleService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.util.UUID;
 
+/**
+ * REST controller for Vehicle APIs.
+ * Handles CRUD operations for vehicles using DTOs only.
+ */
 @RestController
 @RequestMapping("api/vehicles")
 @CrossOrigin
 public class VehicleController {
-    @Autowired
-    private VehicleService vehicleService;
+    @Autowired private VehicleService vehicleService;
 
-    // Lấy tất cả xe
+    // Get all vehicles with pagination
     @GetMapping
-    public ResponseEntity<List<Vehicle>> getAllVehicles() {
-        List<Vehicle> vehicles = vehicleService.getVehicles();
-        return ResponseEntity.ok(vehicles);
+    public ResponseEntity<PagedResponse<VehicleResponseDTO>> getAllVehicles(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        PagedResponse<VehicleResponseDTO> vehiclesPage = vehicleService.getAllVehiclesPage(PageRequest.of(page, size));
+        return ResponseEntity.ok(vehiclesPage);
     }
 
-    // Lấy xe theo ID
+    // Get vehicle by ID
     @GetMapping("/{id}")
-    public ResponseEntity<Vehicle> getVehicleById(@PathVariable("id") Long id) {
-        Vehicle vehicle = vehicleService.getById(id);
+    public ResponseEntity<VehicleResponseDTO> getVehicleById(@PathVariable Long id) {
+        VehicleResponseDTO vehicle = vehicleService.getVehicleById(id);
         if (vehicle != null) {
             return ResponseEntity.ok(vehicle);
         }
         return ResponseEntity.notFound().build();
     }
 
-    // Tạo xe mới
+    // Create new vehicle
     @PostMapping
-    public ResponseEntity<Vehicle> createVehicle(@Valid @RequestBody Vehicle vehicle) {
-        vehicle.setVehicleId(null); // Đảm bảo ID null để tạo mới
-        Vehicle savedVehicle = vehicleService.createVehicle(vehicle);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedVehicle);
+    public ResponseEntity<VehicleResponseDTO> createVehicle(@Valid @RequestBody VehicleRequestDTO requestDTO) {
+        VehicleResponseDTO responseDTO = vehicleService.createVehicle(requestDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
     }
 
-    // Cập nhật xe
+    // Update vehicle
     @PutMapping("/{id}")
-    public ResponseEntity<Vehicle> updateVehicle(@PathVariable("id") Long id, @Valid @RequestBody Vehicle vehicle) {
-        Vehicle existingVehicle = vehicleService.getById(id);
-        if (existingVehicle == null) {
-            return ResponseEntity.notFound().build();
+    public ResponseEntity<VehicleResponseDTO> updateVehicle(@PathVariable Long id,
+                                                          @Valid @RequestBody VehicleRequestDTO requestDTO) {
+        VehicleResponseDTO updatedVehicle = vehicleService.updateVehicle(id, requestDTO);
+        if (updatedVehicle != null) {
+            return ResponseEntity.ok(updatedVehicle);
         }
-
-        vehicle.setVehicleId(id);
-        Vehicle updatedVehicle = vehicleService.updateVehicle(vehicle);
-        return ResponseEntity.ok(updatedVehicle);
+        return ResponseEntity.notFound().build();
     }
 
-    // Xóa xe
+    // Delete vehicle
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteVehicle(@PathVariable("id") Long id) {
-        Vehicle existingVehicle = vehicleService.getById(id);
-        if (existingVehicle == null) {
-            return ResponseEntity.notFound().build();
+    public ResponseEntity<Void> deleteVehicle(@PathVariable Long id) {
+        boolean deleted = vehicleService.deleteVehicle(id);
+        if (deleted) {
+            return ResponseEntity.noContent().build();
         }
-
-        vehicleService.deleteVehicle(id);
-        return ResponseEntity.noContent().build();
-    }
-
-    // Lấy xe theo customer ID
-    @GetMapping("/customer/{customerId}")
-    public ResponseEntity<List<Vehicle>> getVehiclesByCustomerId(@PathVariable("customerId") String customerId) {
-        List<Vehicle> vehicles = vehicleService.getVehicles()
-                .stream()
-                .filter(v -> v.getCustomer().getCustomerId().toString().equals(customerId))
-                .toList();
-        return ResponseEntity.ok(vehicles);
+        return ResponseEntity.notFound().build();
     }
 }
