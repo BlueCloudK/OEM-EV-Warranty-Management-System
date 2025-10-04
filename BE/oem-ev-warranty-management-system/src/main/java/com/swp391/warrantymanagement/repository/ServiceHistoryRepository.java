@@ -13,11 +13,17 @@ public interface ServiceHistoryRepository extends JpaRepository<ServiceHistory, 
     // Spring Boot đã tự động sinh các phương thức CRUD cơ bản với Long ID
 
     // Derived query methods - Spring tự động tạo queries
-    List<ServiceHistory> findByVehicleVehicleId(Long vehicleId);
-
     List<ServiceHistory> findByServiceTypeContainingIgnoreCase(String serviceType);
 
+    // Đổi tên để match field thật trong entity Part (part.partId)
+    List<ServiceHistory> findByPartPartId(String partId);
+
+    List<ServiceHistory> findByVehicleVehicleId(Long vehicleId);
+
     // Custom query với JOIN FETCH để tối ưu hiệu suất
+    @Query("SELECT sh FROM ServiceHistory sh JOIN FETCH sh.part p WHERE p.partId = :partId")
+    List<ServiceHistory> findByPartIdWithPart(@Param("partId") String partId);
+
     @Query("SELECT sh FROM ServiceHistory sh JOIN FETCH sh.vehicle v WHERE v.vehicleId = :vehicleId")
     List<ServiceHistory> findByVehicleIdWithVehicle(@Param("vehicleId") Long vehicleId);
 }

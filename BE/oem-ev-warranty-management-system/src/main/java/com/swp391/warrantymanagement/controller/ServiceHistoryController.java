@@ -1,83 +1,70 @@
 package com.swp391.warrantymanagement.controller;
 
-import com.swp391.warrantymanagement.entity.ServiceHistory;
+import com.swp391.warrantymanagement.dto.request.ServiceHistoryRequestDTO;
+import com.swp391.warrantymanagement.dto.response.ServiceHistoryResponseDTO;
+import com.swp391.warrantymanagement.dto.response.PagedResponse;
 import com.swp391.warrantymanagement.service.ServiceHistoryService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
+/**
+ * REST controller for Service History APIs.
+ * Handles CRUD operations for service histories using DTOs only.
+ */
 @RestController
-@RequestMapping("api/service-history")
+@RequestMapping("api/service-histories")
 @CrossOrigin
 public class ServiceHistoryController {
-    @Autowired
-    private ServiceHistoryService serviceHistoryService;
+    @Autowired private ServiceHistoryService serviceHistoryService;
 
-    // Lấy tất cả lịch sử dịch vụ
+    // Get all service histories with pagination
     @GetMapping
-    public ResponseEntity<List<ServiceHistory>> getAllServiceHistories() {
-        List<ServiceHistory> serviceHistories = serviceHistoryService.getServiceHistories();
-        return ResponseEntity.ok(serviceHistories);
+    public ResponseEntity<PagedResponse<ServiceHistoryResponseDTO>> getAllServiceHistories(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        PagedResponse<ServiceHistoryResponseDTO> historiesPage = serviceHistoryService.getAllServiceHistoriesPage(PageRequest.of(page, size));
+        return ResponseEntity.ok(historiesPage);
     }
 
-    // Lấy lịch sử dịch vụ theo ID
+    // Get service history by ID
     @GetMapping("/{id}")
-    public ResponseEntity<ServiceHistory> getServiceHistoryById(@PathVariable("id") Long id) {
-        ServiceHistory serviceHistory = serviceHistoryService.getById(id);
-        if (serviceHistory != null) {
-            return ResponseEntity.ok(serviceHistory);
+    public ResponseEntity<ServiceHistoryResponseDTO> getServiceHistoryById(@PathVariable Long id) {
+        ServiceHistoryResponseDTO history = serviceHistoryService.getServiceHistoryById(id);
+        if (history != null) {
+            return ResponseEntity.ok(history);
         }
         return ResponseEntity.notFound().build();
     }
 
-    // Tạo lịch sử dịch vụ mới
+    // Create new service history
     @PostMapping
-    public ResponseEntity<ServiceHistory> createServiceHistory(@Valid @RequestBody ServiceHistory serviceHistory) {
-        serviceHistory.setServiceHistoryId(null); // Đảm bảo ID null để tạo mới
-        ServiceHistory savedServiceHistory = serviceHistoryService.createServiceHistory(serviceHistory);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedServiceHistory);
+    public ResponseEntity<ServiceHistoryResponseDTO> createServiceHistory(@Valid @RequestBody ServiceHistoryRequestDTO requestDTO) {
+        ServiceHistoryResponseDTO responseDTO = serviceHistoryService.createServiceHistory(requestDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
     }
 
-    // Cập nhật lịch sử dịch vụ
+    // Update service history
     @PutMapping("/{id}")
-    public ResponseEntity<ServiceHistory> updateServiceHistory(@PathVariable("id") Long id, @Valid @RequestBody ServiceHistory serviceHistory) {
-        ServiceHistory existingServiceHistory = serviceHistoryService.getById(id);
-        if (existingServiceHistory == null) {
-            return ResponseEntity.notFound().build();
+    public ResponseEntity<ServiceHistoryResponseDTO> updateServiceHistory(@PathVariable Long id,
+                                                                        @Valid @RequestBody ServiceHistoryRequestDTO requestDTO) {
+        ServiceHistoryResponseDTO updatedHistory = serviceHistoryService.updateServiceHistory(id, requestDTO);
+        if (updatedHistory != null) {
+            return ResponseEntity.ok(updatedHistory);
         }
-
-        serviceHistory.setServiceHistoryId(id);
-        ServiceHistory updatedServiceHistory = serviceHistoryService.updateServiceHistory(serviceHistory);
-        return ResponseEntity.ok(updatedServiceHistory);
+        return ResponseEntity.notFound().build();
     }
 
-    // Xóa lịch sử dịch vụ
+    // Delete service history
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteServiceHistory(@PathVariable("id") Long id) {
-        ServiceHistory existingServiceHistory = serviceHistoryService.getById(id);
-        if (existingServiceHistory == null) {
-            return ResponseEntity.notFound().build();
+    public ResponseEntity<Void> deleteServiceHistory(@PathVariable Long id) {
+        boolean deleted = serviceHistoryService.deleteServiceHistory(id);
+        if (deleted) {
+            return ResponseEntity.noContent().build();
         }
-
-        serviceHistoryService.deleteServiceHistory(id);
-        return ResponseEntity.noContent().build();
-    }
-
-    // Lấy lịch sử dịch vụ theo vehicle ID - sử dụng database query hiệu quả
-    @GetMapping("/vehicle/{vehicleId}")
-    public ResponseEntity<List<ServiceHistory>> getServiceHistoryByVehicleId(@PathVariable("vehicleId") Long vehicleId) {
-        List<ServiceHistory> serviceHistories = serviceHistoryService.getServiceHistoriesByVehicleId(vehicleId);
-        return ResponseEntity.ok(serviceHistories);
-    }
-
-    // Lấy lịch sử dịch vụ theo loại dịch vụ - sử dụng database query hiệu quả
-    @GetMapping("/type/{serviceType}")
-    public ResponseEntity<List<ServiceHistory>> getServiceHistoryByType(@PathVariable("serviceType") String serviceType) {
-        List<ServiceHistory> serviceHistories = serviceHistoryService.getServiceHistoriesByServiceType(serviceType);
-        return ResponseEntity.ok(serviceHistories);
+        return ResponseEntity.notFound().build();
     }
 }

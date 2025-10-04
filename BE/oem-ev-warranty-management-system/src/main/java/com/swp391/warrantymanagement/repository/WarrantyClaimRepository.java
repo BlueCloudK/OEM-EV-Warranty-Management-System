@@ -16,9 +16,10 @@ public interface WarrantyClaimRepository extends JpaRepository<WarrantyClaim, Lo
     // Derived query methods - Spring automatically generates queries
     List<WarrantyClaim> findByStatus(WarrantyClaimStatus status);
 
+    // Sửa từ findByVehicleId thành findByVehicleVehicleId để match với WarrantyClaim.vehicle.vehicleId
     List<WarrantyClaim> findByVehicleVehicleId(Long vehicleId);
 
-    // Custom query for better performance with joins
+    // Custom query với JOIN FETCH để tối ưu hiệu suất - giữ nguyên vì dùng @Query
     @Query("SELECT wc FROM WarrantyClaim wc JOIN FETCH wc.vehicle v WHERE v.vehicleId = :vehicleId")
     List<WarrantyClaim> findByVehicleIdWithVehicle(@Param("vehicleId") Long vehicleId);
 

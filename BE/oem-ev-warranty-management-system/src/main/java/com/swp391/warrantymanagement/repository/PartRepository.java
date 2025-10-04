@@ -17,11 +17,12 @@ public interface PartRepository extends JpaRepository<Part, String> {
 
     List<Part> findByManufacturerContainingIgnoreCase(String manufacturer);
 
+    // Sửa từ findByVehicleId thành findByVehicleVehicleId để match với Part.vehicle.vehicleId
     List<Part> findByVehicleVehicleId(Long vehicleId);
 
-    List<Part> findByPartNumber(String partNumber);
+    List<Part> findByPartId(String partId);
 
-    // Custom query với JOIN FETCH để tối ưu hiệu suất
+    // Custom query với JOIN FETCH để tối ưu hiệu suất - giữ nguyên vì dùng @Query
     @Query("SELECT p FROM Part p JOIN FETCH p.vehicle v WHERE v.vehicleId = :vehicleId")
     List<Part> findByVehicleIdWithVehicle(@Param("vehicleId") Long vehicleId);
 

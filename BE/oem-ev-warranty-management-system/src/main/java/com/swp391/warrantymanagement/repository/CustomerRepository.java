@@ -1,6 +1,8 @@
 package com.swp391.warrantymanagement.repository;
 
 import com.swp391.warrantymanagement.entity.Customer;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,6 +18,9 @@ public interface CustomerRepository extends JpaRepository<Customer, UUID> { // J
 
     // Derived query methods - Spring tự động tạo queries
     List<Customer> findByNameContainingIgnoreCase(String name);
+
+    // Thêm method hỗ trợ pagination cho search
+    Page<Customer> findByNameContainingIgnoreCase(String name, Pageable pageable);
 
     Optional<Customer> findByEmail(String email);
 

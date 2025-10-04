@@ -1,17 +1,23 @@
 package com.swp391.warrantymanagement.service;
 
-import com.swp391.warrantymanagement.entity.Customer;
-import java.util.List;
-import java.util.UUID;
-
+import com.swp391.warrantymanagement.dto.request.CustomerRequestDTO;
+import com.swp391.warrantymanagement.dto.response.CustomerResponseDTO;
+import com.swp391.warrantymanagement.dto.response.PagedResponse;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-// class đứng giữa Controller và Repository, nó sẽ đưa Object từ Repository lên Controller và ngược lại
+import java.util.UUID;
+
+/**
+ * Service interface for customer-related business logic.
+ * Handles CRUD and search operations for customers using DTOs.
+ */
 @Service
 public interface CustomerService {
-    Customer getById(UUID id);
-    Customer createCustomer(Customer customer);
-    Customer updateCustomer(Customer customer);
-    void deleteCustomer(UUID id);
-    List<Customer> getCustomers();
+    PagedResponse<CustomerResponseDTO> getAllCustomersPage(Pageable pageable, String search);
+    CustomerResponseDTO getCustomerById(UUID id);
+    CustomerResponseDTO createCustomer(CustomerRequestDTO requestDTO);
+    CustomerResponseDTO updateCustomer(UUID id, CustomerRequestDTO requestDTO);
+    boolean deleteCustomer(UUID id);
+    PagedResponse<CustomerResponseDTO> searchCustomersByName(String name, Pageable pageable);
 }
