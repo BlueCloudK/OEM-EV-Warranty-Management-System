@@ -14,6 +14,7 @@ import lombok.NoArgsConstructor;
 public class ServiceHistory {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "service_history_id")
     private Long serviceHistoryId;
 
     @Column(name = "service_date", nullable = false)

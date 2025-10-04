@@ -21,12 +21,13 @@ public class Token {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "token_id")
     private Long tokenId;
 
-    @Column(nullable = false, unique = true, length = 500)
+    @Column(name = "token", nullable = false, unique = true, length = 500)
     private String token;
 
-    @Column(nullable = false)
+    @Column(name = "expiration_date", nullable = false)
     private LocalDateTime expirationDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
