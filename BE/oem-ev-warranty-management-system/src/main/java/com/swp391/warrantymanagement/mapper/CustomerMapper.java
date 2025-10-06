@@ -5,7 +5,6 @@ import com.swp391.warrantymanagement.dto.response.CustomerResponseDTO;
 import com.swp391.warrantymanagement.entity.Customer;
 import com.swp391.warrantymanagement.entity.User;
 
-import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,7 +23,6 @@ public final class CustomerMapper {
         entity.setEmail(requestDTO.getEmail());
         entity.setPhone(requestDTO.getPhone());
         entity.setAddress(requestDTO.getAddress());
-        entity.setCreatedAt(new Date());
         entity.setUser(user);
 
         return entity;
@@ -52,7 +50,6 @@ public final class CustomerMapper {
         responseDTO.setEmail(entity.getEmail());
         responseDTO.setPhone(entity.getPhone());
         responseDTO.setAddress(entity.getAddress());
-        responseDTO.setCreatedAt(entity.getCreatedAt());
 
         if (entity.getUser() != null) {
             responseDTO.setUserId(entity.getUser().getUserId());

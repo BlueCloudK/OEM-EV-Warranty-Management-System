@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Nationalized;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Entity // map/ánh xạ class này với bảng trong database
@@ -34,7 +35,7 @@ public class User {
     private String address;
 
     @Column(name = "created_at", nullable = false)
-    private Date createdAt; // Removed @NotNull validation - field is set automatically during registration
+    private LocalDateTime createdAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "role_id", nullable = false)
@@ -43,4 +44,12 @@ public class User {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Customer> customers = new ArrayList<>();
 
+    /**
+     * Tự động set createdAt khi tạo mới user
+     * Được gọi trước khi persist vào database
+     */
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
 }

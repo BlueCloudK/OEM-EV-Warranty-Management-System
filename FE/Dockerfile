@@ -21,7 +21,8 @@ FROM nginx:alpine
 # Copy file build ra dist vào nginx
 COPY --from=build /app/dist /usr/share/nginx/html
 
-# Expose port 80
-EXPOSE 80
+# Expose port 8081
+EXPOSE 8081
 
 CMD ["nginx", "-g", "daemon off;"]
+
