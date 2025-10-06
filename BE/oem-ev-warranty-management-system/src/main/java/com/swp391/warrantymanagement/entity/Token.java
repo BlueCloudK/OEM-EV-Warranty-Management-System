@@ -34,6 +34,9 @@ public class Token {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "token_type", nullable = false, length = 20)
+    private String tokenType; // "REFRESH" hoặc "RESET"
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;

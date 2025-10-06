@@ -47,6 +47,7 @@ public class AuthServiceImpl implements AuthService {
      * Output: AuthResponseDTO trả về cho client
      */
     @Override
+    @Transactional
     public AuthResponseDTO authenticateUser(LoginRequestDTO loginRequest) {
         // Validate user credentials - tìm user theo username
         User user = userRepository.findByUsername(loginRequest.getUsername());
@@ -189,24 +190,34 @@ public class AuthServiceImpl implements AuthService {
     }
 
     /**
-     * Xử lý forgot password - gửi email reset
+     * Xử lý forgot password - tạo reset token và lưu vào database
      * Input: ForgotPasswordRequestDTO
      * Output: void
      */
     @Override
+    @Transactional
     public void processForgotPassword(ForgotPasswordRequestDTO forgotRequest) {
-        // Find user by email - sử dụng Optional để an toàn
+        // Find user by email
         User user = userRepository.findByEmail(forgotRequest.getEmail())
                 .orElseThrow(() -> new RuntimeException("Email not found"));
 
-        // TODO: Generate reset token and send email
-        // For now, just log the action
-        System.out.println("Password reset requested for: " + user.getEmail());
+        // Generate reset token (UUID)
+        String resetToken = java.util.UUID.randomUUID().toString();
 
-        // In real implementation:
-        // 1. Generate reset token
-        // 2. Save token with expiration
-        // 3. Send email with reset link
+        // Xóa chỉ reset token cũ của user này, không xóa refresh token
+        tokenRepository.deleteByUserAndTokenType(user, "RESET");
+
+        // Lưu reset token vào database với expiration 15 phút
+        Token tokenEntity = new Token();
+        tokenEntity.setToken(resetToken);
+        tokenEntity.setUser(user);
+        tokenEntity.setTokenType("RESET");
+        tokenEntity.setExpirationDate(LocalDateTime.now().plusMinutes(15));
+        tokenRepository.save(tokenEntity);
+
+        // Log reset token để test (trong production sẽ gửi email)
+        System.out.println("Reset token generated for " + user.getEmail() + ": " + resetToken);
+        System.out.println("Reset token expires at: " + tokenEntity.getExpirationDate());
     }
 
     /**
@@ -215,21 +226,33 @@ public class AuthServiceImpl implements AuthService {
      * Output: void
      */
     @Override
+    @Transactional
     public void processResetPassword(ResetPasswordRequestDTO resetRequest) {
         // Validate passwords match
         if (!resetRequest.getNewPassword().equals(resetRequest.getConfirmPassword())) {
             throw new RuntimeException("Passwords do not match");
         }
 
-        // TODO: Validate reset token and update password
-        // For now, just log the action
-        System.out.println("Password reset processed for token: " + resetRequest.getResetToken());
+        // Tìm reset token theo type để tránh xung đột với refresh token
+        Token tokenEntity = tokenRepository.findByTokenAndTokenType(resetRequest.getResetToken(), "RESET")
+                .orElseThrow(() -> new RuntimeException("Invalid reset token"));
 
-        // In real implementation:
-        // 1. Find user by reset token
-        // 2. Check token expiration
-        // 3. Update user password
-        // 4. Delete reset token
+        // Check token expiration
+        if (tokenEntity.getExpirationDate().isBefore(LocalDateTime.now())) {
+            tokenRepository.delete(tokenEntity);
+            throw new RuntimeException("Reset token has expired");
+        }
+
+        User user = tokenEntity.getUser();
+
+        // Update user password
+        user.setPassword(passwordEncoder.encode(resetRequest.getNewPassword()));
+        userRepository.save(user);
+
+        // Delete reset token after successful password reset
+        tokenRepository.delete(tokenEntity);
+
+        System.out.println("Password reset successfully for user: " + user.getUsername());
     }
 
     /**
@@ -272,17 +295,19 @@ public class AuthServiceImpl implements AuthService {
 
     /**
      * Lưu refresh token vào database
-     * - Xóa token cũ của user
-     * - Tạo token mới với expiration date
+     * - Xóa refresh token cũ của user
+     * - Tạo refresh token mới với expiration date
      */
-    private void saveRefreshToken(User user, String refreshToken) {
-        // Remove existing refresh tokens for this user
-        tokenRepository.deleteByUser(user);
+    @Transactional
+    public void saveRefreshToken(User user, String refreshToken) {
+        // Remove existing refresh tokens for this user (chỉ xóa refresh token, không xóa reset token)
+        tokenRepository.deleteByUserAndTokenType(user, "REFRESH");
 
         // Save new refresh token
         Token tokenEntity = new Token();
         tokenEntity.setToken(refreshToken);
         tokenEntity.setUser(user);
+        tokenEntity.setTokenType("REFRESH");
         tokenEntity.setExpirationDate(LocalDateTime.now().plusDays(7));
         tokenRepository.save(tokenEntity);
     }

@@ -63,10 +63,28 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     public CustomerResponseDTO createCustomer(CustomerRequestDTO requestDTO) {
-        // Load User entity từ userId
+        // Validate User tồn tại và có đầy đủ thông tin đăng ký
         User user = userRepository.findById(requestDTO.getUserId()).orElse(null);
         if (user == null) {
             throw new RuntimeException("User not found with id: " + requestDTO.getUserId());
+        }
+
+        // Kiểm tra User đã có đầy đủ thông tin đăng ký chưa
+        validateUserRegistrationComplete(user);
+
+        // THAY ĐỔI LOGIC: Chỉ ADMIN hoặc STAFF mới được tạo Customer record cho khách hàng
+        String roleName = user.getRole().getRoleName();
+        if (!roleName.equals("ADMIN") && !roleName.equals("SC_STAFF") && !roleName.equals("EVM_STAFF")) {
+            throw new RuntimeException("Only ADMIN or STAFF can create customer records. Customers should update their own profile instead.");
+        }
+
+        // Validate email và phone không trùng lặp
+        if (customerRepository.findByEmail(requestDTO.getEmail()).isPresent()) {
+            throw new RuntimeException("Email already exists: " + requestDTO.getEmail());
+        }
+
+        if (customerRepository.findByPhone(requestDTO.getPhone()).isPresent()) {
+            throw new RuntimeException("Phone number already exists: " + requestDTO.getPhone());
         }
 
         // Convert DTO to Entity
@@ -77,6 +95,36 @@ public class CustomerServiceImpl implements CustomerService {
 
         // Convert entity back to response DTO
         return CustomerMapper.toResponseDTO(savedCustomer);
+    }
+
+    /**
+     * Validate User đã hoàn thành đăng ký đầy đủ thông tin
+     */
+    private void validateUserRegistrationComplete(User user) {
+        if (user.getUsername() == null || user.getUsername().trim().isEmpty()) {
+            throw new RuntimeException("User registration incomplete: username is required");
+        }
+
+        if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
+            throw new RuntimeException("User registration incomplete: email is required");
+        }
+
+        if (user.getAddress() == null || user.getAddress().trim().isEmpty()) {
+            throw new RuntimeException("User registration incomplete: address is required");
+        }
+
+        if (user.getRole() == null) {
+            throw new RuntimeException("User registration incomplete: role is required");
+        }
+
+        if (user.getPassword() == null || user.getPassword().trim().isEmpty()) {
+            throw new RuntimeException("User registration incomplete: password is required");
+        }
+
+        // Kiểm tra User account đã được kích hoạt (nếu có field isActive)
+        // if (!user.isActive()) {
+        //     throw new RuntimeException("User account is not activated");
+        // }
     }
 
     @Override
@@ -125,5 +173,80 @@ public class CustomerServiceImpl implements CustomerService {
             customerPage.isFirst(),
             customerPage.isLast()
         );
+    }
+
+    @Override
+    public CustomerResponseDTO getCustomerByEmail(String email) {
+        Customer customer = customerRepository.findByEmail(email).orElse(null);
+        return customer != null ? CustomerMapper.toResponseDTO(customer) : null;
+    }
+
+    @Override
+    public CustomerResponseDTO getCustomerByPhone(String phone) {
+        Customer customer = customerRepository.findByPhone(phone).orElse(null);
+        return customer != null ? CustomerMapper.toResponseDTO(customer) : null;
+    }
+
+    @Override
+    public PagedResponse<CustomerResponseDTO> getCustomersByUserId(Long userId, Pageable pageable) {
+        Page<Customer> customerPage = customerRepository.findByUserUserId(userId, pageable);
+        List<CustomerResponseDTO> responseDTOs = CustomerMapper.toResponseDTOList(customerPage.getContent());
+
+        return new PagedResponse<>(
+            responseDTOs,
+            customerPage.getNumber(),
+            customerPage.getSize(),
+            customerPage.getTotalElements(),
+            customerPage.getTotalPages(),
+            customerPage.isFirst(),
+            customerPage.isLast()
+        );
+    }
+
+    @Override
+    public CustomerResponseDTO updateCustomerProfile(CustomerRequestDTO requestDTO, String authorizationHeader) {
+        // Extract JWT token từ Authorization header
+        String token = authorizationHeader.replace("Bearer ", "");
+
+        // Sử dụng JwtService để extract username từ token
+        // TODO: Inject JwtService để sử dụng
+        // String username = jwtService.extractUsername(token);
+        // User currentUser = userRepository.findByUsername(username);
+
+        // Tạm thời validate bằng userId trong requestDTO
+        User user = userRepository.findById(requestDTO.getUserId()).orElse(null);
+        if (user == null) {
+            throw new RuntimeException("User not found");
+        }
+
+        // Chỉ cho phép role CUSTOMER cập nhật profile
+        if (!user.getRole().getRoleName().equals("CUSTOMER")) {
+            throw new RuntimeException("Only customers can update their own profile");
+        }
+
+        // Tìm Customer record của User này
+        Customer existingCustomer = customerRepository.findByUserUserId(user.getUserId(), Pageable.unpaged())
+                .getContent().stream().findFirst().orElse(null);
+
+        if (existingCustomer == null) {
+            throw new RuntimeException("Customer profile not found. Please contact administrator to create your profile.");
+        }
+
+        // Validate email và phone không trùng với customer khác (trừ chính mình)
+        Customer emailOwner = customerRepository.findByEmail(requestDTO.getEmail()).orElse(null);
+        if (emailOwner != null && !emailOwner.getCustomerId().equals(existingCustomer.getCustomerId())) {
+            throw new RuntimeException("Email already exists: " + requestDTO.getEmail());
+        }
+
+        Customer phoneOwner = customerRepository.findByPhone(requestDTO.getPhone()).orElse(null);
+        if (phoneOwner != null && !phoneOwner.getCustomerId().equals(existingCustomer.getCustomerId())) {
+            throw new RuntimeException("Phone number already exists: " + requestDTO.getPhone());
+        }
+
+        // Update customer profile
+        CustomerMapper.updateEntity(existingCustomer, requestDTO, user);
+        Customer updatedCustomer = customerRepository.save(existingCustomer);
+
+        return CustomerMapper.toResponseDTO(updatedCustomer);
     }
 }

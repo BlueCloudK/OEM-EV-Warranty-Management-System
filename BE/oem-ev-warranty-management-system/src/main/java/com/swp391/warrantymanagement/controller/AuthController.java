@@ -38,6 +38,7 @@ public class AuthController {
         }
     }
 
+
     // Làm mới token - sử dụng service
     @PostMapping("/refresh")
     public ResponseEntity<AuthResponseDTO> refresh(@Valid @RequestBody RefreshTokenRequestDTO request) {
