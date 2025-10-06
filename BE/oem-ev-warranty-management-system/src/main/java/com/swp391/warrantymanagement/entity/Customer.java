@@ -1,13 +1,12 @@
 package com.swp391.warrantymanagement.entity;
 
-import jakarta.persistence.*; // ipmort anatation jpa này là các code entity đã được viết sẵn để làm việc với database
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -34,9 +33,6 @@ public class Customer {
 
     @Column(name = "address", nullable = false)
     private String address;
-
-    @Column(name = "created_at", nullable = false)
-    private Date createdAt;
 
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Vehicle> vehicles = new ArrayList<>();

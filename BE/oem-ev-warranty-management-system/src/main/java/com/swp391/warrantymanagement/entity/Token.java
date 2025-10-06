@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
  * Entity để lưu trữ refresh token
  * - Mỗi user có thể có nhiều token (multi-device login)
  * - Token có thời gian hết hạn để bảo mật
+ * - Tự động khởi tạo createdAt khi tạo mới
  */
 @Entity // map/ánh xạ class này với bảng trong database
 @Table(name = "tokens") // đặt tên bảng trong database
@@ -30,9 +31,21 @@ public class Token {
     @Column(name = "expiration_date", nullable = false)
     private LocalDateTime expirationDate;
 
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    /**
+     * Tự động set createdAt khi tạo mới entity
+     * Được gọi trước khi persist vào database
+     */
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
 
     // Utility methods
     public boolean isExpired() {
