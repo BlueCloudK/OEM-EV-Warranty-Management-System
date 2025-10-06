@@ -24,6 +24,21 @@ public interface TokenRepository extends JpaRepository<Token, Long> {
     Optional<Token> findByToken(String token);
 
     /**
+     * Tìm token theo giá trị và loại token
+     * @param token giá trị token
+     * @param tokenType loại token (REFRESH hoặc RESET)
+     * @return Optional<Token>
+     */
+    Optional<Token> findByTokenAndTokenType(String token, String tokenType);
+
+    /**
+     * Xóa tất cả token của một user theo loại
+     * @param user user cần xóa token
+     * @param tokenType loại token cần xóa
+     */
+    void deleteByUserAndTokenType(User user, String tokenType);
+
+    /**
      * Xóa tất cả token của một user
      * Dùng khi user logout hoặc thay đổi password
      * @param user user cần xóa token

@@ -2,6 +2,7 @@ package com.swp391.warrantymanagement.service;
 
 import com.swp391.warrantymanagement.dto.request.auth.*;
 import com.swp391.warrantymanagement.dto.response.AuthResponseDTO;
+import com.swp391.warrantymanagement.entity.User;
 import org.springframework.stereotype.Service;
 
 /**
@@ -18,4 +19,5 @@ public interface AuthService {
     void processForgotPassword(ForgotPasswordRequestDTO forgotRequest);
     void processResetPassword(ResetPasswordRequestDTO resetRequest);
     AuthResponseDTO validateToken(String token);
+    void saveRefreshToken(User user, String refreshToken);
 }

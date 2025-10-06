@@ -1,6 +1,7 @@
 package com.swp391.warrantymanagement.repository;
 
 import com.swp391.warrantymanagement.entity.Customer;
+import com.swp391.warrantymanagement.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -26,9 +27,18 @@ public interface CustomerRepository extends JpaRepository<Customer, UUID> { // J
 
     Optional<Customer> findByPhone(String phone);
 
+    // Tìm customers theo userId với pagination
+    Page<Customer> findByUserUserId(Long userId, Pageable pageable);
+
+    // Kiểm tra User đã có Customer record chưa (1 User chỉ có 1 Customer)
+    boolean existsByUserUserId(Long userId);
+
     // Custom query để tìm kiếm customer theo nhiều tiêu chí
     @Query("SELECT c FROM Customer c WHERE " +
            "(:name IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', :name, '%'))) AND " +
            "(:email IS NULL OR LOWER(c.email) = LOWER(:email))")
     List<Customer> findByNameAndEmail(@Param("name") String name, @Param("email") String email);
+
+    // Find customer by User entity (required for VehicleService)
+    Customer findByUser(User user);
 }

@@ -14,6 +14,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.util.Date;
 import java.util.List;
 
 @Service
@@ -24,8 +26,15 @@ public class PartServiceImpl implements PartService {
     private VehicleRepository vehicleRepository;
 
     @Override
-    public PagedResponse<PartResponseDTO> getAllPartsPage(Pageable pageable) {
-        Page<Part> partPage = partRepository.findAll(pageable);
+    public PagedResponse<PartResponseDTO> getAllPartsPage(Pageable pageable, String search) {
+        Page<Part> partPage;
+        if (search != null && !search.trim().isEmpty()) {
+            partPage = partRepository.findByPartNameContainingIgnoreCaseOrManufacturerContainingIgnoreCase(
+                search, search, pageable);
+        } else {
+            partPage = partRepository.findAll(pageable);
+        }
+
         List<PartResponseDTO> responseDTOs = PartMapper.toResponseDTOList(partPage.getContent());
 
         return new PagedResponse<>(
@@ -96,20 +105,66 @@ public class PartServiceImpl implements PartService {
     }
 
     @Override
+    public PagedResponse<PartResponseDTO> getPartsByVehicleId(Long vehicleId, Pageable pageable) {
+        Page<Part> partPage = partRepository.findByVehicleVehicleId(vehicleId, pageable);
+        List<PartResponseDTO> responseDTOs = PartMapper.toResponseDTOList(partPage.getContent());
+
+        return new PagedResponse<>(
+            responseDTOs,
+            partPage.getNumber(),
+            partPage.getSize(),
+            partPage.getTotalElements(),
+            partPage.getTotalPages(),
+            partPage.isFirst(),
+            partPage.isLast()
+        );
+    }
+
+    @Override
+    public PagedResponse<PartResponseDTO> getPartsByManufacturer(String manufacturer, Pageable pageable) {
+        Page<Part> partPage = partRepository.findByManufacturerContainingIgnoreCase(manufacturer, pageable);
+        List<PartResponseDTO> responseDTOs = PartMapper.toResponseDTOList(partPage.getContent());
+
+        return new PagedResponse<>(
+            responseDTOs,
+            partPage.getNumber(),
+            partPage.getSize(),
+            partPage.getTotalElements(),
+            partPage.getTotalPages(),
+            partPage.isFirst(),
+            partPage.isLast()
+        );
+    }
+
+    @Override
+    public PagedResponse<PartResponseDTO> getPartsWithExpiringWarranty(int daysFromNow, Pageable pageable) {
+        // Convert LocalDate to Date for compatibility with Part entity
+        LocalDate cutoffLocalDate = LocalDate.now().plusDays(daysFromNow);
+        Date cutoffDate = java.sql.Date.valueOf(cutoffLocalDate);
+
+        // Use correct field name from Part entity
+        Page<Part> partPage = partRepository.findByWarrantyExpirationDateBefore(cutoffDate, pageable);
+        List<PartResponseDTO> responseDTOs = PartMapper.toResponseDTOList(partPage.getContent());
+
+        return new PagedResponse<>(
+            responseDTOs,
+            partPage.getNumber(),
+            partPage.getSize(),
+            partPage.getTotalElements(),
+            partPage.getTotalPages(),
+            partPage.isFirst(),
+            partPage.isLast()
+        );
+    }
+
+    @Override
     public List<PartResponseDTO> searchPartsByName(String name) {
         List<Part> parts = partRepository.findByPartNameContainingIgnoreCase(name);
         return PartMapper.toResponseDTOList(parts);
     }
 
     @Override
-    public List<PartResponseDTO> searchPartsByManufacturer(String manufacturer) {
-        List<Part> parts = partRepository.findByManufacturerContainingIgnoreCase(manufacturer);
-        return PartMapper.toResponseDTOList(parts);
-    }
-
-    @Override
     public List<PartResponseDTO> findPartsByVehicleId(Long vehicleId) {
-        // Gọi method mới trong repository
         List<Part> parts = partRepository.findByVehicleVehicleId(vehicleId);
         return PartMapper.toResponseDTOList(parts);
     }

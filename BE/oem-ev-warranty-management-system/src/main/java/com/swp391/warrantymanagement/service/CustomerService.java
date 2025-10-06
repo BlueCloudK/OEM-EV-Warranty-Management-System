@@ -20,4 +20,12 @@ public interface CustomerService {
     CustomerResponseDTO updateCustomer(UUID id, CustomerRequestDTO requestDTO);
     boolean deleteCustomer(UUID id);
     PagedResponse<CustomerResponseDTO> searchCustomersByName(String name, Pageable pageable);
+
+    // Thêm các methods mới
+    CustomerResponseDTO getCustomerByEmail(String email);
+    CustomerResponseDTO getCustomerByPhone(String phone);
+    PagedResponse<CustomerResponseDTO> getCustomersByUserId(Long userId, Pageable pageable);
+
+    // Method cho Customer tự cập nhật profile
+    CustomerResponseDTO updateCustomerProfile(CustomerRequestDTO requestDTO, String authorizationHeader);
 }

@@ -1,6 +1,7 @@
 package com.swp391.warrantymanagement.dto.request.auth;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 /** DTO chức năng: Đăng xuất */
@@ -9,6 +10,6 @@ public class LogoutRequestDTO {
     @NotBlank(message = "Access token is required")
     private String accessToken;
 
-    @NotBlank(message = "User ID is required")
+    @NotNull(message = "User ID is required")
     private Long userId;
 }
