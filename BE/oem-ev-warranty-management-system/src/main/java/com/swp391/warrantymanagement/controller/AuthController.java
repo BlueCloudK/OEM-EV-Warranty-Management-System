@@ -35,7 +35,7 @@ public class AuthController {
         try {
             // Service xử lý authentication và trả về AuthResponseDTO
             AuthResponseDTO response = authService.authenticateUser(request);
-            logger.info("Login successful for username: {}", request.getUsername());
+            logger.info("Login successful for username: {} with role: {}", request.getUsername(), response.getRoleName());
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             logger.error("Login failed for username: {} - Error: {}", request.getUsername(), e.getMessage());

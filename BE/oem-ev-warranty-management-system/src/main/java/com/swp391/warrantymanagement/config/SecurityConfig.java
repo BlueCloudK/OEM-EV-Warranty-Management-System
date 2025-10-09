@@ -48,32 +48,23 @@ public class SecurityConfig {
                 // Health check
                 .requestMatchers("/actuator/**", "/health").permitAll()
 
-                // CRUD operations - cần authentication và phân quyền
-                // Admin có thể làm tất cả
+                // ADMIN - Quyền cao nhất, có thể làm tất cả
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/customers/**").hasAnyRole("ADMIN", "SC_STAFF", "EVM_STAFF")
 
-                // Staff có thể CRUD hầu hết resource
-                .requestMatchers("/api/staff/**").hasAnyRole("ADMIN", "STAFF")
+                // EVM_STAFF - Nhân viên nhà sản xuất: quản lý vehicles, parts, warranty policies
+                .requestMatchers("/api/vehicles/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF", "SC_TECHNICIAN", "CUSTOMER")
+                .requestMatchers("/api/parts/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF")
 
-                // Customer chỉ được xem và tạo warranty claim của mình
-                .requestMatchers("/api/customers/me/**").hasAnyRole("CUSTOMER", "STAFF", "ADMIN")
+                // SC_STAFF - Nhân viên trung tâm bảo hành: quản lý warranty claims, service histories
+                .requestMatchers("/api/warranty-claims/**").hasAnyRole("ADMIN", "SC_STAFF", "SC_TECHNICIAN", "CUSTOMER")
+                .requestMatchers("/api/service-histories/**").hasAnyRole("ADMIN", "SC_STAFF", "SC_TECHNICIAN")
 
-                // Vehicles - phân quyền theo method
-                .requestMatchers("/api/vehicles").hasAnyRole("ADMIN", "STAFF") // GET all
-                .requestMatchers("/api/vehicles/**").hasAnyRole("ADMIN", "STAFF", "CUSTOMER") // GET by ID
+                // SC_TECHNICIAN - Kỹ thuật viên: xem và cập nhật service histories, warranty claims
+                // (Quyền đã được định nghĩa ở trên cùng với SC_STAFF)
 
-                // Warranty Claims
-                .requestMatchers("/api/warranty-claims").hasAnyRole("ADMIN", "STAFF") // GET all
-                .requestMatchers("/api/warranty-claims/**").authenticated() // CRUD theo rule business
-
-                // Parts - chỉ Admin và Staff
-                .requestMatchers("/api/parts/**").hasAnyRole("ADMIN", "STAFF")
-
-                // Service History
-                .requestMatchers("/api/service-histories/**").hasAnyRole("ADMIN", "STAFF")
-
-                // Customers - phân quyền theo role
-                .requestMatchers("/api/customers/**").hasAnyRole("ADMIN", "STAFF")
+                // CUSTOMER - Khách hàng: chỉ xem thông tin của mình và tạo warranty claim
+                .requestMatchers("/api/customers/me/**").hasAnyRole("CUSTOMER", "SC_STAFF", "SC_TECHNICIAN", "ADMIN")
 
                 // Tất cả request khác cần authentication
                 .anyRequest().authenticated()

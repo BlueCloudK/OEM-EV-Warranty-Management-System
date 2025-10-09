@@ -29,9 +29,9 @@ public class PartController {
     private static final Logger logger = LoggerFactory.getLogger(PartController.class);
     @Autowired private PartService partService;
 
-    // Get all parts with pagination (ADMIN/STAFF only)
+    // Get all parts with pagination (ADMIN/EVM_STAFF/SC_STAFF only)
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF') or hasRole('EVM_STAFF')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF')")
     public ResponseEntity<PagedResponse<PartResponseDTO>> getAllParts(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -45,7 +45,7 @@ public class PartController {
 
     // Get part by ID (All authenticated users can view basic part info)
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF') or hasRole('EVM_STAFF') or hasRole('SERVICE_CENTER_STAFF') or hasRole('CUSTOMER')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN') or hasRole('CUSTOMER')")
     public ResponseEntity<PartResponseDTO> getPartById(@PathVariable String id) {
         logger.info("Get part by id: {}", id);
         PartResponseDTO part = partService.getPartById(id);
