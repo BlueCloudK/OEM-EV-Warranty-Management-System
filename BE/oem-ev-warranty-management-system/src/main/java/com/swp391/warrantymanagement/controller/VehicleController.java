@@ -13,6 +13,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.UUID;
 
 /**
@@ -24,6 +27,7 @@ import java.util.UUID;
 @RequestMapping("api/vehicles")
 @CrossOrigin
 public class VehicleController {
+    private static final Logger logger = LoggerFactory.getLogger(VehicleController.class);
     @Autowired private VehicleService vehicleService;
 
     // Get all vehicles with pagination (ADMIN/STAFF only)
@@ -33,8 +37,10 @@ public class VehicleController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String search) {
+        logger.info("Get all vehicles request: page={}, size={}, search={}", page, size, search);
         PagedResponse<VehicleResponseDTO> vehiclesPage = vehicleService.getAllVehiclesPage(
             PageRequest.of(page, size), search);
+        logger.info("Get all vehicles success, totalElements={}", vehiclesPage.getTotalElements());
         return ResponseEntity.ok(vehiclesPage);
     }
 
@@ -42,10 +48,13 @@ public class VehicleController {
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF') or hasRole('CUSTOMER')")
     public ResponseEntity<VehicleResponseDTO> getVehicleById(@PathVariable Long id) {
+        logger.info("Get vehicle by id: {}", id);
         VehicleResponseDTO vehicle = vehicleService.getVehicleById(id);
         if (vehicle != null) {
+            logger.info("Vehicle found: {}", id);
             return ResponseEntity.ok(vehicle);
         }
+        logger.warn("Vehicle not found: {}", id);
         return ResponseEntity.notFound().build();
     }
 
@@ -53,20 +62,14 @@ public class VehicleController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
     public ResponseEntity<VehicleResponseDTO> createVehicle(@Valid @RequestBody VehicleRequestDTO requestDTO) {
-        // Log thông tin user đang thực hiện action
         String currentUser = SecurityUtil.getCurrentUsername();
-        System.out.println("=== CREATE VEHICLE REQUEST ===");
-        System.out.println("User: " + currentUser);
-        System.out.println("Roles: " + SecurityUtil.getCurrentRoles());
-        System.out.println("Is Admin: " + SecurityUtil.hasRole("ADMIN"));
-        System.out.println("Is Staff: " + SecurityUtil.hasRole("STAFF"));
-        System.out.println("Request Data: " + requestDTO);
-        System.out.println("==============================");
-
+        logger.info("Create vehicle request by user: {}, data: {}", currentUser, requestDTO);
         try {
             VehicleResponseDTO createdVehicle = vehicleService.createVehicle(requestDTO);
+            logger.info("Vehicle created: {} by user: {}", createdVehicle.getVehicleId(), currentUser);
             return ResponseEntity.status(HttpStatus.CREATED).body(createdVehicle);
         } catch (RuntimeException e) {
+            logger.error("Create vehicle failed by user: {} - Error: {}", currentUser, e.getMessage());
             return ResponseEntity.badRequest().build();
         }
     }
@@ -77,20 +80,14 @@ public class VehicleController {
     public ResponseEntity<VehicleResponseDTO> updateVehicle(
             @PathVariable Long id,
             @Valid @RequestBody VehicleRequestDTO requestDTO) {
-
-        // Log thông tin user đang thực hiện action
         String currentUser = SecurityUtil.getCurrentUsername();
-        System.out.println("=== UPDATE VEHICLE REQUEST ===");
-        System.out.println("User: " + currentUser);
-        System.out.println("Roles: " + SecurityUtil.getCurrentRoles());
-        System.out.println("Vehicle ID: " + id);
-        System.out.println("Request Data: " + requestDTO);
-        System.out.println("==============================");
-
+        logger.info("Update vehicle request by user: {}, vehicleId: {}, data: {}", currentUser, id, requestDTO);
         VehicleResponseDTO updatedVehicle = vehicleService.updateVehicle(id, requestDTO);
         if (updatedVehicle != null) {
+            logger.info("Vehicle updated: {} by user: {}", id, currentUser);
             return ResponseEntity.ok(updatedVehicle);
         }
+        logger.warn("Vehicle not found for update: {} by user: {}", id, currentUser);
         return ResponseEntity.notFound().build();
     }
 
@@ -98,10 +95,14 @@ public class VehicleController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
     public ResponseEntity<Void> deleteVehicle(@PathVariable Long id) {
+        String currentUser = SecurityUtil.getCurrentUsername();
+        logger.info("Delete vehicle request by user: {}, vehicleId: {}", currentUser, id);
         boolean deleted = vehicleService.deleteVehicle(id);
         if (deleted) {
+            logger.info("Vehicle deleted: {} by user: {}", id, currentUser);
             return ResponseEntity.noContent().build();
         }
+        logger.warn("Vehicle not found for delete: {} by user: {}", id, currentUser);
         return ResponseEntity.notFound().build();
     }
 
