@@ -155,16 +155,14 @@ public class ServiceHistoryServiceImpl implements ServiceHistoryService {
     public PagedResponse<ServiceHistoryResponseDTO> getServiceHistoriesByCurrentUser(String authorizationHeader, Pageable pageable) {
         // Extract token from Authorization header
         String token = extractTokenFromHeader(authorizationHeader);
-        if (token == null || !jwtService.isTokenValid(token)) {
+        if (token == null) {
             throw new RuntimeException("Invalid or missing authorization token");
         }
 
         // Get username from token
         String username = jwtService.extractUsername(token);
-        User user = userRepository.findByUsername(username);
-        if (user == null) {
-            throw new RuntimeException("User not found");
-        }
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         // Get customer associated with this user
         Customer customer = customerRepository.findByUser(user);
