@@ -11,6 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * REST controller for Service History APIs.
@@ -24,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("api/service-histories")
 @CrossOrigin
 public class ServiceHistoryController {
+    private static final Logger logger = LoggerFactory.getLogger(ServiceHistoryController.class);
     @Autowired private ServiceHistoryService serviceHistoryService;
 
     // Get all service histories with pagination (ADMIN/STAFF only)
@@ -33,8 +36,10 @@ public class ServiceHistoryController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String search) {
+        logger.info("Get all service histories request: page={}, size={}, search={}", page, size, search);
         PagedResponse<ServiceHistoryResponseDTO> historiesPage = serviceHistoryService.getAllServiceHistoriesPage(
             PageRequest.of(page, size), search);
+        logger.info("Get all service histories success, totalElements={}", historiesPage.getTotalElements());
         return ResponseEntity.ok(historiesPage);
     }
 
@@ -42,10 +47,13 @@ public class ServiceHistoryController {
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF') or hasRole('CUSTOMER')")
     public ResponseEntity<ServiceHistoryResponseDTO> getServiceHistoryById(@PathVariable Long id) {
+        logger.info("Get service history by id: {}", id);
         ServiceHistoryResponseDTO history = serviceHistoryService.getServiceHistoryById(id);
         if (history != null) {
+            logger.info("Service history found: {}", id);
             return ResponseEntity.ok(history);
         }
+        logger.warn("Service history not found: {}", id);
         return ResponseEntity.notFound().build();
     }
 
@@ -53,10 +61,13 @@ public class ServiceHistoryController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF') or hasRole('SERVICE_CENTER_STAFF') or hasRole('TECHNICIAN')")
     public ResponseEntity<ServiceHistoryResponseDTO> createServiceHistory(@Valid @RequestBody ServiceHistoryRequestDTO requestDTO) {
+        logger.info("Create service history request: {}", requestDTO);
         try {
             ServiceHistoryResponseDTO responseDTO = serviceHistoryService.createServiceHistory(requestDTO);
+            logger.info("Service history created: {}", responseDTO.getServiceHistoryId());
             return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
         } catch (RuntimeException e) {
+            logger.error("Create service history failed: {}", e.getMessage());
             return ResponseEntity.badRequest().build();
         }
     }
@@ -66,13 +77,17 @@ public class ServiceHistoryController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF') or hasRole('SERVICE_CENTER_STAFF') or hasRole('TECHNICIAN')")
     public ResponseEntity<ServiceHistoryResponseDTO> updateServiceHistory(@PathVariable Long id,
                                                                         @Valid @RequestBody ServiceHistoryRequestDTO requestDTO) {
+        logger.info("Update service history request: id={}, data={}", id, requestDTO);
         try {
             ServiceHistoryResponseDTO updatedHistory = serviceHistoryService.updateServiceHistory(id, requestDTO);
             if (updatedHistory != null) {
+                logger.info("Service history updated: {}", id);
                 return ResponseEntity.ok(updatedHistory);
             }
+            logger.warn("Service history not found for update: {}", id);
             return ResponseEntity.notFound().build();
         } catch (RuntimeException e) {
+            logger.error("Update service history failed: {}", e.getMessage());
             return ResponseEntity.badRequest().build();
         }
     }
@@ -81,10 +96,13 @@ public class ServiceHistoryController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteServiceHistory(@PathVariable Long id) {
+        logger.info("Delete service history request: {}", id);
         boolean deleted = serviceHistoryService.deleteServiceHistory(id);
         if (deleted) {
+            logger.info("Service history deleted: {}", id);
             return ResponseEntity.noContent().build();
         }
+        logger.warn("Service history not found for delete: {}", id);
         return ResponseEntity.notFound().build();
     }
 
@@ -95,8 +113,10 @@ public class ServiceHistoryController {
             @PathVariable Long vehicleId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
+        logger.info("Get service histories by vehicleId: {}, page={}, size={}", vehicleId, page, size);
         PagedResponse<ServiceHistoryResponseDTO> historiesPage = serviceHistoryService.getServiceHistoriesByVehicleId(
             vehicleId, PageRequest.of(page, size));
+        logger.info("Get service histories by vehicleId success, totalElements={}", historiesPage.getTotalElements());
         return ResponseEntity.ok(historiesPage);
     }
 

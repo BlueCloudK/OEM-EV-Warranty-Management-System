@@ -11,6 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * REST controller for Part APIs.
@@ -24,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("api/parts")
 @CrossOrigin
 public class PartController {
+    private static final Logger logger = LoggerFactory.getLogger(PartController.class);
     @Autowired private PartService partService;
 
     // Get all parts with pagination (ADMIN/STAFF only)
@@ -33,8 +36,10 @@ public class PartController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String search) {
+        logger.info("Get all parts request: page={}, size={}, search={}", page, size, search);
         PagedResponse<PartResponseDTO> partsPage = partService.getAllPartsPage(
             PageRequest.of(page, size), search);
+        logger.info("Get all parts success, totalElements={}", partsPage.getTotalElements());
         return ResponseEntity.ok(partsPage);
     }
 
@@ -42,10 +47,13 @@ public class PartController {
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF') or hasRole('EVM_STAFF') or hasRole('SERVICE_CENTER_STAFF') or hasRole('CUSTOMER')")
     public ResponseEntity<PartResponseDTO> getPartById(@PathVariable String id) {
+        logger.info("Get part by id: {}", id);
         PartResponseDTO part = partService.getPartById(id);
         if (part != null) {
+            logger.info("Part found: {}", id);
             return ResponseEntity.ok(part);
         }
+        logger.warn("Part not found: {}", id);
         return ResponseEntity.notFound().build();
     }
 
@@ -53,10 +61,13 @@ public class PartController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF')")
     public ResponseEntity<PartResponseDTO> createPart(@Valid @RequestBody PartRequestDTO requestDTO) {
+        logger.info("Create part request: {}", requestDTO);
         try {
             PartResponseDTO responseDTO = partService.createPart(requestDTO);
+            logger.info("Part created: {}", responseDTO.getPartId());
             return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
         } catch (RuntimeException e) {
+            logger.error("Create part failed: {}", e.getMessage());
             return ResponseEntity.badRequest().build();
         }
     }
@@ -66,13 +77,17 @@ public class PartController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF')")
     public ResponseEntity<PartResponseDTO> updatePart(@PathVariable String id,
                                                      @Valid @RequestBody PartRequestDTO requestDTO) {
+        logger.info("Update part request: id={}, data={}", id, requestDTO);
         try {
             PartResponseDTO updatedPart = partService.updatePart(id, requestDTO);
             if (updatedPart != null) {
+                logger.info("Part updated: {}", id);
                 return ResponseEntity.ok(updatedPart);
             }
+            logger.warn("Part not found for update: {}", id);
             return ResponseEntity.notFound().build();
         } catch (RuntimeException e) {
+            logger.error("Update part failed: {}", e.getMessage());
             return ResponseEntity.badRequest().build();
         }
     }
@@ -81,10 +96,13 @@ public class PartController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deletePart(@PathVariable String id) {
+        logger.info("Delete part request: {}", id);
         boolean deleted = partService.deletePart(id);
         if (deleted) {
+            logger.info("Part deleted: {}", id);
             return ResponseEntity.noContent().build();
         }
+        logger.warn("Part not found for delete: {}", id);
         return ResponseEntity.notFound().build();
     }
 
@@ -95,8 +113,10 @@ public class PartController {
             @PathVariable Long vehicleId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
+        logger.info("Get parts by vehicleId: {}, page={}, size={}", vehicleId, page, size);
         PagedResponse<PartResponseDTO> partsPage = partService.getPartsByVehicleId(
             vehicleId, PageRequest.of(page, size));
+        logger.info("Get parts by vehicleId success, totalElements={}", partsPage.getTotalElements());
         return ResponseEntity.ok(partsPage);
     }
 
