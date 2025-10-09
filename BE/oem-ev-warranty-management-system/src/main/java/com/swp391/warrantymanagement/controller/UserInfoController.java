@@ -82,13 +82,13 @@ public class UserInfoController {
         }
         Map<String, Object> response = new HashMap<>();
         if (SecurityUtil.hasRole("ADMIN")) {
-            response.put("message", "Admin có thể làm tất cả");
+            response.put("message", "Admin can do everything");
             response.put("allowedActions", new String[]{"CREATE", "READ", "UPDATE", "DELETE"});
         } else if (SecurityUtil.hasRole("STAFF")) {
-            response.put("message", "Staff có quyền hạn chế");
+            response.put("message", "Staff has limited permissions");
             response.put("allowedActions", new String[]{"CREATE", "READ", "UPDATE"});
         } else if (SecurityUtil.hasRole("CUSTOMER")) {
-            response.put("message", "Customer chỉ được xem");
+            response.put("message", "Customer can only view");
             response.put("allowedActions", new String[]{"READ"});
         } else {
             logger.warn("Dynamic auth failed: no valid role");

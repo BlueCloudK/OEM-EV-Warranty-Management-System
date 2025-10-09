@@ -11,14 +11,25 @@ Hệ thống OEM EV Warranty Management sử dụng JWT (JSON Web Token) để x
    - Truy cập tất cả endpoints
    - Quản lý users và roles
 
-2. **STAFF** - Nhân viên
-   - CRUD vehicles, parts, service histories
-   - Xem tất cả warranty claims
-   - Không thể quản lý users
+2. **EVM_STAFF** - Nhân viên nhà sản xuất xe điện
+   - CRUD vehicles, parts
+   - Xem customers
+   - Không thể quản lý warranty claims và service histories
 
-3. **CUSTOMER** - Khách hàng
+3. **SC_STAFF** - Nhân viên trung tâm bảo hành
+   - CRUD customers, vehicles, warranty claims, service histories
+   - Xem parts (read-only trong thực tế)
+   - Quản lý toàn bộ quy trình bảo hành
+
+4. **SC_TECHNICIAN** - Kỹ thuật viên trung tâm bảo hành
+   - Xem vehicles
+   - CRUD warranty claims và service histories
+   - Không thể quản lý customers và parts
+
+5. **CUSTOMER** - Khách hàng
    - Chỉ xem vehicles của mình
    - Tạo và xem warranty claims của mình
+   - Xem service histories của vehicles mình sở hữu
    - Không thể xem dữ liệu của khách hàng khác
 
 ## 🚀 Flow Authentication (Đăng nhập)
@@ -36,7 +47,7 @@ Body: {
 ```
 AuthController.login()
   ↓
-AuthServiceImpl.authenticateUser()
+AuthService.authenticateUser()
   ↓
 1. Tìm user trong database (UserRepository.findByUsername())
 2. Verify password với BCrypt
@@ -93,9 +104,9 @@ Controller method được gọi
 ### 3. Method-level Security
 ```java
 @PostMapping("/vehicles")
-@PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
+@PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF')")
 public ResponseEntity<VehicleResponseDTO> createVehicle(@RequestBody VehicleRequestDTO request) {
-    // Code chỉ chạy nếu user có role ADMIN hoặc STAFF
+    // Code chỉ chạy nếu user có role ADMIN, EVM_STAFF hoặc SC_STAFF
 }
 ```
 
@@ -110,14 +121,15 @@ public ResponseEntity<?> createVehicle(@RequestBody VehicleRequestDTO request) {
     Set<String> roles = SecurityUtil.getCurrentRoles();
     
     // Log để audit
-    System.out.println("User: " + currentUser + " creating vehicle");
-    System.out.println("Roles: " + roles);
+    logger.info("User: {} creating vehicle with roles: {}", currentUser, roles);
     
-    // Xử lý logic
+    // Xử lý logic theo role
     if (SecurityUtil.hasRole("ADMIN")) {
         // Logic cho Admin
-    } else if (SecurityUtil.hasRole("STAFF")) {
-        // Logic cho Staff
+    } else if (SecurityUtil.hasRole("EVM_STAFF")) {
+        // Logic cho EVM Staff
+    } else if (SecurityUtil.hasRole("SC_STAFF")) {
+        // Logic cho SC Staff
     }
 }
 ```
@@ -148,7 +160,7 @@ Body: {
 
 ### 3. Server xử lý
 ```
-AuthServiceImpl.refreshUserToken()
+AuthService.refreshUserToken()
   ↓
 1. Validate refresh token từ database
 2. Kiểm tra expiration date
@@ -193,16 +205,21 @@ JwtService.isTokenValid()
 
 ## 📱 API Endpoints Security Matrix
 
-| Endpoint | ADMIN | STAFF | CUSTOMER |
-|----------|-------|--------|----------|
-| `GET /api/vehicles` | ✅ | ✅ | ❌ |
-| `POST /api/vehicles` | ✅ | ✅ | ❌ |
-| `GET /api/vehicles/{id}` | ✅ | ✅ | ✅ (own only) |
-| `GET /api/vehicles/my-vehicles` | ❌ | ❌ | ✅ |
-| `POST /api/warranty-claims` | ✅ | ✅ | ✅ (own only) |
-| `GET /api/warranty-claims` | ✅ | ✅ | ❌ |
-| `GET /api/admin/**` | ✅ | ❌ | ❌ |
-| `GET /api/me` | ✅ | ✅ | ✅ |
+| Endpoint | ADMIN | EVM_STAFF | SC_STAFF | SC_TECHNICIAN | CUSTOMER |
+|----------|-------|-----------|----------|---------------|----------|
+| `GET /api/vehicles` | ✅ | ✅ | ✅ | ✅ | ❌ |
+| `POST /api/vehicles` | ✅ | ✅ | ✅ | ❌ | ❌ |
+| `GET /api/vehicles/{id}` | ✅ | ✅ | ✅ | ✅ | ✅ (own only) |
+| `GET /api/vehicles/my-vehicles` | ❌ | ❌ | ❌ | ❌ | ✅ |
+| `GET /api/parts` | ✅ | ✅ | ✅ | ❌ | ❌ |
+| `POST /api/parts` | ✅ | ✅ | ✅ | ❌ | ❌ |
+| `GET /api/customers` | ✅ | ✅ | ✅ | ❌ | ❌ |
+| `GET /api/customers/me` | ✅ | ❌ | ✅ | ✅ | ✅ |
+| `POST /api/warranty-claims` | ✅ | ❌ | ✅ | ✅ | ✅ (own only) |
+| `GET /api/warranty-claims` | ✅ | ❌ | ✅ | ✅ | ❌ |
+| `POST /api/service-histories` | ✅ | ❌ | ✅ | ✅ | ❌ |
+| `GET /api/service-histories` | ✅ | ❌ | ✅ | ✅ | ❌ |
+| `GET /api/admin/**` | ✅ | ❌ | ❌ | ❌ | ❌ |
 
 ## 🚨 Error Handling Flow
 
@@ -239,7 +256,11 @@ curl -X POST http://localhost:8080/api/auth/login \
 # Response
 {
   "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
-  "refreshToken": "eyJhbGciOiJIUzI1NiJ9..."
+  "refreshToken": "eyJhbGciOiJIUzI1NiJ9...",
+  "message": "Login successful",
+  "userId": 1,
+  "username": "admin", 
+  "roleName": "ADMIN"
 }
 ```
 
@@ -259,7 +280,7 @@ curl -X GET http://localhost:8080/api/me \
 
 ### 3. Test Protected Endpoint
 ```bash
-# Create vehicle (ADMIN/STAFF only)
+# Create vehicle (ADMIN/EVM_STAFF/SC_STAFF only)
 curl -X POST http://localhost:8080/api/vehicles \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9..." \
   -H "Content-Type: application/json" \
@@ -282,7 +303,7 @@ jwt.secret-key=mySecretKeyForJWTTokenGeneration123456789SecureKey
 ### 2. SecurityConfig.java
 - Cấu hình Spring Security
 - JWT Filter chain
-- Endpoint permissions
+- Endpoint permissions theo 5 roles
 - Password encoder
 
 ### 3. JwtService.java
@@ -293,7 +314,7 @@ jwt.secret-key=mySecretKeyForJWTTokenGeneration123456789SecureKey
 ## 📝 Key Classes & Their Roles
 
 ### Security Layer
-- `SecurityConfig.java` - Spring Security configuration
+- `SecurityConfig.java` - Spring Security configuration với 5 roles
 - `JwtAuthenticationFilter.java` - Intercept requests, validate JWT
 - `CustomUserDetailsService.java` - Load user from database
 - `SecurityUtil.java` - Utility to get current user info
@@ -306,11 +327,13 @@ jwt.secret-key=mySecretKeyForJWTTokenGeneration123456789SecureKey
 ### Controller Layer
 - `AuthController.java` - Login/logout endpoints
 - `UserInfoController.java` - Current user info endpoints
-- `VehicleController.java` - Vehicle CRUD with authorization
+- `VehicleController.java` - Vehicle CRUD với @PreAuthorize cho 5 roles
+- `WarrantyClaimController.java` - Warranty claims với role-based access
+- `ServiceHistoryController.java` - Service histories với role-based access
 
 ### Data Layer
 - `User.java` - User entity
-- `Role.java` - Role entity
+- `Role.java` - Role entity với 5 roles
 - `Token.java` - Refresh token entity
 - `UserRepository.java` - User database operations
 
@@ -318,14 +341,15 @@ jwt.secret-key=mySecretKeyForJWTTokenGeneration123456789SecureKey
 
 1. **Login** → Get JWT tokens
 2. **Include token** in Authorization header for protected endpoints
-3. **JWT Filter** validates token and sets user context
-4. **@PreAuthorize** checks permissions
+3. **JWT Filter** validates token và sets user context
+4. **@PreAuthorize** checks permissions theo 5 roles
 5. **SecurityUtil** provides current user info in controllers
 6. **Refresh** tokens when access token expires
 
 Hệ thống đảm bảo:
 - ✅ Stateless authentication với JWT
-- ✅ Role-based authorization
-- ✅ Secure password storage
+- ✅ Role-based authorization với 5 distinct roles
+- ✅ Secure password storage với BCrypt
 - ✅ Token refresh mechanism
 - ✅ Comprehensive logging và audit trail
+- ✅ Fine-grained permissions cho từng role

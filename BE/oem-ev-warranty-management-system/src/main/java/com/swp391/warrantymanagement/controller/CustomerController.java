@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.UUID;
 
@@ -24,8 +25,9 @@ public class CustomerController {
     @Autowired
     private CustomerService customerService;
 
-    // Lấy tất cả customers với pagination
+    // Lấy tất cả customers với pagination (ADMIN/SC_STAFF/EVM_STAFF only)
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('EVM_STAFF')")
     public ResponseEntity<PagedResponse<CustomerResponseDTO>> getAllCustomers(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -37,8 +39,9 @@ public class CustomerController {
         return ResponseEntity.ok(customersPage);
     }
 
-    // Lấy customer theo ID
+    // Lấy customer theo ID (ADMIN/SC_STAFF/EVM_STAFF only)
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('EVM_STAFF')")
     public ResponseEntity<CustomerResponseDTO> getCustomerById(@PathVariable UUID id) {
         logger.info("Get customer by id: {}", id);
         CustomerResponseDTO customer = customerService.getCustomerById(id);
@@ -50,8 +53,9 @@ public class CustomerController {
         return ResponseEntity.notFound().build();
     }
 
-    // Tạo customer mới
+    // Tạo customer mới (ADMIN/SC_STAFF/EVM_STAFF only)
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('EVM_STAFF')")
     public ResponseEntity<CustomerResponseDTO> createCustomer(@Valid @RequestBody CustomerRequestDTO requestDTO) {
         logger.info("Create customer request: {}", requestDTO);
         CustomerResponseDTO responseDTO = customerService.createCustomer(requestDTO);
@@ -59,8 +63,9 @@ public class CustomerController {
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
     }
 
-    // Cập nhật customer
+    // Cập nhật customer (ADMIN/SC_STAFF/EVM_STAFF only)
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('EVM_STAFF')")
     public ResponseEntity<CustomerResponseDTO> updateCustomer(@PathVariable UUID id,
                                                              @Valid @RequestBody CustomerRequestDTO requestDTO) {
         logger.info("Update customer request: id={}, data={}", id, requestDTO);
@@ -73,8 +78,9 @@ public class CustomerController {
         return ResponseEntity.notFound().build();
     }
 
-    // Xóa customer
+    // Xóa customer (ADMIN only)
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteCustomer(@PathVariable UUID id) {
         logger.info("Delete customer request: {}", id);
         boolean deleted = customerService.deleteCustomer(id);

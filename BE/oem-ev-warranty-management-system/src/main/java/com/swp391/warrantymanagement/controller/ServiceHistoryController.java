@@ -29,9 +29,9 @@ public class ServiceHistoryController {
     private static final Logger logger = LoggerFactory.getLogger(ServiceHistoryController.class);
     @Autowired private ServiceHistoryService serviceHistoryService;
 
-    // Get all service histories with pagination (ADMIN/STAFF only)
+    // Get all service histories with pagination (ADMIN/SC_STAFF/SC_TECHNICIAN only)
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN')")
     public ResponseEntity<PagedResponse<ServiceHistoryResponseDTO>> getAllServiceHistories(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -43,9 +43,9 @@ public class ServiceHistoryController {
         return ResponseEntity.ok(historiesPage);
     }
 
-    // Get service history by ID (ADMIN/STAFF can view any, CUSTOMER can view own)
+    // Get service history by ID (ADMIN/SC_STAFF/SC_TECHNICIAN can view any, CUSTOMER can view own)
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF') or hasRole('CUSTOMER')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN') or hasRole('CUSTOMER')")
     public ResponseEntity<ServiceHistoryResponseDTO> getServiceHistoryById(@PathVariable Long id) {
         logger.info("Get service history by id: {}", id);
         ServiceHistoryResponseDTO history = serviceHistoryService.getServiceHistoryById(id);
