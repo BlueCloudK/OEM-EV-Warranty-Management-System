@@ -16,7 +16,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 
 /**
  * Implementation của AuthService
@@ -50,10 +49,8 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public AuthResponseDTO authenticateUser(LoginRequestDTO loginRequest) {
         // Validate user credentials - tìm user theo username
-        User user = userRepository.findByUsername(loginRequest.getUsername());
-        if (user == null) {
-            throw new RuntimeException("User not found");
-        }
+        User user = userRepository.findByUsername(loginRequest.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         // Kiểm tra password với bcrypt
         if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
@@ -177,10 +174,8 @@ public class AuthServiceImpl implements AuthService {
 
         try {
             String username = jwtService.extractUsername(token);
-            User user = userRepository.findByUsername(username);
-            if (user == null) {
-                throw new RuntimeException("User not found");
-            }
+            User user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
 
             // Xóa tất cả token của user để logout trên tất cả device
             tokenRepository.deleteByUser(user);
@@ -267,10 +262,8 @@ public class AuthServiceImpl implements AuthService {
             String username = jwtService.extractUsername(token);
 
             // Find user by username
-            User user = userRepository.findByUsername(username);
-            if (user == null) {
-                throw new RuntimeException("User not found");
-            }
+            User user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
 
             // Validate token
             if (!jwtService.isTokenValid(token)) {

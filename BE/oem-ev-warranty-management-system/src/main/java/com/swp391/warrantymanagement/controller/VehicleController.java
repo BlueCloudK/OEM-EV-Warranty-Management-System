@@ -4,6 +4,7 @@ import com.swp391.warrantymanagement.dto.request.VehicleRequestDTO;
 import com.swp391.warrantymanagement.dto.response.VehicleResponseDTO;
 import com.swp391.warrantymanagement.dto.response.PagedResponse;
 import com.swp391.warrantymanagement.service.VehicleService;
+import com.swp391.warrantymanagement.util.SecurityUtil;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -48,32 +49,49 @@ public class VehicleController {
         return ResponseEntity.notFound().build();
     }
 
-    // Create new vehicle (Only ADMIN/STAFF can create for customers)
+    // Create new vehicle (ADMIN/STAFF only)
     @PostMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
     public ResponseEntity<VehicleResponseDTO> createVehicle(@Valid @RequestBody VehicleRequestDTO requestDTO) {
+        // Log thông tin user đang thực hiện action
+        String currentUser = SecurityUtil.getCurrentUsername();
+        System.out.println("=== CREATE VEHICLE REQUEST ===");
+        System.out.println("User: " + currentUser);
+        System.out.println("Roles: " + SecurityUtil.getCurrentRoles());
+        System.out.println("Is Admin: " + SecurityUtil.hasRole("ADMIN"));
+        System.out.println("Is Staff: " + SecurityUtil.hasRole("STAFF"));
+        System.out.println("Request Data: " + requestDTO);
+        System.out.println("==============================");
+
         try {
-            VehicleResponseDTO responseDTO = vehicleService.createVehicle(requestDTO);
-            return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
+            VehicleResponseDTO createdVehicle = vehicleService.createVehicle(requestDTO);
+            return ResponseEntity.status(HttpStatus.CREATED).body(createdVehicle);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();
         }
     }
 
-    // Update vehicle (ADMIN/STAFF can update any, Customer can update own)
+    // Update vehicle (ADMIN/STAFF only)
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF') or hasRole('CUSTOMER')")
-    public ResponseEntity<VehicleResponseDTO> updateVehicle(@PathVariable Long id,
-                                                          @Valid @RequestBody VehicleRequestDTO requestDTO) {
-        try {
-            VehicleResponseDTO updatedVehicle = vehicleService.updateVehicle(id, requestDTO);
-            if (updatedVehicle != null) {
-                return ResponseEntity.ok(updatedVehicle);
-            }
-            return ResponseEntity.notFound().build();
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
+    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
+    public ResponseEntity<VehicleResponseDTO> updateVehicle(
+            @PathVariable Long id,
+            @Valid @RequestBody VehicleRequestDTO requestDTO) {
+
+        // Log thông tin user đang thực hiện action
+        String currentUser = SecurityUtil.getCurrentUsername();
+        System.out.println("=== UPDATE VEHICLE REQUEST ===");
+        System.out.println("User: " + currentUser);
+        System.out.println("Roles: " + SecurityUtil.getCurrentRoles());
+        System.out.println("Vehicle ID: " + id);
+        System.out.println("Request Data: " + requestDTO);
+        System.out.println("==============================");
+
+        VehicleResponseDTO updatedVehicle = vehicleService.updateVehicle(id, requestDTO);
+        if (updatedVehicle != null) {
+            return ResponseEntity.ok(updatedVehicle);
         }
+        return ResponseEntity.notFound().build();
     }
 
     // Delete vehicle (Only ADMIN/STAFF)
