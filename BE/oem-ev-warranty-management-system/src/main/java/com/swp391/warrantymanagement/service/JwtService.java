@@ -1,7 +1,6 @@
 package com.swp391.warrantymanagement.service;
 
 import com.swp391.warrantymanagement.entity.User;
-import org.springframework.stereotype.Service;
 
 /**
  * Service xử lý JWT Token
@@ -9,7 +8,6 @@ import org.springframework.stereotype.Service;
  * - Validate token và extract thông tin
  * - Hỗ trợ cả username string và User object
  */
-@Service
 public interface JwtService {
 
     /**

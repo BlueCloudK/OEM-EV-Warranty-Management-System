@@ -4,21 +4,13 @@ import com.swp391.warrantymanagement.dto.request.VehicleRequestDTO;
 import com.swp391.warrantymanagement.dto.response.VehicleResponseDTO;
 import com.swp391.warrantymanagement.dto.response.PagedResponse;
 import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.UUID;
 
 /**
  * Service interface for vehicle-related business logic.
- * Handles CRUD and search operations for vehicles using DTOs with proper business rules.
- *
- * Performance Strategy:
- * - Pageable for operations that can return many records (getAllVehicles, search, etc.)
- * - Single DTO for operations that return exactly one record (getById, getByVin)
- * - List for operations that naturally return a small, fixed set (customer's vehicles if limited)
  */
-@Service
 public interface VehicleService {
     // ============= CRUD Operations =============
     VehicleResponseDTO getVehicleById(Long id); // Single record - no pagination needed
