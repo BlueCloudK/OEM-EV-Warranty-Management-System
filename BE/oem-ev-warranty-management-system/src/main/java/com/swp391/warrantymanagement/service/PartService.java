@@ -4,7 +4,6 @@ import com.swp391.warrantymanagement.dto.request.PartRequestDTO;
 import com.swp391.warrantymanagement.dto.response.PartResponseDTO;
 import com.swp391.warrantymanagement.dto.response.PagedResponse;
 import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
 
 import java.util.List;
 
@@ -12,7 +11,6 @@ import java.util.List;
  * Service interface for part-related business logic.
  * Handles CRUD and search operations for parts using DTOs.
  */
-@Service
 public interface PartService {
     // ============= CRUD Operations =============
     PartResponseDTO getPartById(String id);

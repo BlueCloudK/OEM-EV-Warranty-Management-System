@@ -4,15 +4,12 @@ import com.swp391.warrantymanagement.dto.request.ServiceHistoryRequestDTO;
 import com.swp391.warrantymanagement.dto.response.ServiceHistoryResponseDTO;
 import com.swp391.warrantymanagement.dto.response.PagedResponse;
 import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 /**
  * Service interface for service history-related business logic.
- * Handles CRUD and search operations for service histories using DTOs.
  */
-@Service
 public interface ServiceHistoryService {
     // ============= CRUD Operations =============
     ServiceHistoryResponseDTO getServiceHistoryById(Long id);

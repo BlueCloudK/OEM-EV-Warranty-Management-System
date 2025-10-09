@@ -37,10 +37,6 @@ public class Token {
     @Column(name = "token_type", nullable = false, length = 20)
     private String tokenType; // "REFRESH" hoặc "RESET"
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-
     /**
      * Tự động set createdAt khi tạo mới entity
      * Được gọi trước khi persist vào database
@@ -50,8 +46,12 @@ public class Token {
         this.createdAt = LocalDateTime.now();
     }
 
-    // Utility methods
+    // Kiểm tra token đã hết hạn chưa // <<extended>>
     public boolean isExpired() {
         return LocalDateTime.now().isAfter(this.expirationDate);
     }
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 }
