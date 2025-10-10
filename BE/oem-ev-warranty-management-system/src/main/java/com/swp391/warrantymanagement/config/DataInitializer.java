@@ -21,7 +21,7 @@ public class DataInitializer implements CommandLineRunner {
     public void run(String... args) throws Exception {
         // Kiểm tra xem đã có role chưa, nếu chưa thì tạo
         if (roleRepository.count() == 0) {
-            initializeRoles();
+            initializeRoles(); // hàm nay sẽ tạo và lưu các role vào DB bằng cach gọi roleRepository.save()
         }
     }
 
@@ -29,28 +29,28 @@ public class DataInitializer implements CommandLineRunner {
         // Tạo role Admin
         Role adminRole = new Role();
         adminRole.setRoleName("ADMIN");
-        roleRepository.save(adminRole);
+        roleRepository.save(adminRole); // Lưu role Admin với ID = 1
 
         // Tạo role Service Center Staff
         Role scStaffRole = new Role();
         scStaffRole.setRoleName("SC_STAFF");
-        roleRepository.save(scStaffRole);
+        roleRepository.save(scStaffRole); // Lưu role SC_STAFF với ID = 2
 
         // Tạo role Service Center Technician
         Role scTechnicianRole = new Role();
         scTechnicianRole.setRoleName("SC_TECHNICIAN");
-        roleRepository.save(scTechnicianRole);
+        roleRepository.save(scTechnicianRole); // Lưu role SC_TECHNICIAN với ID = 3
 
         // Tạo role EV Manufacturer Staff
         Role evmStaffRole = new Role();
         evmStaffRole.setRoleName("EVM_STAFF");
-        roleRepository.save(evmStaffRole);
+        roleRepository.save(evmStaffRole); // Lưu role EVM_STAFF với ID = 4
 
         // Tạo role Customer
         Role customerRole = new Role();
         customerRole.setRoleName("CUSTOMER");
-        roleRepository.save(customerRole);
+        roleRepository.save(customerRole); // Lưu role CUSTOMER với ID = 5
 
-        System.out.println("Initialized roles: ADMIN (ID=1), SC_STAFF (ID=2), SC_TECHNICIAN (ID=3), EVM_STAFF (ID=4), CUSTOMER (ID=5)");
+        //System.out.println("Initialized roles: ADMIN (ID=1), SC_STAFF (ID=2), SC_TECHNICIAN (ID=3), EVM_STAFF (ID=4), CUSTOMER (ID=5)");
     }
 }

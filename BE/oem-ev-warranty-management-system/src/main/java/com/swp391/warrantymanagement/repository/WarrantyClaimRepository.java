@@ -18,11 +18,4 @@ public interface WarrantyClaimRepository extends JpaRepository<WarrantyClaim, Lo
 
     // Sửa từ findByVehicleId thành findByVehicleVehicleId để match với WarrantyClaim.vehicle.vehicleId
     List<WarrantyClaim> findByVehicleVehicleId(Long vehicleId);
-
-    // Custom query với JOIN FETCH để tối ưu hiệu suất - giữ nguyên vì dùng @Query
-    @Query("SELECT wc FROM WarrantyClaim wc JOIN FETCH wc.vehicle v WHERE v.vehicleId = :vehicleId")
-    List<WarrantyClaim> findByVehicleIdWithVehicle(@Param("vehicleId") Long vehicleId);
-
-    @Query("SELECT wc FROM WarrantyClaim wc JOIN FETCH wc.part p WHERE wc.status = :status")
-    List<WarrantyClaim> findByStatusWithPart(@Param("status") WarrantyClaimStatus status);
 }

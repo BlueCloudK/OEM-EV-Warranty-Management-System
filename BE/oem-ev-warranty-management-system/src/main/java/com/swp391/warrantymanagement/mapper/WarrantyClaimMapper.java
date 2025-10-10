@@ -1,7 +1,6 @@
 package com.swp391.warrantymanagement.mapper;
 
 import com.swp391.warrantymanagement.dto.request.WarrantyClaimRequestDTO;
-import com.swp391.warrantymanagement.dto.request.WarrantyClaimStatusUpdateRequestDTO;
 import com.swp391.warrantymanagement.dto.response.WarrantyClaimResponseDTO;
 import com.swp391.warrantymanagement.entity.Part;
 import com.swp391.warrantymanagement.entity.Vehicle;
@@ -30,21 +29,6 @@ public final class WarrantyClaimMapper {
         entity.setClaimDate(new Date());
 
         return entity;
-    }
-
-    // Update status from request DTO
-    public static void updateStatus(WarrantyClaim entity, WarrantyClaimStatusUpdateRequestDTO requestDTO) {
-        if (entity == null || requestDTO == null) return;
-
-        entity.setStatus(requestDTO.getStatus());
-        // TODO: Nếu entity có fields comments và updatedBy thì uncomment
-        // entity.setComments(requestDTO.getComments());
-        // entity.setUpdatedBy(requestDTO.getUpdatedBy());
-
-        // Business rule: tự động set resolution date khi completed
-        if (requestDTO.getStatus() == WarrantyClaimStatus.COMPLETED) {
-            entity.setResolutionDate(new Date());
-        }
     }
 
     // Entity -> Response DTO (cho API response)

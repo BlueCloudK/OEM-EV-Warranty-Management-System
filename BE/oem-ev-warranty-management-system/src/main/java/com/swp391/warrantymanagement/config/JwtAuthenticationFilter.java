@@ -23,7 +23,7 @@ import java.io.IOException;
  */
 @Component
 @RequiredArgsConstructor
-public class JwtAuthenticationFilter extends OncePerRequestFilter {
+public class JwtAuthenticationFilter extends OncePerRequestFilter { // đảm bảo filter này chỉ được gọi một lần cho mỗi request
 
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
@@ -32,7 +32,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
-            FilterChain filterChain
+            FilterChain filterChain // tiếp tục chuỗi filter để xử lý request và trả response sau khi hoàn thành nhiệm vụ của filter này
     ) throws ServletException, IOException {
 
         final String authHeader = request.getHeader("Authorization");

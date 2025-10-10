@@ -14,31 +14,15 @@ import java.util.Optional;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
 
-    /**
-     * Tìm user theo username
-     * @param username tên đăng nhập
-     * @return Optional<User> - an toàn hơn với null
-     */
+    // Tìm user theo username
     Optional<User> findByUsername(String username);
 
-    /**
-     * Tìm user theo email
-     * @param email địa chỉ email
-     * @return Optional<User> - an toàn hơn với null
-     */
+    // Tìm user theo email
     Optional<User> findByEmail(String email);
 
-    /**
-     * Kiểm tra username đã tồn tại chưa
-     * @param username tên đăng nhập cần kiểm tra
-     * @return true nếu đã tồn tại
-     */
+    // Kiểm tra username đã tồn tại chưa
     boolean existsByUsername(String username);
 
-    /**
-     * Kiểm tra email đã tồn tại chưa
-     * @param email email cần kiểm tra
-     * @return true nếu đã tồn tại
-     */
+    // Kiểm tra email đã tồn tại chưa
     boolean existsByEmail(String email);
 }

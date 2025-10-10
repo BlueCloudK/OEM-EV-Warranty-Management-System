@@ -211,12 +211,6 @@ public class ServiceHistoryServiceImpl implements ServiceHistoryService {
         }
     }
 
-    @Override
-    public List<ServiceHistoryResponseDTO> searchServiceHistoriesByType(String serviceType) {
-        List<ServiceHistory> serviceHistories = serviceHistoryRepository.findByServiceTypeContainingIgnoreCase(serviceType);
-        return ServiceHistoryMapper.toResponseDTOList(serviceHistories);
-    }
-
     private String extractTokenFromHeader(String authorizationHeader) {
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             return authorizationHeader.substring(7);

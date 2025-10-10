@@ -23,8 +23,10 @@ public interface CustomerRepository extends JpaRepository<Customer, UUID> { // J
     // Thêm method hỗ trợ pagination cho search
     Page<Customer> findByNameContainingIgnoreCase(String name, Pageable pageable);
 
+    // Tìm customer theo email hoặc phone (unique)
     Optional<Customer> findByEmail(String email);
 
+    // Tìm customer theo phone (unique)
     Optional<Customer> findByPhone(String phone);
 
     // Tìm customers theo userId với pagination

@@ -30,6 +30,7 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
     @Autowired
     private VehicleRepository vehicleRepository;
 
+    // Methods implementation
     @Override
     public PagedResponse<WarrantyClaimResponseDTO> getAllClaimsPage(Pageable pageable) {
         Page<WarrantyClaim> claimPage = warrantyClaimRepository.findAll(pageable);
@@ -46,12 +47,14 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
         );
     }
 
+    // Get claim by ID
     @Override
     public WarrantyClaimResponseDTO getClaimById(Long id) {
         WarrantyClaim claim = warrantyClaimRepository.findById(id).orElse(null);
         return WarrantyClaimMapper.toResponseDTO(claim);
     }
 
+    // Create new claim
     @Override
     public WarrantyClaimResponseDTO createClaim(WarrantyClaimRequestDTO requestDTO) {
         // Load Part entity từ partId
@@ -76,6 +79,7 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
         return WarrantyClaimMapper.toResponseDTO(savedClaim);
     }
 
+    // Update existing claim (except status)
     @Override
     public WarrantyClaimResponseDTO updateClaim(Long id, WarrantyClaimRequestDTO requestDTO) {
         WarrantyClaim claim = warrantyClaimRepository.findById(id).orElse(null);
@@ -101,6 +105,7 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
         return WarrantyClaimMapper.toResponseDTO(savedClaim);
     }
 
+    // Update claim status with business logic validation
     @Override
     public WarrantyClaimResponseDTO updateClaimStatus(Long id, WarrantyClaimStatusUpdateRequestDTO requestDTO) {
         WarrantyClaim claim = warrantyClaimRepository.findById(id).orElse(null);
@@ -121,26 +126,7 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
         return WarrantyClaimMapper.toResponseDTO(savedClaim);
     }
 
-    @Override
-    public List<WarrantyClaimResponseDTO> getClaimsByStatus(String status) {
-        // Convert String to WarrantyClaimStatus enum
-        WarrantyClaimStatus statusEnum;
-        try {
-            statusEnum = WarrantyClaimStatus.valueOf(status.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Invalid status: " + status);
-        }
-        List<WarrantyClaim> claims = warrantyClaimRepository.findByStatus(statusEnum);
-        return WarrantyClaimMapper.toResponseDTOList(claims);
-    }
-
-    @Override
-    public List<WarrantyClaimResponseDTO> getClaimsByVehicleId(Long vehicleId) {
-        // Gọi method mới trong repository
-        List<WarrantyClaim> claims = warrantyClaimRepository.findByVehicleVehicleId(vehicleId);
-        return WarrantyClaimMapper.toResponseDTOList(claims);
-    }
-
+    // Delete claim by ID
     @Override
     public boolean deleteClaim(Long id) {
         if (!warrantyClaimRepository.existsById(id)) {

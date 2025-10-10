@@ -25,6 +25,7 @@ public class PartServiceImpl implements PartService {
     @Autowired
     private VehicleRepository vehicleRepository;
 
+    // Basic CRUD operations with pagination and search
     @Override
     public PagedResponse<PartResponseDTO> getAllPartsPage(Pageable pageable, String search) {
         Page<Part> partPage;
@@ -48,12 +49,14 @@ public class PartServiceImpl implements PartService {
         );
     }
 
+    // Get part by ID
     @Override
     public PartResponseDTO getPartById(String id) {
         Part part = partRepository.findById(id).orElse(null);
         return PartMapper.toResponseDTO(part);
     }
 
+    // Create new part
     @Override
     public PartResponseDTO createPart(PartRequestDTO requestDTO) {
         // Load Vehicle entity từ vehicleId
@@ -72,6 +75,7 @@ public class PartServiceImpl implements PartService {
         return PartMapper.toResponseDTO(savedPart);
     }
 
+    // Update existing part
     @Override
     public PartResponseDTO updatePart(String id, PartRequestDTO requestDTO) {
         Part existingPart = partRepository.findById(id).orElse(null);
@@ -95,6 +99,7 @@ public class PartServiceImpl implements PartService {
         return PartMapper.toResponseDTO(updatedPart);
     }
 
+    // Delete part by ID
     @Override
     public boolean deletePart(String id) {
         if (!partRepository.existsById(id)) {
@@ -104,6 +109,7 @@ public class PartServiceImpl implements PartService {
         return true;
     }
 
+    // Advanced queries
     @Override
     public PagedResponse<PartResponseDTO> getPartsByVehicleId(Long vehicleId, Pageable pageable) {
         Page<Part> partPage = partRepository.findByVehicleVehicleId(vehicleId, pageable);
@@ -120,6 +126,7 @@ public class PartServiceImpl implements PartService {
         );
     }
 
+    // Find parts by manufacturer with pagination
     @Override
     public PagedResponse<PartResponseDTO> getPartsByManufacturer(String manufacturer, Pageable pageable) {
         Page<Part> partPage = partRepository.findByManufacturerContainingIgnoreCase(manufacturer, pageable);
@@ -136,6 +143,7 @@ public class PartServiceImpl implements PartService {
         );
     }
 
+    // Find parts with warranty expiring within the next 'daysFromNow' days
     @Override
     public PagedResponse<PartResponseDTO> getPartsWithExpiringWarranty(int daysFromNow, Pageable pageable) {
         // Convert LocalDate to Date for compatibility with Part entity
@@ -155,17 +163,5 @@ public class PartServiceImpl implements PartService {
             partPage.isFirst(),
             partPage.isLast()
         );
-    }
-
-    @Override
-    public List<PartResponseDTO> searchPartsByName(String name) {
-        List<Part> parts = partRepository.findByPartNameContainingIgnoreCase(name);
-        return PartMapper.toResponseDTOList(parts);
-    }
-
-    @Override
-    public List<PartResponseDTO> findPartsByVehicleId(Long vehicleId) {
-        List<Part> parts = partRepository.findByVehicleVehicleId(vehicleId);
-        return PartMapper.toResponseDTOList(parts);
     }
 }

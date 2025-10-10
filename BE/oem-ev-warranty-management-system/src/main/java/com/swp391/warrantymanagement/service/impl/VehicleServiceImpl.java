@@ -32,6 +32,7 @@ public class VehicleServiceImpl implements VehicleService {
     @Autowired
     private JwtService jwtService;
 
+    // Basic CRUD Operations with Pagination and Search
     @Override
     public PagedResponse<VehicleResponseDTO> getAllVehiclesPage(Pageable pageable, String search) {
         Page<Vehicle> vehiclePage;
@@ -55,12 +56,14 @@ public class VehicleServiceImpl implements VehicleService {
         );
     }
 
+    // Get vehicle by ID
     @Override
     public VehicleResponseDTO getVehicleById(Long id) {
         Vehicle vehicle = vehicleRepository.findById(id).orElse(null);
         return VehicleMapper.toResponseDTO(vehicle);
     }
 
+    // Create new vehicle
     @Override
     public VehicleResponseDTO createVehicle(VehicleRequestDTO requestDTO) {
         // Load Customer entity từ customerId
@@ -84,6 +87,7 @@ public class VehicleServiceImpl implements VehicleService {
         return VehicleMapper.toResponseDTO(savedVehicle);
     }
 
+    // Update existing vehicle
     @Override
     public VehicleResponseDTO updateVehicle(Long id, VehicleRequestDTO requestDTO) {
         Vehicle existingVehicle = vehicleRepository.findById(id).orElse(null);
@@ -113,6 +117,7 @@ public class VehicleServiceImpl implements VehicleService {
         return VehicleMapper.toResponseDTO(updatedVehicle);
     }
 
+    // Delete vehicle by ID
     @Override
     public boolean deleteVehicle(Long id) {
         if (!vehicleRepository.existsById(id)) {
@@ -122,6 +127,7 @@ public class VehicleServiceImpl implements VehicleService {
         return true;
     }
 
+    // Advanced Queries
     @Override
     public PagedResponse<VehicleResponseDTO> getVehiclesByCustomerId(UUID customerId, Pageable pageable) {
         Page<Vehicle> vehiclePage = vehicleRepository.findByCustomerCustomerId(customerId, pageable);
@@ -138,6 +144,7 @@ public class VehicleServiceImpl implements VehicleService {
         );
     }
 
+    // Get vehicles for the currently authenticated user
     @Override
     public PagedResponse<VehicleResponseDTO> getVehiclesByCurrentUser(String authorizationHeader, Pageable pageable) {
         // Extract token from Authorization header
@@ -161,12 +168,14 @@ public class VehicleServiceImpl implements VehicleService {
         return getVehiclesByCustomerId(customer.getCustomerId(), pageable);
     }
 
+    // Get vehicle by VIN
     @Override
     public VehicleResponseDTO getVehicleByVin(String vin) {
         Vehicle vehicle = vehicleRepository.findByVehicleVin(vin);
         return VehicleMapper.toResponseDTO(vehicle);
     }
 
+    // Search vehicles by model and/or brand with pagination
     @Override
     public PagedResponse<VehicleResponseDTO> searchVehicles(String model, String brand, Pageable pageable) {
         Page<Vehicle> vehiclePage;
@@ -195,6 +204,7 @@ public class VehicleServiceImpl implements VehicleService {
         );
     }
 
+    // Get vehicles with warranty expiring within specified days
     @Override
     public PagedResponse<VehicleResponseDTO> getVehiclesWithExpiringWarranty(int daysFromNow, Pageable pageable) {
         // Calculate warranty expiration based on vehicle year and warranty period
@@ -216,12 +226,7 @@ public class VehicleServiceImpl implements VehicleService {
         );
     }
 
-    @Override
-    public List<VehicleResponseDTO> getVehiclesByCustomerIdSimple(UUID customerId) {
-        List<Vehicle> vehicles = vehicleRepository.findByCustomerCustomerId(customerId);
-        return VehicleMapper.toResponseDTOList(vehicles);
-    }
-
+    // Helper method to extract token from "Bearer <token
     private String extractTokenFromHeader(String authorizationHeader) {
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             return authorizationHeader.substring(7);
