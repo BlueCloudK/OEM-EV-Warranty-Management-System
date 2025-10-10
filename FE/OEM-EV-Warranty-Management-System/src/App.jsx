@@ -4,6 +4,8 @@ import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Customer from "./Roles/Customer/Customer";
 import SCStaff from "./Roles/SCStaff/SCStaff";
 import Booking from "./Roles/Customer/Booking"; 
@@ -20,14 +22,20 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         // Customer
         <Route path="/customer/dashboard" element={<Customer />} />
         <Route path="/booking" element={<Booking />} /> 
         <Route path="/customer/warranty-result" element={<WarrantyResult />} /> 
         <Route path="/customer/warranty-history" element={<WarrantyHistory />} />
         <Route path="/customer/parts-warranty" element={<PartsWarranty />} />
+        
         // SCStaff
         <Route path="/scstaff/dashboard" element={<SCStaff />} />
+        
+        // Add fallback dashboard route
+        <Route path="/dashboard" element={<Customer />} />
       </Routes>
       <footer className="footer">
         <div className="container">

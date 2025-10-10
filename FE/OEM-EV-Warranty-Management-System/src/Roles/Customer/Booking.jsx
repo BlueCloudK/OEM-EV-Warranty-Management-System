@@ -15,14 +15,16 @@ export default function Booking() {
   const [selectedImage, setSelectedImage] = useState(images[0]);
 
   const [formData, setFormData] = useState({
-    fullName: "",
-    phone: "",
-    email: "",
-    vin: "",
-    date: "",
-    time: "",
-    serviceType: "maintenance",
-    note: "",
+    warrantyClaimId: 0,
+    claimDate: new Date().toISOString(),
+    description: "",
+    requestDate: "",
+    vehicleName: "",
+    vehicleModel: "",
+    vehicleYear: new Date().getFullYear(),
+    vehicleVin: "",
+    customerName: "",
+    customerPhone: "",
   });
 
   const handleChange = (e) =>
@@ -30,8 +32,79 @@ export default function Booking() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: gọi API backend (ví dụ fetch/axios)
-    alert("Đặt lịch (demo): " + JSON.stringify(formData, null, 2));
+    
+    // Validation
+    if (!formData.description.trim()) {
+      alert("Vui lòng mô tả chi tiết vấn đề cần bảo hành!");
+      return;
+    }
+    
+    if (!formData.requestDate) {
+      alert("Vui lòng chọn ngày yêu cầu bảo hành!");
+      return;
+    }
+    
+    if (!formData.vehicleName.trim() || !formData.vehicleModel.trim() || !formData.vehicleVin.trim()) {
+      alert("Vui lòng điền đầy đủ thông tin xe!");
+      return;
+    }
+    
+    if (!formData.customerName.trim() || !formData.customerPhone.trim()) {
+      alert("Vui lòng điền đầy đủ thông tin liên hệ!");
+      return;
+    }
+    
+    try {
+      // Use environment variable for API URL
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+      const apiUrl = `${API_BASE_URL}/api/warranty-claims`;
+      
+      console.log("Sending booking request to:", apiUrl);
+      console.log("Form data:", JSON.stringify(formData, null, 2));
+      
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "ngrok-skip-browser-warning": "true",
+          // Add authorization if user is logged in
+          ...(localStorage.getItem('token') && {
+            "Authorization": `Bearer ${localStorage.getItem('token')}`
+          })
+        },
+        body: JSON.stringify(formData),
+      });
+
+      console.log("Response status:", response.status);
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log("Booking created successfully:", result);
+        alert("Đặt lịch bảo hành thành công!");
+        
+        // Reset form or navigate
+        setFormData({
+          warrantyClaimId: 0,
+          claimDate: new Date().toISOString(),
+          description: "",
+          requestDate: "",
+          vehicleName: "",
+          vehicleModel: "",
+          vehicleYear: new Date().getFullYear(),
+          vehicleVin: "",
+          customerName: "",
+          customerPhone: "",
+        });
+      } else {
+        const errorData = await response.text();
+        console.error("Booking failed:", errorData);
+        alert(`Lỗi đặt lịch: ${errorData}`);
+      }
+    } catch (error) {
+      console.error("Network error:", error);
+      alert(`Lỗi kết nối: ${error.message}`);
+    }
   };
 
   return (
@@ -43,30 +116,134 @@ export default function Booking() {
             <FaArrowLeft /> Quay về
           </button>
 
-          <h2 style={{ color: "#044835", marginTop: 10 }}>Đặt lịch bảo dưỡng / bảo hành</h2>
-          <p style={{ color: "#666" }}></p>
+          <h2 style={{ color: "#044835", marginTop: 10 }}>Tạo yêu cầu bảo hành</h2>
+          <p style={{ color: "#666" }}>Điền thông tin chi tiết để tạo yêu cầu bảo hành</p>
 
           <form onSubmit={handleSubmit} style={formStyle}>
-            <input name="fullName" value={formData.fullName} onChange={handleChange} placeholder="Họ và tên" style={inputStyle} required />
-            <input name="phone" value={formData.phone} onChange={handleChange} placeholder="Số điện thoại" style={inputStyle} required />
-            <input name="email" value={formData.email} onChange={handleChange} placeholder="Email" style={inputStyle} />
-            <input name="vin" value={formData.vin} onChange={handleChange} placeholder="VIN (số khung)" style={inputStyle} />
-            <div style={{ display: "flex", gap: 10 }}>
-              <input name="date" value={formData.date} onChange={handleChange} type="date" style={{ ...inputStyle, flex: 1 }} required />
-              <input name="time" value={formData.time} onChange={handleChange} type="time" style={{ ...inputStyle, flex: 1 }} required />
+            {/* Warranty Claim Information */}
+            <div style={sectionStyle}>
+              <h4 style={sectionHeaderStyle}>Thông tin yêu cầu bảo hành</h4>
+              <div style={fieldGroupStyle}>
+                <textarea 
+                  name="description" 
+                  value={formData.description} 
+                  onChange={handleChange} 
+                  placeholder="Mô tả chi tiết về vấn đề cần bảo hành *" 
+                  style={{ ...inputStyle, resize: "vertical", minHeight: "100px" }}
+                  rows={4}
+                  required 
+                />
+                <div style={gridTwoStyle}>
+                  <input 
+                    name="requestDate" 
+                    value={formData.requestDate} 
+                    onChange={handleChange} 
+                    placeholder="Ngày yêu cầu bảo hành" 
+                    type="date"
+                    style={inputStyle} 
+                    min={new Date().toISOString().split('T')[0]}
+                    required 
+                  />
+                  <div style={{ display: "flex", alignItems: "center", color: "#6b7280", fontSize: "14px", fontStyle: "italic" }}>
+                    Chọn ngày mong muốn được xử lý
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <select name="serviceType" value={formData.serviceType} onChange={handleChange} style={inputStyle}>
-              <option value="maintenance">Bảo dưỡng định kỳ</option>
-              <option value="warranty">Bảo hành</option>
-              <option value="repair">Sửa chữa</option>
-            </select>
+            {/* Vehicle Information */}
+            <div style={sectionStyle}>
+              <h4 style={sectionHeaderStyle}>Thông tin xe</h4>
+              <div style={fieldGroupStyle}>
+                <div style={gridTwoStyle}>
+                  <input 
+                    name="vehicleName" 
+                    value={formData.vehicleName} 
+                    onChange={handleChange} 
+                    placeholder="Tên xe *" 
+                    style={inputStyle} 
+                    required 
+                  />
+                  <input 
+                    name="vehicleYear" 
+                    value={formData.vehicleYear} 
+                    onChange={handleChange} 
+                    placeholder="Năm sản xuất *" 
+                    type="number"
+                    min="1900"
+                    max="2030"
+                    style={inputStyle} 
+                    required 
+                  />
+                </div>
+                <input 
+                  name="vehicleModel" 
+                  value={formData.vehicleModel} 
+                  onChange={handleChange} 
+                  placeholder="Model xe *" 
+                  style={inputStyle} 
+                  required 
+                />
+                <input 
+                  name="vehicleVin" 
+                  value={formData.vehicleVin} 
+                  onChange={handleChange} 
+                  placeholder="VIN (số khung xe) *" 
+                  style={inputStyle} 
+                  maxLength="17"
+                  required 
+                />
+              </div>
+            </div>
 
-            <textarea name="note" value={formData.note} onChange={handleChange} rows={4} placeholder="Ghi chú thêm..." style={{ ...inputStyle, resize: "vertical" }} />
+            {/* Customer Information */}
+            <div style={sectionStyle}>
+              <h4 style={sectionHeaderStyle}>Thông tin khách hàng</h4>
+              <div style={fieldGroupStyle}>
+                <div style={gridTwoStyle}>
+                  <input 
+                    name="customerName" 
+                    value={formData.customerName} 
+                    onChange={handleChange} 
+                    placeholder="Tên khách hàng *" 
+                    style={inputStyle} 
+                    required 
+                  />
+                  <input 
+                    name="customerPhone" 
+                    value={formData.customerPhone} 
+                    onChange={handleChange} 
+                    placeholder="Số điện thoại *" 
+                    style={inputStyle} 
+                    pattern="[0-9+\-\s\(\)]+"
+                    required 
+                  />
+                </div>
+              </div>
+            </div>
 
-            <div style={{ display: "flex", gap: 12 }}>
-              <button type="submit" style={btnPrimary}>Xác nhận đặt lịch</button>
-              <button type="button" onClick={() => { setFormData({ fullName: "", phone: "", email: "", vin: "", date: "", time: "", serviceType: "maintenance", note: "" }); }} style={btnOutline}>Xóa</button>
+            <div style={buttonGroupStyle}>
+              <button type="submit" style={btnPrimary}>
+                <span style={buttonIconStyle}>✓</span>
+                Tạo yêu cầu bảo hành
+              </button>
+              <button type="button" onClick={() => { 
+                setFormData({
+                  warrantyClaimId: 0,
+                  claimDate: new Date().toISOString(),
+                  description: "",
+                  requestDate: "",
+                  vehicleName: "",
+                  vehicleModel: "",
+                  vehicleYear: new Date().getFullYear(),
+                  vehicleVin: "",
+                  customerName: "",
+                  customerPhone: "",
+                }); 
+              }} style={btnSecondary}>
+                <span style={buttonIconStyle}>↻</span>
+                Đặt lại
+              </button>
             </div>
           </form>
         </div>
@@ -77,8 +254,8 @@ export default function Booking() {
             <img src={selectedImage} alt="EV" style={heroImage} />
             <div style={heroOverlay}>
               <div>
-                <h3 style={{ margin: 0 }}>Dịch vụ bảo hành</h3>
-                <p style={{ margin: 0 }}>An toàn — Nhanh chóng — Chính xác</p>
+                <h3 style={{ margin: 0 }}>Hệ thống bảo hành EV</h3>
+                <p style={{ margin: 0 }}>Chuyên nghiệp — Tin cậy — Hiệu quả</p>
               </div>
             </div>
           </div>
@@ -109,7 +286,7 @@ const pageStyle = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  background: "linear-gradient(180deg,#f0f7f4 0%, #eef7fb 100%)",
+  background: "linear-gradient(135deg, #f0f7f4 0%, #e8f4f8 100%)",
   padding: 24,
   boxSizing: "border-box",
 };
@@ -117,14 +294,19 @@ const pageStyle = {
 const cardStyle = {
   display: "flex",
   width: "100%",
-  maxWidth: 1100,
-  borderRadius: 14,
+  maxWidth: 1200,
+  borderRadius: 16,
   overflow: "hidden",
-  boxShadow: "0 12px 40px rgba(2,12,8,0.12)",
+  boxShadow: "0 20px 60px rgba(2,12,8,0.15)",
   background: "#fff",
 };
 
-const leftStyle = { flex: 1.1, padding: 28, background: "#fff" };
+const leftStyle = { 
+  flex: 1.2, 
+  padding: 32, 
+  background: "linear-gradient(135deg, #fafbfc 0%, #f8fafc 100%)",
+  borderRight: "1px solid #f0f2f5"
+};
 const rightStyle = { flex: 1, position: "relative", background: "#f6f9fa", padding: 20, display: "flex", flexDirection: "column" };
 
 const heroContainer = { position: "relative", height: 360, borderRadius: 10, overflow: "hidden", boxShadow: "0 8px 25px rgba(2,12,8,0.06)" };
@@ -134,10 +316,110 @@ const heroOverlay = { position: "absolute", inset: 0, background: "linear-gradie
 const thumbRow = { display: "flex", gap: 10, marginTop: 12 };
 const thumbStyle = { width: 90, height: 64, objectFit: "cover", borderRadius: 8, cursor: "pointer", boxShadow: "0 4px 12px rgba(0,0,0,0.06)" };
 
-const formStyle = { marginTop: 12, display: "flex", flexDirection: "column", gap: 12 };
-const inputStyle = { padding: "10px 12px", borderRadius: 8, border: "1px solid #d7dfe0", fontSize: 14, outline: "none" };
+const formStyle = { 
+  marginTop: 12, 
+  display: "flex", 
+  flexDirection: "column", 
+  gap: 24 
+};
 
-const btnPrimary = { padding: "12px 16px", borderRadius: 8, border: "none", background: "#044835", color: "#fff", fontWeight: 600, cursor: "pointer" };
-const btnOutline = { padding: "12px 16px", borderRadius: 8, border: "1px solid #ccd6d6", background: "#fff", color: "#333", cursor: "pointer" };
+const inputStyle = { 
+  padding: "12px 16px", 
+  borderRadius: 10, 
+  border: "1px solid #e1e5e9", 
+  fontSize: 14, 
+  outline: "none", 
+  fontFamily: "inherit",
+  transition: "all 0.2s ease",
+  "&:focus": {
+    borderColor: "#044835",
+    boxShadow: "0 0 0 3px rgba(4,72,53,0.1)"
+  }
+};
+
+const selectStyle = { 
+  ...inputStyle,
+  cursor: "pointer",
+  backgroundColor: "#fff"
+};
+
+// New professional styles
+const sectionStyle = {
+  background: "#fff",
+  borderRadius: 12,
+  padding: 20,
+  border: "1px solid #f0f2f5",
+  boxShadow: "0 2px 8px rgba(0,0,0,0.04)"
+};
+
+const sectionHeaderStyle = {
+  margin: "0 0 16px 0",
+  color: "#044835",
+  fontSize: 16,
+  fontWeight: 600,
+  borderBottom: "2px solid #f0f2f5",
+  paddingBottom: 8
+};
+
+const fieldGroupStyle = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 12
+};
+
+const gridTwoStyle = {
+  display: "grid",
+  gridTemplateColumns: "1fr 1fr",
+  gap: 12
+};
+
+const buttonGroupStyle = {
+  display: "flex",
+  gap: 16,
+  marginTop: 8,
+  justifyContent: "flex-end"
+};
+
+const buttonIconStyle = {
+  marginRight: 8,
+  fontSize: 16
+};
+
+const btnPrimary = { 
+  padding: "14px 24px", 
+  borderRadius: 10, 
+  border: "none", 
+  background: "linear-gradient(135deg, #044835 0%, #065a42 100%)", 
+  color: "#fff", 
+  fontWeight: 600, 
+  cursor: "pointer",
+  fontSize: 14,
+  display: "flex",
+  alignItems: "center",
+  boxShadow: "0 4px 12px rgba(4,72,53,0.2)",
+  transition: "all 0.2s ease",
+  "&:hover": {
+    transform: "translateY(-1px)",
+    boxShadow: "0 6px 16px rgba(4,72,53,0.3)"
+  }
+};
+
+const btnSecondary = { 
+  padding: "14px 24px", 
+  borderRadius: 10, 
+  border: "1px solid #e1e5e9", 
+  background: "#fff", 
+  color: "#6b7280", 
+  cursor: "pointer",
+  fontSize: 14,
+  fontWeight: 500,
+  display: "flex",
+  alignItems: "center",
+  transition: "all 0.2s ease",
+  "&:hover": {
+    borderColor: "#d1d5db",
+    backgroundColor: "#f9fafb"
+  }
+};
 
 const backBtn = { background: "transparent", border: "none", color: "#044835", cursor: "pointer", fontWeight: 600, padding: 0, display: "inline-flex", alignItems: "center", gap: 8 };

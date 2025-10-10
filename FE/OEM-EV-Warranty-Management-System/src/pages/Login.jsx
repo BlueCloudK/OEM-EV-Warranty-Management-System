@@ -1,10 +1,9 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { FaCar, FaUser, FaLock } from "react-icons/fa";
 
 export default function Login() {
   const navigate = useNavigate();
-
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -16,32 +15,57 @@ export default function Login() {
     setErrorMessage("");
 
     try {
-      const formData = new FormData();
-      formData.append("username", username);
-      formData.append("password", password);
+      console.log("Attempting login with:", { username, password: "***" });
 
-      const res = await fetch(
-        "https://2062f77dd483.ngrok-free.app/api/auth/login",
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+      const res = await fetch(`${API_BASE_URL}api/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "ngrok-skip-browser-warning": "true",
+        },
+        body: JSON.stringify({ username, password }),
+      });
 
-      if (res.ok) {
-        const data = await res.json(); // backend trả { token: "..." }
-        console.log("JWT:", data.token);
+      const data = await res.json();
+      console.log("Login response:", data);
 
-        localStorage.setItem("token", data.token); // lưu JWT
-        alert("Login thành công!");
-        navigate("/dashboard");
+      // ✅ Kiểm tra thông báo login thành công
+      if (data.message && data.message.toLowerCase().includes("success")) {
+        // Lưu token
+        localStorage.setItem("token", data.accessToken);
+
+        // Lưu thông tin user
+        const userRole = data.roleName || "CUSTOMER";
+        localStorage.setItem("role", userRole);
+        localStorage.setItem(
+          "user",
+          JSON.stringify({
+            username: data.username,
+            userId: data.userId,
+          })
+        );
+
+        // ✅ Điều hướng theo role
+        const roleRedirects = {
+          ADMIN: "/admin/dashboard",
+          SC_STAFF: "/scstaff/dashboard",
+          SC_TECHNICIAN: "/sctechnician/dashboard",
+          EVM_STAFF: "/evmstaff/dashboard",
+          CUSTOMER: "/customer/dashboard",
+        };
+
+        const redirectPath = roleRedirects[userRole] || "/customer/dashboard";
+
+        alert(`Đăng nhập thành công! Role: ${userRole}`);
+        navigate(redirectPath);
       } else {
-        const err = await res.text();
-        setErrorMessage("Login thất bại: " + err);
+        setErrorMessage(data.message || "Đăng nhập thất bại.");
       }
     } catch (error) {
       console.error("Login error:", error);
-      setErrorMessage("Login thất bại. Kiểm tra console để biết chi tiết.");
+      setErrorMessage("Lỗi khi đăng nhập. Vui lòng thử lại sau.");
     }
 
     setIsLoading(false);
@@ -61,7 +85,6 @@ export default function Login() {
         position: "relative",
       }}
     >
-      {/* Overlay làm mờ nền */}
       <div
         style={{
           position: "absolute",
@@ -71,7 +94,6 @@ export default function Login() {
         }}
       />
 
-      {/* Khung đăng nhập */}
       <div
         style={{
           zIndex: 2,
@@ -84,7 +106,6 @@ export default function Login() {
           background: "#fff",
         }}
       >
-        {/* Left side */}
         <div
           style={{
             flex: 1,
@@ -138,6 +159,7 @@ export default function Login() {
             <button
               type="submit"
               style={loginBtn}
+              disabled={isLoading}
               onMouseOver={(e) =>
                 (e.currentTarget.style.background = "#06694e")
               }
@@ -145,42 +167,31 @@ export default function Login() {
                 (e.currentTarget.style.background = "#044835")
               }
             >
-              Đăng nhập
+              {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
             </button>
 
-            <button
-              type="button"
-              onClick={() => navigate("/register")}
-              style={registerBtn}
-              onMouseOver={(e) => {
-                e.target.style.background = "#044835";
-                e.target.style.color = "#fff";
-              }}
-              onMouseOut={(e) => {
-                e.target.style.background = "#fff";
-                e.target.style.color = "#044835";
-              }}
-            >
-              Đăng ký
-            </button>
+            {errorMessage && (
+              <p style={{ color: "red", marginTop: "10px" }}>{errorMessage}</p>
+            )}
 
-            <div style={{ textAlign: "right", marginTop: "10px" }}>
-              <a
-                href="#"
-                onClick={(e) => e.preventDefault()}
+            <div style={{ textAlign: "center", marginTop: "15px" }}>
+              <Link 
+                to="/forgot-password" 
                 style={{
                   color: "#044835",
-                  fontSize: "13px",
                   textDecoration: "none",
+                  fontSize: "14px",
+                  cursor: "pointer"
                 }}
+                onMouseOver={(e) => (e.currentTarget.style.textDecoration = "underline")}
+                onMouseOut={(e) => (e.currentTarget.style.textDecoration = "none")}
               >
-                Forgot password?
-              </a>
+                Quên mật khẩu?
+              </Link>
             </div>
           </form>
         </div>
 
-        {/* Right side (ảnh xe đẹp, overlay gradient) */}
         <div
           style={{
             flex: 1,
@@ -190,8 +201,7 @@ export default function Login() {
             backgroundSize: "cover",
             backgroundPosition: "center",
           }}
-        >
-        </div>
+        ></div>
       </div>
     </div>
   );
@@ -226,15 +236,3 @@ const loginBtn = {
   transition: "0.3s",
   marginTop: "10px",
 };
-const registerBtn = {
-  padding: "12px",
-  border: "2px solid #044835",
-  borderRadius: "10px",
-  background: "#fff",
-  color: "#044835",
-  fontWeight: "600",
-  fontSize: "15px",
-  cursor: "pointer",
-  transition: "0.3s",
-};
-//

@@ -1,9 +1,73 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { FaArrowLeft } from "react-icons/fa";
 
 export default function WarrantyResult() {
   const navigate = useNavigate();
+  const { id } = useParams(); // Get warranty ID from URL params
+  const [warrantyData, setWarrantyData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (id) {
+      fetchWarrantyResult(id);
+    } else {
+      fetchLatestWarrantyResult();
+    }
+  }, [id]);
+
+  const fetchWarrantyResult = async (warrantyId) => {
+    try {
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+      const response = await fetch(`${API_BASE_URL}/api/warranty/result/${warrantyId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setWarrantyData(data);
+      } else {
+        setError("Không thể tải kết quả bảo hành");
+      }
+    } catch (err) {
+      console.error("Warranty result fetch error:", err);
+      setError("Lỗi kết nối: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchLatestWarrantyResult = async () => {
+    try {
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+      const response = await fetch(`${API_BASE_URL}/api/warranty/result/latest`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setWarrantyData(data);
+      } else {
+        setError("Không thể tải kết quả bảo hành mới nhất");
+      }
+    } catch (err) {
+      console.error("Latest warranty result fetch error:", err);
+      setError("Lỗi kết nối: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div
