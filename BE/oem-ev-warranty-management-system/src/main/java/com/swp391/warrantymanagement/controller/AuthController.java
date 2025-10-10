@@ -78,7 +78,7 @@ public class AuthController {
             response.put("user", Map.of(
                 "userId", authResponse.getUserId(),
                 "username", authResponse.getUsername(),
-                "roleName", authResponse.getRoleName()
+                "roleName", authResponse.getRoleName() //get role name from AuthResponseDTO
             ));
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (RuntimeException e) {
@@ -134,11 +134,18 @@ public class AuthController {
         }
     }
 
-    // Validate token - endpoint mới thiếu
+    // Validate token - nhận token từ header Authorization thay vì query param
     @GetMapping("/validate")
-    public ResponseEntity<AuthResponseDTO> validateToken(@RequestParam String token) {
+    public ResponseEntity<AuthResponseDTO> validateToken(@RequestHeader("Authorization") String authorizationHeader) {
         logger.info("Token validation request");
         try {
+            // Lấy token từ header (định dạng: Bearer <token>)
+            String token = null;
+            if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+                token = authorizationHeader.substring(7);
+            } else {
+                throw new RuntimeException("Invalid Authorization header format");
+            }
             AuthResponseDTO response = authService.validateToken(token);
             logger.info("Token validation successful");
             return ResponseEntity.ok(response);
