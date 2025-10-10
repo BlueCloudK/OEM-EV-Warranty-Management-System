@@ -11,14 +11,14 @@ export default function Register() {
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-  const [roleName, setRoleName] = useState("USER");
+  const [roleId, setRoleId] = useState(5); // Default to CUSTOMER
   const [isLoading, setIsLoading] = useState(false);
 
   const handleRegister = async (e) => {
     e.preventDefault();
     setErrorMessage("");
     setIsLoading(true);
-
+    
     // Validation cơ bản
     if (password !== confirmPassword) {
       setErrorMessage("Mật khẩu không khớp!");
@@ -28,6 +28,11 @@ export default function Register() {
 
     if (!/^[a-zA-Z0-9_]+$/.test(username)) {
       setErrorMessage("Username chỉ chứa chữ cái, số và gạch dưới!");
+      setIsLoading(false);
+      return;
+    }
+    if (username.length < 3 || username.length > 50) {
+      setErrorMessage("Username phải từ 3 đến 50 ký tự!");
       setIsLoading(false);
       return;
     }
@@ -46,39 +51,53 @@ export default function Register() {
       setIsLoading(false);
       return;
     }
-
-    const now = new Date();
-    const offset = "+07:00";
-    const createdAt =
-      new Date(now.getTime() - now.getTimezoneOffset() * 60000)
-        .toISOString()
-        .slice(0, -1) + offset;
+    if (roleId < 1 || roleId > 5) {
+      setErrorMessage("Role không hợp lệ!");
+      setIsLoading(false);
+      return;
+    }
 
     const body = {
       username,
+      email,
       password,
       address,
-      email,
-      createdAt,
-      role: { roleName },
+      roleId: roleId
     };
 
     console.log("Request body gửi đi:", JSON.stringify(body, null, 2));
 
-    // Chỉ dùng Ngrok URL
-    const apiUrl = "https://2062f77dd483.ngrok-free.app/api/auth/register";
+    // Use environment variable for API URL
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+    const apiUrl = `${API_BASE_URL}api/auth/register`;
+    
+    console.log("API URL:", apiUrl);
 
     try {
       const res = await fetch(apiUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "ngrok-skip-browser-warning": "true"
+        },
         body: JSON.stringify(body),
       });
 
-      const text = await res.text();
+      console.log("Response status:", res.status);
+      console.log("Response headers:", res.headers);
+
+      let responseData;
+      try {
+        responseData = await res.json();
+      } catch (jsonError) {
+        responseData = await res.text();
+        console.log("Response is not JSON, got text:", responseData);
+      }
+
       console.log(`Response from ${apiUrl}:`, {
         status: res.status,
-        body: text,
+        data: responseData,
       });
 
       if (res.ok) {
@@ -86,12 +105,36 @@ export default function Register() {
         alert("Đăng ký thành công!");
         navigate("/login");
       } else {
-        setErrorMessage(`Đăng ký thất bại (Status: ${res.status}): ${text}`);
+        let errorMsg;
+        const errorText = typeof responseData === 'object' 
+          ? responseData.message || JSON.stringify(responseData)
+          : responseData;
+        
+        // Provide user-friendly error messages for common backend issues
+        if (res.status === 400) {
+          if (errorText.includes("JPA EntityManager") || errorText.includes("transaction")) {
+            errorMsg = "Lỗi hệ thống database. Vui lòng thử lại sau ít phút hoặc liên hệ admin.";
+          } else if (errorText.includes("username") && errorText.includes("exist")) {
+            errorMsg = "Tên đăng nhập đã tồn tại. Vui lòng chọn tên khác.";
+          } else if (errorText.includes("email") && errorText.includes("exist")) {
+            errorMsg = "Email đã được sử dụng. Vui lòng dùng email khác.";
+          } else if (errorText.includes("validation") || errorText.includes("invalid")) {
+            errorMsg = "Dữ liệu nhập vào không hợp lệ. Vui lòng kiểm tra lại.";
+          } else {
+            errorMsg = `Đăng ký thất bại: ${errorText}`;
+          }
+        } else if (res.status === 500) {
+          errorMsg = "Lỗi server nội bộ. Vui lòng thử lại sau hoặc liên hệ admin.";
+        } else {
+          errorMsg = `Đăng ký thất bại (${res.status}): ${errorText}`;
+        }
+        
+        setErrorMessage(errorMsg);
       }
     } catch (error) {
-      console.error(`Error with ${apiUrl}:`, error.message);
+      console.error(`Network error:`, error);
       setErrorMessage(
-        `Đăng ký thất bại do lỗi kết nối. Vui lòng kiểm tra server. Chi tiết: ${error.message}`
+        `Đăng ký thất bại do lỗi kết nối. Chi tiết: ${error.message}`
       );
     }
     setIsLoading(false);
@@ -148,12 +191,14 @@ export default function Register() {
               onChange={(e) => setAddress(e.target.value)}
             />
             <select
-              value={roleName}
-              onChange={(e) => setRoleName(e.target.value)}
+              value={roleId}
+              onChange={(e) => setRoleId(parseInt(e.target.value))}
             >
-              <option value="USER">User</option>
-              <option value="CUSTOMER">Customer</option>
-              <option value="ADMIN">Admin</option>
+              <option value={1}>Admin</option>
+              <option value={2}>SC Staff</option>
+              <option value={3}>SC Technician</option>
+              <option value={4}>EVM Staff</option>
+              <option value={5}>Customer</option>
             </select>
             {errorMessage && <p className="error-message">{errorMessage}</p>}
             <div className="button-group">
