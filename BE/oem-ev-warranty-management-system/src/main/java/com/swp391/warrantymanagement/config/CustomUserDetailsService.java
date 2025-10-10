@@ -25,7 +25,7 @@ public class CustomUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         // Tìm user theo username
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username)); // cấu trúc gọn với lambda
 
         // Convert authority từ role (single role)
         List<SimpleGrantedAuthority> authorities = Collections.singletonList(
@@ -40,7 +40,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .accountExpired(false)
                 .accountLocked(false)
                 .credentialsExpired(false)
-                .disabled(false) // Tạm thời disable check này
+                .disabled(false) // Tạm thời disable check này do user không có field active (trong tương lai có thể thêm)
                 .build();
     }
 }

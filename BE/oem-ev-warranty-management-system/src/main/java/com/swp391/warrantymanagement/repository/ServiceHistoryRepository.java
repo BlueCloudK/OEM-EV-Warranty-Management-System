@@ -4,8 +4,6 @@ import com.swp391.warrantymanagement.entity.ServiceHistory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -17,30 +15,19 @@ public interface ServiceHistoryRepository extends JpaRepository<ServiceHistory, 
     // Spring Boot đã tự động sinh các phương thức CRUD cơ bản với Long ID
 
     // ============= Basic Search Methods =============
+    // Tìm kiếm theo loại dịch vụ (serviceType)
     List<ServiceHistory> findByServiceTypeContainingIgnoreCase(String serviceType);
-    List<ServiceHistory> findByPartPartId(String partId);
-    List<ServiceHistory> findByVehicleVehicleId(Long vehicleId);
 
     // ============= Pagination Support Methods =============
-    // Basic pagination methods
+    // Tìm kiếm theo loại dịch vụ (serviceType)
     Page<ServiceHistory> findByServiceTypeContainingIgnoreCase(String serviceType, Pageable pageable);
 
-    // Search methods with pagination
-    Page<ServiceHistory> findByServiceTypeContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
-        String serviceType, String description, Pageable pageable);
-
+    // Tìm kiếm theo xe, phụ tùng, khách hàng
     Page<ServiceHistory> findByVehicleVehicleId(Long vehicleId, Pageable pageable);
     Page<ServiceHistory> findByPartPartId(String partId, Pageable pageable);
     Page<ServiceHistory> findByVehicleCustomerCustomerId(UUID customerId, Pageable pageable);
 
-    // Date range search
+    // Tìm kiếm theo khoảng thời gian
     Page<ServiceHistory> findByServiceDateBetween(LocalDate startDate, LocalDate endDate, Pageable pageable);
 
-    // ============= Custom Query Methods =============
-    // Custom query với JOIN FETCH để tối ưu hiệu suất
-    @Query("SELECT sh FROM ServiceHistory sh JOIN FETCH sh.part p WHERE p.partId = :partId")
-    List<ServiceHistory> findByPartIdWithPart(@Param("partId") String partId);
-
-    @Query("SELECT sh FROM ServiceHistory sh JOIN FETCH sh.vehicle v WHERE v.vehicleId = :vehicleId")
-    List<ServiceHistory> findByVehicleIdWithVehicle(@Param("vehicleId") Long vehicleId);
 }

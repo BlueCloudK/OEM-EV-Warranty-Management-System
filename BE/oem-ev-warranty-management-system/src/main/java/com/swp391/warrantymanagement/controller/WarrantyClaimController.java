@@ -24,9 +24,10 @@ import org.slf4j.LoggerFactory;
 @CrossOrigin
 public class WarrantyClaimController {
     private static final Logger logger = LoggerFactory.getLogger(WarrantyClaimController.class);
-    @Autowired private WarrantyClaimService warrantyClaimService;
+    @Autowired
+    private WarrantyClaimService warrantyClaimService;
 
-    // Get all warranty claims with pagination
+    // Get all warranty claims with pagination (ADMIN/SC_STAFF/EVM_STAFF only)
     @GetMapping
     public ResponseEntity<PagedResponse<WarrantyClaimResponseDTO>> getAllClaims(
             @RequestParam(defaultValue = "0") int page,
@@ -37,7 +38,7 @@ public class WarrantyClaimController {
         return ResponseEntity.ok(claimsPage);
     }
 
-    // Get warranty claim by ID
+    // Get warranty claim by ID (ADMIN/SC_STAFF/EVM_STAFF only)
     @GetMapping("/{id}")
     public ResponseEntity<WarrantyClaimResponseDTO> getClaimById(@PathVariable Long id) {
         logger.info("Get warranty claim by id: {}", id);
@@ -50,7 +51,7 @@ public class WarrantyClaimController {
         return ResponseEntity.notFound().build();
     }
 
-    // Create new warranty claim
+    // Create new warranty claim (CUSTOMER/ADMIN/SC_STAFF/EVM_STAFF)
     @PostMapping
     public ResponseEntity<WarrantyClaimResponseDTO> createClaim(@Valid @RequestBody WarrantyClaimRequestDTO requestDTO) {
         logger.info("Create warranty claim request: {}", requestDTO);
@@ -59,7 +60,7 @@ public class WarrantyClaimController {
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
     }
 
-    // Update warranty claim
+    // Update warranty claim details (ADMIN/SC_STAFF/EVM_STAFF only)
     @PutMapping("/{id}")
     public ResponseEntity<WarrantyClaimResponseDTO> updateClaim(@PathVariable Long id,
                                                               @Valid @RequestBody WarrantyClaimRequestDTO requestDTO) {
@@ -73,7 +74,7 @@ public class WarrantyClaimController {
         return ResponseEntity.notFound().build();
     }
 
-    // Update claim status
+    // Update claim status (ADMIN/SC_STAFF/EVM_STAFF only)
     @PatchMapping("/{id}/status")
     public ResponseEntity<WarrantyClaimResponseDTO> updateClaimStatus(@PathVariable Long id,
         @Valid @RequestBody WarrantyClaimStatusUpdateRequestDTO requestDTO) {
@@ -87,7 +88,7 @@ public class WarrantyClaimController {
         return ResponseEntity.notFound().build();
     }
 
-    // Delete warranty claim
+    // Delete warranty claim (ADMIN only)
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteClaim(@PathVariable Long id) {
         logger.info("Delete warranty claim request: {}", id);

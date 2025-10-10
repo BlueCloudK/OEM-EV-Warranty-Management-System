@@ -25,18 +25,18 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    } // Sử dụng BCrypt để mã hóa password trong database
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception { // Cấu hình AuthenticationManager để sử dụng trong AuthController
+        return config.getAuthenticationManager(); // Lấy AuthenticationManager từ cấu hình của Spring Security
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
-        return config.getAuthenticationManager();
-    }
-
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception { // Cấu hình Security Filter Chain cho ứng dụng Spring Security
         http
-            .csrf(csrf -> csrf.disable()) // Tắt CSRF
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .csrf(csrf -> csrf.disable()) // Tắt CSRF(Cross-Site Request Forgery là một loại tấn công mạng mà kẻ tấn công giả mạo người dùng hợp pháp để thực hiện các hành động không mong muốn trên ứng dụng web mà người dùng đã xác thực trước đó.) vì ta dùng JWT, không cần session nên không cần CSRF mà k tắt thì sẽ bị lỗi 403 khi gọi API POST, PUT, DELETE
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Sử dụng JWT, không dùng session nên set policy là STATELESS để server không lưu session chỉ nên dùng session khi hệ thống cần lưu trạng thái người dùng (như web app truyền thống)
             .authorizeHttpRequests(auth -> auth
                 // Public endpoints - không cần authentication
                 .requestMatchers("/api/auth/**").permitAll() // Login, Register

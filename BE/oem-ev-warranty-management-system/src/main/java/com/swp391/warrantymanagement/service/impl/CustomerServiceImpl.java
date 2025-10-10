@@ -206,7 +206,7 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     public CustomerResponseDTO updateCustomerProfile(CustomerRequestDTO requestDTO, String authorizationHeader) {
         // Extract JWT token từ Authorization header
-        String token = authorizationHeader.replace("Bearer ", "");
+//        String token = authorizationHeader.replace("Bearer ", "");
 
         // Sử dụng JwtService để extract username từ token
         // TODO: Inject JwtService để sử dụng

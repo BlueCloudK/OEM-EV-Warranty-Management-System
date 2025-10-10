@@ -18,6 +18,4 @@ public interface WarrantyClaimService {
     WarrantyClaimResponseDTO updateClaim(Long id, WarrantyClaimRequestDTO requestDTO);
     WarrantyClaimResponseDTO updateClaimStatus(Long id, WarrantyClaimStatusUpdateRequestDTO requestDTO);
     boolean deleteClaim(Long id);
-    List<WarrantyClaimResponseDTO> getClaimsByStatus(String status);
-    List<WarrantyClaimResponseDTO> getClaimsByVehicleId(Long vehicleId);
 }

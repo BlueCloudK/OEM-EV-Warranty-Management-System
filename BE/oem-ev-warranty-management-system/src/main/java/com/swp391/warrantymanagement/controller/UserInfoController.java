@@ -19,9 +19,7 @@ import java.util.Map;
 public class UserInfoController {
     private static final Logger logger = LoggerFactory.getLogger(UserInfoController.class);
 
-    /**
-     * Endpoint để xem thông tin user hiện tại (GET)
-     */
+    // Lấy thông tin user hiện tại (tên, roles, trạng thái xác thực)
     @GetMapping("/me")
     public ResponseEntity<Map<String, Object>> getCurrentUser() {
         logger.info("Get current user info request");
@@ -36,9 +34,7 @@ public class UserInfoController {
         return ResponseEntity.ok(userInfo);
     }
 
-    /**
-     * VÍ DỤ: POST endpoint chỉ dành cho ADMIN
-     */
+    // VÍ DỤ: POST endpoint chỉ cho ADMIN
     @PostMapping("/admin/test")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Map<String, Object>> adminOnlyPost(@RequestBody Map<String, Object> requestData) {
@@ -52,9 +48,7 @@ public class UserInfoController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * VÍ DỤ: POST endpoint cho ADMIN hoặc STAFF
-     */
+    // VÍ DỤ: POST endpoint cho ADMIN hoặc STAFF
     @PostMapping("/staff/test")
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ResponseEntity<Map<String, Object>> staffPost(@RequestBody Map<String, Object> requestData) {
@@ -69,9 +63,7 @@ public class UserInfoController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * VÍ DỤ: POST endpoint với logic phân quyền trong code
-     */
+    // VÍ DỤ: POST endpoint với logic phân quyền phức tạp hơn
     @PostMapping("/dynamic-auth")
     public ResponseEntity<Map<String, Object>> dynamicAuth(@RequestBody Map<String, Object> requestData) {
         String currentUser = SecurityUtil.getCurrentUsername();
