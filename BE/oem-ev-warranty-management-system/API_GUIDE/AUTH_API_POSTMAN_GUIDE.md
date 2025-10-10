@@ -168,7 +168,7 @@ Authorization: Bearer {access_token}
 ```
 
 ### 7. Validate Token
-**POST** `/api/auth/validate`
+**GET** `/api/auth/validate`
 
 **Headers:**
 ```
@@ -176,11 +176,7 @@ Authorization: Bearer {access_token}
 ```
 
 **Request:**
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiJ9..."
-}
-```
+Không cần body.
 
 **Response Success (200):**
 ```json
@@ -191,6 +187,16 @@ Authorization: Bearer {access_token}
   "roleName": "ADMIN"
 }
 ```
+
+**Postman Setup:**
+```
+Method: GET
+URL: http://localhost:8080/api/auth/validate
+Headers:
+  Authorization: Bearer <access_token>
+```
+
+> Lưu ý: Chỉ cần gửi header Authorization, không cần gửi body hay params.
 
 ## Postman Collection Setup
 
