@@ -1,0 +1,2 @@
+# Ignore only BE/.env file
+BE/.env
