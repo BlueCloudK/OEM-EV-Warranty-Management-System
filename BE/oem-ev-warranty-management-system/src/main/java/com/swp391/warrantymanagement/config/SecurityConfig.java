@@ -13,6 +13,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -36,6 +41,7 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception { // Cấu hình Security Filter Chain cho ứng dụng Spring Security
         http
             .csrf(csrf -> csrf.disable()) // Tắt CSRF(Cross-Site Request Forgery là một loại tấn công mạng mà kẻ tấn công giả mạo người dùng hợp pháp để thực hiện các hành động không mong muốn trên ứng dụng web mà người dùng đã xác thực trước đó.) vì ta dùng JWT, không cần session nên không cần CSRF mà k tắt thì sẽ bị lỗi 403 khi gọi API POST, PUT, DELETE
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Sử dụng JWT, không dùng session nên set policy là STATELESS để server không lưu session chỉ nên dùng session khi hệ thống cần lưu trạng thái người dùng (như web app truyền thống)
             .authorizeHttpRequests(auth -> auth
                 // Public endpoints - không cần authentication
@@ -74,5 +80,20 @@ public class SecurityConfig {
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class); // Thêm JWT filter
 
         return http.build();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        // Nếu muốn chỉ cho phép domain FE truy cập, dùng dòng dưới:
+        // configuration.setAllowedOrigins(List.of("https://your-frontend.com")); // Thay bằng domain FE thật
+        // Nếu muốn cho phép mọi domain truy cập, dùng dòng dưới:
+        configuration.setAllowedOriginPatterns(List.of("*")); // Cho phép mọi domain truy cập
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
+        configuration.setAllowCredentials(true);
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 }
