@@ -21,7 +21,7 @@ Authorization: Bearer {jwt_token}
 ### 1. Get All Vehicles
 **GET** `/api/vehicles`
 
-**Permissions:** ADMIN, EVM_STAFF, SC_STAFF, SC_TECHNICIAN only
+**Permissions:** ADMIN, EVM_STAFF, SC_STAFF only
 
 **Query Parameters:**
 - `page` (optional): Số trang (default: 0)
@@ -53,23 +53,15 @@ Authorization: Bearer {jwt_token}
 }
 ```
 
-**Postman Setup:**
-```
-Method: GET
-URL: http://localhost:8080/api/vehicles?page=0&size=10&search=Tesla
-Headers:
-  Authorization: Bearer {{jwt_token}}
-```
-
 ### 2. Get Vehicle by ID
 **GET** `/api/vehicles/{id}`
 
-**Permissions:** 
-- ADMIN, EVM_STAFF, SC_STAFF, SC_TECHNICIAN: Any vehicle
-- CUSTOMER: Own vehicles only
+**Permissions:** ADMIN, EVM_STAFF, SC_STAFF, CUSTOMER only
 
 **Path Parameters:**
 - `id`: Vehicle ID
+
+**Note:** Customers chỉ có thể xem vehicles của mình thông qua business logic filtering
 
 **Response Success (200):**
 ```json
@@ -82,54 +74,25 @@ Headers:
   "vehicleColor": "White",
   "vehicleEngine": "Electric Motor",
   "customerId": "123e4567-e89b-12d3-a456-426614174000",
-  "customerName": "John Doe",
-  "warrantyInfo": {
-    "warrantyStartDate": "2023-01-15",
-    "warrantyEndDate": "2031-01-15",
-    "isUnderWarranty": true
-  },
-  "serviceHistory": [
-    {
-      "serviceHistoryId": 1,
-      "serviceDate": "2024-09-15",
-      "serviceType": "MAINTENANCE",
-      "serviceDescription": "Regular maintenance check"
-    }
-  ]
+  "customerName": "John Doe"
 }
 ```
 
 ### 3. Create Vehicle
 **POST** `/api/vehicles`
 
-**Permissions:** ADMIN, EVM_STAFF, SC_STAFF only
+**Permissions:** ADMIN, EVM_STAFF only
 
 **Request Body:**
 ```json
 {
   "vehicleName": "Tesla Model Y",
   "vehicleModel": "Model Y Long Range",
-  "vehicleVin": "5YJ3E1EA8KF123456",
+  "vehicleVin": "5YJ3E1EA4KF123456",
   "vehicleYear": 2024,
-  "vehicleColor": "Red",
-  "vehicleEngine": "Electric Motor",
-  "customerId": "123e4567-e89b-12d3-a456-426614174000"
-}
-```
-
-**Response Success (201):**
-```json
-{
-  "vehicleId": 2,
-  "vehicleName": "Tesla Model Y",
-  "vehicleModel": "Model Y Long Range",
-  "vehicleVin": "5YJ3E1EA8KF123456",
-  "vehicleYear": 2024,
-  "vehicleColor": "Red",
-  "vehicleEngine": "Electric Motor",
-  "customerId": "123e4567-e89b-12d3-a456-426614174000",
-  "customerName": "John Doe",
-  "createdDate": "2024-10-09"
+  "vehicleColor": "Blue",
+  "vehicleEngine": "Dual Motor AWD",
+  "customerId": "456e7890-e89b-12d3-a456-426614174001"
 }
 ```
 
@@ -146,7 +109,9 @@ Headers:
 {
   "vehicleName": "Tesla Model 3 Updated",
   "vehicleModel": "Model 3 Long Range",
-  "vehicleColor": "Blue",
+  "vehicleVin": "1HGBH41JXMN109186",
+  "vehicleYear": 2023,
+  "vehicleColor": "Red",
   "vehicleEngine": "Electric Motor",
   "customerId": "123e4567-e89b-12d3-a456-426614174000"
 }
@@ -160,12 +125,19 @@ Headers:
 **Path Parameters:**
 - `id`: Vehicle ID
 
-**Response Success (204):** No content
+**Response Success (204):** No Content
 
-### 6. Get My Vehicles (Customer endpoint)
-**GET** `/api/vehicles/my-vehicles`
+### 6. Get Vehicles by Customer ID
+**GET** `/api/vehicles/by-customer/{customerId}`
 
-**Permissions:** CUSTOMER only
+**Permissions:** ADMIN, EVM_STAFF, SC_STAFF only
+
+**Path Parameters:**
+- `customerId`: Customer UUID
+
+**Query Parameters:**
+- `page` (optional): Số trang (default: 0)
+- `size` (optional): Kích thước trang (default: 10)
 
 **Response Success (200):**
 ```json
@@ -178,36 +150,79 @@ Headers:
       "vehicleVin": "1HGBH41JXMN109186",
       "vehicleYear": 2023,
       "vehicleColor": "White",
-      "warrantyInfo": {
-        "warrantyStartDate": "2023-01-15",
-        "warrantyEndDate": "2031-01-15",
-        "isUnderWarranty": true
-      },
-      "recentServices": [
-        {
-          "serviceDate": "2024-09-15",
-          "serviceType": "MAINTENANCE"
-        }
-      ]
+      "vehicleEngine": "Electric Motor",
+      "customerId": "123e4567-e89b-12d3-a456-426614174000",
+      "customerName": "John Doe"
     }
-  ]
+  ],
+  "pageNumber": 0,
+  "pageSize": 10,
+  "totalElements": 2,
+  "totalPages": 1,
+  "first": true,
+  "last": true
 }
 ```
 
-### 7. Search Vehicles by VIN
-**GET** `/api/vehicles/search/vin/{vin}`
+### 7. Get My Vehicles (Customer Self-Service)
+**GET** `/api/vehicles/my-vehicles`
 
-**Permissions:** ADMIN, EVM_STAFF, SC_STAFF, SC_TECHNICIAN only
+**Permissions:** CUSTOMER only
 
-**Path Parameters:**
-- `vin`: Vehicle VIN
+**Description:** Customer xem danh sách vehicles của mình
+
+**Query Parameters:**
+- `page` (optional): Số trang (default: 0)
+- `size` (optional): Kích thước trang (default: 10)
+
+**Headers:**
+```
+Authorization: Bearer {jwt_token}
+```
+
+**Response Success (200):**
+```json
+{
+  "content": [
+    {
+      "vehicleId": 1,
+      "vehicleName": "Tesla Model 3",
+      "vehicleModel": "Model 3 Standard Range",
+      "vehicleVin": "1HGBH41JXMN109186",
+      "vehicleYear": 2023,
+      "vehicleColor": "White",
+      "vehicleEngine": "Electric Motor",
+      "customerId": "123e4567-e89b-12d3-a456-426614174000",
+      "customerName": "John Doe"
+    }
+  ],
+  "pageNumber": 0,
+  "pageSize": 10,
+  "totalElements": 2,
+  "totalPages": 1,
+  "first": true,
+  "last": true
+}
+```
+
+### 8. Get Vehicle by VIN
+**GET** `/api/vehicles/by-vin`
+
+**Permissions:** ADMIN, EVM_STAFF, SC_STAFF only
+
+**Query Parameters:**
+- `vin` (required): Vehicle VIN number
 
 **Response Success (200):**
 ```json
 {
   "vehicleId": 1,
   "vehicleName": "Tesla Model 3",
+  "vehicleModel": "Model 3 Standard Range",
   "vehicleVin": "1HGBH41JXMN109186",
+  "vehicleYear": 2023,
+  "vehicleColor": "White",
+  "vehicleEngine": "Electric Motor",
   "customerId": "123e4567-e89b-12d3-a456-426614174000",
   "customerName": "John Doe"
 }
@@ -223,6 +238,14 @@ Headers:
   Authorization: Bearer {{jwt_token}}
 ```
 
+### Get Vehicle by ID
+```
+Method: GET
+URL: http://localhost:8080/api/vehicles/1
+Headers:
+  Authorization: Bearer {{jwt_token}}
+```
+
 ### Create Vehicle
 ```
 Method: POST
@@ -232,36 +255,63 @@ Headers:
   Content-Type: application/json
 Body (raw JSON):
 {
-  "vehicleName": "New Vehicle",
-  "vehicleModel": "Model X",
-  "vehicleVin": "NEWVIN123456789",
+  "vehicleName": "Tesla Model Y",
+  "vehicleModel": "Model Y Long Range",
+  "vehicleVin": "5YJ3E1EA4KF123456",
   "vehicleYear": 2024,
-  "vehicleColor": "Black",
+  "vehicleColor": "Blue",
+  "vehicleEngine": "Dual Motor AWD",
+  "customerId": "456e7890-e89b-12d3-a456-426614174001"
+}
+```
+
+### Update Vehicle
+```
+Method: PUT
+URL: http://localhost:8080/api/vehicles/1
+Headers:
+  Authorization: Bearer {{jwt_token}}
+  Content-Type: application/json
+Body (raw JSON):
+{
+  "vehicleName": "Tesla Model 3 Updated",
+  "vehicleModel": "Model 3 Long Range",
+  "vehicleVin": "1HGBH41JXMN109186",
+  "vehicleYear": 2023,
+  "vehicleColor": "Red",
   "vehicleEngine": "Electric Motor",
   "customerId": "123e4567-e89b-12d3-a456-426614174000"
 }
 ```
 
-## Error Responses
-
-### 403 Forbidden
-```json
-{
-  "error": "Access denied",
-  "message": "Insufficient permissions to access vehicle data"
-}
+### Delete Vehicle
+```
+Method: DELETE
+URL: http://localhost:8080/api/vehicles/1
+Headers:
+  Authorization: Bearer {{jwt_token}}
 ```
 
-### 404 Not Found
-```json
-{
-  "error": "Vehicle not found",
-  "message": "Vehicle with ID 123 does not exist"
-}
+### Get Vehicles by Customer ID
+```
+Method: GET
+URL: http://localhost:8080/api/vehicles/by-customer/123e4567-e89b-12d3-a456-426614174000?page=0&size=10
+Headers:
+  Authorization: Bearer {{jwt_token}}
 ```
 
-## Note on Access Levels
-- **CUSTOMER**: Chỉ có thể xem vehicles của mình thông qua endpoint `/my-vehicles` hoặc specific vehicle ID nếu sở hữu
-- **SC_TECHNICIAN**: Có thể xem tất cả vehicles nhưng không thể tạo/sửa/xóa
-- **SC_STAFF, EVM_STAFF**: Có thể CRUD vehicles
-- **ADMIN**: Full access tất cả operations
+### Get My Vehicles (Customer)
+```
+Method: GET
+URL: http://localhost:8080/api/vehicles/my-vehicles?page=0&size=10
+Headers:
+  Authorization: Bearer {{jwt_token}}
+```
+
+### Get Vehicle by VIN
+```
+Method: GET
+URL: http://localhost:8080/api/vehicles/by-vin?vin=1HGBH41JXMN109186
+Headers:
+  Authorization: Bearer {{jwt_token}}
+```

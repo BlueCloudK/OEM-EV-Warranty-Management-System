@@ -200,129 +200,251 @@ Headers:
 
 ## Postman Collection Setup
 
-### Environment Variables
+### 1. Tạo Environment Variables
+Tạo environment trong Postman và thêm các variables:
+
+**Environment Name:** `OEM EV Warranty API`
+
+**Variables:**
 ```
-jwt_token: (sẽ được set sau khi login)
-refresh_token: (sẽ được set sau khi login)
-base_url: http://localhost:8080
+baseUrl: http://localhost:8080
+accessToken: {{accessToken}}
+refreshToken: {{refreshToken}}
 ```
 
-### Pre-request Script cho Auto Login
+### 2. Pre-request Script cho Login
+Thêm vào tab **Pre-request Script** của request Login:
+
 ```javascript
-// Tự động login nếu chưa có token
-if (!pm.environment.get("jwt_token")) {
-    pm.sendRequest({
-        url: pm.environment.get("base_url") + "/api/auth/login",
-        method: "POST",
+// Clear previous tokens
+pm.environment.unset("accessToken");
+pm.environment.unset("refreshToken");
+```
+
+### 3. Tests Script cho Login
+Thêm vào tab **Tests** của request Login:
+
+```javascript
+// Parse response
+var jsonData = pm.response.json();
+
+// Set tokens to environment
+if (jsonData.accessToken) {
+    pm.environment.set("accessToken", jsonData.accessToken);
+    console.log("Access Token saved:", jsonData.accessToken);
+}
+
+if (jsonData.refreshToken) {
+    pm.environment.set("refreshToken", jsonData.refreshToken);
+    console.log("Refresh Token saved:", jsonData.refreshToken);
+}
+
+// Test response
+pm.test("Login successful", function () {
+    pm.response.to.have.status(200);
+    pm.expect(jsonData).to.have.property("accessToken");
+    pm.expect(jsonData).to.have.property("refreshToken");
+    pm.expect(jsonData).to.have.property("username");
+    pm.expect(jsonData).to.have.property("roleName");
+});
+```
+
+### 4. Sử dụng Token cho Các API Khác
+
+**Cách 1: Manual Header**
+```
+Headers:
+  Authorization: Bearer {{accessToken}}
+  Content-Type: application/json
+```
+
+**Cách 2: Authorization Tab**
+1. Chọn tab **Authorization**
+2. Type: **Bearer Token**
+3. Token: `{{accessToken}}`
+
+### 5. Auto-refresh Token khi Expired
+
+**Pre-request Script cho tất cả protected endpoints:**
+
+```javascript
+// Check if access token exists
+const accessToken = pm.environment.get("accessToken");
+const refreshToken = pm.environment.get("refreshToken");
+
+if (!accessToken && refreshToken) {
+    // Auto refresh token
+    const refreshRequest = {
+        url: pm.environment.get("baseUrl") + "/api/auth/refresh",
+        method: 'POST',
         header: {
-            "Content-Type": "application/json"
+            'Content-Type': 'application/json'
         },
         body: {
-            mode: "raw",
+            mode: 'raw',
             raw: JSON.stringify({
-                "username": "admin",
-                "password": "password123"
+                "refreshToken": refreshToken
             })
         }
-    }, function(err, response) {
-        if (!err && response.code === 200) {
-            const responseJson = response.json();
-            pm.environment.set("jwt_token", responseJson.accessToken);
-            pm.environment.set("refresh_token", responseJson.refreshToken);
+    };
+    
+    pm.sendRequest(refreshRequest, function (err, response) {
+        if (err) {
+            console.log("Refresh token failed:", err);
+        } else {
+            const jsonData = response.json();
+            if (jsonData.accessToken) {
+                pm.environment.set("accessToken", jsonData.accessToken);
+                pm.environment.set("refreshToken", jsonData.refreshToken);
+                console.log("Token refreshed successfully");
+            }
         }
     });
 }
 ```
 
-### Test Script để lưu token
-```javascript
-// Lưu tokens sau khi login thành công
-if (pm.response.code === 200) {
-    const responseJson = pm.response.json();
-    if (responseJson.accessToken) {
-        pm.environment.set("jwt_token", responseJson.accessToken);
-        pm.environment.set("refresh_token", responseJson.refreshToken);
-        pm.test("Token saved successfully", function () {
-            pm.expect(responseJson.accessToken).to.not.be.undefined;
-        });
-    }
-}
+## Sample Postman Collection
+
+### Collection Structure:
+```
+📁 OEM EV Warranty API
+├── 📁 Auth
+│   ├── 🔑 Login (Admin)
+│   ├── 🔑 Login (EVM Staff) 
+│   ├── 🔑 Login (SC Staff)
+│   ├── 🔑 Login (SC Technician)
+│   ├── 🔑 Login (Customer)
+│   ├── 📝 Register Customer
+│   ├── 🔄 Refresh Token
+│   ├── ✅ Validate Token
+│   └── 🚪 Logout
+├── 📁 Vehicles
+│   ├── 📋 Get All Vehicles
+│   ├── 👁️ Get Vehicle by ID
+│   ├── ➕ Create Vehicle
+│   ├── ✏️ Update Vehicle
+│   └── ❌ Delete Vehicle
+├── 📁 Customers
+│   ├── 📋 Get All Customers
+│   ├── 👁️ Get Customer by ID
+│   ├── 👤 Get My Profile
+│   ├── ➕ Create Customer
+│   └── ✏️ Update Customer
+├── 📁 Parts
+├── 📁 Warranty Claims
+└── 📁 Service Histories
 ```
 
-## Error Responses
+## Default Test Accounts
 
-### 400 Bad Request
+### Admin Account
 ```json
 {
-  "error": "Invalid request data",
-  "details": "Username is required"
+  "username": "admin",
+  "password": "password123"
 }
 ```
+**Role:** ADMIN  
+**Permissions:** Full access to all endpoints
+
+### EVM Staff Account  
+```json
+{
+  "username": "evm_staff",
+  "password": "password123"
+}
+```
+**Role:** EVM_STAFF  
+**Permissions:** Vehicles, Parts (CRUD), Customers (Read)
+
+### SC Staff Account
+```json
+{
+  "username": "sc_staff", 
+  "password": "password123"
+}
+```
+**Role:** SC_STAFF  
+**Permissions:** All except user management
+
+### SC Technician Account
+```json
+{
+  "username": "sc_tech",
+  "password": "password123"
+}
+```
+**Role:** SC_TECHNICIAN  
+**Permissions:** Warranty Claims, Service Histories, Vehicles (Read)
+
+### Customer Account
+```json
+{
+  "username": "customer",
+  "password": "password123"
+}
+```
+**Role:** CUSTOMER  
+**Permissions:** Own data only
+
+## Common Error Responses
 
 ### 401 Unauthorized
 ```json
 {
-  "error": "Invalid credentials"
+  "timestamp": "2024-10-13T10:15:30.000+00:00",
+  "status": 401,
+  "error": "Unauthorized", 
+  "message": "JWT token is missing or invalid",
+  "path": "/api/vehicles"
 }
 ```
 
 ### 403 Forbidden
 ```json
 {
-  "error": "Access denied"
+  "timestamp": "2024-10-13T10:15:30.000+00:00",
+  "status": 403,
+  "error": "Forbidden",
+  "message": "Access denied. Insufficient permissions",
+  "path": "/api/admin/users"
 }
 ```
 
-### 500 Internal Server Error
+### 422 Token Expired
 ```json
 {
-  "error": "Internal server error"
+  "timestamp": "2024-10-13T10:15:30.000+00:00",
+  "status": 422,
+  "error": "Unprocessable Entity",
+  "message": "JWT token has expired",
+  "path": "/api/vehicles"
 }
 ```
 
-## Default Users
+## Tips & Best Practices
 
-### Admin User
-```
-Username: admin
-Password: admin123
-Role: ADMIN
-```
+### 1. Token Management
+- Always save `accessToken` và `refreshToken` từ login response
+- Sử dụng environment variables trong Postman
+- Implement auto-refresh mechanism
 
-### Staff User
-```
-Username: staff
-Password: staff123
-Role: STAFF
-```
+### 2. Testing Different Roles
+- Tạo separate requests cho mỗi role
+- Use descriptive names: "Login (Admin)", "Login (Customer)"
+- Test permissions thoroughly
 
-### Customer User
-```
-Username: customer
-Password: customer123
-Role: CUSTOMER
-```
+### 3. Error Handling
+- Always check response status codes
+- Handle 401/403 errors gracefully
+- Implement retry logic for expired tokens
 
-## Role Permissions
+### 4. Security
+- Không hardcode tokens trong requests
+- Use environment variables
+- Clear tokens khi logout
 
-| Role | Description |
-|------|-------------|
-| ADMIN | Full access to all resources |
-| STAFF | Access to vehicles, parts, service histories, warranty claims |
-| CUSTOMER | Access to own vehicles and warranty claims only |
-
-## Usage Flow
-
-1. **Login** để lấy JWT tokens
-2. **Lưu access token** vào environment variable
-3. **Sử dụng token** trong Authorization header cho các API khác
-4. **Refresh token** khi access token hết hạn (15 phút)
-5. **Logout** khi cần đăng xuất
-
-## Security Notes
-
-- Access token có thời hạn 15 phút
-- Refresh token có thời hạn 7 ngày
-- Tokens được lưu trong database và có thể bị vô hiệu hóa
-- Password được mã hóa bằng BCrypt
-- Tất cả endpoints authentication đều stateless
+### 5. Debugging
+- Check console logs for token values
+- Verify token format (should start with "eyJ")
+- Use jwt.io để decode và kiểm tra token content

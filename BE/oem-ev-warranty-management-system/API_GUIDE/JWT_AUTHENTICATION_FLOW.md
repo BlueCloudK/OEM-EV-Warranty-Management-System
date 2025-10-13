@@ -10,27 +10,33 @@ Hệ thống OEM EV Warranty Management sử dụng JWT (JSON Web Token) để x
    - Có thể CRUD tất cả resources
    - Truy cập tất cả endpoints
    - Quản lý users và roles
+   - Duy nhất có quyền DELETE hầu hết resources
 
 2. **EVM_STAFF** - Nhân viên nhà sản xuất xe điện
-   - CRUD vehicles, parts
-   - Xem customers
-   - Không thể quản lý warranty claims và service histories
+   - CRUD vehicles và parts (trừ DELETE parts - chỉ ADMIN)
+   - CRU customers (không DELETE)
+   - **Workflow**: Xem xét và chấp nhận/từ chối warranty claims
+   - **Không có access**: Service histories
 
 3. **SC_STAFF** - Nhân viên trung tâm bảo hành
    - CRUD customers, vehicles, warranty claims, service histories
-   - Xem parts (read-only trong thực tế)
+   - READ parts (không thể CUD parts)
+   - **Workflow**: Tạo warranty claims cho khách hàng
    - Quản lý toàn bộ quy trình bảo hành
 
 4. **SC_TECHNICIAN** - Kỹ thuật viên trung tâm bảo hành
-   - Xem vehicles
-   - CRUD warranty claims và service histories
-   - Không thể quản lý customers và parts
+   - READ vehicles, parts
+   - RU warranty claims (không thể CREATE/DELETE)
+   - CRUD service histories
+   - **Workflow**: Xử lý warranty claims (start/complete processing)
+   - **Không có access**: Customers management
 
 5. **CUSTOMER** - Khách hàng
-   - Chỉ xem vehicles của mình
-   - Tạo và xem warranty claims của mình
-   - Xem service histories của vehicles mình sở hữu
-   - Không thể xem dữ liệu của khách hàng khác
+   - READ vehicles của mình (qua `/my-vehicles`)
+   - READ parts information
+   - CR warranty claims của mình (không thể UPDATE/DELETE)
+   - READ service histories của vehicles mình sở hữu
+   - Self-service: Update profile qua `/profile`
 
 ## 🚀 Flow Authentication (Đăng nhập)
 
@@ -39,7 +45,7 @@ Hệ thống OEM EV Warranty Management sử dụng JWT (JSON Web Token) để x
 POST /api/auth/login
 Body: {
   "username": "admin",
-  "password": "password123"
+  "password": "admin123"
 }
 ```
 
@@ -98,15 +104,15 @@ JwtAuthenticationFilter.doFilterInternal()
   ↓
 SecurityFilterChain kiểm tra @PreAuthorize
   ↓
-Controller method được gọi
+Controller method được gọi nếu có quyền
 ```
 
 ### 3. Method-level Security
 ```java
 @PostMapping("/vehicles")
-@PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF')")
+@PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF')")
 public ResponseEntity<VehicleResponseDTO> createVehicle(@RequestBody VehicleRequestDTO request) {
-    // Code chỉ chạy nếu user có role ADMIN, EVM_STAFF hoặc SC_STAFF
+    // Code chỉ chạy nếu user có role ADMIN hoặc EVM_STAFF
 }
 ```
 
@@ -128,8 +134,6 @@ public ResponseEntity<?> createVehicle(@RequestBody VehicleRequestDTO request) {
         // Logic cho Admin
     } else if (SecurityUtil.hasRole("EVM_STAFF")) {
         // Logic cho EVM Staff
-    } else if (SecurityUtil.hasRole("SC_STAFF")) {
-        // Logic cho SC Staff
     }
 }
 ```
@@ -203,153 +207,110 @@ JwtService.isTokenValid()
 4. Validate username
 ```
 
-## 📱 API Endpoints Security Matrix
+## 📱 API Endpoints Security Matrix (CHÍNH XÁC)
 
 | Endpoint | ADMIN | EVM_STAFF | SC_STAFF | SC_TECHNICIAN | CUSTOMER |
 |----------|-------|-----------|----------|---------------|----------|
-| `GET /api/vehicles` | ✅ | ✅ | ✅ | ✅ | ❌ |
-| `POST /api/vehicles` | ✅ | ✅ | ✅ | ❌ | ❌ |
-| `GET /api/vehicles/{id}` | ✅ | ✅ | ✅ | ✅ | ✅ (own only) |
+| **VEHICLES** |
+| `GET /api/vehicles` | ✅ | ✅ | ✅ | ❌ | ❌ |
+| `POST /api/vehicles` | ✅ | ✅ | ❌ | ❌ | ❌ |
+| `GET /api/vehicles/{id}` | ✅ | ✅ | ✅ | ❌ | ✅ (own only) |
+| `PUT /api/vehicles/{id}` | ✅ | ✅ | ✅ | ❌ | ❌ |
+| `DELETE /api/vehicles/{id}` | ✅ | ✅ | ❌ | ❌ | ❌ |
 | `GET /api/vehicles/my-vehicles` | ❌ | ❌ | ❌ | ❌ | ✅ |
+| `GET /api/vehicles/by-customer/{id}` | ✅ | ✅ | ✅ | ❌ | ❌ |
+| `GET /api/vehicles/by-vin` | ✅ | ✅ | ✅ | ❌ | ❌ |
+| **PARTS** |
 | `GET /api/parts` | ✅ | ✅ | ✅ | ❌ | ❌ |
-| `POST /api/parts` | ✅ | ✅ | ✅ | ❌ | ❌ |
+| `GET /api/parts/{id}` | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `POST /api/parts` | ✅ | ✅ | ❌ | ❌ | ❌ |
+| `PUT /api/parts/{id}` | ✅ | ✅ | ❌ | ❌ | ❌ |
+| `DELETE /api/parts/{id}` | ✅ | ❌ | ❌ | ❌ | ❌ |
+| `GET /api/parts/by-vehicle/{id}` | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **CUSTOMERS** |
 | `GET /api/customers` | ✅ | ✅ | ✅ | ❌ | ❌ |
-| `GET /api/customers/me` | ✅ | ❌ | ✅ | ✅ | ✅ |
-| `POST /api/warranty-claims` | ✅ | ❌ | ✅ | ✅ | ✅ (own only) |
-| `GET /api/warranty-claims` | ✅ | ❌ | ✅ | ✅ | ❌ |
-| `POST /api/service-histories` | ✅ | ❌ | ✅ | ✅ | ❌ |
+| `GET /api/customers/{id}` | ✅ | ✅ | ✅ | ❌ | ❌ |
+| `POST /api/customers` | ✅ | ✅ | ✅ | ❌ | ❌ |
+| `PUT /api/customers/{id}` | ✅ | ✅ | ✅ | ❌ | ❌ |
+| `DELETE /api/customers/{id}` | ✅ | ❌ | ❌ | ❌ | ❌ |
+| `PUT /api/customers/profile` | ❌ | ❌ | ❌ | ❌ | ✅ |
+| `GET /api/customers/search` | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `GET /api/customers/by-email` | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `GET /api/customers/by-phone` | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **WARRANTY CLAIMS** |
+| `GET /api/warranty-claims` | ✅ | ✅ | ✅ | ❌ | ❌ |
+| `GET /api/warranty-claims/{id}` | ✅ | ✅ | ✅ | ❌ | ❌ |
+| `POST /api/warranty-claims` | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `PUT /api/warranty-claims/{id}` | ✅ | ✅ | ✅ | ❌ | ❌ |
+| `DELETE /api/warranty-claims/{id}` | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **WORKFLOW ENDPOINTS** |
+| `POST /api/warranty-claims/sc-create` | ❌ | ❌ | ✅ | ❌ | ❌ |
+| `PATCH /api/warranty-claims/{id}/evm-accept` | ❌ | ✅ | ❌ | ❌ | ❌ |
+| `PATCH /api/warranty-claims/{id}/evm-reject` | ❌ | ✅ | ❌ | ❌ | ❌ |
+| `PATCH /api/warranty-claims/{id}/tech-start` | ❌ | ❌ | ❌ | ✅ | ❌ |
+| `PATCH /api/warranty-claims/{id}/tech-complete` | ❌ | ❌ | ❌ | ✅ | ❌ |
+| `GET /api/warranty-claims/evm-pending` | ❌ | ✅ | ❌ | ❌ | ❌ |
+| `GET /api/warranty-claims/tech-pending` | ❌ | ❌ | ❌ | ✅ | ❌ |
+| **SERVICE HISTORIES** |
 | `GET /api/service-histories` | ✅ | ❌ | ✅ | ✅ | ❌ |
-| `GET /api/admin/**` | ✅ | ❌ | ❌ | ❌ | ❌ |
+| `GET /api/service-histories/{id}` | ✅ | ❌ | ✅ | ✅ | ✅ (own vehicles) |
+| `POST /api/service-histories` | ✅ | ❌ | ✅ | ✅ | ❌ |
+| `PUT /api/service-histories/{id}` | ✅ | ❌ | ✅ | ✅ | ❌ |
+| `DELETE /api/service-histories/{id}` | ✅ | ❌ | ❌ | ❌ | ❌ |
 
-## 🚨 Error Handling Flow
+## 🚨 Lưu ý quan trọng về Security
 
-### 1. No Token
-```
-Request without Authorization header → 401 Unauthorized
-```
+### 1. Data Isolation cho Customer
+- Customer chỉ truy cập được data của vehicles mình sở hữu
+- Business logic filtering được implement tại service layer
+- JWT claims chứa user info để xác định ownership
 
-### 2. Invalid Token
-```
-Invalid/Expired JWT → JwtAuthenticationFilter → 401 Unauthorized
-```
+### 2. Workflow Security
+- Warranty claim workflow có strict role-based transitions
+- Chỉ specific roles mới có thể thực hiện workflow actions
+- Status transitions được validate trước khi thực hiện
 
-### 3. Insufficient Permissions
-```
-@PreAuthorize fails → 403 Forbidden
-```
+### 3. Sensitive Information Protection
+- VIN lookup chỉ cho phép ADMIN/STAFF roles
+- Customer data chỉ accessible cho authorized roles
+- Audit logging cho tất cả critical operations
 
-### 4. Database Connection Error
-```
-Cannot connect to MySQL → Application startup fails
-Fix: Check MySQL service, credentials, database exists
-```
+### 4. Token Security
+- Access token có thời gian expire ngắn
+- Refresh token được store và validate trong database
+- Automatic token refresh khi access token hết hạn
 
-## 🧪 Testing Flow
+## 🔧 Error Handling
 
-### 1. Test Authentication
-```bash
-# Login
-curl -X POST http://localhost:8080/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"password"}'
-
-# Response
+### 401 Unauthorized
+```json
 {
-  "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
-  "refreshToken": "eyJhbGciOiJIUzI1NiJ9...",
-  "message": "Login successful",
-  "userId": 1,
-  "username": "admin", 
-  "roleName": "ADMIN"
+  "timestamp": "2024-10-13T10:15:30.000+00:00",
+  "status": 401,
+  "error": "Unauthorized",
+  "message": "JWT token is missing or invalid",
+  "path": "/api/vehicles"
 }
 ```
 
-### 2. Test Authorization
-```bash
-# Use token in subsequent requests
-curl -X GET http://localhost:8080/api/me \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9..."
-
-# Response
+### 403 Forbidden
+```json
 {
-  "username": "admin",
-  "roles": ["ROLE_ADMIN"],
-  "isAuthenticated": true
+  "timestamp": "2024-10-13T10:15:30.000+00:00",
+  "status": 403,
+  "error": "Forbidden", 
+  "message": "Access denied. Insufficient permissions",
+  "path": "/api/vehicles"
 }
 ```
 
-### 3. Test Protected Endpoint
-```bash
-# Create vehicle (ADMIN/EVM_STAFF/SC_STAFF only)
-curl -X POST http://localhost:8080/api/vehicles \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9..." \
-  -H "Content-Type: application/json" \
-  -d '{"vehicleName":"Tesla Model 3","customerId":"123"}'
+### 400 Bad Request (Invalid Credentials)
+```json
+{
+  "timestamp": "2024-10-13T10:15:30.000+00:00",
+  "status": 400,
+  "error": "Bad Request",
+  "message": "Invalid username or password",
+  "path": "/api/auth/login"
+}
 ```
-
-## 🔧 Configuration Files
-
-### 1. application.properties
-```properties
-# Database
-spring.datasource.url=jdbc:mysql://localhost:3306/warranty_db
-spring.datasource.username=root
-spring.datasource.password=1234
-
-# JWT
-jwt.secret-key=mySecretKeyForJWTTokenGeneration123456789SecureKey
-```
-
-### 2. SecurityConfig.java
-- Cấu hình Spring Security
-- JWT Filter chain
-- Endpoint permissions theo 5 roles
-- Password encoder
-
-### 3. JwtService.java
-- Generate tokens
-- Validate tokens
-- Extract claims
-
-## 📝 Key Classes & Their Roles
-
-### Security Layer
-- `SecurityConfig.java` - Spring Security configuration với 5 roles
-- `JwtAuthenticationFilter.java` - Intercept requests, validate JWT
-- `CustomUserDetailsService.java` - Load user from database
-- `SecurityUtil.java` - Utility to get current user info
-
-### Service Layer
-- `AuthService.java` - Authentication business logic
-- `JwtService.java` - JWT token operations
-- `UserService.java` - User management
-
-### Controller Layer
-- `AuthController.java` - Login/logout endpoints
-- `UserInfoController.java` - Current user info endpoints
-- `VehicleController.java` - Vehicle CRUD với @PreAuthorize cho 5 roles
-- `WarrantyClaimController.java` - Warranty claims với role-based access
-- `ServiceHistoryController.java` - Service histories với role-based access
-
-### Data Layer
-- `User.java` - User entity
-- `Role.java` - Role entity với 5 roles
-- `Token.java` - Refresh token entity
-- `UserRepository.java` - User database operations
-
-## 🎯 Summary
-
-1. **Login** → Get JWT tokens
-2. **Include token** in Authorization header for protected endpoints
-3. **JWT Filter** validates token và sets user context
-4. **@PreAuthorize** checks permissions theo 5 roles
-5. **SecurityUtil** provides current user info in controllers
-6. **Refresh** tokens when access token expires
-
-Hệ thống đảm bảo:
-- ✅ Stateless authentication với JWT
-- ✅ Role-based authorization với 5 distinct roles
-- ✅ Secure password storage với BCrypt
-- ✅ Token refresh mechanism
-- ✅ Comprehensive logging và audit trail
-- ✅ Fine-grained permissions cho từng role

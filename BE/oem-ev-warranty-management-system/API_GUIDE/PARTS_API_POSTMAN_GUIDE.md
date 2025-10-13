@@ -59,7 +59,7 @@ Authorization: Bearer {jwt_token}
 ### 2. Get Part by ID
 **GET** `/api/parts/{id}`
 
-**Permissions:** ADMIN, EVM_STAFF, SC_STAFF only
+**Permissions:** All authenticated users (ADMIN, EVM_STAFF, SC_STAFF, SC_TECHNICIAN, CUSTOMER)
 
 **Path Parameters:**
 - `id`: Part ID
@@ -93,7 +93,7 @@ Authorization: Bearer {jwt_token}
 ### 3. Create Part
 **POST** `/api/parts`
 
-**Permissions:** ADMIN, EVM_STAFF, SC_STAFF only
+**Permissions:** ADMIN, EVM_STAFF only
 
 **Request Body:**
 ```json
@@ -131,7 +131,7 @@ Authorization: Bearer {jwt_token}
 ### 4. Update Part
 **PUT** `/api/parts/{id}`
 
-**Permissions:** ADMIN, EVM_STAFF, SC_STAFF only
+**Permissions:** ADMIN, EVM_STAFF only
 
 **Path Parameters:**
 - `id`: Part ID
@@ -151,23 +151,29 @@ Authorization: Bearer {jwt_token}
 }
 ```
 
+**Response Success (200):** Same as Get Part by ID
+
 ### 5. Delete Part
 **DELETE** `/api/parts/{id}`
 
-**Permissions:** ADMIN, EVM_STAFF only
+**Permissions:** ADMIN only
 
 **Path Parameters:**
 - `id`: Part ID
 
-**Response Success (204):** No content
+**Response Success (204):** No Content
 
-### 6. Search Parts by Category
-**GET** `/api/parts/category/{category}`
+### 6. Get Parts by Vehicle ID
+**GET** `/api/parts/by-vehicle/{vehicleId}`
 
-**Permissions:** ADMIN, EVM_STAFF, SC_STAFF only
+**Permissions:** All authenticated users (ADMIN, EVM_STAFF, SC_STAFF, SC_TECHNICIAN, CUSTOMER)
 
 **Path Parameters:**
-- `category`: Part category (BATTERY, MOTOR, BRAKE, etc.)
+- `vehicleId`: Vehicle ID
+
+**Query Parameters:**
+- `page` (optional): Số trang (default: 0)
+- `size` (optional): Kích thước trang (default: 10)
 
 **Response Success (200):**
 ```json
@@ -177,12 +183,23 @@ Authorization: Bearer {jwt_token}
       "partId": "PART-BAT-001",
       "partName": "Tesla Model 3 Battery Pack",
       "partNumber": "1234567890",
+      "partDescription": "Lithium-ion battery pack for Tesla Model 3",
       "partCategory": "BATTERY",
       "partPrice": 15000.00,
       "partQuantity": 25,
-      "isActive": true
+      "partSupplier": "Tesla Inc.",
+      "partWarrantyPeriod": 96,
+      "isActive": true,
+      "createdDate": "2024-01-15",
+      "lastUpdated": "2024-10-01"
     }
-  ]
+  ],
+  "pageNumber": 0,
+  "pageSize": 10,
+  "totalElements": 5,
+  "totalPages": 1,
+  "first": true,
+  "last": true
 }
 ```
 
@@ -192,6 +209,14 @@ Authorization: Bearer {jwt_token}
 ```
 Method: GET
 URL: http://localhost:8080/api/parts?page=0&size=10&search=Tesla
+Headers:
+  Authorization: Bearer {{jwt_token}}
+```
+
+### Get Part by ID
+```
+Method: GET
+URL: http://localhost:8080/api/parts/PART-BAT-001
 Headers:
   Authorization: Bearer {{jwt_token}}
 ```
@@ -217,25 +242,106 @@ Body (raw JSON):
 }
 ```
 
+### Update Part
+```
+Method: PUT
+URL: http://localhost:8080/api/parts/PART-BAT-001
+Headers:
+  Authorization: Bearer {{jwt_token}}
+  Content-Type: application/json
+Body (raw JSON):
+{
+  "partName": "Updated Part Name",
+  "partNumber": "1234567890",
+  "partDescription": "Updated description",
+  "partCategory": "BATTERY",
+  "partPrice": 16000.00,
+  "partQuantity": 30,
+  "partSupplier": "Tesla Inc.",
+  "partWarrantyPeriod": 96,
+  "isActive": true
+}
+```
+
+### Delete Part
+```
+Method: DELETE
+URL: http://localhost:8080/api/parts/PART-BAT-001
+Headers:
+  Authorization: Bearer {{jwt_token}}
+```
+
+### Get Parts by Vehicle ID
+```
+Method: GET
+URL: http://localhost:8080/api/parts/by-vehicle/1?page=0&size=10
+Headers:
+  Authorization: Bearer {{jwt_token}}
+```
+
 ## Error Responses
+
+### 400 Bad Request (Validation Error)
+```json
+{
+  "timestamp": "2024-10-13T10:15:30.000+00:00",
+  "status": 400,
+  "error": "Bad Request",
+  "message": "Part name must be between 5 and 100 characters",
+  "path": "/api/parts"
+}
+```
 
 ### 403 Forbidden
 ```json
 {
-  "error": "Access denied",
-  "message": "Insufficient permissions to access parts data"
+  "timestamp": "2024-10-13T10:15:30.000+00:00",
+  "status": 403,
+  "error": "Forbidden",
+  "message": "Access denied. Only ADMIN and EVM_STAFF can create parts",
+  "path": "/api/parts"
 }
 ```
 
 ### 404 Not Found
 ```json
 {
-  "error": "Part not found",
-  "message": "Part with ID PART-001 does not exist"
+  "timestamp": "2024-10-13T10:15:30.000+00:00",
+  "status": 404,
+  "error": "Not Found",
+  "message": "Part with ID PART-001 does not exist",
+  "path": "/api/parts/PART-001"
 }
 ```
 
-## Note on Access Restrictions
-- **SC_TECHNICIAN** và **CUSTOMER** không có quyền truy cập vào Parts API theo SecurityConfig
-- Chỉ **ADMIN**, **EVM_STAFF**, và **SC_STAFF** mới có thể truy cập parts data
-- **SC_STAFF** có read-only access trong thực tế, nhưng API level cho phép CRUD
+## Validation Rules
+
+### Part Name Field
+- **Required:** Yes
+- **Length:** 5-100 characters
+- **Description:** Tên part phải rõ ràng và mô tả
+
+### Part Number Field
+- **Required:** Yes
+- **Length:** 5-50 characters
+- **Pattern:** Alphanumeric và dấu gạch ngang
+- **Unique:** Part number phải unique trong hệ thống
+
+### Part Price Field
+- **Required:** Yes
+- **Type:** Positive number
+- **Minimum:** 0.01
+- **Description:** Giá part tính bằng USD
+
+### Part Quantity Field
+- **Required:** Yes
+- **Type:** Non-negative integer
+- **Minimum:** 0
+- **Description:** Số lượng part trong kho
+
+### Warranty Period Field
+- **Required:** Yes
+- **Type:** Positive integer
+- **Unit:** Months
+- **Range:** 1-120 months
+- **Description:** Thời gian bảo hành part
