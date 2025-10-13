@@ -6,12 +6,20 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import Logout from "./pages/Logout";
 import Customer from "./Roles/Customer/Customer";
-import SCStaff from "./Roles/SCStaff/SCStaff";
 import Booking from "./Roles/Customer/Booking"; 
 import WarrantyResult from "./Roles/Customer/WarrantyResult";
 import WarrantyHistory from "./Roles/Customer/WarrantyHistory";
 import PartsWarranty from "./Roles/Customer/PartsWarranty";
+//
+import SCStaff from "./Roles/SCStaff/SCStaff";
+import CustomerList from "./Roles/SCStaff/Profile_Management/CustomerList";
+import CreateCustomer from "./Roles/SCStaff/Profile_Management/CreateCustomer";
+import UpdateCustomers from "./Roles/SCStaff/Profile_Management/UpdateCustomers";
+//
+import Admin from "./Roles/Admin";
+
 
 export default function App() {
   const location = useLocation();
@@ -24,6 +32,7 @@ export default function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/logout" element={<Logout />} />
         // Customer
         <Route path="/customer/dashboard" element={<Customer />} />
         <Route path="/booking" element={<Booking />} /> 
@@ -32,8 +41,15 @@ export default function App() {
         <Route path="/customer/parts-warranty" element={<PartsWarranty />} />
         
         // SCStaff
+        <Route path="/scstaff" element={<SCStaff />} />
         <Route path="/scstaff/dashboard" element={<SCStaff />} />
-        
+        <Route path="/scstaff/customers/list" element={<CustomerList />} />
+        <Route path="/scstaff/customers/create" element={<CreateCustomer />} />
+        <Route path="/scstaff/customers/edit/:id" element={<UpdateCustomers />} />
+        // Admin
+        <Route path="/admin" element={<Admin />} />
+        <Route path="/admin/dashboard" element={<Admin />} />
+
         // Add fallback dashboard route
         <Route path="/dashboard" element={<Customer />} />
       </Routes>

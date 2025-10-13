@@ -23,7 +23,6 @@ export default function Login() {
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
-          "ngrok-skip-browser-warning": "true",
         },
         body: JSON.stringify({ username, password }),
       });

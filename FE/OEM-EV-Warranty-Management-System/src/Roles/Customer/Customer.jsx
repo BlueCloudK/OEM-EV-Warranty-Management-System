@@ -7,6 +7,12 @@ export default function Customer() {
 
   const features = [
     {
+      title: "Xem thông tin cá nhân",
+      description: "Quản lý và xem chi tiết thông tin tài khoản cá nhân.",
+      image: "https://cdn-icons-gif.flaticon.com/10635/10635873.gif",
+      path: "/customer/profile",
+    },
+    {
       title: "Đặt lịch bảo dưỡng / bảo hành",
       description: "Đặt lịch hẹn tại trung tâm dịch vụ nhanh chóng và tiện lợi.",
       image: "https://cdn-icons-gif.flaticon.com/19013/19013045.gif",
