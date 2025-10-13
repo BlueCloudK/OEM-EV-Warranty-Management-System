@@ -1,7 +1,7 @@
 # Warranty Claims API Guide
 
 ## Overview
-Warranty Claims API cho hệ thống OEM EV Warranty Management với JWT authentication và role-based authorization.
+Warranty Claims API cho hệ thống OEM EV Warranty Management với JWT authentication, role-based authorization và workflow management.
 
 ## Base URL
 ```
@@ -16,37 +16,47 @@ http://localhost:8080/api/warranty-claims
 Authorization: Bearer {jwt_token}
 ```
 
+## Warranty Claim Status Flow
+```
+SUBMITTED → SC_REVIEW → PROCESSING → COMPLETED
+     ↓         ↓            ↓
+  REJECTED  REJECTED    REJECTED
+```
+
+**Status Descriptions:**
+- `SUBMITTED`: SC Staff đã tạo claim, chờ EVM xem xét
+- `SC_REVIEW`: EVM đã chấp nhận, chờ Technician xử lý
+- `PROCESSING`: Technician đang xử lý
+- `COMPLETED`: Đã hoàn tất
+- `REJECTED`: Bị từ chối (có thể ở bất kỳ bước nào)
+
 ## Endpoints
 
 ### 1. Get All Warranty Claims
 **GET** `/api/warranty-claims`
 
-**Permissions:** ADMIN, SC_STAFF, SC_TECHNICIAN only
+**Permissions:** ADMIN, SC_STAFF, EVM_STAFF only
 
 **Query Parameters:**
 - `page` (optional): Số trang (default: 0)
 - `size` (optional): Kích thước trang (default: 10)
-- `search` (optional): Tìm kiếm theo description hoặc claim number
 
 **Response Success (200):**
 ```json
 {
   "content": [
     {
-      "claimId": 1,
-      "claimNumber": "WC-2024-001",
-      "claimDescription": "Battery replacement under warranty",
-      "claimDate": "2024-10-09",
-      "claimStatus": "PENDING",
+      "warrantyClaimId": 1,
+      "description": "Battery replacement under warranty",
+      "claimDate": "2024-10-09T10:30:00.000+00:00",
+      "resolutionDate": null,
+      "status": "SUBMITTED",
+      "partId": 1,
+      "partName": "Battery Pack",
       "vehicleId": 1,
       "vehicleVin": "1HGBH41JXMN109186",
-      "vehicleName": "Tesla Model 3",
-      "customerId": "123e4567-e89b-12d3-a456-426614174000",
-      "customerName": "John Doe",
-      "estimatedCost": 5000.00,
-      "actualCost": null,
-      "approvedDate": null,
-      "completedDate": null
+      "vehicleBrand": "Tesla",
+      "vehicleModel": "Model 3"
     }
   ],
   "pageNumber": 0,
@@ -61,9 +71,7 @@ Authorization: Bearer {jwt_token}
 ### 2. Get Warranty Claim by ID
 **GET** `/api/warranty-claims/{id}`
 
-**Permissions:** 
-- ADMIN, SC_STAFF, SC_TECHNICIAN: Any claim
-- CUSTOMER: Own claims only
+**Permissions:** ADMIN, SC_STAFF, EVM_STAFF only
 
 **Path Parameters:**
 - `id`: Warranty Claim ID
@@ -71,198 +79,431 @@ Authorization: Bearer {jwt_token}
 **Response Success (200):**
 ```json
 {
-  "claimId": 1,
-  "claimNumber": "WC-2024-001",
-  "claimDescription": "Battery replacement under warranty",
-  "claimDate": "2024-10-09",
-  "claimStatus": "PENDING",
+  "warrantyClaimId": 1,
+  "description": "Battery replacement under warranty",
+  "claimDate": "2024-10-09T10:30:00.000+00:00",
+  "resolutionDate": null,
+  "status": "SUBMITTED",
+  "partId": 1,
+  "partName": "Battery Pack",
   "vehicleId": 1,
   "vehicleVin": "1HGBH41JXMN109186",
-  "vehicleName": "Tesla Model 3",
-  "customerId": "123e4567-e89b-12d3-a456-426614174000",
-  "customerName": "John Doe",
-  "estimatedCost": 5000.00,
-  "actualCost": null,
-  "approvedDate": null,
-  "completedDate": null,
-  "notes": "Customer reported battery degradation",
-  "createdBy": "customer123",
-  "createdDate": "2024-10-09T10:30:00"
+  "vehicleBrand": "Tesla",
+  "vehicleModel": "Model 3"
 }
 ```
 
-### 3. Create Warranty Claim
+### 3. Create Warranty Claim (General)
 **POST** `/api/warranty-claims`
 
-**Permissions:** ADMIN, SC_STAFF, SC_TECHNICIAN, CUSTOMER
+**Permissions:** CUSTOMER, ADMIN, SC_STAFF, EVM_STAFF
 
 **Request Body:**
 ```json
 {
-  "claimDescription": "Motor replacement under warranty",
-  "vehicleId": 1,
-  "estimatedCost": 8000.00,
-  "notes": "Customer reported unusual motor noise"
+  "description": "Battery replacement under warranty",
+  "partId": 1,
+  "vehicleId": 1
+}
+```
+
+**Response Success (201):** Same as Get Warranty Claim
+
+### 4. Update Warranty Claim
+**PUT** `/api/warranty-claims/{id}`
+
+**Permissions:** ADMIN, SC_STAFF, EVM_STAFF only
+
+**Path Parameters:**
+- `id`: Warranty Claim ID
+
+**Request Body:**
+```json
+{
+  "description": "Updated battery replacement description",
+  "partId": 1,
+  "vehicleId": 1
+}
+```
+
+**Response Success (200):** Same as Get Warranty Claim
+
+### 5. Update Claim Status (Manual)
+**PATCH** `/api/warranty-claims/{id}/status`
+
+**Permissions:** ADMIN, SC_STAFF, EVM_STAFF only
+
+**Path Parameters:**
+- `id`: Warranty Claim ID
+
+**Request Body:**
+```json
+{
+  "status": "COMPLETED"
+}
+```
+
+**Response Success (200):** Same as Get Warranty Claim
+
+### 6. Delete Warranty Claim
+**DELETE** `/api/warranty-claims/{id}`
+
+**Permissions:** ADMIN only
+
+**Path Parameters:**
+- `id`: Warranty Claim ID
+
+**Response Success (204):** No Content
+
+---
+
+## 🔄 WORKFLOW ENDPOINTS
+
+### 7. SC Staff Create Claim
+**POST** `/api/warranty-claims/sc-create`
+
+**Permissions:** SC_STAFF only
+
+**Description:** SC Staff tạo claim cho khách hàng với status SUBMITTED
+
+**Request Body:**
+```json
+{
+  "description": "Customer reported battery issues, needs replacement",
+  "partId": 1,
+  "vehicleId": 1
 }
 ```
 
 **Response Success (201):**
 ```json
 {
-  "claimId": 2,
-  "claimNumber": "WC-2024-002",
-  "claimDescription": "Motor replacement under warranty",
-  "claimDate": "2024-10-09",
-  "claimStatus": "PENDING",
+  "warrantyClaimId": 1,
+  "description": "Customer reported battery issues, needs replacement",
+  "claimDate": "2024-10-13T10:30:00.000+00:00",
+  "resolutionDate": null,
+  "status": "SUBMITTED",
+  "partId": 1,
+  "partName": "Battery Pack",
   "vehicleId": 1,
   "vehicleVin": "1HGBH41JXMN109186",
-  "vehicleName": "Tesla Model 3",
-  "customerId": "123e4567-e89b-12d3-a456-426614174000",
-  "customerName": "John Doe",
-  "estimatedCost": 8000.00,
-  "actualCost": null,
-  "createdBy": "current_user",
-  "createdDate": "2024-10-09T15:30:00"
+  "vehicleBrand": "Tesla",
+  "vehicleModel": "Model 3"
 }
 ```
 
-### 4. Update Warranty Claim
-**PUT** `/api/warranty-claims/{id}`
+### 8. EVM Accept Claim
+**PATCH** `/api/warranty-claims/{id}/evm-accept`
 
-**Permissions:** 
-- ADMIN, SC_STAFF: Full update (all fields)
-- SC_TECHNICIAN: Limited update (status, notes, actual cost)
-- CUSTOMER: Limited update (description, notes) for own claims only
+**Permissions:** EVM_STAFF only
+
+**Description:** EVM chấp nhận claim (SUBMITTED → SC_REVIEW)
 
 **Path Parameters:**
 - `id`: Warranty Claim ID
 
-**Request Body (ADMIN/SC_STAFF):**
+**Request Body (optional):**
 ```json
-{
-  "claimDescription": "Battery replacement under warranty - Updated",
-  "claimStatus": "APPROVED",
-  "estimatedCost": 5500.00,
-  "actualCost": 5200.00,
-  "notes": "Claim approved after technical review"
-}
+"Approved for warranty coverage - proceed with repair"
 ```
 
-**Request Body (SC_TECHNICIAN):**
-```json
-{
-  "claimStatus": "IN_PROGRESS",
-  "actualCost": 5200.00,
-  "notes": "Work in progress - battery testing completed"
-}
-```
+**Response Success (200):** Same as Get Warranty Claim with status = SC_REVIEW
 
-**Request Body (CUSTOMER - own claims only):**
-```json
-{
-  "claimDescription": "Battery replacement under warranty - Additional details",
-  "notes": "Updated description with more details"
-}
-```
+### 9. EVM Reject Claim
+**PATCH** `/api/warranty-claims/{id}/evm-reject`
 
-### 5. Delete Warranty Claim
-**DELETE** `/api/warranty-claims/{id}`
+**Permissions:** EVM_STAFF only
 
-**Permissions:** ADMIN, SC_STAFF only
+**Description:** EVM từ chối claim (SUBMITTED → REJECTED)
 
 **Path Parameters:**
 - `id`: Warranty Claim ID
 
-**Response Success (204):** No content
+**Query Parameters:**
+- `reason` (required): Lý do từ chối
 
-### 6. Get My Warranty Claims (Customer endpoint)
-**GET** `/api/warranty-claims/my-claims`
-
-**Permissions:** CUSTOMER only
-
-**Response Success (200):**
-```json
-{
-  "content": [
-    {
-      "claimId": 1,
-      "claimNumber": "WC-2024-001",
-      "claimDescription": "Battery replacement under warranty",
-      "claimDate": "2024-10-09",
-      "claimStatus": "PENDING",
-      "vehicleId": 1,
-      "vehicleVin": "1HGBH41JXMN109186",
-      "vehicleName": "Tesla Model 3",
-      "estimatedCost": 5000.00,
-      "actualCost": null
-    }
-  ]
-}
+**Example:**
+```
+PATCH /api/warranty-claims/1/evm-reject?reason=Out of warranty period
 ```
 
-### 7. Update Claim Status
-**PATCH** `/api/warranty-claims/{id}/status`
+**Response Success (200):** Same as Get Warranty Claim with status = REJECTED
 
-**Permissions:** ADMIN, SC_STAFF, SC_TECHNICIAN only
+### 10. Tech Start Processing
+**PATCH** `/api/warranty-claims/{id}/tech-start`
+
+**Permissions:** SC_TECHNICIAN only
+
+**Description:** Technician bắt đầu xử lý (SC_REVIEW → PROCESSING)
 
 **Path Parameters:**
 - `id`: Warranty Claim ID
 
-**Request Body:**
+**Request Body (optional):**
 ```json
-{
-  "status": "APPROVED",
-  "notes": "Claim approved after technical review"
-}
+"Started diagnostic and repair process"
 ```
 
-## Postman Collection Examples
+**Response Success (200):** Same as Get Warranty Claim with status = PROCESSING
 
-### Get All Warranty Claims
+### 11. Tech Complete Claim
+**PATCH** `/api/warranty-claims/{id}/tech-complete`
+
+**Permissions:** SC_TECHNICIAN only
+
+**Description:** Technician hoàn tất xử lý (PROCESSING → COMPLETED)
+
+**Path Parameters:**
+- `id`: Warranty Claim ID
+
+**Query Parameters:**
+- `completionNote` (required): Ghi chú hoàn tất
+
+**Example:**
 ```
-Method: GET
-URL: http://localhost:8080/api/warranty-claims?page=0&size=10&search=battery
-Headers:
-  Authorization: Bearer {{jwt_token}}
+PATCH /api/warranty-claims/1/tech-complete?completionNote=Battery replaced successfully, vehicle tested OK
 ```
 
-### Create Warranty Claim
+**Response Success (200):** Same as Get Warranty Claim with status = COMPLETED
+
+---
+
+## 📋 QUERY ENDPOINTS
+
+### 12. Get Claims by Status
+**GET** `/api/warranty-claims/by-status/{status}`
+
+**Permissions:** All authenticated users
+
+**Path Parameters:**
+- `status`: Warranty claim status (SUBMITTED, SC_REVIEW, PROCESSING, COMPLETED, REJECTED)
+
+**Query Parameters:**
+- `page` (optional): Số trang (default: 0)
+- `size` (optional): Kích thước trang (default: 10)
+
+**Example:**
+```
+GET /api/warranty-claims/by-status/SUBMITTED?page=0&size=10
+```
+
+**Response Success (200):** Paginated list of claims with specified status
+
+### 13. Get EVM Pending Claims
+**GET** `/api/warranty-claims/evm-pending`
+
+**Permissions:** EVM_STAFF only
+
+**Description:** Lấy claims cần EVM xử lý (status = SUBMITTED)
+
+**Query Parameters:**
+- `page` (optional): Số trang (default: 0)
+- `size` (optional): Kích thước trang (default: 10)
+
+**Response Success (200):** Paginated list of SUBMITTED claims
+
+### 14. Get Tech Pending Claims
+**GET** `/api/warranty-claims/tech-pending`
+
+**Permissions:** SC_TECHNICIAN only
+
+**Description:** Lấy claims cần Technician xử lý (status = SC_REVIEW hoặc PROCESSING)
+
+**Query Parameters:**
+- `page` (optional): Số trang (default: 0)
+- `size` (optional): Kích thước trang (default: 10)
+
+**Response Success (200):** Paginated list of SC_REVIEW and PROCESSING claims
+
+---
+
+## 🚀 Postman Collection Examples
+
+### SC Staff Create Claim
 ```
 Method: POST
-URL: http://localhost:8080/api/warranty-claims
+URL: http://localhost:8080/api/warranty-claims/sc-create
 Headers:
   Authorization: Bearer {{jwt_token}}
   Content-Type: application/json
 Body (raw JSON):
 {
-  "claimDescription": "New warranty claim",
-  "vehicleId": 1,
-  "estimatedCost": 3000.00,
-  "notes": "Initial claim submission"
+  "description": "Customer battery degradation issue",
+  "partId": 1,
+  "vehicleId": 1
 }
 ```
 
+### EVM Accept Claim
+```
+Method: PATCH
+URL: http://localhost:8080/api/warranty-claims/1/evm-accept
+Headers:
+  Authorization: Bearer {{jwt_token}}
+  Content-Type: application/json
+Body (raw JSON):
+"Approved - valid warranty claim"
+```
+
+### EVM Reject Claim
+```
+Method: PATCH
+URL: http://localhost:8080/api/warranty-claims/1/evm-reject?reason=Vehicle out of warranty period
+Headers:
+  Authorization: Bearer {{jwt_token}}
+```
+
+### Tech Start Processing
+```
+Method: PATCH
+URL: http://localhost:8080/api/warranty-claims/1/tech-start
+Headers:
+  Authorization: Bearer {{jwt_token}}
+  Content-Type: application/json
+Body (raw JSON):
+"Beginning battery diagnostics and replacement"
+```
+
+### Tech Complete Claim
+```
+Method: PATCH
+URL: http://localhost:8080/api/warranty-claims/1/tech-complete?completionNote=Battery replaced, all systems functioning normally
+Headers:
+  Authorization: Bearer {{jwt_token}}
+```
+
+### Get EVM Pending Claims
+```
+Method: GET
+URL: http://localhost:8080/api/warranty-claims/evm-pending?page=0&size=10
+Headers:
+  Authorization: Bearer {{jwt_token}}
+```
+
+### Get Tech Pending Claims
+```
+Method: GET
+URL: http://localhost:8080/api/warranty-claims/tech-pending?page=0&size=10
+Headers:
+  Authorization: Bearer {{jwt_token}}
+```
+
+### Get Claims by Status
+```
+Method: GET
+URL: http://localhost:8080/api/warranty-claims/by-status/COMPLETED?page=0&size=10
+Headers:
+  Authorization: Bearer {{jwt_token}}
+```
+
+---
+
+## 📊 Workflow Usage Examples
+
+### Complete Warranty Claim Flow
+
+1. **SC Staff tạo claim:**
+```bash
+POST /api/warranty-claims/sc-create
+# Status: SUBMITTED
+```
+
+2. **EVM xem danh sách cần xử lý:**
+```bash
+GET /api/warranty-claims/evm-pending
+```
+
+3. **EVM chấp nhận hoặc từ chối:**
+```bash
+# Chấp nhận
+PATCH /api/warranty-claims/1/evm-accept
+# Status: SC_REVIEW
+
+# Hoặc từ chối
+PATCH /api/warranty-claims/1/evm-reject?reason=...
+# Status: REJECTED
+```
+
+4. **Tech xem danh sách cần xử lý:**
+```bash
+GET /api/warranty-claims/tech-pending
+```
+
+5. **Tech bắt đầu xử lý:**
+```bash
+PATCH /api/warranty-claims/1/tech-start
+# Status: PROCESSING
+```
+
+6. **Tech hoàn tất:**
+```bash
+PATCH /api/warranty-claims/1/tech-complete?completionNote=...
+# Status: COMPLETED
+```
+
+---
+
+## Validation Rules
+
+### Description Field
+- **Required:** Yes
+- **Length:** 10-500 characters
+- **Description:** Mô tả chi tiết vấn đề warranty
+
+### Part ID Field
+- **Required:** Yes
+- **Type:** Positive number
+- **Description:** Must be existing Part ID
+
+### Vehicle ID Field
+- **Required:** Yes
+- **Type:** Positive number
+- **Description:** Must be existing Vehicle ID
+
+---
+
 ## Error Responses
 
-### 403 Forbidden
+### 400 Bad Request (Validation Error)
 ```json
 {
-  "error": "Access denied",
-  "message": "Insufficient permissions to access warranty claim data"
+  "timestamp": "2024-10-13T10:15:30.000+00:00",
+  "status": 400,
+  "error": "Bad Request",
+  "message": "Description must be between 10 and 500 characters",
+  "path": "/api/warranty-claims"
+}
+```
+
+### 403 Forbidden (Wrong Role)
+```json
+{
+  "timestamp": "2024-10-13T10:15:30.000+00:00", 
+  "status": 403,
+  "error": "Forbidden",
+  "message": "Access denied. Only EVM_STAFF can accept claims",
+  "path": "/api/warranty-claims/1/evm-accept"
+}
+```
+
+### 409 Conflict (Invalid Status Transition)
+```json
+{
+  "timestamp": "2024-10-13T10:15:30.000+00:00",
+  "status": 409,
+  "error": "Conflict", 
+  "message": "Claim must be in SUBMITTED status to accept. Current status: COMPLETED",
+  "path": "/api/warranty-claims/1/evm-accept"
 }
 ```
 
 ### 404 Not Found
 ```json
 {
-  "error": "Warranty claim not found",
-  "message": "Warranty claim with ID 123 does not exist"
+  "timestamp": "2024-10-13T10:15:30.000+00:00",
+  "status": 404,
+  "error": "Not Found",
+  "message": "Warranty claim not found with id: 999",
+  "path": "/api/warranty-claims/999"
 }
 ```
-
-## Note on Access Levels
-- **CUSTOMER**: Có thể tạo claims cho vehicles của mình và xem/cập nhật claims của mình
-- **SC_TECHNICIAN**: Có thể xem tất cả claims và cập nhật status/notes nhưng không thể xóa
-- **SC_STAFF**: Full CRUD access trên tất cả claims
-- **ADMIN**: Full access tất cả operations
-- **EVM_STAFF**: Không có direct access đến warranty claims API theo SecurityConfig
