@@ -66,7 +66,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/parts/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF")
 
                 // SC_STAFF - Nhân viên trung tâm bảo hành: quản lý warranty claims, service histories
-                .requestMatchers("/api/warranty-claims/**").hasAnyRole("ADMIN", "SC_STAFF", "SC_TECHNICIAN", "CUSTOMER")
+                .requestMatchers("/api/warranty-claims/**").hasAnyRole("ADMIN", "SC_STAFF", "SC_TECHNICIAN", "EVM_STAFF", "CUSTOMER")
                 .requestMatchers("/api/service-histories/**").hasAnyRole("ADMIN", "SC_STAFF", "SC_TECHNICIAN", "EVM_STAFF")
 
                 // SC_TECHNICIAN - Kỹ thuật viên: xem và cập nhật service histories, warranty claims
@@ -115,3 +115,4 @@ public class SecurityConfig {
         return source;
     }
 }
+
