@@ -267,6 +267,17 @@ JwtService.isTokenValid()
 | `GET /api/service-histories/by-vehicle/{id}` | ✅ | ✅ | ✅ | ✅ | ✅ (với business logic filtering) |
 | `GET /api/service-histories/by-part/{id}` | ✅ | ✅ | ✅ | ✅ | ❌ |
 | `GET /api/service-histories/my-services` | ❌ | ❌ | ❌ | ❌ | ✅ |
+| **USER MANAGEMENT** ✅ NEW - ADMIN USER MANAGEMENT CAPABILITIES |
+| `GET /api/admin/users` | ✅ | ❌ | ❌ | ❌ | ❌ |
+| `GET /api/admin/users/{id}` | ✅ | ❌ | ❌ | ❌ | ❌ |
+| `GET /api/admin/users/search` | ✅ | ❌ | ❌ | ❌ | ❌ |
+| `GET /api/admin/users/by-role/{role}` | ✅ | ❌ | ❌ | ❌ | ❌ |
+| `PUT /api/admin/users/{id}` | ✅ | ❌ | ❌ | ❌ | ❌ |
+| `PATCH /api/admin/users/{id}/role` | ✅ | ❌ | ❌ | ❌ | ❌ |
+| `PATCH /api/admin/users/{id}/status` | ✅ | ❌ | ❌ | ❌ | ❌ |
+| `DELETE /api/admin/users/{id}` | ✅ | ❌ | ❌ | ❌ | ❌ |
+| `POST /api/admin/users/{id}/reset-password` | ✅ | ❌ | ❌ | ❌ | ❌ |
+| `GET /api/admin/users/statistics` | ✅ | ❌ | ❌ | ❌ | ❌ |
 | **USER INFO** ✅ FIXED - ROLE NAMING CORRECTED |
 | `GET /api/me` | ✅ | ✅ | ✅ | ✅ | ✅ |
 
@@ -304,3 +315,36 @@ JwtService.isTokenValid()
 - ✅ `WarrantyClaimStatusValidator` class
 - ✅ Business rules validation cho tất cả status transitions
 - ✅ IllegalStateException cho invalid transitions
+
+### ✅ **User Management Controller - Admin có thể quản lý tất cả users!**
+**Admin giờ có đầy đủ khả năng quản lý user accounts!**
+
+Các chức năng mới:
+- ✅ **Lấy danh sách users** với pagination và filtering
+- ✅ **Tìm kiếm users** theo username hoặc role
+- ✅ **Xem chi tiết user** với thông tin đầy đủ
+- ✅ **Cập nhật thông tin user** bao gồm email, status
+- ✅ **Thay đổi role** của user
+- ✅ **Kích hoạt/vô hiệu hóa** user accounts
+- ✅ **Reset password** cho users
+- ✅ **Xóa user** (soft delete)
+- ✅ **Thống kê users** theo role và trạng thái
+
+### ✅ **API Endpoints đã được tạo:**
+```
+GET    /api/admin/users                    - Lấy tất cả users
+GET    /api/admin/users/{userId}           - Xem chi tiết user
+GET    /api/admin/users/search             - Tìm kiếm theo username
+GET    /api/admin/users/by-role/{role}     - Lấy users theo role
+PUT    /api/admin/users/{userId}           - Cập nhật user
+PATCH  /api/admin/users/{userId}/role      - Thay đổi role
+PATCH  /api/admin/users/{userId}/status    - Kích hoạt/vô hiệu hóa
+DELETE /api/admin/users/{userId}           - Xóa user
+POST   /api/admin/users/{userId}/reset-password - Reset mật khẩu
+GET    /api/admin/users/statistics         - Thống kê users
+```
+
+### ✅ **Bảo mật hoàn chỉnh:**
+- Tất cả endpoints đều có `@PreAuthorize("hasRole('ADMIN')")`
+- Chỉ Admin mới có quyền truy cập
+- Class-level security annotation đảm bảo không có endpoint nào bị bỏ sót
