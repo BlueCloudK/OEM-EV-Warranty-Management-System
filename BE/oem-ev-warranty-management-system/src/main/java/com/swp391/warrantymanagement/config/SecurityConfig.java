@@ -45,7 +45,10 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Sử dụng JWT, không dùng session nên set policy là STATELESS để server không lưu session chỉ nên dùng session khi hệ thống cần lưu trạng thái người dùng (như web app truyền thống)
             .authorizeHttpRequests(auth -> auth
                 // Public endpoints - không cần authentication
-                .requestMatchers("/api/auth/**").permitAll() // Login, Register
+                .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/refresh",
+                                "/api/auth/forgot-password", "/api/auth/reset-password").permitAll() // Chỉ cho phép các endpoint công khai
+                .requestMatchers("/api/auth/admin/**").hasRole("ADMIN") // Bảo vệ endpoint admin
+                .requestMatchers("/api/auth/**").authenticated() // Các endpoint auth khác cần authentication
                 .requestMatchers("/api/public/**").permitAll()
 
                 // Swagger UI endpoints
@@ -75,8 +78,8 @@ public class SecurityConfig {
                 // Tất cả request khác cần authentication
                 .anyRequest().authenticated()
             )
-            .formLogin(form -> form.disable()) // Tắt form login
-            .httpBasic(basic -> basic.disable()) // Tắt HTTP Basic Auth
+            .formLogin(form -> form.disable()) // Tắt form login để không bị redirect khi gọi API
+            .httpBasic(basic -> basic.disable()) // Tắt HTTP Basic Auth để không bị trình duyệt hiện popup login
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class); // Thêm JWT filter
 
         return http.build();
