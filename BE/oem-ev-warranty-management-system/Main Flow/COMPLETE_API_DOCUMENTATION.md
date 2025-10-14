@@ -35,14 +35,16 @@ Authorization: Bearer {jwt_token}
 
 ### 1. Login
 **POST** `/api/auth/login`
-```json
 Request:
+```json
 {
   "username": "admin",
   "password": "password123"
 }
+```
 
 Response (200):
+```json
 {
   "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
   "refreshToken": "eyJhbGciOiJIUzI1NiJ9...",
@@ -56,16 +58,18 @@ Response (200):
 ### 2. Register Customer (SC Staff Only)
 **POST** `/api/auth/register`
 **Permissions:** SC_STAFF only
-```json
 Request:
+```json
 {
   "username": "newcustomer",
   "email": "customer@example.com",
   "password": "password123",
   "address": "123 Main St, Ho Chi Minh City"
 }
+```
 
 Response (201):
+```json
 {
   "success": true,
   "message": "Customer account created successfully",
@@ -80,8 +84,8 @@ Response (201):
 ### 3. Admin Create User
 **POST** `/api/auth/admin/create-user`
 **Permissions:** ADMIN only
-```json
 Request:
+```json
 {
   "username": "new_staff",
   "email": "staff@example.com",
@@ -89,8 +93,10 @@ Request:
   "address": "456 Staff St, Ho Chi Minh City",
   "roleId": 2
 }
+```
 
 Response (201):
+```json
 {
   "success": true,
   "message": "User created successfully by Admin",
@@ -104,13 +110,15 @@ Response (201):
 
 ### 4. Refresh Token
 **POST** `/api/auth/refresh`
-```json
 Request:
+```json
 {
   "refreshToken": "eyJhbGciOiJIUzI1NiJ9..."
 }
+```
 
 Response (200):
+```json
 {
   "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
   "refreshToken": "eyJhbGciOiJIUzI1NiJ9...",
@@ -123,13 +131,15 @@ Response (200):
 
 ### 5. Logout
 **POST** `/api/auth/logout`
-```json
 Request:
+```json
 {
   "accessToken": "eyJhbGciOiJIUzI1NiJ9..."
 }
+```
 
 Response (200):
+```json
 {
   "success": true,
   "message": "Logged out successfully"
@@ -139,8 +149,8 @@ Response (200):
 ### 6. Validate Token
 **GET** `/api/auth/validate`
 **Headers:** `Authorization: Bearer {access_token}`
-```json
 Response (200):
+```json
 {
   "accessToken": null,
   "refreshToken": null,
@@ -165,8 +175,8 @@ Response (200):
 - `size` (optional): Page size (default: 10)
 - `search` (optional): Search by name, email, or phone
 
-```json
 Response (200):
+```json
 {
   "content": [
     {
@@ -196,8 +206,8 @@ Response (200):
 ### 3. Create Customer
 **POST** `/api/customers`
 **Permissions:** ADMIN, SC_STAFF, EVM_STAFF
-```json
 Request:
+```json
 {
   "name": "Jane Smith",
   "email": "jane.smith@email.com",
@@ -237,8 +247,8 @@ Request:
 **Query Parameters:**
 - `page`, `size`, `search` (similar to customers)
 
-```json
 Response (200):
+```json
 {
   "content": [
     {
@@ -270,8 +280,8 @@ Response (200):
 ### 3. Create Vehicle
 **POST** `/api/vehicles`
 **Permissions:** ADMIN, EVM_STAFF only
-```json
 Request:
+```json
 {
   "vehicleName": "Tesla Model Y",
   "vehicleModel": "Model Y Long Range",
@@ -307,8 +317,8 @@ Request:
 ### 1. Get All Parts
 **GET** `/api/parts`
 **Permissions:** ADMIN, EVM_STAFF, SC_STAFF
-```json
 Response (200):
+```json
 {
   "content": [
     {
@@ -380,15 +390,17 @@ SUBMITTED → SC_REVIEW → PROCESSING → COMPLETED
 ### 3. Create Warranty Claim
 **POST** `/api/warranty-claims`
 **Permissions:** CUSTOMER, ADMIN, SC_STAFF, EVM_STAFF
-```json
 Request:
+```json
 {
   "description": "Battery replacement under warranty",
   "partId": 1,
   "vehicleId": 1
 }
+```
 
 Response (201):
+```json
 {
   "warrantyClaimId": 1,
   "description": "Battery replacement under warranty",
@@ -460,11 +472,11 @@ Response (201):
 
 ### 3. Create Service History
 **POST** `/api/service-histories`
-**Permissions:** ADMIN, SC_STAFF, SC_TECHNICIAN
+**Permissions:** ADMIN only
 
 ### 4. Update Service History
 **PUT** `/api/service-histories/{id}`
-**Permissions:** ADMIN, SC_STAFF, SC_TECHNICIAN
+**Permissions:** ADMIN only
 
 ### 5. Delete Service History
 **DELETE** `/api/service-histories/{id}`
@@ -484,14 +496,14 @@ Response (201):
 ### Get Current User Info
 **GET** `/api/me`
 **Permissions:** All authenticated users
-```json
 Response (200):
+```json
 {
   "username": "admin",
   "roles": ["ADMIN"],
   "isAuthenticated": true,
   "hasAdminRole": true,
-  "hasStaffRole": false,  // ✅ FIXED: Now correctly checks SC_STAFF role
+  "hasStaffRole": false,
   "hasCustomerRole": false
 }
 ```
@@ -513,8 +525,8 @@ Response (200):
 - `search` (optional): Search by username or email
 - `role` (optional): Filter by role name
 
-```json
 Response (200):
+```json
 {
   "content": [
     {
@@ -548,8 +560,8 @@ Response (200):
 ### Get User by ID
 **GET** `/api/admin/users/{userId}`
 **Permissions:** ADMIN only
-```json
 Response (200):
+```json
 {
   "userId": 5,
   "username": "john_customer",
@@ -559,8 +571,10 @@ Response (200):
   "roleId": 5,
   "createdAt": "2024-01-15T10:30:00.000+00:00"
 }
+```
 
 Error Response (404):
+```json
 {
   "success": false,
   "message": "User not found with id: 999"
@@ -574,8 +588,8 @@ Error Response (404):
 - `username` (required): Username to search for (partial match)
 - `page`, `size`: Standard pagination
 
-```json
 Response (200):
+```json
 {
   "content": [
     {
@@ -603,8 +617,8 @@ Response (200):
 **Path Parameters:**
 - `roleName`: ADMIN, EVM_STAFF, SC_STAFF, SC_TECHNICIAN, CUSTOMER
 
-```json
 Response (200):
+```json
 {
   "content": [
     {
@@ -629,15 +643,17 @@ Response (200):
 ### Update User Information
 **PUT** `/api/admin/users/{userId}`
 **Permissions:** ADMIN only
-```json
 Request:
+```json
 {
   "username": "updated_username",
   "email": "newemail@company.com",
   "address": "New Address 123, District 1, Ho Chi Minh City"
 }
+```
 
 Response (200):
+```json
 {
   "success": true,
   "message": "User updated successfully",
@@ -653,8 +669,10 @@ Response (200):
     "createdAt": "2024-01-15T10:30:00.000+00:00"
   }
 }
+```
 
 Error Response (400):
+```json
 {
   "success": false,
   "message": "Email already exists: duplicate@email.com"
@@ -665,8 +683,8 @@ Error Response (400):
 **PATCH** `/api/admin/users/{userId}/role?newRoleId={roleId}`
 **Permissions:** ADMIN only
 **⚠️ Use with extreme caution - affects user permissions immediately**
-```json
 Response (200):
+```json
 {
   "success": true,
   "message": "User role updated successfully",
@@ -683,8 +701,10 @@ Response (200):
     "createdAt": "2024-01-15T10:30:00.000+00:00"
   }
 }
+```
 
 Error Response (400):
+```json
 {
   "success": false,
   "message": "Role not found with id: 999"
@@ -696,9 +716,10 @@ Error Response (400):
 **Permissions:** ADMIN only
 **Query Parameters:**
 - `newPassword` (optional): If not provided, generates random secure password
-```json
-# Auto-generated password response:
+
+Auto-generated password response:
 Response (200):
+```json
 {
   "success": true,
   "message": "User password reset successfully", 
@@ -706,9 +727,11 @@ Response (200):
   "newPassword": "A8k9L2mN5pQ7",
   "note": "Please share this password securely with the user"
 }
+```
 
-# Custom password response:
+Custom password response:
 Response (200):
+```json
 {
   "success": true,
   "message": "User password reset successfully",
@@ -720,15 +743,17 @@ Response (200):
 **DELETE** `/api/admin/users/{userId}`
 **Permissions:** ADMIN only
 **⚠️ EXTREME CAUTION: Implements soft delete to preserve data integrity**
-```json
 Response (200):
+```json
 {
   "success": true,
   "message": "User deleted successfully",
   "userId": 5
 }
+```
 
 Error Response (400):
+```json
 {
   "success": false,
   "message": "Cannot delete user: User has active warranty claims"
@@ -738,8 +763,8 @@ Error Response (400):
 ### Get User Statistics
 **GET** `/api/admin/users/statistics`
 **Permissions:** ADMIN only
-```json
 Response (200):
+```json
 {
   "totalUsers": 125,
   "activeUsers": 125,
@@ -779,7 +804,7 @@ Response (200):
 | **Vehicles** | ✅ CRUD | ✅ CRUD | ✅ CRUD | ❌ Read only | ✅ Own only |
 | **Parts** | ✅ CRUD | ✅ CRU | ✅ Read | ✅ Read | ✅ Read |
 | **Warranty Claims** | ✅ CRUD | ✅ Accept/Reject | ✅ CRUD + Create | ✅ Process | ✅ Own only |
-| **Service Histories** | ✅ CRUD | ✅ **Read** ✅ | ✅ CRUD | ✅ CRUD | ✅ Own only |
+| **Service Histories** | ✅ CRUD | ✅ **Read** ✅ | ✅ Read | ✅ Read | ✅ Own only |
 | **User Info** | ✅ All | ✅ All | ✅ All | ✅ All | ✅ All |
 | **User Management** | ✅ **Full CRUD** ✅ | ❌ | ❌ | ❌ | ❌ |
 
@@ -805,4 +830,3 @@ Response (200):
 - **Audit logging** for all administrative actions
 
 ---
-
