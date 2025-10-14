@@ -1,6 +1,8 @@
 package com.swp391.warrantymanagement.controller;
 
+import com.swp391.warrantymanagement.dto.response.UserResponseDTO;
 import com.swp391.warrantymanagement.entity.User;
+import com.swp391.warrantymanagement.mapper.UserMapper;
 import com.swp391.warrantymanagement.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -43,15 +45,17 @@ public class UserManagementController {
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String role) {
 
-        logger.info("Admin get all users request: page={}, size={}, search={}, role={}\n", page, size, search, role);
+        logger.info("\n========================================");
+        logger.info("GET ALL USERS REQUEST");
+        logger.info("Page: {}, Size: {}", page, size);
+        logger.info("Search: {}, Role: {}", search, role);
+        logger.info("========================================\n");
 
         try {
             Page<User> userPage = userService.getAllUsers(PageRequest.of(page, size), search, role);
 
-            // Convert to response format
-            List<Map<String, Object>> userList = userPage.getContent().stream()
-                .map(this::convertUserToResponse)
-                .toList();
+            // Convert to DTO using UserMapper
+            List<UserResponseDTO> userList = UserMapper.toResponseDTOList(userPage.getContent());
 
             Map<String, Object> response = new HashMap<>();
             response.put("content", userList);
@@ -62,7 +66,7 @@ public class UserManagementController {
             response.put("first", userPage.isFirst());
             response.put("last", userPage.isLast());
 
-            logger.info("Get all users successful, page: {}, totalElements: {}\n", page, userPage.getTotalElements());
+            logger.info("Get all users successful - Total: {}\n", userPage.getTotalElements());
             return ResponseEntity.ok(response);
 
         } catch (RuntimeException e) {
@@ -77,20 +81,19 @@ public class UserManagementController {
      * ADMIN only
      */
     @GetMapping("/{userId}")
-    public ResponseEntity<Map<String, Object>> getUserById(@PathVariable Long userId) {
-        logger.info("Admin get user by id: {}\n", userId);
+    public ResponseEntity<UserResponseDTO> getUserById(@PathVariable Long userId) {
+        logger.info("\n>>> GET USER BY ID: {}\n", userId);
 
         try {
             User user = userService.getUserById(userId);
-            Map<String, Object> response = convertUserToResponse(user);
+            UserResponseDTO response = UserMapper.toResponseDTO(user);
 
-            logger.info("Get user by id successful: {}\n", userId);
+            logger.info("User found: {}\n", userId);
             return ResponseEntity.ok(response);
 
         } catch (RuntimeException e) {
             logger.error("Get user by id failed: {} - Error: {}\n", userId, e.getMessage());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(Map.of("success", false, "message", e.getMessage()));
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
     }
 
@@ -104,14 +107,13 @@ public class UserManagementController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
-        logger.info("Admin search users by username: {}, page={}, size={}\n", username, page, size);
+        logger.info("\n>>> SEARCH USERS: username={}, page={}, size={}\n", username, page, size);
 
         try {
             Page<User> userPage = userService.searchByUsername(username, PageRequest.of(page, size));
 
-            List<Map<String, Object>> userList = userPage.getContent().stream()
-                .map(this::convertUserToResponse)
-                .toList();
+            // Convert to DTO using UserMapper
+            List<UserResponseDTO> userList = UserMapper.toResponseDTOList(userPage.getContent());
 
             Map<String, Object> response = new HashMap<>();
             response.put("content", userList);
@@ -122,11 +124,11 @@ public class UserManagementController {
             response.put("first", userPage.isFirst());
             response.put("last", userPage.isLast());
 
-            logger.info("Search users successful for username: {}, found: {} users\n", username, userPage.getTotalElements());
+            logger.info("Search successful - Found: {} users\n", userPage.getTotalElements());
             return ResponseEntity.ok(response);
 
         } catch (RuntimeException e) {
-            logger.error("Search users failed for username: {} - Error: {}\n", username, e.getMessage());
+            logger.error("Search failed: {}\n", e.getMessage());
             return ResponseEntity.badRequest()
                 .body(Map.of("success", false, "message", e.getMessage()));
         }
@@ -142,14 +144,13 @@ public class UserManagementController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
-        logger.info("Admin get users by role: {}, page={}, size={}\n", roleName, page, size);
+        logger.info("\n>>> GET USERS BY ROLE: {}, page={}, size={}\n", roleName, page, size);
 
         try {
             Page<User> userPage = userService.getUsersByRole(roleName, PageRequest.of(page, size));
 
-            List<Map<String, Object>> userList = userPage.getContent().stream()
-                .map(this::convertUserToResponse)
-                .toList();
+            // Convert to DTO using UserMapper
+            List<UserResponseDTO> userList = UserMapper.toResponseDTOList(userPage.getContent());
 
             Map<String, Object> response = new HashMap<>();
             response.put("content", userList);
@@ -160,11 +161,11 @@ public class UserManagementController {
             response.put("first", userPage.isFirst());
             response.put("last", userPage.isLast());
 
-            logger.info("Get users by role successful for role: {}, found: {} users\n", roleName, userPage.getTotalElements());
+            logger.info("Get by role successful - Found: {} users\n", userPage.getTotalElements());
             return ResponseEntity.ok(response);
 
         } catch (RuntimeException e) {
-            logger.error("Get users by role failed for role: {} - Error: {}\n", roleName, e.getMessage());
+            logger.error("Get by role failed: {}\n", e.getMessage());
             return ResponseEntity.badRequest()
                 .body(Map.of("success", false, "message", e.getMessage()));
         }
@@ -179,7 +180,11 @@ public class UserManagementController {
             @PathVariable Long userId,
             @Valid @RequestBody Map<String, Object> updateRequest) {
 
-        logger.info("Admin update user request: userId={}, data={}\n", userId, updateRequest);
+        logger.info("\n========================================");
+        logger.info("UPDATE USER REQUEST");
+        logger.info("User ID: {}", userId);
+        logger.info("Data: {}", updateRequest);
+        logger.info("========================================\n");
 
         try {
             User updatedUser = userService.updateUser(userId, updateRequest);
@@ -189,7 +194,7 @@ public class UserManagementController {
             response.put("message", "User updated successfully");
             response.put("userId", userId);
             response.put("updatedFields", updateRequest.keySet());
-            response.put("user", convertUserToResponse(updatedUser));
+            response.put("user", UserMapper.toResponseDTO(updatedUser)); // Use DTO
 
             logger.info("Update user successful: {}\n", userId);
             return ResponseEntity.ok(response);
@@ -210,7 +215,7 @@ public class UserManagementController {
             @PathVariable Long userId,
             @RequestParam Long newRoleId) {
 
-        logger.info("Admin update user role: userId={}, newRoleId={}\n", userId, newRoleId);
+        logger.info("\n>>> UPDATE USER ROLE: userId={}, newRoleId={}\n", userId, newRoleId);
 
         try {
             User updatedUser = userService.updateUserRole(userId, newRoleId);
@@ -221,14 +226,13 @@ public class UserManagementController {
             response.put("userId", userId);
             response.put("newRoleId", newRoleId);
             response.put("newRoleName", updatedUser.getRole().getRoleName());
-            response.put("user", convertUserToResponse(updatedUser));
+            response.put("user", UserMapper.toResponseDTO(updatedUser)); // ✅ Use DTO
 
-            logger.info("Update user role successful: userId={}, newRoleId={}, newRoleName={}\n",
-                userId, newRoleId, updatedUser.getRole().getRoleName());
+            logger.info("Update role successful: {} → {}\n", userId, updatedUser.getRole().getRoleName());
             return ResponseEntity.ok(response);
 
         } catch (RuntimeException e) {
-            logger.error("Update user role failed: userId={}, newRoleId={} - Error: {}\n", userId, newRoleId, e.getMessage());
+            logger.error("Update role failed: {}\n", e.getMessage());
             return ResponseEntity.badRequest()
                 .body(Map.of("success", false, "message", e.getMessage()));
         }
@@ -240,7 +244,7 @@ public class UserManagementController {
      */
     @DeleteMapping("/{userId}")
     public ResponseEntity<Map<String, Object>> deleteUser(@PathVariable Long userId) {
-        logger.info("Admin delete user request: {}\n", userId);
+        logger.info("\nDELETE USER REQUEST: {}\n", userId);
 
         try {
             userService.deleteUser(userId);
@@ -269,7 +273,7 @@ public class UserManagementController {
             @PathVariable Long userId,
             @RequestParam(required = false) String newPassword) {
 
-        logger.info("Admin reset user password: userId={}\n", userId);
+        logger.info("\nRESET PASSWORD REQUEST: userId={}\n", userId);
 
         try {
             String resetPassword = userService.resetUserPassword(userId, newPassword);
@@ -285,11 +289,11 @@ public class UserManagementController {
                 response.put("note", "Please share this password securely with the user");
             }
 
-            logger.info("Reset user password successful: {}\n", userId);
+            logger.info("Reset password successful: {}\n", userId);
             return ResponseEntity.ok(response);
 
         } catch (RuntimeException e) {
-            logger.error("Reset user password failed: {} - Error: {}\n", userId, e.getMessage());
+            logger.error("Reset password failed: {}\n", e.getMessage());
             return ResponseEntity.badRequest()
                 .body(Map.of("success", false, "message", e.getMessage()));
         }
@@ -301,33 +305,19 @@ public class UserManagementController {
      */
     @GetMapping("/statistics")
     public ResponseEntity<Map<String, Object>> getUserStatistics() {
-        logger.info("Admin get user statistics request\n");
+        logger.info("\nGET USER STATISTICS REQUEST\n");
 
         try {
             Map<String, Object> statistics = userService.getUserStatistics();
 
-            logger.info("Get user statistics successful\n");
+            logger.info("Get statistics successful\n");
             return ResponseEntity.ok(statistics);
 
         } catch (RuntimeException e) {
-            logger.error("Get user statistics failed: {}\n", e.getMessage());
+            logger.error("Get statistics failed: {}\n", e.getMessage());
             return ResponseEntity.badRequest()
                 .body(Map.of("success", false, "message", e.getMessage()));
         }
     }
-
-    /**
-     * Helper method to convert User entity to response format
-     */
-    private Map<String, Object> convertUserToResponse(User user) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("userId", user.getUserId());
-        response.put("username", user.getUsername());
-        response.put("email", user.getEmail());
-        response.put("address", user.getAddress());
-        response.put("roleName", user.getRole().getRoleName());
-        response.put("roleId", user.getRole().getRoleId());
-        response.put("createdAt", user.getCreatedAt());
-        return response;
-    }
 }
+

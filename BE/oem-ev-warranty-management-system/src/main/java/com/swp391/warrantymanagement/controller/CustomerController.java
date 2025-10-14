@@ -34,7 +34,7 @@ public class CustomerController {
             @RequestParam(required = false) String search) {
         logger.info("Get all customers request: page={}, size={}, search={}\n", page, size, search);
         PagedResponse<CustomerResponseDTO> customersPage = customerService.getAllCustomersPage(
-            PageRequest.of(page, size), search);
+                PageRequest.of(page, size), search);
         logger.info("Get all customers success, totalElements={}\n", customersPage.getTotalElements());
         return ResponseEntity.ok(customersPage);
     }
@@ -67,7 +67,7 @@ public class CustomerController {
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('EVM_STAFF')")
     public ResponseEntity<CustomerResponseDTO> updateCustomer(@PathVariable UUID id,
-                                                             @Valid @RequestBody CustomerRequestDTO requestDTO) {
+                                                              @Valid @RequestBody CustomerRequestDTO requestDTO) {
         logger.info("Update customer request: id={}, data={}\n", id, requestDTO);
         CustomerResponseDTO updatedCustomer = customerService.updateCustomer(id, requestDTO);
         if (updatedCustomer != null) {
@@ -100,7 +100,7 @@ public class CustomerController {
             @RequestParam(defaultValue = "10") int size) {
         logger.info("Search customers by name: {}, page={}, size={}\n", name, page, size);
         PagedResponse<CustomerResponseDTO> customersPage = customerService.searchCustomersByName(
-            name, PageRequest.of(page, size));
+                name, PageRequest.of(page, size));
         logger.info("Search customers by name success, totalElements={}\n", customersPage.getTotalElements());
         return ResponseEntity.ok(customersPage);
     }
@@ -139,7 +139,7 @@ public class CustomerController {
             @RequestParam(defaultValue = "10") int size) {
 
         PagedResponse<CustomerResponseDTO> customersPage = customerService.getCustomersByUserId(
-            userId, PageRequest.of(page, size));
+                userId, PageRequest.of(page, size));
         return ResponseEntity.ok(customersPage);
     }
 
