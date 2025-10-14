@@ -23,11 +23,10 @@ public class VehicleRequestDTO {
     @Max(value = 2030, message = "Vehicle year cannot exceed 2030")
     private Integer vehicleYear;
 
-    @NotBlank(message = "Vehicle VIN is required")
-    @Size(min = 17, max = 17, message = "VIN must be exactly 17 characters")
+    @NotBlank(message = "License plate is required")
     @Pattern(
-            regexp = "^[A-HJ-NPR-Z0-9]{17}$",
-            message = "VIN must be 17 characters, no I, O, or Q allowed"
+            regexp = "^[0-9]{2}-MĐ-[0-9]{3}\\.[0-9]{2}$",
+            message = "Biển số xe điện phải đúng định dạng XX-MĐ-YYY.ZZ"
     )
     private String vehicleVin;
 
