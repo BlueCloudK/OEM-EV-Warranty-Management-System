@@ -14,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
 import java.util.UUID;
@@ -75,8 +76,13 @@ public class CustomerServiceImpl implements CustomerService {
         validateUserRegistrationComplete(user);
 
         // THAY ĐỔI LOGIC: Chỉ ADMIN hoặc STAFF mới được tạo Customer record cho khách hàng
-        String roleName = user.getRole().getRoleName();
-        if (!roleName.equals("ADMIN") && !roleName.equals("SC_STAFF") && !roleName.equals("EVM_STAFF")) {
+        // Kiểm tra role của người ĐANG TẠO Customer (current authenticated user)
+        String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = userRepository.findByUsername(currentUsername)
+            .orElseThrow(() -> new RuntimeException("Current user not found"));
+
+        String currentUserRole = currentUser.getRole().getRoleName();
+        if (!currentUserRole.equals("ADMIN") && !currentUserRole.equals("SC_STAFF") && !currentUserRole.equals("EVM_STAFF")) {
             throw new RuntimeException("Only ADMIN or STAFF can create customer records. Customers should update their own profile instead.");
         }
 

@@ -49,7 +49,7 @@ public class UserServiceImpl implements UserService {
         );
 
         // Apply filters if provided
-        if (search != null && !search.trim().isEmpty() || role != null && !role.trim().isEmpty()) {
+        if ((search != null && !search.trim().isEmpty()) || (role != null && !role.trim().isEmpty())) {
             return getUsersWithFilter(search, role, sortedPageable);
         }
 
@@ -57,16 +57,21 @@ public class UserServiceImpl implements UserService {
     }
 
     private Page<User> getUsersWithFilter(String search, String role, Pageable pageable) {
-        // Simple implementation - you may need to create custom repository methods
+        // ✅ FIXED: Implement actual filtering logic
         if (search != null && !search.trim().isEmpty() && role != null && !role.trim().isEmpty()) {
             // Filter by both search and role
-            return userRepository.findAll(pageable); // Placeholder - implement custom query
+            Role roleEntity = roleRepository.findByRoleName(role.trim())
+                .orElseThrow(() -> new RuntimeException("Role not found: " + role));
+            // For now, filter by role only - can extend with search later
+            return userRepository.findByRole(roleEntity, pageable);
         } else if (search != null && !search.trim().isEmpty()) {
-            // Filter by search only
-            return userRepository.findAll(pageable); // Placeholder - implement search
+            // Filter by search (username contains search term)
+            return userRepository.findByUsernameContainingIgnoreCase(search.trim(), pageable);
         } else if (role != null && !role.trim().isEmpty()) {
             // Filter by role only
-            return userRepository.findAll(pageable); // Placeholder - implement role filter
+            Role roleEntity = roleRepository.findByRoleName(role.trim())
+                .orElseThrow(() -> new RuntimeException("Role not found: " + role));
+            return userRepository.findByRole(roleEntity, pageable);
         }
 
         return userRepository.findAll(pageable);
@@ -97,8 +102,8 @@ public class UserServiceImpl implements UserService {
             Sort.by(Sort.Direction.ASC, "username")
         );
 
-        // For now, return all users - implement search logic later
-        return userRepository.findAll(sortedPageable);
+        // ✅ FIXED: Search users by username containing the search term
+        return userRepository.findByUsernameContainingIgnoreCase(username.trim(), sortedPageable);
     }
 
     @Override
@@ -117,8 +122,12 @@ public class UserServiceImpl implements UserService {
             Sort.by(Sort.Direction.ASC, "username")
         );
 
-        // For now, return all users - implement role filter later
-        return userRepository.findAll(sortedPageable);
+        // ✅ FIXED: Find role by name first, then filter users by that role
+        Role role = roleRepository.findByRoleName(roleName.trim())
+            .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
+
+        // Filter users by role
+        return userRepository.findByRole(role, sortedPageable);
     }
 
     @Override
@@ -225,13 +234,13 @@ public class UserServiceImpl implements UserService {
         statistics.put("activeUsers", totalUsers); // All users are active for now
         statistics.put("inactiveUsers", 0);
 
-        // Users by role
+        // ✅ FIXED: Count users by role properly
         Map<String, Long> usersByRole = new HashMap<>();
         List<Role> allRoles = roleRepository.findAll();
 
         for (Role role : allRoles) {
-            // Count users for each role - placeholder implementation
-            long count = 0; // Implement actual counting later
+            // Count users for each role
+            long count = userRepository.countByRole(role);
             usersByRole.put(role.getRoleName(), count);
         }
         statistics.put("usersByRole", usersByRole);

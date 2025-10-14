@@ -6,6 +6,7 @@ import com.swp391.warrantymanagement.entity.Customer;
 import com.swp391.warrantymanagement.entity.User;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -19,6 +20,7 @@ public final class CustomerMapper {
         if (requestDTO == null) return null;
 
         Customer entity = new Customer();
+        entity.setCustomerId(UUID.randomUUID());
         entity.setName(requestDTO.getName());
         entity.setEmail(requestDTO.getEmail());
         entity.setPhone(requestDTO.getPhone());

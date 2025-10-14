@@ -1,6 +1,9 @@
 package com.swp391.warrantymanagement.repository;
 
+import com.swp391.warrantymanagement.entity.Role;
 import com.swp391.warrantymanagement.entity.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -31,4 +34,15 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // Lấy role name của user theo username (để tránh lazy loading)
     @Query("SELECT r.roleName FROM User u JOIN u.role r WHERE u.username = :username")
     Optional<String> findRoleNameByUsername(@Param("username") String username);
+
+    // ============= User Management Methods =============
+    // Tìm users theo role (phân trang)
+    Page<User> findByRole(Role role, Pageable pageable);
+
+    // Tìm users theo username có chứa từ khóa tìm kiếm (không phân biệt hoa thường)
+    Page<User> findByUsernameContainingIgnoreCase(String username, Pageable pageable);
+
+    // Đếm số lượng users theo role
+    long countByRole(Role role);
 }
+
