@@ -498,7 +498,279 @@ Response (200):
 
 ---
 
-# 🚨 SECURITY MATRIX (UPDATED)
+# 👤 USER MANAGEMENT API (ADMIN ONLY)
+
+## Base URL: `/api/admin/users`
+
+**⚠️ IMPORTANT:** All User Management endpoints require ADMIN role only. No other roles can access these endpoints.
+
+### Get All Users
+**GET** `/api/admin/users`
+**Permissions:** ADMIN only
+**Query Parameters:**
+- `page` (optional): Page number (default: 0)
+- `size` (optional): Page size (default: 10)  
+- `search` (optional): Search by username or email
+- `role` (optional): Filter by role name
+
+```json
+Response (200):
+{
+  "content": [
+    {
+      "userId": 1,
+      "username": "admin",
+      "email": "admin@company.com",
+      "address": "Admin Office, District 1, Ho Chi Minh City",
+      "roleName": "ADMIN",
+      "roleId": 1,
+      "createdAt": "2024-01-01T10:00:00.000+00:00"
+    },
+    {
+      "userId": 5,
+      "username": "john_customer",
+      "email": "john@email.com",
+      "address": "123 Main St, Ho Chi Minh City", 
+      "roleName": "CUSTOMER",
+      "roleId": 5,
+      "createdAt": "2024-01-15T10:30:00.000+00:00"
+    }
+  ],
+  "pageNumber": 0,
+  "pageSize": 10,
+  "totalElements": 25,
+  "totalPages": 3,
+  "first": true,
+  "last": false
+}
+```
+
+### Get User by ID
+**GET** `/api/admin/users/{userId}`
+**Permissions:** ADMIN only
+```json
+Response (200):
+{
+  "userId": 5,
+  "username": "john_customer",
+  "email": "john@email.com",
+  "address": "123 Main St, Ho Chi Minh City",
+  "roleName": "CUSTOMER", 
+  "roleId": 5,
+  "createdAt": "2024-01-15T10:30:00.000+00:00"
+}
+
+Error Response (404):
+{
+  "success": false,
+  "message": "User not found with id: 999"
+}
+```
+
+### Search Users
+**GET** `/api/admin/users/search?username={username}`
+**Permissions:** ADMIN only
+**Query Parameters:**
+- `username` (required): Username to search for (partial match)
+- `page`, `size`: Standard pagination
+
+```json
+Response (200):
+{
+  "content": [
+    {
+      "userId": 5,
+      "username": "john_customer",
+      "email": "john@email.com",
+      "address": "123 Main St",
+      "roleName": "CUSTOMER",
+      "roleId": 5,
+      "createdAt": "2024-01-15T10:30:00.000+00:00"
+    }
+  ],
+  "pageNumber": 0,
+  "pageSize": 10,
+  "totalElements": 1,
+  "totalPages": 1,
+  "first": true,
+  "last": true
+}
+```
+
+### Get Users by Role  
+**GET** `/api/admin/users/by-role/{roleName}`
+**Permissions:** ADMIN only
+**Path Parameters:**
+- `roleName`: ADMIN, EVM_STAFF, SC_STAFF, SC_TECHNICIAN, CUSTOMER
+
+```json
+Response (200):
+{
+  "content": [
+    {
+      "userId": 8,
+      "username": "jane_staff",
+      "email": "jane@company.com",
+      "address": "456 Office St, Hanoi",
+      "roleName": "SC_STAFF",
+      "roleId": 3,
+      "createdAt": "2024-02-20T14:15:00.000+00:00"
+    }
+  ],
+  "pageNumber": 0,
+  "pageSize": 10,
+  "totalElements": 15,
+  "totalPages": 2,
+  "first": true,
+  "last": false
+}
+```
+
+### Update User Information
+**PUT** `/api/admin/users/{userId}`
+**Permissions:** ADMIN only
+```json
+Request:
+{
+  "username": "updated_username",
+  "email": "newemail@company.com",
+  "address": "New Address 123, District 1, Ho Chi Minh City"
+}
+
+Response (200):
+{
+  "success": true,
+  "message": "User updated successfully",
+  "userId": 5,
+  "updatedFields": ["email", "address"],
+  "user": {
+    "userId": 5,
+    "username": "john_customer",
+    "email": "newemail@company.com",
+    "address": "New Address 123, District 1, Ho Chi Minh City",
+    "roleName": "CUSTOMER",
+    "roleId": 5,
+    "createdAt": "2024-01-15T10:30:00.000+00:00"
+  }
+}
+
+Error Response (400):
+{
+  "success": false,
+  "message": "Email already exists: duplicate@email.com"
+}
+```
+
+### Update User Role
+**PATCH** `/api/admin/users/{userId}/role?newRoleId={roleId}`
+**Permissions:** ADMIN only
+**⚠️ Use with extreme caution - affects user permissions immediately**
+```json
+Response (200):
+{
+  "success": true,
+  "message": "User role updated successfully",
+  "userId": 5,
+  "newRoleId": 3,
+  "newRoleName": "SC_STAFF",
+  "user": {
+    "userId": 5,
+    "username": "john_customer",
+    "email": "john@email.com",
+    "address": "123 Main St",
+    "roleName": "SC_STAFF",
+    "roleId": 3,
+    "createdAt": "2024-01-15T10:30:00.000+00:00"
+  }
+}
+
+Error Response (400):
+{
+  "success": false,
+  "message": "Role not found with id: 999"
+}
+```
+
+### Reset User Password
+**POST** `/api/admin/users/{userId}/reset-password`
+**Permissions:** ADMIN only
+**Query Parameters:**
+- `newPassword` (optional): If not provided, generates random secure password
+```json
+# Auto-generated password response:
+Response (200):
+{
+  "success": true,
+  "message": "User password reset successfully", 
+  "userId": 5,
+  "newPassword": "A8k9L2mN5pQ7",
+  "note": "Please share this password securely with the user"
+}
+
+# Custom password response:
+Response (200):
+{
+  "success": true,
+  "message": "User password reset successfully",
+  "userId": 5
+}
+```
+
+### Delete User
+**DELETE** `/api/admin/users/{userId}`
+**Permissions:** ADMIN only
+**⚠️ EXTREME CAUTION: Implements soft delete to preserve data integrity**
+```json
+Response (200):
+{
+  "success": true,
+  "message": "User deleted successfully",
+  "userId": 5
+}
+
+Error Response (400):
+{
+  "success": false,
+  "message": "Cannot delete user: User has active warranty claims"
+}
+```
+
+### Get User Statistics
+**GET** `/api/admin/users/statistics`
+**Permissions:** ADMIN only
+```json
+Response (200):
+{
+  "totalUsers": 125,
+  "activeUsers": 125,
+  "inactiveUsers": 0,
+  "usersByRole": {
+    "ADMIN": 2,
+    "EVM_STAFF": 8,
+    "SC_STAFF": 15,
+    "SC_TECHNICIAN": 25,
+    "CUSTOMER": 75
+  },
+  "recentRegistrations": [
+    {
+      "userId": 125,
+      "username": "newest_user",
+      "email": "newest@email.com",
+      "roleName": "CUSTOMER",
+      "createdAt": "2024-10-14T08:30:00.000+00:00"
+    },
+    {
+      "userId": 124,
+      "username": "recent_staff",
+      "email": "staff@company.com", 
+      "roleName": "SC_STAFF",
+      "createdAt": "2024-10-13T16:45:00.000+00:00"
+    }
+  ]
+}
+```
+
+## 🚨 SECURITY MATRIX (UPDATED)
 
 | Endpoint Category | ADMIN | EVM_STAFF | SC_STAFF | SC_TECHNICIAN | CUSTOMER |
 |------------------|-------|-----------|----------|---------------|----------|
@@ -509,118 +781,28 @@ Response (200):
 | **Warranty Claims** | ✅ CRUD | ✅ Accept/Reject | ✅ CRUD + Create | ✅ Process | ✅ Own only |
 | **Service Histories** | ✅ CRUD | ✅ **Read** ✅ | ✅ CRUD | ✅ CRUD | ✅ Own only |
 | **User Info** | ✅ All | ✅ All | ✅ All | ✅ All | ✅ All |
+| **User Management** | ✅ **Full CRUD** ✅ | ❌ | ❌ | ❌ | ❌ |
 
 **Legend:** C=Create, R=Read, U=Update, D=Delete
 
----
+## 🔐 User Management API Security Details
 
-# ⚠️ WARRANTY CLAIMS API (WITH STATUS VALIDATION)
+### ADMIN-ONLY Endpoints:
+- **GET** `/api/admin/users` - List all users with filtering
+- **GET** `/api/admin/users/{id}` - Get user details
+- **GET** `/api/admin/users/search` - Search users by username
+- **GET** `/api/admin/users/by-role/{role}` - Filter users by role
+- **PUT** `/api/admin/users/{id}` - Update user information
+- **PATCH** `/api/admin/users/{id}/role` - Change user role
+- **DELETE** `/api/admin/users/{id}` - Delete user (soft delete)
+- **POST** `/api/admin/users/{id}/reset-password` - Reset user password
+- **GET** `/api/admin/users/statistics` - Get user statistics
 
-## Status Transition Validation ✅ NEW FEATURE
-
-The system now includes comprehensive status transition validation using `WarrantyClaimStatusValidator`:
-
-### Valid Status Transitions:
-```
-SUBMITTED → SC_REVIEW ✅
-SUBMITTED → REJECTED ✅
-SC_REVIEW → PROCESSING ✅
-SC_REVIEW → REJECTED ✅
-PROCESSING → COMPLETED ✅
-PROCESSING → REJECTED ✅
-COMPLETED → [FINAL STATE] ❌
-REJECTED → [FINAL STATE] ❌
-```
-
-### Status Validation Features:
-- **Automatic validation** on all status change operations
-- **IllegalStateException** thrown for invalid transitions
-- **Business logic enforcement** prevents data inconsistencies
-- **Audit trail support** for status change tracking
+### Security Enforcement:
+- **403 Forbidden** returned for non-ADMIN access attempts
+- **JWT validation** required for all endpoints
+- **Input sanitization** on all user data modifications
+- **Audit logging** for all administrative actions
 
 ---
 
-# 🚨 ISSUES RESOLVED ✅
-
-## ✅ **Fixed Critical Issues:**
-
-### 1. **Role Naming Inconsistency** ✅ RESOLVED
-- **Issue**: UserInfoController used `hasRole("STAFF")` but this role doesn't exist
-- **Fix**: Changed to `hasRole("SC_STAFF")` in all methods
-- **Impact**: Security vulnerability eliminated
-
-### 2. **EVM_STAFF Service History Access** ✅ RESOLVED
-- **Issue**: EVM_STAFF couldn't track warranty claims completion
-- **Fix**: Added EVM_STAFF to all ServiceHistoryController permissions
-- **Impact**: EVM can now monitor service quality and completion
-
-### 3. **Status Transition Validation** ✅ RESOLVED
-- **Issue**: Warranty claims could transition to invalid states
-- **Fix**: Created `WarrantyClaimStatusValidator` with business rules
-- **Impact**: Data consistency and business logic enforcement
-
-### 4. **Workflow Monitoring** ✅ RESOLVED
-- **Issue**: EVM_STAFF couldn't monitor warranty claim completion
-- **Fix**: Service History access + status validation
-- **Impact**: Complete workflow visibility for EVM
-
-## 🔧 **Technical Improvements:**
-
-### New Files Created:
-1. **WarrantyClaimStatusValidator.java** - Status transition validation
-2. **Updated Controllers** - Enhanced permissions and security
-
-### Security Enhancements:
-1. **Role consistency** across all controllers
-2. **Permission granularity** improved for business needs
-3. **Status validation** prevents invalid data states
-
-### Business Logic Improvements:
-1. **EVM monitoring** of warranty claim completion
-2. **Workflow transparency** across all roles
-3. **Data integrity** through validation
-
----
-
-# 📊 TESTING GUIDE (UPDATED)
-
-## Status Validation Testing:
-```bash
-# Test valid transition
-PATCH /api/warranty-claims/1/evm-accept
-# SUBMITTED → SC_REVIEW ✅
-
-# Test invalid transition (should fail)
-PATCH /api/warranty-claims/1/tech-complete
-# SUBMITTED → COMPLETED ❌ (IllegalStateException)
-```
-
-## EVM Staff Testing:
-```bash
-# EVM can now access service histories
-GET /api/service-histories
-Authorization: Bearer {evm_staff_token} ✅
-
-# EVM can monitor completion
-GET /api/service-histories/by-vehicle/1
-Authorization: Bearer {evm_staff_token} ✅
-```
-
----
-
-# 📝 CONCLUSION
-
-**System Status:** ✅ PRODUCTION READY
-
-All critical security issues have been resolved:
-- ✅ Role naming consistency fixed
-- ✅ EVM_STAFF service history access enabled
-- ✅ Status transition validation implemented
-- ✅ Workflow monitoring capabilities added
-
-**Performance Impact:** Minimal - only business logic improvements
-**Security Level:** Enhanced - all vulnerabilities patched
-**Business Value:** Increased - better workflow visibility and control
-
-**Last Updated:** October 14, 2025  
-**Version:** 1.1 (Security & Business Logic Enhanced)
