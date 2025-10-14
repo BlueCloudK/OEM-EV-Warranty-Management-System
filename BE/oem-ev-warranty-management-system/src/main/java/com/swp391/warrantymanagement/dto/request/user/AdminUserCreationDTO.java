@@ -1,11 +1,11 @@
-package com.swp391.warrantymanagement.dto.request.auth;
+package com.swp391.warrantymanagement.dto.request.user;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;
 import org.hibernate.annotations.Nationalized;
 
 @Data
-public class UserRegistrationDTO {
+public class AdminUserCreationDTO {
     @NotBlank(message = "Username is required")
     @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
     @Pattern(regexp = "^[a-zA-Z0-9_]+$", message = "Username can only contain letters, numbers and underscore")
@@ -13,7 +13,7 @@ public class UserRegistrationDTO {
 
     @NotBlank(message = "Email is required")
     @Pattern(
-            regexp ="^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$", // may be 99% email hiện tại ^_^
+            regexp ="^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$",
             message = "Email format is invalid"
     )
     private String email;
@@ -26,4 +26,8 @@ public class UserRegistrationDTO {
     @NotBlank(message = "Address is required")
     @Size(min = 10, max = 255, message = "Address must be between 10 and 255 characters")
     private String address;
+
+    @NotNull(message = "Role ID is required")
+    @Positive(message = "Role ID must be a positive number")
+    private Long roleId;
 }
