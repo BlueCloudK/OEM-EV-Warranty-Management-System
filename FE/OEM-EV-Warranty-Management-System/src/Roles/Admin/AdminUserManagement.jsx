@@ -960,57 +960,7 @@ const AdminUserManagement = () => {
 
         .btn-action.activate { color: #28a745; }
         .btn-action.activate:hover { background: #d4edda; }
-
-        .loading {
-          text-align: center;
-          padding: 50px;
-        }
-
-        .loading-spinner {
-          border: 4px solid #f3f3f3;
-          border-top: 4px solid #007bff;
-          border-radius: 50%;
-          width: 40px;
-          height: 40px;
-          animation: spin 1s linear infinite;
-          margin: 0 auto 20px;
-        }
-
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-
-        .btn {
-          padding: 10px 20px;
-          border: none;
-          border-radius: 5px;
-          cursor: pointer;
-          font-weight: 600;
-          transition: background-color 0.2s;
-        }
-
-        .btn-primary {
-          background: #007bff;
-          color: white;
-        }
-
-        .btn-primary:hover {
-          background: #0056b3;
-        }
-
-        .btn-primary:disabled {
-          background: #6c757d;
-          cursor: not-allowed;
-        }
-
-        .btn-secondary {
-          background: #6c757d;
-          color: white;
-        }
-
-        .btn-secondary:hover {
-          background: #545b62;
+5b62;
         }
 
         .btn-back {

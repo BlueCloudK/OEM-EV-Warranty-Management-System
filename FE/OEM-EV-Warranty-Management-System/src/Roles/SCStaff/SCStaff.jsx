@@ -9,7 +9,8 @@ import {
   FaHistory,
   FaArrowRight,
   FaUserCog,
-  FaTools
+  FaTools,
+  FaUserPlus
 } from "react-icons/fa";
 
 export default function SCStaff() {
@@ -24,11 +25,7 @@ export default function SCStaff() {
       icon: <FaUserCog size={40} />,
       color: "#3b82f6",
       bgGradient: "linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)",
-      actions: [
-        { label: "Xem danh sách khách hàng", path: "/scstaff/customers/list" },
-        { label: "Tạo khách hàng mới", path: "/scstaff/customers/create" },
-        { label: "Cập nhật thông tin", path: "/scstaff/customers/list" }
-      ]
+      path: "/scstaff/customers"
     },
     {
       id: 2,
@@ -37,11 +34,7 @@ export default function SCStaff() {
       icon: <FaCar size={40} />,
       color: "#10b981",
       bgGradient: "linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)",
-      actions: [
-        { label: "Xem danh sách xe", path: "/scstaff/vehicles" },
-        { label: "Tạo mới thông tin xe", path: "/scstaff/vehicles/create" },
-        { label: "Cập nhật thông tin xe", path: "/scstaff/vehicles/edit" }
-      ]
+      path: "/scstaff/vehicles"
     },
     {
       id: 3,
@@ -50,11 +43,7 @@ export default function SCStaff() {
       icon: <FaClipboardList size={40} />,
       color: "#f59e0b",
       bgGradient: "linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)",
-      actions: [
-        { label: "Xem yêu cầu bảo hành", path: "/scstaff/warranty-claims" },
-        { label: "Xử lý yêu cầu mới", path: "/scstaff/warranty-claims/process" },
-        { label: "Cập nhật trạng thái", path: "/scstaff/warranty-claims/update" }
-      ]
+      path: "/scstaff/warranty-claims"
     },
     {
       id: 4,
@@ -63,11 +52,16 @@ export default function SCStaff() {
       icon: <FaHistory size={40} />,
       color: "#8b5cf6",
       bgGradient: "linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%)",
-      actions: [
-        { label: "Xem lịch sử dịch vụ", path: "/scstaff/service-history" },
-        { label: "Tạo bản ghi dịch vụ", path: "/scstaff/service-history/create" },
-        { label: "Cập nhật lịch sử", path: "/scstaff/service-history/update" }
-      ]
+      path: "/scstaff/service-history"
+    },
+    {
+      id: 5,
+      title: "Tạo tài khoản khách hàng",
+      description: "Tạo tài khoản mới cho khách hàng với thông tin đầy đủ",
+      icon: <FaUserPlus size={40} />,
+      color: "#ef4444",
+      bgGradient: "linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)",
+      path: "/scstaff/create-customer-account"
     }
   ];
 
@@ -157,6 +151,7 @@ export default function SCStaff() {
               }}
               onMouseEnter={() => setHoveredCard(card.id)}
               onMouseLeave={() => setHoveredCard(null)}
+              onClick={() => card.path ? handleCardClick(card.path) : null}
             >
               {/* Card Header */}
               <div
@@ -203,43 +198,9 @@ export default function SCStaff() {
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                {card.actions.map((action, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleCardClick(action.path)}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      background: "#fff",
-                      border: "none",
-                      borderRadius: "8px",
-                      padding: "12px 16px",
-                      cursor: "pointer",
-                      transition: "all 0.3s ease",
-                      fontSize: "14px",
-                      fontWeight: "500",
-                      color: "#374151",
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-                    }}
-                    onMouseOver={(e) => {
-                      e.currentTarget.style.background = card.color;
-                      e.currentTarget.style.color = "#fff";
-                      e.currentTarget.style.transform = "translateX(5px)";
-                    }}
-                    onMouseOut={(e) => {
-                      e.currentTarget.style.background = "#fff";
-                      e.currentTarget.style.color = "#374151";
-                      e.currentTarget.style.transform = "translateX(0)";
-                    }}
-                  >
-                    <span>{action.label}</span>
-                    <FaArrowRight size={12} />
-                  </button>
-                ))}
-              </div>
+
+
+             
             </div>
           ))}
         </div>
@@ -329,6 +290,21 @@ export default function SCStaff() {
               </div>
               <div style={{ fontSize: "14px", color: "#6b7280" }}>
                 Dịch vụ đã hoàn thành
+              </div>
+            </div>
+            <div
+              style={{
+                textAlign: "center",
+                padding: "20px",
+                background: "linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)",
+                borderRadius: "12px",
+              }}
+            >
+              <div style={{ fontSize: "24px", fontWeight: "bold", color: "#ef4444" }}>
+                47
+              </div>
+              <div style={{ fontSize: "14px", color: "#6b7280" }}>
+                Tài khoản tạo trong tháng
               </div>
             </div>
           </div>
