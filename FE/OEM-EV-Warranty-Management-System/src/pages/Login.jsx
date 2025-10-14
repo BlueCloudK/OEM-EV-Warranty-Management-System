@@ -18,7 +18,7 @@ export default function Login() {
       console.log("Attempting login with:", { username, password: "***" });
 
       const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-      const res = await fetch(`${API_BASE_URL}api/auth/login`, {
+      const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -55,7 +55,7 @@ export default function Login() {
           CUSTOMER: "/customer/dashboard",
         };
 
-        const redirectPath = roleRedirects[userRole] || "/customer/dashboard";
+        const redirectPath = roleRedirects[userRole] || "/customer/dashboard" ;
 
         alert(`Đăng nhập thành công! Role: ${userRole}`);
         navigate(redirectPath);

@@ -154,7 +154,6 @@ export default function Navbar() {
             <>
               <Link to="/" className="nav-link">Trang chủ</Link>
               <Link to="/login" className="nav-link">Đăng nhập</Link>
-              <Link to="/register" className="nav-cta">Đăng Ký</Link>
             </>
           )}
         </nav>

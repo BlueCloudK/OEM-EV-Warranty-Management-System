@@ -3,7 +3,6 @@ import { Routes, Route, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
-import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Logout from "./pages/Logout";
@@ -18,7 +17,8 @@ import CustomerList from "./Roles/SCStaff/Profile_Management/CustomerList";
 import CreateCustomer from "./Roles/SCStaff/Profile_Management/CreateCustomer";
 import UpdateCustomers from "./Roles/SCStaff/Profile_Management/UpdateCustomers";
 //
-import Admin from "./Roles/Admin";
+import Admin from "./Roles/Admin/Admin";
+import AdminUserManagement from "./Roles/Admin/AdminUserManagement";
 
 
 export default function App() {
@@ -29,7 +29,6 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/logout" element={<Logout />} />
@@ -49,6 +48,12 @@ export default function App() {
         // Admin
         <Route path="/admin" element={<Admin />} />
         <Route path="/admin/dashboard" element={<Admin />} />
+        <Route path="/admin/customers" element={<div>Admin Customer Management - Coming Soon</div>} />
+        <Route path="/admin/vehicles" element={<div>Admin Vehicle Management - Coming Soon</div>} />
+        <Route path="/admin/parts" element={<div>Admin Parts Management - Coming Soon</div>} />
+        <Route path="/admin/warranty-claims" element={<div>Admin Warranty Claims Management - Coming Soon</div>} />
+        <Route path="/admin/service-histories" element={<div>Admin Service History Management - Coming Soon</div>} />
+        <Route path="/admin/users" element={<AdminUserManagement />} />
 
         // Add fallback dashboard route
         <Route path="/dashboard" element={<Customer />} />
