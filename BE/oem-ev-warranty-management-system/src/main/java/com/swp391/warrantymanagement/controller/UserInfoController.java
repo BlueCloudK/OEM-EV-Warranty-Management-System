@@ -28,7 +28,7 @@ public class UserInfoController {
         userInfo.put("roles", SecurityUtil.getCurrentRoles());
         userInfo.put("isAuthenticated", SecurityUtil.isAuthenticated());
         userInfo.put("hasAdminRole", SecurityUtil.hasRole("ADMIN"));
-        userInfo.put("hasStaffRole", SecurityUtil.hasRole("STAFF"));
+        userInfo.put("hasStaffRole", SecurityUtil.hasRole("SC_STAFF"));
         userInfo.put("hasCustomerRole", SecurityUtil.hasRole("CUSTOMER"));
         logger.info("Current user info: {}", userInfo);
         return ResponseEntity.ok(userInfo);
@@ -50,7 +50,7 @@ public class UserInfoController {
 
     // VÍ DỤ: POST endpoint cho ADMIN hoặc STAFF
     @PostMapping("/staff/test")
-    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SC_STAFF')")
     public ResponseEntity<Map<String, Object>> staffPost(@RequestBody Map<String, Object> requestData) {
         String currentUser = SecurityUtil.getCurrentUsername();
         logger.info("Staff POST request by: {}, data: {}", currentUser, requestData);
@@ -59,7 +59,7 @@ public class UserInfoController {
         response.put("performedBy", currentUser);
         response.put("userRoles", SecurityUtil.getCurrentRoles());
         response.put("isAdmin", SecurityUtil.hasRole("ADMIN"));
-        response.put("isStaff", SecurityUtil.hasRole("STAFF"));
+        response.put("isStaff", SecurityUtil.hasRole("SC_STAFF"));
         return ResponseEntity.ok(response);
     }
 
@@ -76,7 +76,7 @@ public class UserInfoController {
         if (SecurityUtil.hasRole("ADMIN")) {
             response.put("message", "Admin can do everything");
             response.put("allowedActions", new String[]{"CREATE", "READ", "UPDATE", "DELETE"});
-        } else if (SecurityUtil.hasRole("STAFF")) {
+        } else if (SecurityUtil.hasRole("SC_STAFF")) {
             response.put("message", "Staff has limited permissions");
             response.put("allowedActions", new String[]{"CREATE", "READ", "UPDATE"});
         } else if (SecurityUtil.hasRole("CUSTOMER")) {

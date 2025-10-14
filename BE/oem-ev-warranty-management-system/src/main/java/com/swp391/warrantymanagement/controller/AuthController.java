@@ -6,6 +6,7 @@ import com.swp391.warrantymanagement.dto.request.auth.UserRegistrationDTO;
 import com.swp391.warrantymanagement.dto.request.auth.ForgotPasswordRequestDTO;
 import com.swp391.warrantymanagement.dto.request.auth.ResetPasswordRequestDTO;
 import com.swp391.warrantymanagement.dto.request.auth.LogoutRequestDTO;
+import com.swp391.warrantymanagement.dto.request.user.AdminUserCreationDTO;
 import com.swp391.warrantymanagement.dto.response.AuthResponseDTO;
 import com.swp391.warrantymanagement.service.AuthService;
 import jakarta.validation.Valid;
@@ -63,18 +64,19 @@ public class AuthController {
     }
 
     // Đăng ký - sử dụng service, giữ nguyên response format
+    // CHỈ DÀNH CHO SC STAFF TẠO TÀI KHOẢN CUSTOMER
     @PostMapping("/register")
     public ResponseEntity<Map<String, Object>> register(@Valid @RequestBody UserRegistrationDTO registrationDTO) {
         logger.info("Registration attempt for username: {}", registrationDTO.getUsername());
         try {
-            // Service xử lý registration logic
+            // Service xử lý registration logic - chỉ tạo customer
             AuthResponseDTO authResponse = authService.registerNewUser(registrationDTO);
             logger.info("Registration successful for username: {}", registrationDTO.getUsername());
 
             // Giữ nguyên format response Map như cũ
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("message", "User registered successfully");
+            response.put("message", "Customer account created successfully");
             response.put("user", Map.of(
                 "userId", authResponse.getUserId(),
                 "username", authResponse.getUsername(),
@@ -83,6 +85,33 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (RuntimeException e) {
             logger.error("Registration failed for username: {} - Error: {}", registrationDTO.getUsername(), e.getMessage());
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    // TẠO TÀI KHOẢN BỞI ADMIN - CHỈ ADMIN MỚI TRUY CẬP ĐƯỢC
+    @PostMapping("/admin/create-user")
+    public ResponseEntity<Map<String, Object>> createUserByAdmin(@Valid @RequestBody AdminUserCreationDTO adminCreationRequest) {
+        logger.info("Admin user creation attempt for username: {}", adminCreationRequest.getUsername());
+        try {
+            // Service xử lý tạo user với bất kỳ role nào
+            AuthResponseDTO authResponse = authService.createUserByAdmin(adminCreationRequest);
+            logger.info("Admin user creation successful for username: {}", adminCreationRequest.getUsername());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "User created successfully by Admin");
+            response.put("user", Map.of(
+                "userId", authResponse.getUserId(),
+                "username", authResponse.getUsername(),
+                "roleName", authResponse.getRoleName()
+            ));
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (RuntimeException e) {
+            logger.error("Admin user creation failed for username: {} - Error: {}", adminCreationRequest.getUsername(), e.getMessage());
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", e.getMessage());

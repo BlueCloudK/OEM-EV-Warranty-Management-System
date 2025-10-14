@@ -108,7 +108,7 @@ public class PartController {
 
     // Search parts by vehicle ID (All authenticated users can view parts for specific vehicle)
     @GetMapping("/by-vehicle/{vehicleId}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF') or hasRole('EVM_STAFF') or hasRole('SERVICE_CENTER_STAFF') or hasRole('CUSTOMER')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('EVM_STAFF') or hasRole('SC_TECHNICIAN') or hasRole('CUSTOMER')")
     public ResponseEntity<PagedResponse<PartResponseDTO>> getPartsByVehicle(
             @PathVariable Long vehicleId,
             @RequestParam(defaultValue = "0") int page,
@@ -122,7 +122,7 @@ public class PartController {
 
     // Search parts by manufacturer (ADMIN/STAFF/EVM_STAFF/SERVICE_CENTER only)
     @GetMapping("/by-manufacturer")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF') or hasRole('EVM_STAFF') or hasRole('SERVICE_CENTER_STAFF')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('EVM_STAFF') or hasRole('SC_TECHNICIAN')")
     public ResponseEntity<PagedResponse<PartResponseDTO>> getPartsByManufacturer(
             @RequestParam String manufacturer,
             @RequestParam(defaultValue = "0") int page,
@@ -134,7 +134,7 @@ public class PartController {
 
     // Get parts with warranty expiring soon (ADMIN/STAFF/EVM_STAFF only - business intelligence)
     @GetMapping("/warranty-expiring")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF') or hasRole('EVM_STAFF')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('EVM_STAFF')")
     public ResponseEntity<PagedResponse<PartResponseDTO>> getPartsWithExpiringWarranty(
             @RequestParam(defaultValue = "30") int daysFromNow,
             @RequestParam(defaultValue = "0") int page,
