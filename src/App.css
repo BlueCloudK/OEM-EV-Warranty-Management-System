@@ -1,0 +1,71 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+/* New Home page styles */
+.hero-mint { background: linear-gradient(180deg,#dff8f0 0%, #d5fbf0 100%); padding: 56px 0; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; }
+.hero-inner { display:flex; align-items:center; gap:28px; }
+.hero-text h1 { font-size:48px; margin:0 0 12px 0; color:#083230; }
+.lead { color:#0f3a36; margin-bottom:18px; }
+.hero-image { flex:1; display:flex; justify-content:flex-end; }
+.hero-image img { width:520px; border-radius:12px; box-shadow: 0 12px 40px rgba(2,44,40,0.07); }
+.btn-primary.large { padding:14px 22px; font-size:16px; background:#0b6b61; border-radius:10px; }
+.btn-secondary { border:1px solid rgba(0,0,0,0.08); background:transparent; padding:10px 16px; border-radius:8px; }
+
+.features { padding:48px 0; }
+.section-title { text-align:center; font-size:28px; color:#053233; margin-bottom:28px; }
+.features-grid { display:grid; grid-template-columns: repeat(3,1fr); gap:22px; }
+.feature-card { background:#fff; padding:18px; border-radius:12px; text-align:left; box-shadow: 0 6px 20px rgba(2,44,40,0.03); }
+.feature-card img { width:100%; height:140px; object-fit:cover; border-radius:8px; margin-bottom:12px; }
+.feature-card h3 { margin:8px 0; color:#103233; }
+.feature-card p { color:#475569; margin:0; }
+
+.support-cta { background:#0b6b61; color:#fff; padding:36px 0; margin-top:24px; }
+.support-inner { text-align:center; }
+.support-inner h2 { margin:0 0 8px 0; font-size:26px; }
+.support-inner p { margin:0 0 18px 0; color:rgba(255,255,255,0.85); }
+
+@media (max-width: 900px) {
+  .hero-inner { flex-direction:column; text-align:center; }
+  .hero-image img { width:320px; }
+  .features-grid { grid-template-columns: 1fr; }
+}
