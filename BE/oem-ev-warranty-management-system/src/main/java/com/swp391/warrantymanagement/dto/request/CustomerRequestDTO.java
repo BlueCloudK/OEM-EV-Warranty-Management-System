@@ -3,6 +3,8 @@ package com.swp391.warrantymanagement.dto.request;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
+import java.util.UUID;
+
 /** Request DTO: Dữ liệu đầu vào từ FE cho Customer operations */
 @Data
 public class CustomerRequestDTO {
