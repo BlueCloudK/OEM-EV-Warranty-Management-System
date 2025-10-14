@@ -38,7 +38,12 @@ http://localhost:8080/api/auth
 **Response Error (401):**
 ```json
 {
-  "error": "Invalid credentials"
+  "accessToken": null,
+  "refreshToken": null,
+  "message": "Invalid credentials",
+  "userId": null,
+  "username": null,
+  "roleName": null
 }
 ```
 
@@ -55,35 +60,77 @@ Body (raw JSON):
 }
 ```
 
-### 2. Register - Đăng ký
+### 2. Register - Đăng ký Customer (Chỉ dành cho SC Staff)
 **POST** `/api/auth/register`
 
-**Description:** Đăng ký user mới
+**Description:** Đăng ký customer mới (chỉ SC Staff mới có quyền)
 
 **Request:**
 ```json
 {
-  "username": "newuser",
-  "email": "user@example.com",
+  "username": "newcustomer",
+  "email": "customer@example.com",
   "password": "password123",
-  "address": "123 Main St, Ho Chi Minh City",
-  "roleId": 3
+  "address": "123 Main St, Ho Chi Minh City"
 }
 ```
 
 **Response Success (201):**
 ```json
 {
-  "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
-  "refreshToken": "eyJhbGciOiJIUzI1NiJ9...",
-  "message": "User registered successfully",
-  "userId": 2,
-  "username": "newuser",
-  "roleName": "CUSTOMER"
+  "success": true,
+  "message": "Customer account created successfully",
+  "user": {
+    "userId": 5,
+    "username": "newcustomer",
+    "roleName": "CUSTOMER"
+  }
 }
 ```
 
-### 3. Refresh Token
+**Response Error (400):**
+```json
+{
+  "success": false,
+  "message": "Username already exists"
+}
+```
+
+### 3. Admin Create User - Tạo user bởi Admin
+**POST** `/api/auth/admin/create-user`
+
+**Description:** Admin tạo user với bất kỳ role nào
+
+**Headers:**
+```
+Authorization: Bearer {admin_access_token}
+```
+
+**Request:**
+```json
+{
+  "username": "new_staff",
+  "email": "staff@example.com", 
+  "password": "password123",
+  "address": "456 Staff St, Ho Chi Minh City",
+  "roleId": 2
+}
+```
+
+**Response Success (201):**
+```json
+{
+  "success": true,
+  "message": "User created successfully by Admin",
+  "user": {
+    "userId": 6,
+    "username": "new_staff", 
+    "roleName": "EVM_STAFF"
+  }
+}
+```
+
+### 4. Refresh Token
 **POST** `/api/auth/refresh`
 
 **Description:** Làm mới access token bằng refresh token
@@ -107,15 +154,10 @@ Body (raw JSON):
 }
 ```
 
-### 4. Logout
+### 5. Logout
 **POST** `/api/auth/logout`
 
 **Description:** Đăng xuất và vô hiệu hóa refresh token
-
-**Headers:**
-```
-Authorization: Bearer {access_token}
-```
 
 **Request:**
 ```json
@@ -127,11 +169,20 @@ Authorization: Bearer {access_token}
 **Response Success (200):**
 ```json
 {
-  "message": "Logout successful"
+  "success": true,
+  "message": "Logged out successfully"
 }
 ```
 
-### 5. Forgot Password
+**Response Error (400):**
+```json
+{
+  "success": false,
+  "message": "Invalid token"
+}
+```
+
+### 6. Forgot Password
 **POST** `/api/auth/forgot-password`
 
 **Request:**
@@ -144,11 +195,20 @@ Authorization: Bearer {access_token}
 **Response Success (200):**
 ```json
 {
-  "message": "Reset token generated successfully"
+  "success": true,
+  "message": "Password reset email sent"
 }
 ```
 
-### 6. Reset Password
+**Response Error (400):**
+```json
+{
+  "success": false,
+  "message": "Email not found"
+}
+```
+
+### 7. Reset Password
 **POST** `/api/auth/reset-password`
 
 **Request:**
@@ -163,11 +223,20 @@ Authorization: Bearer {access_token}
 **Response Success (200):**
 ```json
 {
+  "success": true,
   "message": "Password reset successfully"
 }
 ```
 
-### 7. Validate Token
+**Response Error (400):**
+```json
+{
+  "success": false,
+  "message": "Invalid or expired reset token"
+}
+```
+
+### 8. Validate Token
 **GET** `/api/auth/validate`
 
 **Headers:**
@@ -181,10 +250,24 @@ Không cần body.
 **Response Success (200):**
 ```json
 {
+  "accessToken": null,
+  "refreshToken": null,
   "message": "Token is valid",
   "userId": 1,
   "username": "admin",
   "roleName": "ADMIN"
+}
+```
+
+**Response Error (401):**
+```json
+{
+  "accessToken": null,
+  "refreshToken": null,
+  "message": "Invalid Authorization header format",
+  "userId": null,
+  "username": null,
+  "roleName": null
 }
 ```
 
@@ -314,9 +397,12 @@ if (!accessToken && refreshToken) {
 │   ├── 🔑 Login (SC Staff)
 │   ├── 🔑 Login (SC Technician)
 │   ├── 🔑 Login (Customer)
-│   ├── 📝 Register Customer
+│   ├── 📝 Register Customer (by SC Staff)
+│   ├── 👨‍💼 Admin Create User
 │   ├── 🔄 Refresh Token
 │   ├── ✅ Validate Token
+│   ├── 🔒 Forgot Password
+│   ├── 🔑 Reset Password
 │   └── 🚪 Logout
 ├── 📁 Vehicles
 │   ├── 📋 Get All Vehicles
@@ -448,3 +534,8 @@ if (!accessToken && refreshToken) {
 - Check console logs for token values
 - Verify token format (should start with "eyJ")
 - Use jwt.io để decode và kiểm tra token content
+
+### 6. Role-based Access
+- **Register endpoint**: Chỉ SC Staff mới có thể tạo customer account
+- **Admin Create User**: Chỉ Admin mới có thể tạo account với bất kỳ role nào
+- **Customer tự đăng ký**: Hiện tại không có endpoint, phải thông qua SC Staff
