@@ -36,9 +36,9 @@ public class WarrantyClaimController {
     public ResponseEntity<PagedResponse<WarrantyClaimResponseDTO>> getAllClaims(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        logger.info("Get all warranty claims request: page={}, size={}", page, size);
+        logger.info("Get all warranty claims request: page={}, size={}\n", page, size);
         PagedResponse<WarrantyClaimResponseDTO> claimsPage = warrantyClaimService.getAllClaimsPage(PageRequest.of(page, size));
-        logger.info("Get all warranty claims success, totalElements={}", claimsPage.getTotalElements());
+        logger.info("Get all warranty claims success, totalElements={}\n", claimsPage.getTotalElements());
         return ResponseEntity.ok(claimsPage);
     }
 
@@ -46,13 +46,13 @@ public class WarrantyClaimController {
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('EVM_STAFF') or hasRole('SC_TECHNICIAN')")
     public ResponseEntity<WarrantyClaimResponseDTO> getClaimById(@PathVariable Long id) {
-        logger.info("Get warranty claim by id: {}", id);
+        logger.info("Get warranty claim by id: {}\n", id);
         WarrantyClaimResponseDTO claim = warrantyClaimService.getClaimById(id);
         if (claim != null) {
-            logger.info("Warranty claim found: {}", id);
+            logger.info("Warranty claim found: {}\n", id);
             return ResponseEntity.ok(claim);
         }
-        logger.warn("Warranty claim not found: {}", id);
+        logger.warn("Warranty claim not found: {}\n", id);
         return ResponseEntity.notFound().build();
     }
 
@@ -60,9 +60,9 @@ public class WarrantyClaimController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('EVM_STAFF') or hasRole('CUSTOMER')")
     public ResponseEntity<WarrantyClaimResponseDTO> createClaim(@Valid @RequestBody WarrantyClaimRequestDTO requestDTO) {
-        logger.info("Create warranty claim request: {}", requestDTO);
+        logger.info("Create warranty claim request: {}\n", requestDTO);
         WarrantyClaimResponseDTO responseDTO = warrantyClaimService.createClaim(requestDTO);
-        logger.info("Warranty claim created: {}", responseDTO.getWarrantyClaimId());
+        logger.info("Warranty claim created: {}\n", responseDTO.getWarrantyClaimId());
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
     }
 
@@ -71,13 +71,13 @@ public class WarrantyClaimController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('EVM_STAFF')")
     public ResponseEntity<WarrantyClaimResponseDTO> updateClaim(@PathVariable Long id,
                                                               @Valid @RequestBody WarrantyClaimRequestDTO requestDTO) {
-        logger.info("Update warranty claim request: id={}, data={}", id, requestDTO);
+        logger.info("Update warranty claim request: id={}, data={}\n", id, requestDTO);
         WarrantyClaimResponseDTO updatedClaim = warrantyClaimService.updateClaim(id, requestDTO);
         if (updatedClaim != null) {
-            logger.info("Warranty claim updated: {}", id);
+            logger.info("Warranty claim updated: {}\n", id);
             return ResponseEntity.ok(updatedClaim);
         }
-        logger.warn("Warranty claim not found for update: {}", id);
+        logger.warn("Warranty claim not found for update: {}\n", id);
         return ResponseEntity.notFound().build();
     }
 
@@ -86,13 +86,13 @@ public class WarrantyClaimController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('EVM_STAFF')")
     public ResponseEntity<WarrantyClaimResponseDTO> updateClaimStatus(@PathVariable Long id,
         @Valid @RequestBody WarrantyClaimStatusUpdateRequestDTO requestDTO) {
-        logger.info("Update warranty claim status request: id={}, data={}", id, requestDTO);
+        logger.info("Update warranty claim status request: id={}, data={}\n", id, requestDTO);
         WarrantyClaimResponseDTO updatedClaim = warrantyClaimService.updateClaimStatus(id, requestDTO);
         if (updatedClaim != null) {
-            logger.info("Warranty claim status updated: {}", id);
+            logger.info("Warranty claim status updated: {}\n", id);
             return ResponseEntity.ok(updatedClaim);
         }
-        logger.warn("Warranty claim not found for status update: {}", id);
+        logger.warn("Warranty claim not found for status update: {}\n", id);
         return ResponseEntity.notFound().build();
     }
 
@@ -100,13 +100,13 @@ public class WarrantyClaimController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteClaim(@PathVariable Long id) {
-        logger.info("Delete warranty claim request: {}", id);
+        logger.info("Delete warranty claim request: {}\n", id);
         boolean deleted = warrantyClaimService.deleteClaim(id);
         if (deleted) {
-            logger.info("Warranty claim deleted: {}", id);
+            logger.info("Warranty claim deleted: {}\n", id);
             return ResponseEntity.noContent().build();
         }
-        logger.warn("Warranty claim not found for delete: {}", id);
+        logger.warn("Warranty claim not found for delete: {}\n", id);
         return ResponseEntity.notFound().build();
     }
 
@@ -120,9 +120,9 @@ public class WarrantyClaimController {
     @PreAuthorize("hasRole('SC_STAFF')")
     public ResponseEntity<WarrantyClaimResponseDTO> createClaimBySCStaff(
             @Valid @RequestBody WarrantyClaimRequestDTO requestDTO) {
-        logger.info("SC Staff create warranty claim request: {}", requestDTO);
+        logger.info("SC Staff create warranty claim request: {}\n", requestDTO);
         WarrantyClaimResponseDTO responseDTO = warrantyClaimService.createClaimBySCStaff(requestDTO);
-        logger.info("Warranty claim created by SC Staff: {}", responseDTO.getWarrantyClaimId());
+        logger.info("Warranty claim created by SC Staff: {}\n", responseDTO.getWarrantyClaimId());
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
     }
 
@@ -135,9 +135,9 @@ public class WarrantyClaimController {
     public ResponseEntity<WarrantyClaimResponseDTO> evmAcceptClaim(
             @PathVariable Long id,
             @RequestBody(required = false) String note) {
-        logger.info("EVM accept warranty claim: id={}, note={}", id, note);
+        logger.info("EVM accept warranty claim: id={}, note={}\n", id, note);
         WarrantyClaimResponseDTO updatedClaim = warrantyClaimService.evmAcceptClaim(id, note);
-        logger.info("Warranty claim accepted by EVM: {}", id);
+        logger.info("Warranty claim accepted by EVM: {}\n", id);
         return ResponseEntity.ok(updatedClaim);
     }
 
@@ -150,9 +150,9 @@ public class WarrantyClaimController {
     public ResponseEntity<WarrantyClaimResponseDTO> evmRejectClaim(
             @PathVariable Long id,
             @RequestParam String reason) {
-        logger.info("EVM reject warranty claim: id={}, reason={}", id, reason);
+        logger.info("EVM reject warranty claim: id={}, reason={}\n", id, reason);
         WarrantyClaimResponseDTO updatedClaim = warrantyClaimService.evmRejectClaim(id, reason);
-        logger.info("Warranty claim rejected by EVM: {}", id);
+        logger.info("Warranty claim rejected by EVM: {}\n", id);
         return ResponseEntity.ok(updatedClaim);
     }
 
@@ -165,9 +165,9 @@ public class WarrantyClaimController {
     public ResponseEntity<WarrantyClaimResponseDTO> techStartProcessing(
             @PathVariable Long id,
             @RequestBody(required = false) String note) {
-        logger.info("Technician start processing claim: id={}, note={}", id, note);
+        logger.info("Technician start processing claim: id={}, note={}\n", id, note);
         WarrantyClaimResponseDTO updatedClaim = warrantyClaimService.techStartProcessing(id, note);
-        logger.info("Claim processing started by technician: {}", id);
+        logger.info("Claim processing started by technician: {}\n", id);
         return ResponseEntity.ok(updatedClaim);
     }
 
@@ -180,9 +180,9 @@ public class WarrantyClaimController {
     public ResponseEntity<WarrantyClaimResponseDTO> techCompleteClaim(
             @PathVariable Long id,
             @RequestParam String completionNote) {
-        logger.info("Technician complete claim: id={}, note={}", id, completionNote);
+        logger.info("Technician complete claim: id={}, note={}\n", id, completionNote);
         WarrantyClaimResponseDTO updatedClaim = warrantyClaimService.techCompleteClaim(id, completionNote);
-        logger.info("Claim completed by technician: {}", id);
+        logger.info("Claim completed by technician: {}\n", id);
         return ResponseEntity.ok(updatedClaim);
     }
 
@@ -195,9 +195,9 @@ public class WarrantyClaimController {
             @PathVariable String status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        logger.info("Get claims by status: status={}, page={}, size={}", status, page, size);
+        logger.info("Get claims by status: status={}, page={}, size={}\n", status, page, size);
         PagedResponse<WarrantyClaimResponseDTO> claimsPage = warrantyClaimService.getClaimsByStatus(status, PageRequest.of(page, size));
-        logger.info("Get claims by status success, totalElements={}", claimsPage.getTotalElements());
+        logger.info("Get claims by status success, totalElements={}\n", claimsPage.getTotalElements());
         return ResponseEntity.ok(claimsPage);
     }
 
@@ -210,9 +210,9 @@ public class WarrantyClaimController {
     public ResponseEntity<PagedResponse<WarrantyClaimResponseDTO>> getEVMPendingClaims(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        logger.info("Get EVM pending claims: page={}, size={}", page, size);
+        logger.info("Get EVM pending claims: page={}, size={}\n", page, size);
         PagedResponse<WarrantyClaimResponseDTO> claimsPage = warrantyClaimService.getClaimsByStatus("SUBMITTED", PageRequest.of(page, size));
-        logger.info("Get EVM pending claims success, totalElements={}", claimsPage.getTotalElements());
+        logger.info("Get EVM pending claims success, totalElements={}\n", claimsPage.getTotalElements());
         return ResponseEntity.ok(claimsPage);
     }
 
@@ -225,9 +225,9 @@ public class WarrantyClaimController {
     public ResponseEntity<PagedResponse<WarrantyClaimResponseDTO>> getTechPendingClaims(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        logger.info("Get technician pending claims: page={}, size={}", page, size);
+        logger.info("Get technician pending claims: page={}, size={}\n", page, size);
         PagedResponse<WarrantyClaimResponseDTO> claimsPage = warrantyClaimService.getTechPendingClaims(PageRequest.of(page, size));
-        logger.info("Get technician pending claims success, totalElements={}", claimsPage.getTotalElements());
+        logger.info("Get technician pending claims success, totalElements={}\n", claimsPage.getTotalElements());
         return ResponseEntity.ok(claimsPage);
     }
 }

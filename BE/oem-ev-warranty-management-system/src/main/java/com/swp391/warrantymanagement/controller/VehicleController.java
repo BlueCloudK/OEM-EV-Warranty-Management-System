@@ -38,10 +38,10 @@ public class VehicleController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String search) {
 
-        logger.info("Get all vehicles request: page={}, size={}, search={}", page, size, search);
+        logger.info("Get all vehicles request: page={}, size={}, search={}\n", page, size, search);
         PagedResponse<VehicleResponseDTO> vehiclesPage = vehicleService.getAllVehiclesPage(
             PageRequest.of(page, size), search);
-        logger.info("Get all vehicles success, totalElements={}", vehiclesPage.getTotalElements());
+        logger.info("Get all vehicles success, totalElements={}\n", vehiclesPage.getTotalElements());
         return ResponseEntity.ok(vehiclesPage);
     }
 
@@ -49,13 +49,13 @@ public class VehicleController {
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('CUSTOMER')")
     public ResponseEntity<VehicleResponseDTO> getVehicleById(@PathVariable Long id) {
-        logger.info("Get vehicle by id: {}", id);
+        logger.info("Get vehicle by id: {}\n", id);
         VehicleResponseDTO vehicle = vehicleService.getVehicleById(id);
         if (vehicle != null) {
-            logger.info("Vehicle found: {}", id);
+            logger.info("Vehicle found: {}\n", id);
             return ResponseEntity.ok(vehicle);
         }
-        logger.warn("Vehicle not found: {}", id);
+        logger.warn("Vehicle not found: {}\n", id);
         return ResponseEntity.notFound().build();
     }
 
@@ -63,13 +63,13 @@ public class VehicleController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF')")
     public ResponseEntity<VehicleResponseDTO> createVehicle(@Valid @RequestBody VehicleRequestDTO requestDTO) {
-        logger.info("Create vehicle request: {}", requestDTO);
+        logger.info("Create vehicle request: {}\n", requestDTO);
         try {
             VehicleResponseDTO createdVehicle = vehicleService.createVehicle(requestDTO);
-            logger.info("Vehicle created: {}", createdVehicle.getVehicleId());
+            logger.info("Vehicle created: {}\n", createdVehicle.getVehicleId());
             return ResponseEntity.status(HttpStatus.CREATED).body(createdVehicle);
         } catch (RuntimeException e) {
-            logger.error("Create vehicle failed - Error: {}", e.getMessage());
+            logger.error("Create vehicle failed - Error: {}\n", e.getMessage());
             return ResponseEntity.badRequest().build();
         }
     }
@@ -81,13 +81,13 @@ public class VehicleController {
             @PathVariable Long id,
             @Valid @RequestBody VehicleRequestDTO requestDTO) {
 
-        logger.info("Update vehicle request: id={}, data={}", id, requestDTO);
+        logger.info("Update vehicle request: id={}, data={}\n", id, requestDTO);
         VehicleResponseDTO updatedVehicle = vehicleService.updateVehicle(id, requestDTO);
         if (updatedVehicle != null) {
-            logger.info("Vehicle updated: {}", id);
+            logger.info("Vehicle updated: {}\n", id);
             return ResponseEntity.ok(updatedVehicle);
         }
-        logger.warn("Vehicle not found for update: {}", id);
+        logger.warn("Vehicle not found for update: {}\n", id);
         return ResponseEntity.notFound().build();
     }
 
@@ -95,13 +95,13 @@ public class VehicleController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF')")
     public ResponseEntity<Void> deleteVehicle(@PathVariable Long id) {
-        logger.info("Delete vehicle request: {}", id);
+        logger.info("Delete vehicle request: {}\n", id);
         boolean deleted = vehicleService.deleteVehicle(id);
         if (deleted) {
-            logger.info("Vehicle deleted: {}", id);
+            logger.info("Vehicle deleted: {}\n", id);
             return ResponseEntity.noContent().build();
         }
-        logger.warn("Vehicle not found for delete: {}", id);
+        logger.warn("Vehicle not found for delete: {}\n", id);
         return ResponseEntity.notFound().build();
     }
 
@@ -112,10 +112,10 @@ public class VehicleController {
             @PathVariable UUID customerId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        logger.info("Get vehicles by customer: {}, page={}, size={}", customerId, page, size);
+        logger.info("Get vehicles by customer: {}, page={}, size={}\n", customerId, page, size);
         PagedResponse<VehicleResponseDTO> vehiclesPage = vehicleService.getVehiclesByCustomerId(
             customerId, PageRequest.of(page, size));
-        logger.info("Get vehicles by customer success, totalElements={}", vehiclesPage.getTotalElements());
+        logger.info("Get vehicles by customer success, totalElements={}\n", vehiclesPage.getTotalElements());
         return ResponseEntity.ok(vehiclesPage);
     }
 
@@ -126,14 +126,14 @@ public class VehicleController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestHeader("Authorization") String authorizationHeader) {
-        logger.info("Get my vehicles request: page={}, size={}", page, size);
+        logger.info("Get my vehicles request: page={}, size={}\n", page, size);
         try {
             PagedResponse<VehicleResponseDTO> vehiclesPage = vehicleService.getVehiclesByCurrentUser(
                 authorizationHeader, PageRequest.of(page, size));
-            logger.info("Get my vehicles success, totalElements={}", vehiclesPage.getTotalElements());
+            logger.info("Get my vehicles success, totalElements={}\n", vehiclesPage.getTotalElements());
             return ResponseEntity.ok(vehiclesPage);
         } catch (RuntimeException e) {
-            logger.error("Get my vehicles failed: {}", e.getMessage());
+            logger.error("Get my vehicles failed: {}\n", e.getMessage());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
     }
@@ -142,13 +142,13 @@ public class VehicleController {
     @GetMapping("/by-vin")
     @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF')")
     public ResponseEntity<VehicleResponseDTO> getVehicleByVin(@RequestParam String vin) {
-        logger.info("Get vehicle by VIN: {}", vin);
+        logger.info("Get vehicle by VIN: {}\n", vin);
         VehicleResponseDTO vehicle = vehicleService.getVehicleByVin(vin);
         if (vehicle != null) {
-            logger.info("Vehicle found by VIN: {}", vin);
+            logger.info("Vehicle found by VIN: {}\n", vin);
             return ResponseEntity.ok(vehicle);
         }
-        logger.warn("Vehicle not found by VIN: {}", vin);
+        logger.warn("Vehicle not found by VIN: {}\n", vin);
         return ResponseEntity.notFound().build();
     }
 
@@ -161,10 +161,10 @@ public class VehicleController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
-        logger.info("Search vehicles request: model={}, brand={}, page={}, size={}", model, brand, page, size);
+        logger.info("Search vehicles request: model={}, brand={}, page={}, size={}\n", model, brand, page, size);
         PagedResponse<VehicleResponseDTO> vehiclesPage = vehicleService.searchVehicles(
             model, brand, PageRequest.of(page, size));
-        logger.info("Search vehicles success, totalElements={}", vehiclesPage.getTotalElements());
+        logger.info("Search vehicles success, totalElements={}\n", vehiclesPage.getTotalElements());
         return ResponseEntity.ok(vehiclesPage);
     }
 
@@ -176,10 +176,10 @@ public class VehicleController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
-        logger.info("Get vehicles with expiring warranty: days={}, page={}, size={}", daysFromNow, page, size);
+        logger.info("Get vehicles with expiring warranty: days={}, page={}, size={}\n", daysFromNow, page, size);
         PagedResponse<VehicleResponseDTO> vehiclesPage = vehicleService.getVehiclesWithExpiringWarranty(
             daysFromNow, PageRequest.of(page, size));
-        logger.info("Get expiring warranty vehicles success, totalElements={}", vehiclesPage.getTotalElements());
+        logger.info("Get expiring warranty vehicles success, totalElements={}\n", vehiclesPage.getTotalElements());
         return ResponseEntity.ok(vehiclesPage);
     }
 }
