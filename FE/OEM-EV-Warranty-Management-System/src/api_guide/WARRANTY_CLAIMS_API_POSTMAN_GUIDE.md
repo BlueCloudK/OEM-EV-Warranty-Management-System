@@ -71,7 +71,7 @@ SUBMITTED → SC_REVIEW → PROCESSING → COMPLETED
 ### 2. Get Warranty Claim by ID
 **GET** `/api/warranty-claims/{id}`
 
-**Permissions:** ADMIN, SC_STAFF, EVM_STAFF only
+**Permissions:** ADMIN, SC_STAFF, EVM_STAFF, SC_TECHNICIAN
 
 **Path Parameters:**
 - `id`: Warranty Claim ID

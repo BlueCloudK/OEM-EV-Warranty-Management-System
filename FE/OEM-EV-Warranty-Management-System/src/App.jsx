@@ -19,6 +19,7 @@ import UpdateCustomers from "./Roles/SCStaff/Profile_Management/UpdateCustomers"
 //
 import Admin from "./Roles/Admin/Admin";
 import AdminUserManagement from "./Roles/Admin/AdminUserManagement";
+import AdminCustomerManagement from "./Roles/Admin/AdminCustomerManagement";
 
 
 export default function App() {
@@ -48,7 +49,7 @@ export default function App() {
         // Admin
         <Route path="/admin" element={<Admin />} />
         <Route path="/admin/dashboard" element={<Admin />} />
-        <Route path="/admin/customers" element={<div>Admin Customer Management - Coming Soon</div>} />
+        <Route path="/admin/customers" element={<AdminCustomerManagement />} />
         <Route path="/admin/vehicles" element={<div>Admin Vehicle Management - Coming Soon</div>} />
         <Route path="/admin/parts" element={<div>Admin Parts Management - Coming Soon</div>} />
         <Route path="/admin/warranty-claims" element={<div>Admin Warranty Claims Management - Coming Soon</div>} />

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const AdminUserManagement = () => {
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showRegisterForm, setShowRegisterForm] = useState(false);
@@ -83,15 +85,15 @@ const AdminUserManagement = () => {
           return;
         }
 
-        console.log('🔍 Fetching users from API:', `${API_BASE_URL}/api/admin/users`);
+        console.log('🔍 Using Customer API (admin/users not in API guide):', `${API_BASE_URL}/api/customers`);
         
-        const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
+        // Since /api/admin/users doesn't exist in API_GUIDE, use Customer API as alternative
+        const response = await fetch(`${API_BASE_URL}/api/customers`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
             'Accept': 'application/json',
-            'ngrok-skip-browser-warning': 'true' // For ngrok compatibility
           }
         });
 
@@ -356,8 +358,18 @@ const AdminUserManagement = () => {
     <div className="admin-user-management">
       <div className="page-header">
         <div className="header-left">
-          <h2>Users & Roles Management</h2>
-          <p className="header-subtitle">Manage user accounts and permissions</p>
+          <button 
+            className="btn btn-back"
+            onClick={() => navigate('/admin')}
+            title="Back to Admin Dashboard"
+          >
+            <i className="fas fa-arrow-left"></i>
+            Quay lại
+          </button>
+          <div className="header-title">
+            <h2>Quản Lý Người Dùng & Vai Trò</h2>
+            <p className="header-subtitle">Quản lý tài khoản người dùng và quyền truy cập</p>
+          </div>
         </div>
         <div className="header-actions">
           <button 
@@ -620,7 +632,13 @@ const AdminUserManagement = () => {
           border-bottom: 2px solid #e0e0e0;
         }
 
-        .header-left h2 {
+        .header-left {
+          display: flex;
+          align-items: center;
+          gap: 20px;
+        }
+
+        .header-title h2 {
           color: #333;
           margin: 0 0 5px 0;
         }
@@ -995,11 +1013,37 @@ const AdminUserManagement = () => {
           background: #545b62;
         }
 
+        .btn-back {
+          background: #17a2b8;
+          color: white;
+        }
+
+        .btn-back:hover {
+          background: #138496;
+        }
+
         @media (max-width: 768px) {
           .page-header {
             flex-direction: column;
             gap: 15px;
             align-items: flex-start;
+          }
+
+          .header-left {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 15px;
+            width: 100%;
+          }
+
+          .header-actions {
+            flex-direction: column;
+            width: 100%;
+          }
+
+          .header-actions .btn {
+            width: 100%;
+            justify-content: center;
           }
           
           .form-row {
