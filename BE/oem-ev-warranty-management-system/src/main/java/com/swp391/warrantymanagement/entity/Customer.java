@@ -4,7 +4,9 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.Type;
+import org.hibernate.type.SqlTypes;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,9 +19,8 @@ import java.util.UUID;
 @NoArgsConstructor // tự động tạo constructor không tham số
 public class Customer {
     @Id
-    @GeneratedValue(generator = "UUID")
-    @UuidGenerator
     @Column(name = "customer_id", updatable = false, nullable = false, columnDefinition = "VarChar(36)")
+    @JdbcTypeCode(SqlTypes.VARCHAR) // Sử dụng SqlTypes.VARCHAR để map UUID sang VARCHAR
     private UUID customerId;
 
     @Column(name = "name", nullable = false, length = 100, columnDefinition = "nvarchar(100)")

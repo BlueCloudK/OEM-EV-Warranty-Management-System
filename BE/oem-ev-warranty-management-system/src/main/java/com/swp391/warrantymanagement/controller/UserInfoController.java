@@ -22,7 +22,7 @@ public class UserInfoController {
     // Lấy thông tin user hiện tại (tên, roles, trạng thái xác thực)
     @GetMapping("/me")
     public ResponseEntity<Map<String, Object>> getCurrentUser() {
-        logger.info("Get current user info request");
+        logger.info("Get current user info request\n");
         Map<String, Object> userInfo = new HashMap<>();
         userInfo.put("username", SecurityUtil.getCurrentUsername());
         userInfo.put("roles", SecurityUtil.getCurrentRoles());
@@ -30,7 +30,7 @@ public class UserInfoController {
         userInfo.put("hasAdminRole", SecurityUtil.hasRole("ADMIN"));
         userInfo.put("hasStaffRole", SecurityUtil.hasRole("SC_STAFF"));
         userInfo.put("hasCustomerRole", SecurityUtil.hasRole("CUSTOMER"));
-        logger.info("Current user info: {}", userInfo);
+        logger.info("Current user info: {}\n", userInfo);
         return ResponseEntity.ok(userInfo);
     }
 
@@ -39,7 +39,7 @@ public class UserInfoController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Map<String, Object>> adminOnlyPost(@RequestBody Map<String, Object> requestData) {
         String currentUser = SecurityUtil.getCurrentUsername();
-        logger.info("Admin only POST request by: {}, data: {}", currentUser, requestData);
+        logger.info("Admin only POST request by: {}, data: {}\n", currentUser, requestData);
         Map<String, Object> response = new HashMap<>();
         response.put("message", "Admin action performed successfully");
         response.put("performedBy", currentUser);
@@ -53,7 +53,7 @@ public class UserInfoController {
     @PreAuthorize("hasAnyRole('ADMIN', 'SC_STAFF')")
     public ResponseEntity<Map<String, Object>> staffPost(@RequestBody Map<String, Object> requestData) {
         String currentUser = SecurityUtil.getCurrentUsername();
-        logger.info("Staff POST request by: {}, data: {}", currentUser, requestData);
+        logger.info("Staff POST request by: {}, data: {}\n", currentUser, requestData);
         Map<String, Object> response = new HashMap<>();
         response.put("message", "Staff action performed");
         response.put("performedBy", currentUser);
@@ -67,9 +67,9 @@ public class UserInfoController {
     @PostMapping("/dynamic-auth")
     public ResponseEntity<Map<String, Object>> dynamicAuth(@RequestBody Map<String, Object> requestData) {
         String currentUser = SecurityUtil.getCurrentUsername();
-        logger.info("Dynamic auth POST request by: {}, data: {}", currentUser, requestData);
+        logger.info("Dynamic auth POST request by: {}, data: {}\n", currentUser, requestData);
         if (!SecurityUtil.isAuthenticated()) {
-            logger.warn("Dynamic auth failed: not authenticated");
+            logger.warn("Dynamic auth failed: not authenticated\n");
             return ResponseEntity.status(401).body(Map.of("error", "Not authenticated"));
         }
         Map<String, Object> response = new HashMap<>();
@@ -83,12 +83,12 @@ public class UserInfoController {
             response.put("message", "Customer can only view");
             response.put("allowedActions", new String[]{"READ"});
         } else {
-            logger.warn("Dynamic auth failed: no valid role");
+            logger.warn("Dynamic auth failed: no valid role\n");
             return ResponseEntity.status(403).body(Map.of("error", "No valid role found"));
         }
         response.put("user", currentUser);
         response.put("roles", SecurityUtil.getCurrentRoles());
-        logger.info("Dynamic auth success for user: {} with roles: {}", currentUser, SecurityUtil.getCurrentRoles());
+        logger.info("Dynamic auth success for user: {} with roles: {}\n", currentUser, SecurityUtil.getCurrentRoles());
         return ResponseEntity.ok(response);
     }
 }

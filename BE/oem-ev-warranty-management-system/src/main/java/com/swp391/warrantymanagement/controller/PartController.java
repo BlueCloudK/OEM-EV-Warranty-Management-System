@@ -36,10 +36,10 @@ public class PartController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String search) {
-        logger.info("Get all parts request: page={}, size={}, search={}", page, size, search);
+        logger.info("Get all parts request: page={}, size={}, search={}\n", page, size, search);
         PagedResponse<PartResponseDTO> partsPage = partService.getAllPartsPage(
             PageRequest.of(page, size), search);
-        logger.info("Get all parts success, totalElements={}", partsPage.getTotalElements());
+        logger.info("Get all parts success, totalElements={}\n", partsPage.getTotalElements());
         return ResponseEntity.ok(partsPage);
     }
 
@@ -47,13 +47,13 @@ public class PartController {
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN') or hasRole('CUSTOMER')")
     public ResponseEntity<PartResponseDTO> getPartById(@PathVariable String id) {
-        logger.info("Get part by id: {}", id);
+        logger.info("Get part by id: {}\n", id);
         PartResponseDTO part = partService.getPartById(id);
         if (part != null) {
-            logger.info("Part found: {}", id);
+            logger.info("Part found: {}\n", id);
             return ResponseEntity.ok(part);
         }
-        logger.warn("Part not found: {}", id);
+        logger.warn("Part not found: {}\n", id);
         return ResponseEntity.notFound().build();
     }
 
@@ -61,13 +61,13 @@ public class PartController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF')")
     public ResponseEntity<PartResponseDTO> createPart(@Valid @RequestBody PartRequestDTO requestDTO) {
-        logger.info("Create part request: {}", requestDTO);
+        logger.info("Create part request: {}\n", requestDTO);
         try {
             PartResponseDTO responseDTO = partService.createPart(requestDTO);
-            logger.info("Part created: {}", responseDTO.getPartId());
+            logger.info("Part created: {}\n", responseDTO.getPartId());
             return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
         } catch (RuntimeException e) {
-            logger.error("Create part failed: {}", e.getMessage());
+            logger.error("Create part failed: {}\n", e.getMessage());
             return ResponseEntity.badRequest().build();
         }
     }
@@ -77,17 +77,17 @@ public class PartController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF')")
     public ResponseEntity<PartResponseDTO> updatePart(@PathVariable String id,
                                                      @Valid @RequestBody PartRequestDTO requestDTO) {
-        logger.info("Update part request: id={}, data={}", id, requestDTO);
+        logger.info("Update part request: id={}, data={}\n", id, requestDTO);
         try {
             PartResponseDTO updatedPart = partService.updatePart(id, requestDTO);
             if (updatedPart != null) {
-                logger.info("Part updated: {}", id);
+                logger.info("Part updated: {}\n", id);
                 return ResponseEntity.ok(updatedPart);
             }
-            logger.warn("Part not found for update: {}", id);
+            logger.warn("Part not found for update: {}\n", id);
             return ResponseEntity.notFound().build();
         } catch (RuntimeException e) {
-            logger.error("Update part failed: {}", e.getMessage());
+            logger.error("Update part failed: {}\n", e.getMessage());
             return ResponseEntity.badRequest().build();
         }
     }
@@ -96,13 +96,13 @@ public class PartController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deletePart(@PathVariable String id) {
-        logger.info("Delete part request: {}", id);
+        logger.info("Delete part request: {}\n", id);
         boolean deleted = partService.deletePart(id);
         if (deleted) {
-            logger.info("Part deleted: {}", id);
+            logger.info("Part deleted: {}\n", id);
             return ResponseEntity.noContent().build();
         }
-        logger.warn("Part not found for delete: {}", id);
+        logger.warn("Part not found for delete: {}\n", id);
         return ResponseEntity.notFound().build();
     }
 
@@ -113,10 +113,10 @@ public class PartController {
             @PathVariable Long vehicleId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        logger.info("Get parts by vehicleId: {}, page={}, size={}", vehicleId, page, size);
+        logger.info("Get parts by vehicleId: {}, page={}, size={}\n", vehicleId, page, size);
         PagedResponse<PartResponseDTO> partsPage = partService.getPartsByVehicleId(
             vehicleId, PageRequest.of(page, size));
-        logger.info("Get parts by vehicleId success, totalElements={}", partsPage.getTotalElements());
+        logger.info("Get parts by vehicleId success, totalElements={}\n", partsPage.getTotalElements());
         return ResponseEntity.ok(partsPage);
     }
 
