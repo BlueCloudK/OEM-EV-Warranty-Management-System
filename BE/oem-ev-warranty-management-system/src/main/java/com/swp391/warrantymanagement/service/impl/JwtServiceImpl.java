@@ -18,7 +18,7 @@ import java.util.function.Function;
  * Implementation của JwtService
  * - Tạo và validate JWT token
  * - Hỗ trợ cả access token và refresh token
- * - Access token: thời gian ngắn (15 phút)
+ * - Access token: thời gian ngắn (1 giờ)
  * - Refresh token: thời gian dài (7 ngày)
  */
 @Service
@@ -27,8 +27,8 @@ public class JwtServiceImpl implements JwtService {
     @Value("${jwt.secret-key}")
     private String secretKey;
 
-    // Thời gian sống của access token (15 phút)
-    private static final long ACCESS_TOKEN_EXPIRATION = 1000 * 60 * 15;
+    // Thời gian sống của access token (1 giờ)
+    private static final long ACCESS_TOKEN_EXPIRATION = 1000 * 60 * 60;
 
     // Thời gian sống của refresh token (7 ngày)
     private static final long REFRESH_TOKEN_EXPIRATION = 1000 * 60 * 60 * 24 * 7;

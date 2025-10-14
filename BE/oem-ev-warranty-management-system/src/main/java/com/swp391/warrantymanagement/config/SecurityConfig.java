@@ -67,13 +67,16 @@ public class SecurityConfig {
 
                 // SC_STAFF - Nhân viên trung tâm bảo hành: quản lý warranty claims, service histories
                 .requestMatchers("/api/warranty-claims/**").hasAnyRole("ADMIN", "SC_STAFF", "SC_TECHNICIAN", "CUSTOMER")
-                .requestMatchers("/api/service-histories/**").hasAnyRole("ADMIN", "SC_STAFF", "SC_TECHNICIAN")
+                .requestMatchers("/api/service-histories/**").hasAnyRole("ADMIN", "SC_STAFF", "SC_TECHNICIAN", "EVM_STAFF")
 
                 // SC_TECHNICIAN - Kỹ thuật viên: xem và cập nhật service histories, warranty claims
                 // (Quyền đã được định nghĩa ở trên cùng với SC_STAFF)
 
                 // CUSTOMER - Khách hàng: chỉ xem thông tin của mình và tạo warranty claim
                 .requestMatchers("/api/customers/me/**").hasAnyRole("CUSTOMER", "SC_STAFF", "SC_TECHNICIAN", "ADMIN")
+
+                // User Info endpoint - all authenticated users
+                .requestMatchers("/api/me").authenticated()
 
                 // Tất cả request khác cần authentication
                 .anyRequest().authenticated()
@@ -88,13 +91,25 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Nếu muốn chỉ cho phép domain FE truy cập, dùng dòng dưới:
-        // configuration.setAllowedOrigins(List.of("https://your-frontend.com")); // Thay bằng domain FE thật
-        // Nếu muốn cho phép mọi domain truy cập, dùng dòng dưới:
-        configuration.setAllowedOriginPatterns(List.of("*")); // Cho phép mọi domain truy cập
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
+
+        // Cho phép tất cả origins (development mode)
+        configuration.setAllowedOriginPatterns(List.of("*"));
+
+        // Cho phép tất cả HTTP methods bao gồm PATCH và OPTIONS
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"));
+
+        // Cho phép tất cả headers
+        configuration.setAllowedHeaders(List.of("*"));
+
+        // Expose headers cho frontend có thể đọc
+        configuration.setExposedHeaders(List.of("Authorization", "Content-Type", "Accept", "X-Requested-With", "Cache-Control", "Access-Control-Allow-Origin"));
+
+        // Cho phép credentials (cookies, authorization headers)
         configuration.setAllowCredentials(true);
+
+        // Cache preflight requests for 1 hour để giảm số lượng OPTIONS requests
+        configuration.setMaxAge(3600L);
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
