@@ -138,7 +138,7 @@ Authorization: Bearer {jwt_token}
 ### 6. Search Customers by Name
 **GET** `/api/customers/search`
 
-**Permissions:** Public (tất cả authenticated users)
+**Permissions:** Tất cả authenticated users (Public)
 
 **Query Parameters:**
 - `name` (required): Tên customer cần tìm
@@ -172,7 +172,7 @@ Authorization: Bearer {jwt_token}
 ### 7. Get Customer by Email
 **GET** `/api/customers/by-email`
 
-**Permissions:** Public (tất cả authenticated users)
+**Permissions:** Tất cả authenticated users (Public)
 
 **Query Parameters:**
 - `email` (required): Email customer cần tìm
@@ -194,7 +194,7 @@ Authorization: Bearer {jwt_token}
 ### 8. Get Customer by Phone
 **GET** `/api/customers/by-phone`
 
-**Permissions:** Public (tất cả authenticated users)
+**Permissions:** Tất cả authenticated users (Public)
 
 **Query Parameters:**
 - `phone` (required): Số điện thoại customer cần tìm
@@ -216,7 +216,7 @@ Authorization: Bearer {jwt_token}
 ### 9. Get Customers by User ID
 **GET** `/api/customers/by-user/{userId}`
 
-**Permissions:** Public (tất cả authenticated users)
+**Permissions:** Tất cả authenticated users (Public)
 
 **Path Parameters:**
 - `userId`: User ID
@@ -252,7 +252,7 @@ Authorization: Bearer {jwt_token}
 ### 10. Update Customer Profile (Self-service)
 **PUT** `/api/customers/profile`
 
-**Permissions:** Authenticated users (Customer tự cập nhật profile)
+**Permissions:** Tất cả authenticated users (Customer tự cập nhật profile)
 
 **Description:** Customer tự cập nhật thông tin cá nhân của mình
 

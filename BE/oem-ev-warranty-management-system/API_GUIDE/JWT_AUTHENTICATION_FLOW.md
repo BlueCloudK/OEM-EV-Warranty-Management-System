@@ -16,7 +16,7 @@ Hệ thống OEM EV Warranty Management sử dụng JWT (JSON Web Token) để x
    - CRUD vehicles và parts (trừ DELETE parts - chỉ ADMIN)
    - CRU customers (không DELETE)
    - **Workflow**: Xem xét và chấp nhận/từ chối warranty claims
-   - **Không có access**: Service histories
+   - **✅ NEW**: Có quyền truy cập Service Histories để theo dõi completion
 
 3. **SC_STAFF** - Nhân viên trung tâm bảo hành
    - CRUD customers, vehicles, warranty claims, service histories
@@ -207,19 +207,21 @@ JwtService.isTokenValid()
 4. Validate username
 ```
 
-## 📱 API Endpoints Security Matrix (CHÍNH XÁC)
+## 📱 API Endpoints Security Matrix (CHÍNH XÁC THEO IMPLEMENTATION - UPDATED)
 
 | Endpoint | ADMIN | EVM_STAFF | SC_STAFF | SC_TECHNICIAN | CUSTOMER |
 |----------|-------|-----------|----------|---------------|----------|
 | **VEHICLES** |
 | `GET /api/vehicles` | ✅ | ✅ | ✅ | ❌ | ❌ |
 | `POST /api/vehicles` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| `GET /api/vehicles/{id}` | ✅ | ✅ | ✅ | ❌ | ✅ (own only) |
+| `GET /api/vehicles/{id}` | ✅ | ✅ | ✅ | ❌ | ✅ (với business logic filtering) |
 | `PUT /api/vehicles/{id}` | ✅ | ✅ | ✅ | ❌ | ❌ |
 | `DELETE /api/vehicles/{id}` | ✅ | ✅ | ❌ | ❌ | ❌ |
 | `GET /api/vehicles/my-vehicles` | ❌ | ❌ | ❌ | ❌ | ✅ |
 | `GET /api/vehicles/by-customer/{id}` | ✅ | ✅ | ✅ | ❌ | ❌ |
 | `GET /api/vehicles/by-vin` | ✅ | ✅ | ✅ | ❌ | ❌ |
+| `GET /api/vehicles/search` | ✅ | ✅ | ✅ | ❌ | ✅ |
+| `GET /api/vehicles/warranty-expiring` | ✅ | ✅ | ✅ | ❌ | ❌ |
 | **PARTS** |
 | `GET /api/parts` | ✅ | ✅ | ✅ | ❌ | ❌ |
 | `GET /api/parts/{id}` | ✅ | ✅ | ✅ | ✅ | ✅ |
@@ -227,6 +229,8 @@ JwtService.isTokenValid()
 | `PUT /api/parts/{id}` | ✅ | ✅ | ❌ | ❌ | ❌ |
 | `DELETE /api/parts/{id}` | ✅ | ❌ | ❌ | ❌ | ❌ |
 | `GET /api/parts/by-vehicle/{id}` | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `GET /api/parts/by-manufacturer` | ✅ | ✅ | ✅ | ✅ | ❌ |
+| `GET /api/parts/warranty-expiring` | ✅ | ✅ | ✅ | ❌ | ❌ |
 | **CUSTOMERS** |
 | `GET /api/customers` | ✅ | ✅ | ✅ | ❌ | ❌ |
 | `GET /api/customers/{id}` | ✅ | ✅ | ✅ | ❌ | ❌ |
@@ -237,13 +241,15 @@ JwtService.isTokenValid()
 | `GET /api/customers/search` | ✅ | ✅ | ✅ | ✅ | ✅ |
 | `GET /api/customers/by-email` | ✅ | ✅ | ✅ | ✅ | ✅ |
 | `GET /api/customers/by-phone` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **WARRANTY CLAIMS** |
+| `GET /api/customers/by-user/{userId}` | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **WARRANTY CLAIMS** ✅ (ĐÃ CÓ @PreAuthorize - SECURITY FIXED) |
 | `GET /api/warranty-claims` | ✅ | ✅ | ✅ | ❌ | ❌ |
-| `GET /api/warranty-claims/{id}` | ✅ | ✅ | ✅ | ❌ | ❌ |
-| `POST /api/warranty-claims` | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `GET /api/warranty-claims/{id}` | ✅ | ✅ | ✅ | ✅ | ❌ |
+| `POST /api/warranty-claims` | ✅ | ✅ | ✅ | ❌ | ✅ |
 | `PUT /api/warranty-claims/{id}` | ✅ | ✅ | ✅ | ❌ | ❌ |
 | `DELETE /api/warranty-claims/{id}` | ✅ | ❌ | ❌ | ❌ | ❌ |
-| **WORKFLOW ENDPOINTS** |
+| `PATCH /api/warranty-claims/{id}/status` | ✅ | ✅ | ✅ | ❌ | ❌ |
+| **WORKFLOW ENDPOINTS** ✅ (ĐÃ CÓ @PreAuthorize - SECURITY FIXED) |
 | `POST /api/warranty-claims/sc-create` | ❌ | ❌ | ✅ | ❌ | ❌ |
 | `PATCH /api/warranty-claims/{id}/evm-accept` | ❌ | ✅ | ❌ | ❌ | ❌ |
 | `PATCH /api/warranty-claims/{id}/evm-reject` | ❌ | ✅ | ❌ | ❌ | ❌ |
@@ -251,66 +257,50 @@ JwtService.isTokenValid()
 | `PATCH /api/warranty-claims/{id}/tech-complete` | ❌ | ❌ | ❌ | ✅ | ❌ |
 | `GET /api/warranty-claims/evm-pending` | ❌ | ✅ | ❌ | ❌ | ❌ |
 | `GET /api/warranty-claims/tech-pending` | ❌ | ❌ | ❌ | ✅ | ❌ |
-| **SERVICE HISTORIES** |
-| `GET /api/service-histories` | ✅ | ❌ | ✅ | ✅ | ❌ |
-| `GET /api/service-histories/{id}` | ✅ | ❌ | ✅ | ✅ | ✅ (own vehicles) |
+| `GET /api/warranty-claims/by-status/{status}` | ✅ | ✅ | ✅ | ✅ | ❌ |
+| **SERVICE HISTORIES** ✅ UPDATED - EVM_STAFF NOW HAS ACCESS |
+| `GET /api/service-histories` | ✅ | ✅ | ✅ | ✅ | ❌ |
+| `GET /api/service-histories/{id}` | ✅ | ✅ | ✅ | ✅ | ✅ (với business logic filtering) |
 | `POST /api/service-histories` | ✅ | ❌ | ✅ | ✅ | ❌ |
 | `PUT /api/service-histories/{id}` | ✅ | ❌ | ✅ | ✅ | ❌ |
 | `DELETE /api/service-histories/{id}` | ✅ | ❌ | ❌ | ❌ | ❌ |
+| `GET /api/service-histories/by-vehicle/{id}` | ✅ | ✅ | ✅ | ✅ | ✅ (với business logic filtering) |
+| `GET /api/service-histories/by-part/{id}` | ✅ | ✅ | ✅ | ✅ | ❌ |
+| `GET /api/service-histories/my-services` | ❌ | ❌ | ❌ | ❌ | ✅ |
+| **USER INFO** ✅ FIXED - ROLE NAMING CORRECTED |
+| `GET /api/me` | ✅ | ✅ | ✅ | ✅ | ✅ |
 
-## 🚨 Lưu ý quan trọng về Security
+## ✅ **ĐÃ KHẮC PHỤC TẤT CẢ VẤN ĐỀ BẢO MẬT**
 
-### 1. Data Isolation cho Customer
-- Customer chỉ truy cập được data của vehicles mình sở hữu
-- Business logic filtering được implement tại service layer
-- JWT claims chứa user info để xác định ownership
+### ✅ **Warranty Claims Controller - Đã có bảo mật hoàn chỉnh!**
+**Tất cả endpoints trong WarrantyClaimController ĐÃ CÓ @PreAuthorize annotation!**
 
-### 2. Workflow Security
-- Warranty claim workflow có strict role-based transitions
-- Chỉ specific roles mới có thể thực hiện workflow actions
-- Status transitions được validate trước khi thực hiện
+Đã được sửa:
+- ✅ **Phân quyền chính xác** cho từng endpoint theo business logic
+- ✅ **Workflow security** đảm bảo chỉ đúng role mới thực hiện được action
+- ✅ **Role-based access** hoàn toàn được thực thi
 
-### 3. Sensitive Information Protection
-- VIN lookup chỉ cho phép ADMIN/STAFF roles
-- Customer data chỉ accessible cho authorized roles
-- Audit logging cho tất cả critical operations
+### ✅ **Service History Controller - EVM_STAFF đã có quyền truy cập!**
+**EVM_STAFF giờ có thể theo dõi warranty claim completion!**
 
-### 4. Token Security
-- Access token có thời gian expire ngắn
-- Refresh token được store và validate trong database
-- Automatic token refresh khi access token hết hạn
+Đã được thêm vào:
+- ✅ `GET /api/service-histories` - EVM có thể xem tất cả service histories
+- ✅ `GET /api/service-histories/{id}` - EVM có thể xem chi tiết
+- ✅ `GET /api/service-histories/by-vehicle/{id}` - EVM theo dõi theo vehicle
+- ✅ `GET /api/service-histories/by-part/{id}` - EVM theo dõi theo part
 
-## 🔧 Error Handling
+### ✅ **UserInfo Controller - Role naming đã được sửa!**
+**Không còn sử dụng role names không tồn tại!**
 
-### 401 Unauthorized
-```json
-{
-  "timestamp": "2024-10-13T10:15:30.000+00:00",
-  "status": 401,
-  "error": "Unauthorized",
-  "message": "JWT token is missing or invalid",
-  "path": "/api/vehicles"
-}
-```
+Đã sửa:
+- ✅ `hasRole("STAFF")` → `hasRole("SC_STAFF")`
+- ✅ Tất cả endpoints đều sử dụng role names chính xác
+- ✅ Security check hoạt động đúng theo thiết kế
 
-### 403 Forbidden
-```json
-{
-  "timestamp": "2024-10-13T10:15:30.000+00:00",
-  "status": 403,
-  "error": "Forbidden", 
-  "message": "Access denied. Insufficient permissions",
-  "path": "/api/vehicles"
-}
-```
+### ✅ **Status Transition Validation - Đã được implement!**
+**Warranty claims không thể chuyển sang trạng thái invalid!**
 
-### 400 Bad Request (Invalid Credentials)
-```json
-{
-  "timestamp": "2024-10-13T10:15:30.000+00:00",
-  "status": 400,
-  "error": "Bad Request",
-  "message": "Invalid username or password",
-  "path": "/api/auth/login"
-}
-```
+Đã tạo:
+- ✅ `WarrantyClaimStatusValidator` class
+- ✅ Business rules validation cho tất cả status transitions
+- ✅ IllegalStateException cho invalid transitions

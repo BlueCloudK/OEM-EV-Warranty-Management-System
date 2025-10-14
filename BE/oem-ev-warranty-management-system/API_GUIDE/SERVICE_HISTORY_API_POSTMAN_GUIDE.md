@@ -21,12 +21,12 @@ Authorization: Bearer {jwt_token}
 ### 1. Get All Service Histories
 **GET** `/api/service-histories`
 
-**Permissions:** ADMIN, SC_STAFF, SC_TECHNICIAN only
+**Permissions:** ADMIN, SC_STAFF, SC_TECHNICIAN, **EVM_STAFF** ✅ UPDATED
 
 **Query Parameters:**
 - `page` (optional): Số trang (default: 0)
 - `size` (optional): Kích thước trang (default: 10)
-- `search` (optional): Tìm kiếm theo service type hoặc description
+- `search` (optional): Tìm kiếm theo description hoặc service type
 
 **Response Success (200):**
 ```json
@@ -34,27 +34,22 @@ Authorization: Bearer {jwt_token}
   "content": [
     {
       "serviceHistoryId": 1,
-      "serviceDate": "2024-10-09",
+      "description": "Battery replacement service",
+      "serviceDate": "2024-10-09T14:30:00.000+00:00",
       "serviceType": "REPLACEMENT",
-      "serviceDescription": "Battery pack replacement under warranty",
-      "serviceCost": 5000.00,
-      "serviceNotes": "Customer reported battery degradation",
+      "serviceCost": 15000.00,
       "vehicleId": 1,
       "vehicleVin": "1HGBH41JXMN109186",
       "vehicleName": "Tesla Model 3",
       "partId": "PART-BAT-001",
-      "partName": "Tesla Model 3 Battery Pack",
-      "customerId": "123e4567-e89b-12d3-a456-426614174000",
-      "customerName": "John Doe",
-      "technicianName": "Mike Johnson",
-      "createdBy": "staff123",
-      "createdDate": "2024-10-09T14:30:00"
+      "partName": "Battery Pack",
+      "technicianName": "John Smith"
     }
   ],
   "pageNumber": 0,
   "pageSize": 10,
-  "totalElements": 85,
-  "totalPages": 9,
+  "totalElements": 25,
+  "totalPages": 3,
   "first": true,
   "last": false
 }
@@ -63,36 +58,30 @@ Authorization: Bearer {jwt_token}
 ### 2. Get Service History by ID
 **GET** `/api/service-histories/{id}`
 
-**Permissions:** 
-- ADMIN, SC_STAFF, SC_TECHNICIAN: Any service history
-- CUSTOMER: Own vehicle's service histories only
+**Permissions:** ADMIN, SC_STAFF, SC_TECHNICIAN, **EVM_STAFF**, CUSTOMER (own vehicles only) ✅ UPDATED
 
 **Path Parameters:**
 - `id`: Service History ID
+
+**Note:** Customers chỉ có thể xem service histories của vehicles mình sở hữu (business logic filtering)
+**Note:** **EVM_STAFF giờ có thể xem để theo dõi warranty claim completion** ✅ NEW
 
 **Response Success (200):**
 ```json
 {
   "serviceHistoryId": 1,
-  "serviceDate": "2024-10-09",
+  "description": "Battery replacement service completed successfully",
+  "serviceDate": "2024-10-09T14:30:00.000+00:00",
   "serviceType": "REPLACEMENT",
-  "serviceDescription": "Battery pack replacement under warranty",
-  "serviceCost": 5000.00,
-  "serviceNotes": "Customer reported battery degradation. Battery tested and found below acceptable capacity. Replaced under warranty.",
+  "serviceCost": 15000.00,
   "vehicleId": 1,
   "vehicleVin": "1HGBH41JXMN109186",
   "vehicleName": "Tesla Model 3",
   "partId": "PART-BAT-001",
-  "partName": "Tesla Model 3 Battery Pack",
-  "partWarrantyPeriod": 96,
-  "customerId": "123e4567-e89b-12d3-a456-426614174000",
-  "customerName": "John Doe",
-  "technicianName": "Mike Johnson",
-  "laborHours": 4.5,
-  "warrantyClaimId": 1,
-  "createdBy": "staff123",
-  "createdDate": "2024-10-09T14:30:00",
-  "lastUpdated": "2024-10-09T16:45:00"
+  "partName": "Battery Pack",
+  "technicianName": "John Smith",
+  "warrantyClaimId": 5,
+  "completionNotes": "Battery replaced under warranty, all systems tested OK"
 }
 ```
 
@@ -104,21 +93,35 @@ Authorization: Bearer {jwt_token}
 **Request Body:**
 ```json
 {
-  "serviceDate": "2024-10-09",
-  "serviceType": "MAINTENANCE",
-  "serviceDescription": "Regular maintenance check",
-  "serviceCost": 200.00,
-  "serviceNotes": "Standard maintenance performed",
+  "description": "Motor repair service",
+  "serviceType": "REPAIR",
+  "serviceCost": 8000.00,
   "vehicleId": 1,
-  "partId": "PART-FILTER-001",
-  "technicianName": "Mike Johnson",
-  "laborHours": 2.0
+  "partId": "PART-MOT-001",
+  "technicianName": "Jane Doe",
+  "warrantyClaimId": 3
 }
 ```
 
-**Response Success (201):** Same as Get Service History by ID
+**Response Success (201):**
+```json
+{
+  "serviceHistoryId": 2,
+  "description": "Motor repair service",
+  "serviceDate": "2024-10-14T10:30:00.000+00:00",
+  "serviceType": "REPAIR",
+  "serviceCost": 8000.00,
+  "vehicleId": 1,
+  "vehicleVin": "1HGBH41JXMN109186",
+  "vehicleName": "Tesla Model 3",
+  "partId": "PART-MOT-001",
+  "partName": "Electric Motor",
+  "technicianName": "Jane Doe",
+  "warrantyClaimId": 3
+}
+```
 
-### 4. Update Service History  
+### 4. Update Service History
 **PUT** `/api/service-histories/{id}`
 
 **Permissions:** ADMIN, SC_STAFF, SC_TECHNICIAN only
@@ -129,17 +132,18 @@ Authorization: Bearer {jwt_token}
 **Request Body:**
 ```json
 {
-  "serviceDate": "2024-10-09",
-  "serviceType": "REPLACEMENT",
-  "serviceDescription": "Battery pack replacement under warranty - Updated",
-  "serviceCost": 5200.00,
-  "serviceNotes": "Updated service notes with final cost",
-  "technicianName": "Mike Johnson",
-  "laborHours": 5.0
+  "description": "Motor repair service - Updated with additional notes",
+  "serviceType": "REPAIR",
+  "serviceCost": 8500.00,
+  "vehicleId": 1,
+  "partId": "PART-MOT-001",
+  "technicianName": "Jane Doe",
+  "warrantyClaimId": 3,
+  "completionNotes": "Motor repaired and tested successfully"
 }
 ```
 
-**Response Success (200):** Same as Get Service History by ID
+**Response Success (200):** Same as Get Service History
 
 ### 5. Delete Service History
 **DELETE** `/api/service-histories/{id}`
@@ -154,9 +158,7 @@ Authorization: Bearer {jwt_token}
 ### 6. Get Service Histories by Vehicle ID
 **GET** `/api/service-histories/by-vehicle/{vehicleId}`
 
-**Permissions:** 
-- ADMIN, SC_STAFF, SC_TECHNICIAN: Any vehicle
-- CUSTOMER: Own vehicles only
+**Permissions:** ADMIN, SC_STAFF, SC_TECHNICIAN, **EVM_STAFF**, CUSTOMER (own vehicles only) ✅ UPDATED
 
 **Path Parameters:**
 - `vehicleId`: Vehicle ID
@@ -165,62 +167,10 @@ Authorization: Bearer {jwt_token}
 - `page` (optional): Số trang (default: 0)
 - `size` (optional): Kích thước trang (default: 10)
 
-**Response Success (200):**
-```json
-{
-  "content": [
-    {
-      "serviceHistoryId": 1,
-      "serviceDate": "2024-10-09",
-      "serviceType": "REPLACEMENT",
-      "serviceDescription": "Battery pack replacement under warranty",
-      "serviceCost": 5000.00,
-      "vehicleId": 1,
-      "vehicleVin": "1HGBH41JXMN109186",
-      "vehicleName": "Tesla Model 3",
-      "partName": "Tesla Model 3 Battery Pack",
-      "technicianName": "Mike Johnson",
-      "createdDate": "2024-10-09T14:30:00"
-    }
-  ],
-  "pageNumber": 0,
-  "pageSize": 10,
-  "totalElements": 5,
-  "totalPages": 1,
-  "first": true,
-  "last": true
-}
-```
-
-### 7. Get Service Histories by Part ID
-**GET** `/api/service-histories/by-part/{partId}`
-
-**Permissions:** ADMIN, SC_STAFF, SC_TECHNICIAN only
-
-**Path Parameters:**
-- `partId`: Part ID
-
-**Query Parameters:**
-- `page` (optional): Số trang (default: 0)
-- `size` (optional): Kích thước trang (default: 10)
-
-**Response Success (200):** Paginated list of service histories using the specified part
-
-### 8. Get My Service Histories (Customer Self-Service)
-**GET** `/api/service-histories/my-services`
-
-**Permissions:** CUSTOMER only
-
-**Description:** Customer xem service histories của vehicles mình sở hữu
-
-**Query Parameters:**
-- `page` (optional): Số trang (default: 0)
-- `size` (optional): Kích thước trang (default: 10)
-
-**Headers:**
-```
-Authorization: Bearer {jwt_token}
-```
+**Use Case for EVM_STAFF:** ✅ NEW
+- Monitor warranty claim completion for specific vehicles
+- Track service quality and resolution times
+- Verify parts usage and replacement patterns
 
 **Response Success (200):**
 ```json
@@ -228,15 +178,17 @@ Authorization: Bearer {jwt_token}
   "content": [
     {
       "serviceHistoryId": 1,
-      "serviceDate": "2024-10-09",
+      "description": "Battery replacement service",
+      "serviceDate": "2024-10-09T14:30:00.000+00:00",
       "serviceType": "REPLACEMENT",
-      "serviceDescription": "Battery pack replacement under warranty",
-      "serviceCost": 5000.00,
+      "serviceCost": 15000.00,
       "vehicleId": 1,
       "vehicleVin": "1HGBH41JXMN109186",
       "vehicleName": "Tesla Model 3",
-      "partName": "Tesla Model 3 Battery Pack",
-      "technicianName": "Mike Johnson"
+      "partId": "PART-BAT-001",
+      "partName": "Battery Pack",
+      "technicianName": "John Smith",
+      "warrantyClaimId": 5
     }
   ],
   "pageNumber": 0,
@@ -248,18 +200,102 @@ Authorization: Bearer {jwt_token}
 }
 ```
 
-### 9. Get Service Histories by Date Range
-**GET** `/api/service-histories/by-date-range`
+### 7. Get Service Histories by Part ID
+**GET** `/api/service-histories/by-part/{partId}`
 
-**Permissions:** ADMIN, SC_STAFF, SC_TECHNICIAN only
+**Permissions:** ADMIN, SC_STAFF, SC_TECHNICIAN, **EVM_STAFF** ✅ UPDATED
+
+**Path Parameters:**
+- `partId`: Part ID
 
 **Query Parameters:**
-- `startDate` (required): Start date (format: YYYY-MM-DD)
-- `endDate` (required): End date (format: YYYY-MM-DD)
 - `page` (optional): Số trang (default: 0)
 - `size` (optional): Kích thước trang (default: 10)
 
-**Response Success (200):** Paginated list of service histories within date range
+**Use Case for EVM_STAFF:** ✅ NEW
+- Track warranty claim patterns for specific parts
+- Monitor part failure rates and replacement frequency
+- Analyze part quality and durability issues
+
+**Response Success (200):** Paginated list of service histories using the specified part
+
+### 8. Get My Service Histories (Customer Self-service)
+**GET** `/api/service-histories/my-services`
+
+**Permissions:** CUSTOMER only
+
+**Description:** Customer xem service histories của vehicles mình sở hữu
+
+**Headers:**
+```
+Authorization: Bearer {customer_jwt_token}
+Content-Type: application/json
+```
+
+**Query Parameters:**
+- `page` (optional): Số trang (default: 0)
+- `size` (optional): Kích thước trang (default: 10)
+
+**Response Success (200):**
+```json
+{
+  "content": [
+    {
+      "serviceHistoryId": 1,
+      "description": "Battery replacement service",
+      "serviceDate": "2024-10-09T14:30:00.000+00:00",
+      "serviceType": "REPLACEMENT",
+      "serviceCost": 15000.00,
+      "vehicleId": 1,
+      "vehicleVin": "1HGBH41JXMN109186",
+      "vehicleName": "Tesla Model 3",
+      "partId": "PART-BAT-001",
+      "partName": "Battery Pack",
+      "technicianName": "John Smith"
+    }
+  ],
+  "pageNumber": 0,
+  "pageSize": 10,
+  "totalElements": 2,
+  "totalPages": 1,
+  "first": true,
+  "last": true
+}
+```
+
+---
+
+## 🔍 EVM_STAFF Monitoring Use Cases ✅ NEW FEATURE
+
+### Warranty Claim Completion Tracking
+**EVM_STAFF can now monitor the entire warranty claim lifecycle:**
+
+1. **Track Claim Progress:**
+```bash
+# Get service histories for a specific vehicle after EVM approval
+GET /api/service-histories/by-vehicle/1
+Authorization: Bearer {evm_staff_token}
+```
+
+2. **Monitor Part Performance:**
+```bash
+# Track all services using a specific part
+GET /api/service-histories/by-part/PART-BAT-001
+Authorization: Bearer {evm_staff_token}
+```
+
+3. **Quality Assurance:**
+```bash
+# Review all service completions
+GET /api/service-histories?search=completion
+Authorization: Bearer {evm_staff_token}
+```
+
+### Business Benefits for EVM:
+- ✅ **Completion Visibility:** Track warranty claim resolution
+- ✅ **Quality Control:** Monitor service center performance
+- ✅ **Part Analysis:** Identify recurring issues
+- ✅ **Customer Satisfaction:** Ensure timely resolution
 
 ## Postman Collection Examples
 
