@@ -5,11 +5,13 @@ import com.swp391.warrantymanagement.dto.request.WarrantyClaimStatusUpdateReques
 import com.swp391.warrantymanagement.dto.response.WarrantyClaimResponseDTO;
 import com.swp391.warrantymanagement.dto.response.PagedResponse;
 import com.swp391.warrantymanagement.service.WarrantyClaimService;
+import com.swp391.warrantymanagement.util.WarrantyClaimStatusValidator;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import org.slf4j.Logger;
@@ -18,6 +20,7 @@ import org.slf4j.LoggerFactory;
 /**
  * REST controller for Warranty Claim APIs.
  * Handles CRUD and status update operations for warranty claims using DTOs only.
+ * SECURITY FIXED: Added @PreAuthorize annotations to all endpoints
  */
 @RestController
 @RequestMapping("api/warranty-claims")
@@ -29,6 +32,7 @@ public class WarrantyClaimController {
 
     // Get all warranty claims with pagination (ADMIN/SC_STAFF/EVM_STAFF only)
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('EVM_STAFF')")
     public ResponseEntity<PagedResponse<WarrantyClaimResponseDTO>> getAllClaims(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
@@ -38,8 +42,9 @@ public class WarrantyClaimController {
         return ResponseEntity.ok(claimsPage);
     }
 
-    // Get warranty claim by ID (ADMIN/SC_STAFF/EVM_STAFF only)
+    // Get warranty claim by ID (ADMIN/SC_STAFF/EVM_STAFF/SC_TECHNICIAN only)
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('EVM_STAFF') or hasRole('SC_TECHNICIAN')")
     public ResponseEntity<WarrantyClaimResponseDTO> getClaimById(@PathVariable Long id) {
         logger.info("Get warranty claim by id: {}", id);
         WarrantyClaimResponseDTO claim = warrantyClaimService.getClaimById(id);
@@ -53,6 +58,7 @@ public class WarrantyClaimController {
 
     // Create new warranty claim (CUSTOMER/ADMIN/SC_STAFF/EVM_STAFF)
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('EVM_STAFF') or hasRole('CUSTOMER')")
     public ResponseEntity<WarrantyClaimResponseDTO> createClaim(@Valid @RequestBody WarrantyClaimRequestDTO requestDTO) {
         logger.info("Create warranty claim request: {}", requestDTO);
         WarrantyClaimResponseDTO responseDTO = warrantyClaimService.createClaim(requestDTO);
@@ -62,6 +68,7 @@ public class WarrantyClaimController {
 
     // Update warranty claim details (ADMIN/SC_STAFF/EVM_STAFF only)
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('EVM_STAFF')")
     public ResponseEntity<WarrantyClaimResponseDTO> updateClaim(@PathVariable Long id,
                                                               @Valid @RequestBody WarrantyClaimRequestDTO requestDTO) {
         logger.info("Update warranty claim request: id={}, data={}", id, requestDTO);
@@ -76,6 +83,7 @@ public class WarrantyClaimController {
 
     // Update claim status (ADMIN/SC_STAFF/EVM_STAFF only)
     @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('EVM_STAFF')")
     public ResponseEntity<WarrantyClaimResponseDTO> updateClaimStatus(@PathVariable Long id,
         @Valid @RequestBody WarrantyClaimStatusUpdateRequestDTO requestDTO) {
         logger.info("Update warranty claim status request: id={}, data={}", id, requestDTO);
@@ -90,6 +98,7 @@ public class WarrantyClaimController {
 
     // Delete warranty claim (ADMIN only)
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteClaim(@PathVariable Long id) {
         logger.info("Delete warranty claim request: {}", id);
         boolean deleted = warrantyClaimService.deleteClaim(id);
@@ -100,8 +109,125 @@ public class WarrantyClaimController {
         logger.warn("Warranty claim not found for delete: {}", id);
         return ResponseEntity.notFound().build();
     }
+
+    // ========== WORKFLOW ENDPOINTS ==========
+
+    /**
+     * SC Staff tạo claim cho khách hàng (status: SUBMITTED)
+     * SC_STAFF only
+     */
+    @PostMapping("/sc-create")
+    @PreAuthorize("hasRole('SC_STAFF')")
+    public ResponseEntity<WarrantyClaimResponseDTO> createClaimBySCStaff(
+            @Valid @RequestBody WarrantyClaimRequestDTO requestDTO) {
+        logger.info("SC Staff create warranty claim request: {}", requestDTO);
+        WarrantyClaimResponseDTO responseDTO = warrantyClaimService.createClaimBySCStaff(requestDTO);
+        logger.info("Warranty claim created by SC Staff: {}", responseDTO.getWarrantyClaimId());
+        return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
+    }
+
+    /**
+     * EVM Staff xem xét và chấp nhận claim (SUBMITTED → SC_REVIEW)
+     * EVM_STAFF only
+     */
+    @PatchMapping("/{id}/evm-accept")
+    @PreAuthorize("hasRole('EVM_STAFF')")
+    public ResponseEntity<WarrantyClaimResponseDTO> evmAcceptClaim(
+            @PathVariable Long id,
+            @RequestBody(required = false) String note) {
+        logger.info("EVM accept warranty claim: id={}, note={}", id, note);
+        WarrantyClaimResponseDTO updatedClaim = warrantyClaimService.evmAcceptClaim(id, note);
+        logger.info("Warranty claim accepted by EVM: {}", id);
+        return ResponseEntity.ok(updatedClaim);
+    }
+
+    /**
+     * EVM Staff từ chối claim (SUBMITTED → REJECTED)
+     * EVM_STAFF only
+     */
+    @PatchMapping("/{id}/evm-reject")
+    @PreAuthorize("hasRole('EVM_STAFF')")
+    public ResponseEntity<WarrantyClaimResponseDTO> evmRejectClaim(
+            @PathVariable Long id,
+            @RequestParam String reason) {
+        logger.info("EVM reject warranty claim: id={}, reason={}", id, reason);
+        WarrantyClaimResponseDTO updatedClaim = warrantyClaimService.evmRejectClaim(id, reason);
+        logger.info("Warranty claim rejected by EVM: {}", id);
+        return ResponseEntity.ok(updatedClaim);
+    }
+
+    /**
+     * Technician bắt đầu xử lý claim (SC_REVIEW → PROCESSING)
+     * SC_TECHNICIAN only
+     */
+    @PatchMapping("/{id}/tech-start")
+    @PreAuthorize("hasRole('SC_TECHNICIAN')")
+    public ResponseEntity<WarrantyClaimResponseDTO> techStartProcessing(
+            @PathVariable Long id,
+            @RequestBody(required = false) String note) {
+        logger.info("Technician start processing claim: id={}, note={}", id, note);
+        WarrantyClaimResponseDTO updatedClaim = warrantyClaimService.techStartProcessing(id, note);
+        logger.info("Claim processing started by technician: {}", id);
+        return ResponseEntity.ok(updatedClaim);
+    }
+
+    /**
+     * Technician hoàn tất xử lý claim (PROCESSING → COMPLETED)
+     * SC_TECHNICIAN only
+     */
+    @PatchMapping("/{id}/tech-complete")
+    @PreAuthorize("hasRole('SC_TECHNICIAN')")
+    public ResponseEntity<WarrantyClaimResponseDTO> techCompleteClaim(
+            @PathVariable Long id,
+            @RequestParam String completionNote) {
+        logger.info("Technician complete claim: id={}, note={}", id, completionNote);
+        WarrantyClaimResponseDTO updatedClaim = warrantyClaimService.techCompleteClaim(id, completionNote);
+        logger.info("Claim completed by technician: {}", id);
+        return ResponseEntity.ok(updatedClaim);
+    }
+
+    /**
+     * Lấy danh sách claims theo role và status (để phân quyền xem)
+     */
+    @GetMapping("/by-status/{status}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('EVM_STAFF') or hasRole('SC_TECHNICIAN')")
+    public ResponseEntity<PagedResponse<WarrantyClaimResponseDTO>> getClaimsByStatus(
+            @PathVariable String status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        logger.info("Get claims by status: status={}, page={}, size={}", status, page, size);
+        PagedResponse<WarrantyClaimResponseDTO> claimsPage = warrantyClaimService.getClaimsByStatus(status, PageRequest.of(page, size));
+        logger.info("Get claims by status success, totalElements={}", claimsPage.getTotalElements());
+        return ResponseEntity.ok(claimsPage);
+    }
+
+    /**
+     * Lấy claims cần EVM xử lý (status = SUBMITTED)
+     * EVM_STAFF only
+     */
+    @GetMapping("/evm-pending")
+    @PreAuthorize("hasRole('EVM_STAFF')")
+    public ResponseEntity<PagedResponse<WarrantyClaimResponseDTO>> getEVMPendingClaims(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        logger.info("Get EVM pending claims: page={}, size={}", page, size);
+        PagedResponse<WarrantyClaimResponseDTO> claimsPage = warrantyClaimService.getClaimsByStatus("SUBMITTED", PageRequest.of(page, size));
+        logger.info("Get EVM pending claims success, totalElements={}", claimsPage.getTotalElements());
+        return ResponseEntity.ok(claimsPage);
+    }
+
+    /**
+     * Lấy claims cần Technician xử lý (status = SC_REVIEW hoặc PROCESSING)
+     * SC_TECHNICIAN only
+     */
+    @GetMapping("/tech-pending")
+    @PreAuthorize("hasRole('SC_TECHNICIAN')")
+    public ResponseEntity<PagedResponse<WarrantyClaimResponseDTO>> getTechPendingClaims(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        logger.info("Get technician pending claims: page={}, size={}", page, size);
+        PagedResponse<WarrantyClaimResponseDTO> claimsPage = warrantyClaimService.getTechPendingClaims(PageRequest.of(page, size));
+        logger.info("Get technician pending claims success, totalElements={}", claimsPage.getTotalElements());
+        return ResponseEntity.ok(claimsPage);
+    }
 }
-
-
-
-

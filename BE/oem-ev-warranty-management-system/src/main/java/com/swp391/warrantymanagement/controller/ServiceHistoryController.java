@@ -31,7 +31,7 @@ public class ServiceHistoryController {
 
     // Get all service histories with pagination (ADMIN/SC_STAFF/SC_TECHNICIAN only)
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN') or hasRole('EVM_STAFF')")
     public ResponseEntity<PagedResponse<ServiceHistoryResponseDTO>> getAllServiceHistories(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -45,7 +45,7 @@ public class ServiceHistoryController {
 
     // Get service history by ID (ADMIN/SC_STAFF/SC_TECHNICIAN can view any, CUSTOMER can view own)
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN') or hasRole('CUSTOMER')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN') or hasRole('EVM_STAFF') or hasRole('CUSTOMER')")
     public ResponseEntity<ServiceHistoryResponseDTO> getServiceHistoryById(@PathVariable Long id) {
         logger.info("Get service history by id: {}", id);
         ServiceHistoryResponseDTO history = serviceHistoryService.getServiceHistoryById(id);
@@ -57,9 +57,9 @@ public class ServiceHistoryController {
         return ResponseEntity.notFound().build();
     }
 
-    // Create new service history (Only SERVICE_CENTER_STAFF/TECHNICIAN/ADMIN)
+    // Create new service history (Only SC_STAFF/SC_TECHNICIAN/ADMIN)
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF') or hasRole('SERVICE_CENTER_STAFF') or hasRole('TECHNICIAN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN') or hasRole('EVM_STAFF')")
     public ResponseEntity<ServiceHistoryResponseDTO> createServiceHistory(@Valid @RequestBody ServiceHistoryRequestDTO requestDTO) {
         logger.info("Create service history request: {}", requestDTO);
         try {
@@ -72,9 +72,9 @@ public class ServiceHistoryController {
         }
     }
 
-    // Update service history (Only SERVICE_CENTER_STAFF/TECHNICIAN/ADMIN)
+    // Update service history (Only SC_STAFF/SC_TECHNICIAN/ADMIN)
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF') or hasRole('SERVICE_CENTER_STAFF') or hasRole('TECHNICIAN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN') or hasRole('EVM_STAFF')")
     public ResponseEntity<ServiceHistoryResponseDTO> updateServiceHistory(@PathVariable Long id,
                                                                         @Valid @RequestBody ServiceHistoryRequestDTO requestDTO) {
         logger.info("Update service history request: id={}, data={}", id, requestDTO);
@@ -106,9 +106,9 @@ public class ServiceHistoryController {
         return ResponseEntity.notFound().build();
     }
 
-    // Get service histories by vehicle ID (ADMIN/STAFF can view any, CUSTOMER can view own vehicle's history)
+    // Get service histories by vehicle ID (ADMIN/SC_STAFF/SC_TECHNICIAN can view any, CUSTOMER can view own vehicle's history)
     @GetMapping("/by-vehicle/{vehicleId}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF') or hasRole('CUSTOMER')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN') or hasRole('EVM_STAFF') or hasRole('CUSTOMER')")
     public ResponseEntity<PagedResponse<ServiceHistoryResponseDTO>> getServiceHistoriesByVehicle(
             @PathVariable Long vehicleId,
             @RequestParam(defaultValue = "0") int page,
@@ -120,9 +120,9 @@ public class ServiceHistoryController {
         return ResponseEntity.ok(historiesPage);
     }
 
-    // Get service histories by part ID (ADMIN/STAFF/SERVICE_CENTER only)
+    // Get service histories by part ID (ADMIN/SC_STAFF/SC_TECHNICIAN only)
     @GetMapping("/by-part/{partId}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF') or hasRole('SERVICE_CENTER_STAFF')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN') or hasRole('EVM_STAFF')")
     public ResponseEntity<PagedResponse<ServiceHistoryResponseDTO>> getServiceHistoriesByPart(
             @PathVariable String partId,
             @RequestParam(defaultValue = "0") int page,
@@ -148,9 +148,9 @@ public class ServiceHistoryController {
         }
     }
 
-    // Search service histories by date range (ADMIN/STAFF/SERVICE_CENTER only)
+    // Search service histories by date range (ADMIN/SC_STAFF/SC_TECHNICIAN only)
     @GetMapping("/by-date-range")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF') or hasRole('SERVICE_CENTER_STAFF')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN') or hasRole('EVM_STAFF')")
     public ResponseEntity<PagedResponse<ServiceHistoryResponseDTO>> getServiceHistoriesByDateRange(
             @RequestParam String startDate,
             @RequestParam String endDate,
