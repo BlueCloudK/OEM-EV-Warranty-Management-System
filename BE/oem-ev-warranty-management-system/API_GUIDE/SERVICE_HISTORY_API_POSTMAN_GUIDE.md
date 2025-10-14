@@ -21,7 +21,7 @@ Authorization: Bearer {jwt_token}
 ### 1. Get All Service Histories
 **GET** `/api/service-histories`
 
-**Permissions:** ADMIN, SC_STAFF, SC_TECHNICIAN, **EVM_STAFF** ✅ UPDATED
+**Permissions:** ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF
 
 **Query Parameters:**
 - `page` (optional): Số trang (default: 0)
@@ -34,16 +34,14 @@ Authorization: Bearer {jwt_token}
   "content": [
     {
       "serviceHistoryId": 1,
-      "description": "Battery replacement service",
-      "serviceDate": "2024-10-09T14:30:00.000+00:00",
+      "serviceDate": "2024-10-14T14:30:00.000+00:00",
       "serviceType": "REPLACEMENT",
-      "serviceCost": 15000.00,
-      "vehicleId": 1,
-      "vehicleVin": "1HGBH41JXMN109186",
-      "vehicleName": "Tesla Model 3",
+      "description": "Battery replacement service",
       "partId": "PART-BAT-001",
       "partName": "Battery Pack",
-      "technicianName": "John Smith"
+      "vehicleId": 1,
+      "vehicleName": "Tesla Model 3",
+      "vehicleVin": "1HGBH41JXMN109186"
     }
   ],
   "pageNumber": 0,
@@ -58,48 +56,39 @@ Authorization: Bearer {jwt_token}
 ### 2. Get Service History by ID
 **GET** `/api/service-histories/{id}`
 
-**Permissions:** ADMIN, SC_STAFF, SC_TECHNICIAN, **EVM_STAFF**, CUSTOMER (own vehicles only) ✅ UPDATED
+**Permissions:** ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF, CUSTOMER (own vehicles only)
 
 **Path Parameters:**
 - `id`: Service History ID
-
-**Note:** Customers chỉ có thể xem service histories của vehicles mình sở hữu (business logic filtering)
-**Note:** **EVM_STAFF giờ có thể xem để theo dõi warranty claim completion** ✅ NEW
 
 **Response Success (200):**
 ```json
 {
   "serviceHistoryId": 1,
-  "description": "Battery replacement service completed successfully",
-  "serviceDate": "2024-10-09T14:30:00.000+00:00",
+  "serviceDate": "2024-10-14T14:30:00.000+00:00",
   "serviceType": "REPLACEMENT",
-  "serviceCost": 15000.00,
-  "vehicleId": 1,
-  "vehicleVin": "1HGBH41JXMN109186",
-  "vehicleName": "Tesla Model 3",
+  "description": "Battery replacement service completed successfully",
   "partId": "PART-BAT-001",
   "partName": "Battery Pack",
-  "technicianName": "John Smith",
-  "warrantyClaimId": 5,
-  "completionNotes": "Battery replaced under warranty, all systems tested OK"
+  "vehicleId": 1,
+  "vehicleName": "Tesla Model 3",
+  "vehicleVin": "1HGBH41JXMN109186"
 }
 ```
 
 ### 3. Create Service History
 **POST** `/api/service-histories`
 
-**Permissions:** ADMIN, SC_STAFF, SC_TECHNICIAN only
+**Permissions:** ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF
 
 **Request Body:**
 ```json
 {
-  "description": "Motor repair service",
+  "serviceDate": "2024-10-14T10:30:00.000+00:00",
   "serviceType": "REPAIR",
-  "serviceCost": 8000.00,
-  "vehicleId": 1,
+  "description": "Motor repair service",
   "partId": "PART-MOT-001",
-  "technicianName": "Jane Doe",
-  "warrantyClaimId": 3
+  "vehicleId": 1
 }
 ```
 
@@ -107,24 +96,20 @@ Authorization: Bearer {jwt_token}
 ```json
 {
   "serviceHistoryId": 2,
-  "description": "Motor repair service",
   "serviceDate": "2024-10-14T10:30:00.000+00:00",
   "serviceType": "REPAIR",
-  "serviceCost": 8000.00,
-  "vehicleId": 1,
-  "vehicleVin": "1HGBH41JXMN109186",
-  "vehicleName": "Tesla Model 3",
+  "description": "Motor repair service",
   "partId": "PART-MOT-001",
-  "partName": "Electric Motor",
-  "technicianName": "Jane Doe",
-  "warrantyClaimId": 3
+  "vehicleId": 1,
+  "vehicleName": "Tesla Model 3",
+  "vehicleVin": "1HGBH41JXMN109186"
 }
 ```
 
 ### 4. Update Service History
 **PUT** `/api/service-histories/{id}`
 
-**Permissions:** ADMIN, SC_STAFF, SC_TECHNICIAN only
+**Permissions:** ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF
 
 **Path Parameters:**
 - `id`: Service History ID
@@ -132,18 +117,15 @@ Authorization: Bearer {jwt_token}
 **Request Body:**
 ```json
 {
-  "description": "Motor repair service - Updated with additional notes",
+  "serviceDate": "2024-10-14T10:30:00.000+00:00",
   "serviceType": "REPAIR",
-  "serviceCost": 8500.00,
-  "vehicleId": 1,
+  "description": "Motor repair service - Updated with additional diagnostics",
   "partId": "PART-MOT-001",
-  "technicianName": "Jane Doe",
-  "warrantyClaimId": 3,
-  "completionNotes": "Motor repaired and tested successfully"
+  "vehicleId": 1
 }
 ```
 
-**Response Success (200):** Same as Get Service History
+**Response Success (200):** Same structure as Get Service History
 
 ### 5. Delete Service History
 **DELETE** `/api/service-histories/{id}`
@@ -158,7 +140,7 @@ Authorization: Bearer {jwt_token}
 ### 6. Get Service Histories by Vehicle ID
 **GET** `/api/service-histories/by-vehicle/{vehicleId}`
 
-**Permissions:** ADMIN, SC_STAFF, SC_TECHNICIAN, **EVM_STAFF**, CUSTOMER (own vehicles only) ✅ UPDATED
+**Permissions:** ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF, CUSTOMER (own vehicles only)
 
 **Path Parameters:**
 - `vehicleId`: Vehicle ID
@@ -167,28 +149,20 @@ Authorization: Bearer {jwt_token}
 - `page` (optional): Số trang (default: 0)
 - `size` (optional): Kích thước trang (default: 10)
 
-**Use Case for EVM_STAFF:** ✅ NEW
-- Monitor warranty claim completion for specific vehicles
-- Track service quality and resolution times
-- Verify parts usage and replacement patterns
-
 **Response Success (200):**
 ```json
 {
   "content": [
     {
       "serviceHistoryId": 1,
-      "description": "Battery replacement service",
-      "serviceDate": "2024-10-09T14:30:00.000+00:00",
+      "serviceDate": "2024-10-14T14:30:00.000+00:00",
       "serviceType": "REPLACEMENT",
-      "serviceCost": 15000.00,
-      "vehicleId": 1,
-      "vehicleVin": "1HGBH41JXMN109186",
-      "vehicleName": "Tesla Model 3",
+      "description": "Battery replacement service",
       "partId": "PART-BAT-001",
       "partName": "Battery Pack",
-      "technicianName": "John Smith",
-      "warrantyClaimId": 5
+      "vehicleId": 1,
+      "vehicleName": "Tesla Model 3",
+      "vehicleVin": "1HGBH41JXMN109186"
     }
   ],
   "pageNumber": 0,
@@ -203,7 +177,7 @@ Authorization: Bearer {jwt_token}
 ### 7. Get Service Histories by Part ID
 **GET** `/api/service-histories/by-part/{partId}`
 
-**Permissions:** ADMIN, SC_STAFF, SC_TECHNICIAN, **EVM_STAFF** ✅ UPDATED
+**Permissions:** ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF
 
 **Path Parameters:**
 - `partId`: Part ID
@@ -212,11 +186,6 @@ Authorization: Bearer {jwt_token}
 - `page` (optional): Số trang (default: 0)
 - `size` (optional): Kích thước trang (default: 10)
 
-**Use Case for EVM_STAFF:** ✅ NEW
-- Track warranty claim patterns for specific parts
-- Monitor part failure rates and replacement frequency
-- Analyze part quality and durability issues
-
 **Response Success (200):** Paginated list of service histories using the specified part
 
 ### 8. Get My Service Histories (Customer Self-service)
@@ -224,17 +193,12 @@ Authorization: Bearer {jwt_token}
 
 **Permissions:** CUSTOMER only
 
-**Description:** Customer xem service histories của vehicles mình sở hữu
-
-**Headers:**
-```
-Authorization: Bearer {customer_jwt_token}
-Content-Type: application/json
-```
-
 **Query Parameters:**
 - `page` (optional): Số trang (default: 0)
 - `size` (optional): Kích thước trang (default: 10)
+
+**Headers:**
+- `Authorization`: Bearer token (required)
 
 **Response Success (200):**
 ```json
@@ -242,16 +206,14 @@ Content-Type: application/json
   "content": [
     {
       "serviceHistoryId": 1,
-      "description": "Battery replacement service",
-      "serviceDate": "2024-10-09T14:30:00.000+00:00",
+      "serviceDate": "2024-10-14T14:30:00.000+00:00",
       "serviceType": "REPLACEMENT",
-      "serviceCost": 15000.00,
-      "vehicleId": 1,
-      "vehicleVin": "1HGBH41JXMN109186",
-      "vehicleName": "Tesla Model 3",
+      "description": "Battery replacement service",
       "partId": "PART-BAT-001",
       "partName": "Battery Pack",
-      "technicianName": "John Smith"
+      "vehicleId": 1,
+      "vehicleName": "Tesla Model 3",
+      "vehicleVin": "1HGBH41JXMN109186"
     }
   ],
   "pageNumber": 0,
@@ -263,173 +225,133 @@ Content-Type: application/json
 }
 ```
 
+### 9. Get Service Histories by Date Range
+**GET** `/api/service-histories/by-date-range`
+
+**Permissions:** ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF
+
+**Query Parameters:**
+- `startDate`: Start date (YYYY-MM-DD) - Required
+- `endDate`: End date (YYYY-MM-DD) - Required
+- `page` (optional): Số trang (default: 0)
+- `size` (optional): Kích thước trang (default: 10)
+
+**Response Success (200):** Paginated list of service histories within date range
+
 ---
-
-## 🔍 EVM_STAFF Monitoring Use Cases ✅ NEW FEATURE
-
-### Warranty Claim Completion Tracking
-**EVM_STAFF can now monitor the entire warranty claim lifecycle:**
-
-1. **Track Claim Progress:**
-```bash
-# Get service histories for a specific vehicle after EVM approval
-GET /api/service-histories/by-vehicle/1
-Authorization: Bearer {evm_staff_token}
-```
-
-2. **Monitor Part Performance:**
-```bash
-# Track all services using a specific part
-GET /api/service-histories/by-part/PART-BAT-001
-Authorization: Bearer {evm_staff_token}
-```
-
-3. **Quality Assurance:**
-```bash
-# Review all service completions
-GET /api/service-histories?search=completion
-Authorization: Bearer {evm_staff_token}
-```
-
-### Business Benefits for EVM:
-- ✅ **Completion Visibility:** Track warranty claim resolution
-- ✅ **Quality Control:** Monitor service center performance
-- ✅ **Part Analysis:** Identify recurring issues
-- ✅ **Customer Satisfaction:** Ensure timely resolution
 
 ## Postman Collection Examples
 
-### Get All Service Histories
+### Environment Variables
 ```
-Method: GET
-URL: http://localhost:8080/api/service-histories?page=0&size=10&search=battery
-Headers:
-  Authorization: Bearer {{jwt_token}}
+BASE_URL: http://localhost:8080
+JWT_TOKEN: {{auth_token}}
 ```
 
-### Get Service History by ID
+### 1. Get All Service Histories
 ```
 Method: GET
-URL: http://localhost:8080/api/service-histories/1
+URL: {{BASE_URL}}/api/service-histories?page=0&size=10&search=battery
 Headers:
-  Authorization: Bearer {{jwt_token}}
+  Authorization: Bearer {{JWT_TOKEN}}
+  Content-Type: application/json
 ```
 
-### Create Service History
+### 2. Get Service History by ID
+```
+Method: GET
+URL: {{BASE_URL}}/api/service-histories/1
+Headers:
+  Authorization: Bearer {{JWT_TOKEN}}
+  Content-Type: application/json
+```
+
+### 3. Create Service History
 ```
 Method: POST
-URL: http://localhost:8080/api/service-histories
+URL: {{BASE_URL}}/api/service-histories
 Headers:
-  Authorization: Bearer {{jwt_token}}
+  Authorization: Bearer {{JWT_TOKEN}}
   Content-Type: application/json
 Body (raw JSON):
 {
-  "serviceDate": "2024-10-09",
-  "serviceType": "REPAIR",
-  "serviceDescription": "Motor repair",
-  "serviceCost": 3000.00,
-  "serviceNotes": "Motor issue resolved",
-  "vehicleId": 1,
-  "partId": "PART-MOT-001",
-  "technicianName": "John Tech",
-  "laborHours": 6.0
+  "serviceDate": "2024-10-14T09:00:00.000+00:00",
+  "serviceType": "MAINTENANCE",
+  "description": "Brake system maintenance and inspection",
+  "partId": "PART-BRK-001",
+  "vehicleId": 1
 }
 ```
 
-### Update Service History
+### 4. Update Service History
 ```
 Method: PUT
-URL: http://localhost:8080/api/service-histories/1
+URL: {{BASE_URL}}/api/service-histories/1
 Headers:
-  Authorization: Bearer {{jwt_token}}
+  Authorization: Bearer {{JWT_TOKEN}}
   Content-Type: application/json
 Body (raw JSON):
 {
-  "serviceDate": "2024-10-09",
-  "serviceType": "REPLACEMENT",
-  "serviceDescription": "Updated description",
-  "serviceCost": 5200.00,
-  "serviceNotes": "Updated notes",
-  "technicianName": "Mike Johnson",
-  "laborHours": 5.0
+  "serviceDate": "2024-10-14T09:00:00.000+00:00",
+  "serviceType": "MAINTENANCE",
+  "description": "Brake system maintenance and inspection - Updated with additional checks",
+  "partId": "PART-BRK-001",
+  "vehicleId": 1
 }
 ```
 
-### Delete Service History
+### 5. Delete Service History (Admin Only)
 ```
 Method: DELETE
-URL: http://localhost:8080/api/service-histories/1
+URL: {{BASE_URL}}/api/service-histories/1
 Headers:
-  Authorization: Bearer {{jwt_token}}
+  Authorization: Bearer {{JWT_TOKEN}}
 ```
 
-### Get Service Histories by Vehicle ID
+### 6. Get Service Histories by Vehicle
 ```
 Method: GET
-URL: http://localhost:8080/api/service-histories/by-vehicle/1?page=0&size=10
+URL: {{BASE_URL}}/api/service-histories/by-vehicle/1?page=0&size=10
 Headers:
-  Authorization: Bearer {{jwt_token}}
+  Authorization: Bearer {{JWT_TOKEN}}
+  Content-Type: application/json
 ```
 
-### Get Service Histories by Part ID
+### 7. Get Service Histories by Part
 ```
 Method: GET
-URL: http://localhost:8080/api/service-histories/by-part/PART-BAT-001?page=0&size=10
+URL: {{BASE_URL}}/api/service-histories/by-part/PART-BAT-001?page=0&size=10
 Headers:
-  Authorization: Bearer {{jwt_token}}
+  Authorization: Bearer {{JWT_TOKEN}}
+  Content-Type: application/json
 ```
 
-### Get My Service Histories (Customer)
+### 8. Get My Service Histories (Customer)
 ```
 Method: GET
-URL: http://localhost:8080/api/service-histories/my-services?page=0&size=10
+URL: {{BASE_URL}}/api/service-histories/my-services?page=0&size=10
 Headers:
-  Authorization: Bearer {{jwt_token}}
+  Authorization: Bearer {{JWT_TOKEN}}
+  Content-Type: application/json
 ```
 
-### Get Service Histories by Date Range
+### 9. Get Service Histories by Date Range
 ```
 Method: GET
-URL: http://localhost:8080/api/service-histories/by-date-range?startDate=2024-10-01&endDate=2024-10-31&page=0&size=10
+URL: {{BASE_URL}}/api/service-histories/by-date-range?startDate=2024-10-01&endDate=2024-10-31&page=0&size=10
 Headers:
-  Authorization: Bearer {{jwt_token}}
+  Authorization: Bearer {{JWT_TOKEN}}
+  Content-Type: application/json
 ```
 
-## Validation Rules
-
-### Service Date Field
-- **Required:** Yes
-- **Format:** YYYY-MM-DD or ISO datetime
-- **Description:** Ngày thực hiện service
-
-### Service Type Field
-- **Required:** Yes
-- **Enum:** MAINTENANCE, REPAIR, REPLACEMENT, INSPECTION
-- **Description:** Loại service được thực hiện
-
-### Service Cost Field
-- **Required:** Yes
-- **Type:** Positive number
-- **Minimum:** 0.00
-- **Description:** Chi phí service tính bằng USD
-
-### Vehicle ID Field
-- **Required:** Yes
-- **Type:** Positive number
-- **Description:** Must be existing Vehicle ID
-
-### Labor Hours Field
-- **Optional:** Yes
-- **Type:** Positive number
-- **Range:** 0.1-24.0 hours
-- **Description:** Số giờ công lao động
+---
 
 ## Error Responses
 
 ### 400 Bad Request (Validation Error)
 ```json
 {
-  "timestamp": "2024-10-13T10:15:30.000+00:00",
+  "timestamp": "2024-10-14T10:15:30.000+00:00",
   "status": 400,
   "error": "Bad Request",
   "message": "Service cost must be greater than 0",
@@ -437,13 +359,24 @@ Headers:
 }
 ```
 
+### 401 Unauthorized
+```json
+{
+  "timestamp": "2024-10-14T10:15:30.000+00:00",
+  "status": 401,
+  "error": "Unauthorized",
+  "message": "JWT token is missing or invalid",
+  "path": "/api/service-histories"
+}
+```
+
 ### 403 Forbidden
 ```json
 {
-  "timestamp": "2024-10-13T10:15:30.000+00:00",
+  "timestamp": "2024-10-14T10:15:30.000+00:00",
   "status": 403,
   "error": "Forbidden",
-  "message": "Access denied. Only ADMIN, SC_STAFF, and SC_TECHNICIAN can create service histories",
+  "message": "Access denied. Insufficient permissions",
   "path": "/api/service-histories"
 }
 ```
@@ -451,7 +384,7 @@ Headers:
 ### 404 Not Found
 ```json
 {
-  "timestamp": "2024-10-13T10:15:30.000+00:00",
+  "timestamp": "2024-10-14T10:15:30.000+00:00",
   "status": 404,
   "error": "Not Found",
   "message": "Service history with ID 123 does not exist",
@@ -459,17 +392,38 @@ Headers:
 }
 ```
 
-## Security Notes
+---
 
-### Data Access Control
-- **CUSTOMER**: Chỉ có thể xem service histories của vehicles mình sở hữu thông qua business logic filtering
-- **SC_TECHNICIAN**: Full CRUD access trên tất cả service histories
-- **SC_STAFF**: Full CRUD access trên tất cả service histories  
-- **ADMIN**: Full access tất cả operations including DELETE
-- **EVM_STAFF**: Không có access đến service histories API
+## Security & Business Rules
 
-### Business Logic Filtering
-- Customer data isolation được implement tại service layer
-- Vehicle ownership validation cho customer endpoints
-- Date range validation để tránh performance issues
-- Audit logging cho tất cả critical operations
+### Role-Based Access Control
+- **ADMIN**: Full CRUD access to all service histories
+- **SC_STAFF**: Full CRUD access to all service histories  
+- **SC_TECHNICIAN**: Full CRUD access to all service histories
+- **EVM_STAFF**: Full CRUD access (can create/update for warranty claims)
+- **CUSTOMER**: Read-only access to own vehicle service histories only
+
+### Data Validation & Business Rules
+1. **Service Date**: Cannot be in the future (@PastOrPresent validation)
+2. **Service Type**: Required, 3-100 characters, only letters/spaces/hyphens/slashes
+3. **Description**: Required, 10-500 characters
+4. **Part ID**: Required, max 50 characters, uppercase letters/numbers/hyphens only
+5. **Vehicle ID**: Required, must reference existing vehicle
+
+### Request Field Specifications
+- `serviceDate`: Date (ISO format), cannot be future date
+- `serviceType`: String (3-100 chars), pattern: `^[a-zA-Z\\s\\-\\/]+$`
+- `description`: String (10-500 chars), required
+- `partId`: String (max 50 chars), pattern: `^[A-Z0-9-]+$`  
+- `vehicleId`: Long, required, must exist in database
+
+### Response Field Specifications
+- `serviceHistoryId`: Long, auto-generated
+- `serviceDate`: Date (ISO format)
+- `serviceType`: String
+- `description`: String
+- `partId`: String
+- `partName`: String (populated from Part entity)
+- `vehicleId`: Long
+- `vehicleName`: String (populated from Vehicle entity)
+- `vehicleVin`: String (populated from Vehicle entity)
