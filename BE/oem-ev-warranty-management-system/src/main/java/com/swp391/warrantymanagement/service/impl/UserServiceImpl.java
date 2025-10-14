@@ -3,6 +3,7 @@ package com.swp391.warrantymanagement.service.impl;
 import com.swp391.warrantymanagement.entity.Role;
 import com.swp391.warrantymanagement.entity.User;
 import com.swp391.warrantymanagement.repository.RoleRepository;
+import com.swp391.warrantymanagement.repository.TokenRepository;
 import com.swp391.warrantymanagement.repository.UserRepository;
 import com.swp391.warrantymanagement.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final TokenRepository tokenRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -43,9 +45,9 @@ public class UserServiceImpl implements UserService {
 
         // Create sort by createdAt DESC
         Pageable sortedPageable = PageRequest.of(
-            pageable.getPageNumber(),
-            pageable.getPageSize(),
-            Sort.by(Sort.Direction.DESC, "createdAt")
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                Sort.by(Sort.Direction.DESC, "createdAt")
         );
 
         // Apply filters if provided
@@ -61,7 +63,7 @@ public class UserServiceImpl implements UserService {
         if (search != null && !search.trim().isEmpty() && role != null && !role.trim().isEmpty()) {
             // Filter by both search and role
             Role roleEntity = roleRepository.findByRoleName(role.trim())
-                .orElseThrow(() -> new RuntimeException("Role not found: " + role));
+                    .orElseThrow(() -> new RuntimeException("Role not found: " + role));
             // For now, filter by role only - can extend with search later
             return userRepository.findByRole(roleEntity, pageable);
         } else if (search != null && !search.trim().isEmpty()) {
@@ -70,7 +72,7 @@ public class UserServiceImpl implements UserService {
         } else if (role != null && !role.trim().isEmpty()) {
             // Filter by role only
             Role roleEntity = roleRepository.findByRoleName(role.trim())
-                .orElseThrow(() -> new RuntimeException("Role not found: " + role));
+                    .orElseThrow(() -> new RuntimeException("Role not found: " + role));
             return userRepository.findByRole(roleEntity, pageable);
         }
 
@@ -83,7 +85,7 @@ public class UserServiceImpl implements UserService {
         logger.info("Getting user by id: {}", userId);
 
         return userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
     }
 
     @Override
@@ -97,9 +99,9 @@ public class UserServiceImpl implements UserService {
 
         // Create sort by username ASC
         Pageable sortedPageable = PageRequest.of(
-            pageable.getPageNumber(),
-            pageable.getPageSize(),
-            Sort.by(Sort.Direction.ASC, "username")
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                Sort.by(Sort.Direction.ASC, "username")
         );
 
         // ✅ FIXED: Search users by username containing the search term
@@ -117,14 +119,14 @@ public class UserServiceImpl implements UserService {
 
         // Create sort by username ASC
         Pageable sortedPageable = PageRequest.of(
-            pageable.getPageNumber(),
-            pageable.getPageSize(),
-            Sort.by(Sort.Direction.ASC, "username")
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                Sort.by(Sort.Direction.ASC, "username")
         );
 
         // ✅ FIXED: Find role by name first, then filter users by that role
         Role role = roleRepository.findByRoleName(roleName.trim())
-            .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
+                .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
 
         // Filter users by role
         return userRepository.findByRole(role, sortedPageable);
@@ -175,7 +177,7 @@ public class UserServiceImpl implements UserService {
 
         User user = getUserById(userId);
         Role newRole = roleRepository.findById(newRoleId)
-            .orElseThrow(() -> new RuntimeException("Role not found with id: " + newRoleId));
+                .orElseThrow(() -> new RuntimeException("Role not found with id: " + newRoleId));
 
         user.setRole(newRole);
 
@@ -187,6 +189,10 @@ public class UserServiceImpl implements UserService {
         logger.info("Deleting user: {}", userId);
 
         User user = getUserById(userId);
+
+        // Xóa tất cả token liên quan đến user trước khi xóa user
+        logger.info("Deleting all tokens for user: {}", userId);
+        tokenRepository.deleteByUser(user);
 
         // Soft delete - you might want to add a 'deleted' flag to User entity
         // For now, we'll do hard delete but log it as soft delete
@@ -250,16 +256,16 @@ public class UserServiceImpl implements UserService {
         Page<User> recentUsers = userRepository.findAll(recentPageable);
 
         List<Map<String, Object>> recentRegistrations = recentUsers.getContent().stream()
-            .map(user -> {
-                Map<String, Object> userInfo = new HashMap<>();
-                userInfo.put("userId", user.getUserId());
-                userInfo.put("username", user.getUsername());
-                userInfo.put("email", user.getEmail());
-                userInfo.put("roleName", user.getRole().getRoleName());
-                userInfo.put("createdAt", user.getCreatedAt());
-                return userInfo;
-            })
-            .toList();
+                .map(user -> {
+                    Map<String, Object> userInfo = new HashMap<>();
+                    userInfo.put("userId", user.getUserId());
+                    userInfo.put("username", user.getUsername());
+                    userInfo.put("email", user.getEmail());
+                    userInfo.put("roleName", user.getRole().getRoleName());
+                    userInfo.put("createdAt", user.getCreatedAt());
+                    return userInfo;
+                })
+                .toList();
 
         statistics.put("recentRegistrations", recentRegistrations);
 
