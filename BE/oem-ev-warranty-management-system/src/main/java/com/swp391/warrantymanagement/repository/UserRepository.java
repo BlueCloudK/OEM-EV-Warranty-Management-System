@@ -2,6 +2,8 @@ package com.swp391.warrantymanagement.repository;
 
 import com.swp391.warrantymanagement.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -25,4 +27,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     // Kiểm tra email đã tồn tại chưa
     boolean existsByEmail(String email);
+
+    // Lấy role name của user theo username (để tránh lazy loading)
+    @Query("SELECT r.roleName FROM User u JOIN u.role r WHERE u.username = :username")
+    Optional<String> findRoleNameByUsername(@Param("username") String username);
 }

@@ -1,15 +1,18 @@
 package com.swp391.warrantymanagement.config;
 
 import com.swp391.warrantymanagement.entity.Role;
+import com.swp391.warrantymanagement.entity.User;
 import com.swp391.warrantymanagement.repository.RoleRepository;
+import com.swp391.warrantymanagement.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 /**
  * Khởi tạo dữ liệu ban đầu cho hệ thống
  * - Tạo các Role cơ bản
- * - Chạy sau khi ứng dụng start up
+ * - Tạo tài khoản Admin mặc định
  */
 @Component
 public class DataInitializer implements CommandLineRunner {
@@ -17,40 +20,52 @@ public class DataInitializer implements CommandLineRunner {
     @Autowired
     private RoleRepository roleRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     @Override
     public void run(String... args) throws Exception {
-        // Kiểm tra xem đã có role chưa, nếu chưa thì tạo
+        // Khởi tạo roles nếu chưa có
         if (roleRepository.count() == 0) {
-            initializeRoles(); // hàm nay sẽ tạo và lưu các role vào DB bằng cach gọi roleRepository.save()
+            initializeRoles();
+        }
+
+        // Khởi tạo admin nếu chưa có user admin
+        if (userRepository.findByUsername("admin").isEmpty()) {
+            initializeAdminUser();
         }
     }
 
     private void initializeRoles() {
-        // Tạo role Admin
-        Role adminRole = new Role();
-        adminRole.setRoleName("ADMIN");
-        roleRepository.save(adminRole); // Lưu role Admin với ID = 1
+        String[] roleNames = {"ADMIN", "SC_STAFF", "SC_TECHNICIAN", "EVM_STAFF", "CUSTOMER"};
 
-        // Tạo role Service Center Staff
-        Role scStaffRole = new Role();
-        scStaffRole.setRoleName("SC_STAFF");
-        roleRepository.save(scStaffRole); // Lưu role SC_STAFF với ID = 2
+        for (String roleName : roleNames) {
+            Role role = new Role();
+            role.setRoleName(roleName);
+            roleRepository.save(role);
+        }
 
-        // Tạo role Service Center Technician
-        Role scTechnicianRole = new Role();
-        scTechnicianRole.setRoleName("SC_TECHNICIAN");
-        roleRepository.save(scTechnicianRole); // Lưu role SC_TECHNICIAN với ID = 3
+        System.out.println("Initialized 5 roles successfully");
+    }
 
-        // Tạo role EV Manufacturer Staff
-        Role evmStaffRole = new Role();
-        evmStaffRole.setRoleName("EVM_STAFF");
-        roleRepository.save(evmStaffRole); // Lưu role EVM_STAFF với ID = 4
+    private void initializeAdminUser() {
+        // Lấy role ADMIN
+        Role adminRole = roleRepository.findById(1L)
+                .orElseThrow(() -> new RuntimeException("Admin role not found"));
 
-        // Tạo role Customer
-        Role customerRole = new Role();
-        customerRole.setRoleName("CUSTOMER");
-        roleRepository.save(customerRole); // Lưu role CUSTOMER với ID = 5
+        // Tạo admin user với password đơn giản
+        User adminUser = new User();
+        adminUser.setUsername("admin");
+        adminUser.setEmail("admin@warranty.com");
+        adminUser.setPassword(passwordEncoder.encode("admin123"));
+        adminUser.setAddress("System Administrator");
+        adminUser.setRole(adminRole);
 
-        //System.out.println("Initialized roles: ADMIN (ID=1), SC_STAFF (ID=2), SC_TECHNICIAN (ID=3), EVM_STAFF (ID=4), CUSTOMER (ID=5)");
+        userRepository.save(adminUser);
+
+        System.out.println("Default admin created: username=admin, password=admin123");
     }
 }

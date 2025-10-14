@@ -140,17 +140,165 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
     private boolean isValidStatusTransition(WarrantyClaimStatus current, WarrantyClaimStatus target) {
         switch (current) {
             case SUBMITTED:
-                return target == WarrantyClaimStatus.SC_REVIEW;
+                return target == WarrantyClaimStatus.SC_REVIEW || target == WarrantyClaimStatus.REJECTED;
             case SC_REVIEW:
-                return target == WarrantyClaimStatus.EVM_REVIEW || target == WarrantyClaimStatus.REJECTED;
-            case EVM_REVIEW:
-                return target == WarrantyClaimStatus.PROCESSING ||
-                       target == WarrantyClaimStatus.COMPLETED ||
-                       target == WarrantyClaimStatus.REJECTED;
+                return target == WarrantyClaimStatus.PROCESSING || target == WarrantyClaimStatus.REJECTED;
             case PROCESSING:
                 return target == WarrantyClaimStatus.COMPLETED || target == WarrantyClaimStatus.REJECTED;
             default:
                 return false;
         }
+    }
+
+    // ========== WORKFLOW METHODS IMPLEMENTATION ==========
+
+    @Override
+    public WarrantyClaimResponseDTO createClaimBySCStaff(WarrantyClaimRequestDTO requestDTO) {
+        // Load Part entity từ partId
+        Part part = partRepository.findById(requestDTO.getPartId()).orElse(null);
+        if (part == null) {
+            throw new RuntimeException("Part not found with id: " + requestDTO.getPartId());
+        }
+
+        // Load Vehicle entity từ vehicleId
+        Vehicle vehicle = vehicleRepository.findById(requestDTO.getVehicleId()).orElse(null);
+        if (vehicle == null) {
+            throw new RuntimeException("Vehicle not found with id: " + requestDTO.getVehicleId());
+        }
+
+        // Convert DTO to Entity với status SUBMITTED
+        WarrantyClaim claim = WarrantyClaimMapper.toEntity(requestDTO, part, vehicle);
+        claim.setStatus(WarrantyClaimStatus.SUBMITTED); // SC Staff tạo với status SUBMITTED
+
+        // Save entity
+        WarrantyClaim savedClaim = warrantyClaimRepository.save(claim);
+        return WarrantyClaimMapper.toResponseDTO(savedClaim);
+    }
+
+    @Override
+    public WarrantyClaimResponseDTO evmAcceptClaim(Long claimId, String note) {
+        WarrantyClaim claim = warrantyClaimRepository.findById(claimId).orElse(null);
+        if (claim == null) {
+            throw new RuntimeException("Warranty claim not found with id: " + claimId);
+        }
+
+        // Kiểm tra status hiện tại phải là SUBMITTED
+        if (claim.getStatus() != WarrantyClaimStatus.SUBMITTED) {
+            throw new RuntimeException("Claim must be in SUBMITTED status to accept. Current status: " + claim.getStatus());
+        }
+
+        // Chuyển status sang SC_REVIEW để Tech có thể xử lý
+        claim.setStatus(WarrantyClaimStatus.SC_REVIEW);
+        if (note != null && !note.trim().isEmpty()) {
+            claim.setDescription(claim.getDescription() + "\n[EVM Note]: " + note);
+        }
+
+        WarrantyClaim savedClaim = warrantyClaimRepository.save(claim);
+        return WarrantyClaimMapper.toResponseDTO(savedClaim);
+    }
+
+    @Override
+    public WarrantyClaimResponseDTO evmRejectClaim(Long claimId, String reason) {
+        WarrantyClaim claim = warrantyClaimRepository.findById(claimId).orElse(null);
+        if (claim == null) {
+            throw new RuntimeException("Warranty claim not found with id: " + claimId);
+        }
+
+        // Kiểm tra status hiện tại phải là SUBMITTED
+        if (claim.getStatus() != WarrantyClaimStatus.SUBMITTED) {
+            throw new RuntimeException("Claim must be in SUBMITTED status to reject. Current status: " + claim.getStatus());
+        }
+
+        // Chuyển status sang REJECTED
+        claim.setStatus(WarrantyClaimStatus.REJECTED);
+        claim.setDescription(claim.getDescription() + "\n[EVM Rejection]: " + reason);
+        claim.setResolutionDate(new Date());
+
+        WarrantyClaim savedClaim = warrantyClaimRepository.save(claim);
+        return WarrantyClaimMapper.toResponseDTO(savedClaim);
+    }
+
+    @Override
+    public WarrantyClaimResponseDTO techStartProcessing(Long claimId, String note) {
+        WarrantyClaim claim = warrantyClaimRepository.findById(claimId).orElse(null);
+        if (claim == null) {
+            throw new RuntimeException("Warranty claim not found with id: " + claimId);
+        }
+
+        // Kiểm tra status hiện tại phải là SC_REVIEW
+        if (claim.getStatus() != WarrantyClaimStatus.SC_REVIEW) {
+            throw new RuntimeException("Claim must be in SC_REVIEW status to start processing. Current status: " + claim.getStatus());
+        }
+
+        // Chuyển status sang PROCESSING
+        claim.setStatus(WarrantyClaimStatus.PROCESSING);
+        if (note != null && !note.trim().isEmpty()) {
+            claim.setDescription(claim.getDescription() + "\n[Tech Start]: " + note);
+        }
+
+        WarrantyClaim savedClaim = warrantyClaimRepository.save(claim);
+        return WarrantyClaimMapper.toResponseDTO(savedClaim);
+    }
+
+    @Override
+    public WarrantyClaimResponseDTO techCompleteClaim(Long claimId, String completionNote) {
+        WarrantyClaim claim = warrantyClaimRepository.findById(claimId).orElse(null);
+        if (claim == null) {
+            throw new RuntimeException("Warranty claim not found with id: " + claimId);
+        }
+
+        // Kiểm tra status hiện tại phải là PROCESSING
+        if (claim.getStatus() != WarrantyClaimStatus.PROCESSING) {
+            throw new RuntimeException("Claim must be in PROCESSING status to complete. Current status: " + claim.getStatus());
+        }
+
+        // Chuyển status sang COMPLETED
+        claim.setStatus(WarrantyClaimStatus.COMPLETED);
+        claim.setDescription(claim.getDescription() + "\n[Tech Completion]: " + completionNote);
+        claim.setResolutionDate(new Date());
+
+        WarrantyClaim savedClaim = warrantyClaimRepository.save(claim);
+        return WarrantyClaimMapper.toResponseDTO(savedClaim);
+    }
+
+    @Override
+    public PagedResponse<WarrantyClaimResponseDTO> getClaimsByStatus(String status, Pageable pageable) {
+        try {
+            WarrantyClaimStatus claimStatus = WarrantyClaimStatus.valueOf(status.toUpperCase());
+            Page<WarrantyClaim> claimPage = warrantyClaimRepository.findByStatus(claimStatus, pageable);
+            List<WarrantyClaimResponseDTO> responseDTOs = WarrantyClaimMapper.toResponseDTOList(claimPage.getContent());
+
+            return new PagedResponse<>(
+                responseDTOs,
+                claimPage.getNumber(),
+                claimPage.getSize(),
+                claimPage.getTotalElements(),
+                claimPage.getTotalPages(),
+                claimPage.isFirst(),
+                claimPage.isLast()
+            );
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid status: " + status);
+        }
+    }
+
+    @Override
+    public PagedResponse<WarrantyClaimResponseDTO> getTechPendingClaims(Pageable pageable) {
+        // Lấy claims có status SC_REVIEW hoặc PROCESSING (cần Tech xử lý)
+        Page<WarrantyClaim> claimPage = warrantyClaimRepository.findByStatusIn(
+            List.of(WarrantyClaimStatus.SC_REVIEW, WarrantyClaimStatus.PROCESSING),
+            pageable
+        );
+        List<WarrantyClaimResponseDTO> responseDTOs = WarrantyClaimMapper.toResponseDTOList(claimPage.getContent());
+
+        return new PagedResponse<>(
+            responseDTOs,
+            claimPage.getNumber(),
+            claimPage.getSize(),
+            claimPage.getTotalElements(),
+            claimPage.getTotalPages(),
+            claimPage.isFirst(),
+            claimPage.isLast()
+        );
     }
 }

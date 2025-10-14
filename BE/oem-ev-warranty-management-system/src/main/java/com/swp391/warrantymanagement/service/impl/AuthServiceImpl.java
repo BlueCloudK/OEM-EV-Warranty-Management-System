@@ -1,6 +1,7 @@
 package com.swp391.warrantymanagement.service.impl;
 
 import com.swp391.warrantymanagement.dto.request.auth.*;
+import com.swp391.warrantymanagement.dto.request.user.AdminUserCreationDTO;
 import com.swp391.warrantymanagement.dto.response.AuthResponseDTO;
 import com.swp391.warrantymanagement.entity.Role;
 import com.swp391.warrantymanagement.entity.Token;
@@ -48,7 +49,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AuthResponseDTO authenticateUser(LoginRequestDTO loginRequest) {
-        // Validate user credentials - tìm user theo username
+        // Validate user credentials - tìm user theo username thông thường
         User user = userRepository.findByUsername(loginRequest.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -64,14 +65,14 @@ public class AuthServiceImpl implements AuthService {
         // Save refresh token vào database
         saveRefreshToken(user, refreshToken);
 
-        // Return AuthResponseDTO - mapping từ Entity sang DTO
+        // Return AuthResponseDTO - mapping từ Entity sang DTO, lazy loading sẽ tự động fetch role khi cần
         return new AuthResponseDTO(
                 accessToken,
                 refreshToken,
                 "Login successful",
                 user.getUserId(),
                 user.getUsername(),
-                user.getRole().getRoleName()
+                user.getRole().getRoleName() // Hibernate sẽ tự động fetch role khi truy cập trong transaction
         );
     }
 
@@ -115,14 +116,14 @@ public class AuthServiceImpl implements AuthService {
     }
 
     /**
-     * Đăng ký user mới
+     * Đăng ký user mới - chỉ dành cho SC Staff tạo tài khoản Customer
      * Input: UserRegistrationDTO từ client
      * Output: AuthResponseDTO với token để auto-login
      */
     @Override
     @Transactional
     public AuthResponseDTO registerNewUser(UserRegistrationDTO registrationRequest) {
-        // Check if username or email already exists - sử dụng method mới
+        // Check if username or email already exists
         if (userRepository.existsByUsername(registrationRequest.getUsername())) {
             throw new RuntimeException("Username already exists");
         }
@@ -130,17 +131,17 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("Email already exists");
         }
 
-        // Load role từ database
-        Role role = roleRepository.findById(registrationRequest.getRoleId())
-                .orElseThrow(() -> new RuntimeException("Role not found"));
+        // SC Staff chỉ có thể tạo tài khoản Customer - tìm role Customer
+        Role customerRole = roleRepository.findByRoleName("CUSTOMER")
+                .orElseThrow(() -> new RuntimeException("Customer role not found"));
 
-        // Create new user entity từ DTO
+        // Create new user entity từ DTO với role Customer
         User newUser = new User();
         newUser.setUsername(registrationRequest.getUsername());
         newUser.setEmail(registrationRequest.getEmail());
         newUser.setPassword(passwordEncoder.encode(registrationRequest.getPassword()));
         newUser.setAddress(registrationRequest.getAddress());
-        newUser.setRole(role);
+        newUser.setRole(customerRole);
 
         User savedUser = userRepository.save(newUser);
 
@@ -154,7 +155,48 @@ public class AuthServiceImpl implements AuthService {
         return new AuthResponseDTO(
                 accessToken,
                 refreshToken,
-                "User registered successfully",
+                "Customer account created successfully",
+                savedUser.getUserId(),
+                savedUser.getUsername(),
+                savedUser.getRole().getRoleName()
+        );
+    }
+
+    /**
+     * Tạo user mới bởi Admin - có thể tạo với bất kỳ role nào
+     * Input: AdminUserCreationDTO từ Admin
+     * Output: AuthResponseDTO với thông tin user được tạo (không có token)
+     */
+    @Override
+    @Transactional
+    public AuthResponseDTO createUserByAdmin(AdminUserCreationDTO adminCreationRequest) {
+        // Check if username or email already exists
+        if (userRepository.existsByUsername(adminCreationRequest.getUsername())) {
+            throw new RuntimeException("Username already exists");
+        }
+        if (userRepository.existsByEmail(adminCreationRequest.getEmail())) {
+            throw new RuntimeException("Email already exists");
+        }
+
+        // Load role từ database theo roleId
+        Role role = roleRepository.findById(adminCreationRequest.getRoleId())
+                .orElseThrow(() -> new RuntimeException("Role not found"));
+
+        // Create new user entity từ DTO
+        User newUser = new User();
+        newUser.setUsername(adminCreationRequest.getUsername());
+        newUser.setEmail(adminCreationRequest.getEmail());
+        newUser.setPassword(passwordEncoder.encode(adminCreationRequest.getPassword()));
+        newUser.setAddress(adminCreationRequest.getAddress());
+        newUser.setRole(role);
+
+        User savedUser = userRepository.save(newUser);
+
+        // Return response không có token (user cần login riêng)
+        return new AuthResponseDTO(
+                null, // no access token
+                null, // no refresh token
+                "User created successfully by Admin",
                 savedUser.getUserId(),
                 savedUser.getUsername(),
                 savedUser.getRole().getRoleName()
@@ -256,12 +298,13 @@ public class AuthServiceImpl implements AuthService {
      * Output: AuthResponseDTO với thông tin user nếu token hợp lệ
      */
     @Override
+    @Transactional
     public AuthResponseDTO validateToken(String token) {
         try {
             // Extract username from token
             String username = jwtService.extractUsername(token);
 
-            // Find user by username
+            // Find user by username - lazy loading sẽ tự động hoạt động trong transaction
             User user = userRepository.findByUsername(username)
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -270,14 +313,14 @@ public class AuthServiceImpl implements AuthService {
                 throw new RuntimeException("Invalid token");
             }
 
-            // Return user info without new tokens
+            // Return user info without new tokens - role sẽ được lazy load khi cần
             return new AuthResponseDTO(
                     null, // không tạo token mới
                     null, // không tạo refresh token mới
                     "Token is valid",
                     user.getUserId(),
                     user.getUsername(),
-                    user.getRole().getRoleName()
+                    user.getRole().getRoleName() // Lazy loading hoạt động trong transaction
             );
         } catch (Exception e) {
             throw new RuntimeException("Token validation failed: " + e.getMessage());

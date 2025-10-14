@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -62,6 +63,7 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     @Override
+    @Transactional
     public CustomerResponseDTO createCustomer(CustomerRequestDTO requestDTO) {
         // Validate User tồn tại và có đầy đủ thông tin đăng ký
         User user = userRepository.findById(requestDTO.getUserId()).orElse(null);
@@ -204,6 +206,7 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     @Override
+    @Transactional
     public CustomerResponseDTO updateCustomerProfile(CustomerRequestDTO requestDTO, String authorizationHeader) {
         // Extract JWT token từ Authorization header
 //        String token = authorizationHeader.replace("Bearer ", "");
