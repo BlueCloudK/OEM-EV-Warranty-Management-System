@@ -23,13 +23,17 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        // Tìm user theo username
+        // Tìm user theo username (giữ lazy loading)
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username)); // cấu trúc gọn với lambda
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+
+        // Lấy role name riêng để tránh lazy loading issue
+        String roleName = userRepository.findRoleNameByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("Role not found for user: " + username));
 
         // Convert authority từ role (single role)
         List<SimpleGrantedAuthority> authorities = Collections.singletonList(
-                new SimpleGrantedAuthority("ROLE_" + user.getRole().getRoleName())
+                new SimpleGrantedAuthority("ROLE_" + roleName)
         );
 
         // Return Spring Security UserDetails
