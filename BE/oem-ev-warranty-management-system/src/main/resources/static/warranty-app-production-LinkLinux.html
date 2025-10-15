@@ -1,0 +1,2935 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OEM EV Warranty Management System - Production Version</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState, useEffect, createContext, useContext, useCallback, useMemo } = React;
+
+        // ============================================
+        // CONFIGURATION - CHANGE THIS FOR YOUR BACKEND
+        // ============================================
+        
+        const CONFIG = {
+            // Change this to your backend URL
+            API_BASE_URL: 'https://backend.bluecloudk.xyz/api',
+            
+            // Alternative configurations:
+            // API_BASE_URL: 'https://your-domain.com/api',
+            // API_BASE_URL: 'http://192.168.1.100:8080/api',
+            
+            // Token refresh settings
+            TOKEN_REFRESH_THRESHOLD: 5 * 60 * 1000, // 5 minutes before expiry
+            
+            // Request timeout
+            REQUEST_TIMEOUT: 30000, // 30 seconds
+            
+            // Enable debug logging
+            DEBUG_MODE: true
+        };
+
+        // ============================================
+        // API SERVICE WITH ERROR HANDLING
+        // ============================================
+        
+        class ApiService {
+            static getAuthHeader() {
+                const token = localStorage.getItem('accessToken');
+                return token ? { 'Authorization': `Bearer ${token}` } : {};
+            }
+
+            static async request(method, url, data = null) {
+                try {
+                    const config = {
+                        method,
+                        url: `${CONFIG.API_BASE_URL}${url}`,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...this.getAuthHeader()
+                        },
+                        timeout: CONFIG.REQUEST_TIMEOUT
+                    };
+                    
+                    if (data) {
+                        if (method === 'GET') {
+                            config.params = data;
+                        } else {
+                            config.data = data;
+                        }
+                    }
+
+                    if (CONFIG.DEBUG_MODE) {
+                        console.log(`[API] ${method} ${url}`, data);
+                    }
+
+                    const response = await axios(config);
+                    
+                    if (CONFIG.DEBUG_MODE) {
+                        console.log(`[API Response]`, response.data);
+                    }
+                    
+                    return response.data;
+                } catch (error) {
+                    if (CONFIG.DEBUG_MODE) {
+                        console.error(`[API Error]`, error);
+                    }
+
+                    // Handle token expiration
+                    if (error.response?.status === 401) {
+                        const refreshToken = localStorage.getItem('refreshToken');
+                        if (refreshToken && url !== '/auth/refresh') {
+                            try {
+                                const refreshResponse = await axios.post(
+                                    `${CONFIG.API_BASE_URL}/auth/refresh`,
+                                    { refreshToken }
+                                );
+                                
+                                localStorage.setItem('accessToken', refreshResponse.data.accessToken);
+                                localStorage.setItem('refreshToken', refreshResponse.data.refreshToken);
+                                
+                                // Retry original request
+                                return await this.request(method, url, data);
+                            } catch (refreshError) {
+                                console.error('Token refresh failed:', refreshError);
+                                localStorage.clear();
+                                window.location.href = '#/login';
+                            }
+                        } else {
+                            localStorage.clear();
+                            window.location.href = '#/login';
+                        }
+                    }
+                    
+                    // Throw error with proper message
+                    const errorMessage = error.response?.data?.message || 
+                                       error.response?.data?.error || 
+                                       error.message || 
+                                       'An error occurred';
+                    
+                    throw new Error(errorMessage);
+                }
+            }
+        }
+
+        // Auth Context
+        const AuthContext = createContext(null);
+
+        // Auth Provider Component with better error handling
+        function AuthProvider({ children }) {
+            const [user, setUser] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+
+            useEffect(() => {
+                const token = localStorage.getItem('accessToken');
+                if (token) {
+                    const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+                    setUser(userData);
+                    
+                    // Validate token
+                    ApiService.request('GET', '/auth/validate')
+                        .catch(err => {
+                            console.error('Token validation failed:', err);
+                            localStorage.clear();
+                            setUser(null);
+                        });
+                }
+                setLoading(false);
+            }, []);
+
+            const login = async (username, password) => {
+                try {
+                    setError(null);
+                    const response = await ApiService.request('POST', '/auth/login', {
+                        username,
+                        password
+                    });
+                    
+                    localStorage.setItem('accessToken', response.accessToken);
+                    localStorage.setItem('refreshToken', response.refreshToken);
+                    
+                    const userData = {
+                        userId: response.userId,
+                        username: response.username,
+                        role: response.roleName
+                    };
+                    
+                    localStorage.setItem('userData', JSON.stringify(userData));
+                    setUser(userData);
+                    
+                    return { success: true };
+                } catch (error) {
+                    const errorMessage = error.message || 'Login failed';
+                    setError(errorMessage);
+                    return { success: false, error: errorMessage };
+                }
+            };
+
+            const logout = async () => {
+                try {
+                    const accessToken = localStorage.getItem('accessToken');
+                    if (accessToken) {
+                        await ApiService.request('POST', '/auth/logout', { accessToken });
+                    }
+                } catch (error) {
+                    console.error('Logout error:', error);
+                } finally {
+                    localStorage.clear();
+                    setUser(null);
+                    window.location.href = '#/login';
+                }
+            };
+
+            return (
+                <AuthContext.Provider value={{ user, login, logout, loading, error }}>
+                    {children}
+                </AuthContext.Provider>
+            );
+        }
+
+        const useAuth = () => useContext(AuthContext);
+
+        // Connection Status Component
+        function ConnectionStatus() {
+            const [status, setStatus] = useState('checking');
+            const [message, setMessage] = useState('');
+
+            useEffect(() => {
+                checkConnection();
+            }, []);
+
+            const checkConnection = async () => {
+                try {
+                    // Thay vì gọi /auth/health, ta sẽ gọi một endpoint có sẵn
+                    // Sử dụng OPTIONS request để kiểm tra CORS và connection
+                    const response = await axios.options(`${CONFIG.API_BASE_URL}/auth/login`, {
+                        timeout: 5000
+                    });
+                    setStatus('connected');
+                    setMessage('Backend connected');
+                } catch (error) {
+                    // Nếu OPTIONS không work, thử GET với endpoint khác
+                    try {
+                        // Test với endpoint không cần auth
+                        await axios.get(`${CONFIG.API_BASE_URL}/auth/login`, {
+                            timeout: 3000,
+                            validateStatus: function (status) {
+                                // Chấp nhận cả 405 (Method Not Allowed) vì đó nghĩa là server đã response
+                                return status < 500;
+                            }
+                        });
+                        setStatus('connected');
+                        setMessage('Backend connected');
+                    } catch (secondError) {
+                        setStatus('error');
+                        setMessage(`Cannot connect to backend at ${CONFIG.API_BASE_URL}`);
+                    }
+                }
+            };
+
+            if (status === 'checking') {
+                return (
+                    <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded flex items-center">
+                        <i className="fas fa-spinner fa-spin mr-2"></i>
+                        Checking backend connection...
+                    </div>
+                );
+            }
+
+            if (status === 'error') {
+                return (
+                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <i className="fas fa-exclamation-triangle mr-2"></i>
+                                {message}
+                            </div>
+                            <button 
+                                onClick={checkConnection}
+                                className="ml-4 text-sm underline hover:no-underline"
+                            >
+                                Retry
+                            </button>
+                        </div>
+                        <div className="mt-2 text-sm">
+                            Please check:
+                            <ul className="list-disc ml-5 mt-1">
+                                <li>Backend is running</li>
+                                <li>CORS is configured</li>
+                                <li>URL is correct in CONFIG.API_BASE_URL</li>
+                            </ul>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded flex items-center">
+                    <i className="fas fa-check-circle mr-2"></i>
+                    {message}
+                </div>
+            );
+        }
+
+        // Enhanced Login Component
+        function Login() {
+            const [username, setUsername] = useState('');
+            const [password, setPassword] = useState('');
+            const [error, setError] = useState('');
+            const [loading, setLoading] = useState(false);
+            const { login } = useAuth();
+
+            const handleLogin = async (e) => {
+                e.preventDefault();
+                setError('');
+                setLoading(true);
+                
+                const result = await login(username, password);
+                if (!result.success) {
+                    setError(result.error);
+                    setLoading(false);
+                } else {
+                    window.location.href = '#/';
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+                    <div className="max-w-md w-full">
+                        <div className="bg-white rounded-2xl shadow-xl p-8">
+                            <div className="text-center mb-8">
+                                <i className="fas fa-car text-5xl text-blue-600 mb-4"></i>
+                                <h1 className="text-3xl font-bold text-gray-900">EV Warranty System</h1>
+                                <p className="text-gray-600 mt-2">Hệ thống quản lý bảo hành xe điện</p>
+                            </div>
+
+                            <div className="mb-6">
+                                <ConnectionStatus />
+                            </div>
+
+                            <form onSubmit={handleLogin} className="space-y-4">
+                                {error && (
+                                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                                        <i className="fas fa-exclamation-circle mr-2"></i>
+                                        {error}
+                                    </div>
+                                )}
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Username
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={username}
+                                        onChange={(e) => setUsername(e.target.value)}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        required
+                                        disabled={loading}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Password
+                                    </label>
+                                    <input
+                                        type="password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        required
+                                        disabled={loading}
+                                    />
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {loading ? (
+                                        <>
+                                            <i className="fas fa-spinner fa-spin mr-2"></i>
+                                            Đang đăng nhập...
+                                        </>
+                                    ) : (
+                                        'Đăng nhập'
+                                    )}
+                                </button>
+                            </form>
+
+                            <div className="mt-6 pt-6 border-t border-gray-200">
+                                <div className="bg-blue-50 rounded-lg p-4">
+                                    <p className="text-sm text-blue-800 font-medium mb-2">
+                                        <i className="fas fa-info-circle mr-2"></i>
+                                        Backend Configuration:
+                                    </p>
+                                    <code className="text-xs bg-white px-2 py-1 rounded block">
+                                        {CONFIG.API_BASE_URL}
+                                    </code>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // Error Boundary Component
+        class ErrorBoundary extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = { hasError: false, error: null };
+            }
+
+            static getDerivedStateFromError(error) {
+                return { hasError: true, error };
+            }
+
+            componentDidCatch(error, errorInfo) {
+                console.error('Error caught by boundary:', error, errorInfo);
+            }
+
+            render() {
+                if (this.state.hasError) {
+                    return (
+                        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+                            <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6">
+                                <div className="text-center">
+                                    <i className="fas fa-exclamation-triangle text-4xl text-red-500 mb-4"></i>
+                                    <h1 className="text-xl font-bold text-gray-900 mb-2">
+                                        Something went wrong
+                                    </h1>
+                                    <p className="text-gray-600 mb-4">
+                                        {this.state.error?.message || 'An unexpected error occurred'}
+                                    </p>
+                                    <button
+                                        onClick={() => window.location.reload()}
+                                        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                                    >
+                                        Reload Page
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                }
+
+                return this.props.children;
+            }
+        }
+
+        // Navigation Component (unchanged from original)
+        function Navigation() {
+            const { user, logout } = useAuth();
+            const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+            const menuItems = useMemo(() => {
+                const items = [];
+                items.push({ name: 'Dashboard', icon: 'fas fa-home', path: '/' });
+
+                switch (user?.role) {
+                    case 'ADMIN':
+                        items.push(
+                            { name: 'User Management', icon: 'fas fa-user-cog', path: '/user-management' },
+                            { name: 'Customers', icon: 'fas fa-users', path: '/customers' },
+                            { name: 'Vehicles', icon: 'fas fa-car', path: '/vehicles' },
+                            { name: 'Parts', icon: 'fas fa-cogs', path: '/parts' },
+                            { name: 'Warranty Claims', icon: 'fas fa-shield-alt', path: '/warranty-claims' },
+                            { name: 'Service History', icon: 'fas fa-tools', path: '/service-history' },
+                            { name: 'API Docs', icon: 'fas fa-book', path: '/api-docs' }
+                        );
+                        break;
+                    case 'EVM_STAFF':
+                        items.push(
+                            { name: 'Vehicles', icon: 'fas fa-car', path: '/vehicles' },
+                            { name: 'Parts', icon: 'fas fa-cogs', path: '/parts' },
+                            { name: 'Review Claims', icon: 'fas fa-clipboard-check', path: '/warranty-claims/review' },
+                            { name: 'API Docs', icon: 'fas fa-book', path: '/api-docs' }
+                        );
+                        break;
+                    case 'SC_STAFF':
+                        items.push(
+                            { name: 'Customers', icon: 'fas fa-users', path: '/customers' },
+                            { name: 'Vehicles', icon: 'fas fa-car', path: '/vehicles' },
+                            { name: 'Create Claim', icon: 'fas fa-plus-circle', path: '/warranty-claims/create' },
+                            { name: 'All Claims', icon: 'fas fa-shield-alt', path: '/warranty-claims' },
+                            { name: 'Service History', icon: 'fas fa-tools', path: '/service-history' },
+                            { name: 'API Docs', icon: 'fas fa-book', path: '/api-docs' }
+                        );
+                        break;
+                    case 'SC_TECHNICIAN':
+                        items.push(
+                            { name: 'My Tasks', icon: 'fas fa-tasks', path: '/warranty-claims/tasks' },
+                            { name: 'Service History', icon: 'fas fa-tools', path: '/service-history' },
+                            { name: 'API Docs', icon: 'fas fa-book', path: '/api-docs' }
+                        );
+                        break;
+                    case 'CUSTOMER':
+                        items.push(
+                            { name: 'My Vehicles', icon: 'fas fa-car', path: '/my-vehicles' },
+                            { name: 'My Claims', icon: 'fas fa-shield-alt', path: '/my-claims' },
+                            { name: 'Service History', icon: 'fas fa-history', path: '/my-service-history' },
+                            { name: 'API Docs', icon: 'fas fa-book', path: '/api-docs' }
+                        );
+                        break;
+                }
+
+                return items;
+            }, [user]);
+
+            return (
+                <nav className="bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="flex justify-between h-16">
+                            <div className="flex items-center">
+                                <i className="fas fa-car text-white text-2xl mr-3"></i>
+                                <span className="text-white font-bold text-xl">EV Warranty</span>
+                                
+                                <div className="hidden md:flex ml-10 space-x-4">
+                                    {menuItems.map((item) => (
+                                        <a
+                                            key={item.path}
+                                            href={`#${item.path}`}
+                                            className="text-white hover:bg-white hover:bg-opacity-20 px-3 py-2 rounded-md text-sm font-medium transition flex items-center"
+                                        >
+                                            <i className={`${item.icon} mr-2`}></i>
+                                            {item.name}
+                                        </a>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="flex items-center space-x-4">
+                                <div className="text-white text-sm">
+                                    <span className="hidden sm:inline">Welcome, </span>
+                                    <span className="font-medium">{user?.username}</span>
+                                    <span className="ml-2 px-2 py-1 bg-white bg-opacity-20 rounded text-xs">
+                                        {user?.role}
+                                    </span>
+                                </div>
+                                <button
+                                    onClick={logout}
+                                    className="text-white hover:bg-white hover:bg-opacity-20 px-3 py-2 rounded-md text-sm font-medium transition"
+                                >
+                                    <i className="fas fa-sign-out-alt mr-2"></i>
+                                    Logout
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </nav>
+            );
+        }
+
+        // Enhanced Warranty Claims Component with real API calls
+        // Enhanced Warranty Claims Component with role-specific logic
+        function WarrantyClaimsWorkflow() {
+            const { user } = useAuth();
+            const [claims, setClaims] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+
+            // State để quản lý modal reject
+            const [rejectingClaim, setRejectingClaim] = useState(null);
+            const [rejectReason, setRejectReason] = useState('');
+
+            useEffect(() => {
+                loadClaims();
+            }, [user]);
+
+            const loadClaims = async () => {
+                try {
+                    setLoading(true);
+                    setError(null);
+
+                    // Logic chọn đúng API endpoint dựa trên vai trò người dùng
+                    let endpoint = '/warranty-claims'; // Endpoint mặc định cho các vai trò khác
+                    if (user?.role === 'EVM_STAFF') {
+                        endpoint = '/warranty-claims/evm-pending'; // API dành riêng cho EVM_STAFF
+                    } else if (user?.role === 'SC_TECHNICIAN') {
+                        endpoint = '/warranty-claims/tech-pending'; // API dành riêng cho SC_TECHNICIAN
+                    }
+
+                    const response = await ApiService.request('GET', endpoint, { page: 0, size: 20 });
+                    setClaims(response.content || []);
+                } catch (err) {
+                    setError(err.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const handleAction = async (claimId, action, reason = '') => {
+                try {
+                    let endpoint = '';
+                    let method = 'PATCH';
+                    let data = null; // Hầu hết các workflow API không cần body
+
+                    switch (action) {
+                        case 'accept':
+                            endpoint = `/warranty-claims/${claimId}/evm-accept`; //
+                            data = "Approved for warranty coverage"; // Body tùy chọn
+                            break;
+                        case 'reject':
+                            if (!reason) {
+                                alert('Reject reason is required.');
+                                return;
+                            }
+                            endpoint = `/warranty-claims/${claimId}/evm-reject?reason=${encodeURIComponent(reason)}`; //
+                            break;
+                        case 'start':
+                            endpoint = `/warranty-claims/${claimId}/tech-start`; //
+                            break;
+                        case 'complete':
+                            endpoint = `/warranty-claims/${claimId}/tech-complete?completionNote=${encodeURIComponent(reason || 'Completed successfully')}`; //
+                            break;
+                        default:
+                            throw new Error('Unknown action');
+                    }
+
+                    await ApiService.request(method, endpoint, data);
+
+                    if (action === 'reject') {
+                        setRejectingClaim(null);
+                        setRejectReason('');
+                    }
+
+                    await loadClaims(); // Tải lại danh sách để cập nhật giao diện
+
+                } catch (err) {
+                    alert(`Error: ${err.message}`);
+                }
+            };
+
+            const getStatusBadge = (status) => {
+                const statusConfig = {
+                    'SUBMITTED': 'bg-blue-100 text-blue-800',
+                    'SC_REVIEW': 'bg-yellow-100 text-yellow-800',
+                    'PROCESSING': 'bg-orange-100 text-orange-800',
+                    'COMPLETED': 'bg-green-100 text-green-800',
+                    'REJECTED': 'bg-red-100 text-red-800'
+                };
+                const color = statusConfig[status] || 'bg-gray-100 text-gray-800';
+                return <span className={`px-2 py-1 text-xs font-medium rounded-full ${color}`}>{status.replace('_', ' ')}</span>;
+            };
+
+            const getActions = (claim) => {
+                // Chỉ EVM_STAFF mới thấy nút Accept/Reject và chỉ khi claim ở trạng thái SUBMITTED
+                if (user?.role === 'EVM_STAFF' && claim.status === 'SUBMITTED') {
+                    return (
+                        <>
+                            <button
+                                onClick={() => handleAction(claim.warrantyClaimId, 'accept')}
+                                className="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600 mr-2"
+                            >
+                                <i className="fas fa-check mr-1"></i> Accept
+                            </button>
+                            <button
+                                onClick={() => setRejectingClaim(claim)}
+                                className="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600"
+                            >
+                                <i className="fas fa-times mr-1"></i> Reject
+                            </button>
+                        </>
+                    );
+                }
+
+                if (user?.role === 'SC_TECHNICIAN') {
+                    if (claim.status === 'SC_REVIEW') {
+                        return <button onClick={() => handleAction(claim.warrantyClaimId, 'start')} className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600">Start Processing</button>;
+                    } else if (claim.status === 'PROCESSING') {
+                        return <button onClick={() => handleAction(claim.warrantyClaimId, 'complete', 'Work completed')} className="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600">Complete</button>;
+                    }
+                }
+                return null;
+            };
+
+            if (loading) {
+                return <div className="p-6 text-center">Loading claims for review...</div>;
+            }
+
+            if (error) {
+                return <div className="p-6 bg-red-100 text-red-700 rounded">Error loading claims: {error}</div>;
+            }
+
+            return (
+                <div className="p-6">
+                    <div className="mb-6 flex justify-between items-center">
+                        <h1 className="text-2xl font-bold text-gray-900">EVM Claims Review</h1>
+                        <button onClick={loadClaims} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                            <i className="fas fa-sync-alt mr-2"></i>Refresh
+                        </button>
+                    </div>
+
+                    <div className="bg-white shadow-md rounded-lg overflow-hidden">
+                        {claims.length === 0 ? (
+                            <div className="p-8 text-center text-gray-500">
+                                <i className="fas fa-inbox text-3xl mb-2"></i>
+                                <p>No pending claims found for your review.</p>
+                            </div>
+                        ) : (
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Claim ID</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vehicle VIN</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                {claims.map((claim) => (
+                                    <tr key={claim.warrantyClaimId}>
+                                        <td className="px-6 py-4">#WC-{claim.warrantyClaimId}</td>
+                                        <td className="px-6 py-4">{claim.description}</td>
+                                        <td className="px-6 py-4 font-mono">{claim.vehicleVin}</td>
+                                        <td className="px-6 py-4">{getStatusBadge(claim.status)}</td>
+                                        <td className="px-6 py-4">{getActions(claim)}</td>
+                                    </tr>
+                                ))}
+                                </tbody>
+                            </table>
+                        )}
+                    </div>
+
+                    {rejectingClaim && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                            <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+                                <h3 className="text-lg font-bold mb-4">Reject Claim #{rejectingClaim.warrantyClaimId}</h3>
+                                <textarea
+                                    value={rejectReason}
+                                    onChange={(e) => setRejectReason(e.target.value)}
+                                    className="w-full p-2 border border-gray-300 rounded mb-4"
+                                    placeholder="Please provide a reason for rejection (required)..."
+                                    rows="4"
+                                />
+                                <div className="flex justify-end space-x-2">
+                                    <button onClick={() => setRejectingClaim(null)} className="px-4 py-2 text-gray-600 border border-gray-300 rounded hover:bg-gray-50">Cancel</button>
+                                    <button onClick={() => handleAction(rejectingClaim.warrantyClaimId, 'reject', rejectReason)} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Confirm Reject</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+
+        // Component MỚI để tạo Warranty Claim
+        function CreateWarrantyClaim() {
+            const { user } = useAuth();
+            const [vehicles, setVehicles] = useState([]);
+            const [parts, setParts] = useState([]);
+            const [formData, setFormData] = useState({
+                vehicleId: '',
+                partId: '',
+                description: ''
+            });
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+            const [submitting, setSubmitting] = useState(false);
+            const [submitStatus, setSubmitStatus] = useState({ error: null, success: null });
+
+            useEffect(() => {
+                const loadInitialData = async () => {
+                    try {
+                        setLoading(true);
+                        setError(null);
+                        const vehicleEndpoint = user.role === 'CUSTOMER' ? '/vehicles/my-vehicles' : '/vehicles';
+                        const vehicleResponse = await ApiService.request('GET', vehicleEndpoint, { page: 0, size: 200 });
+                        setVehicles(vehicleResponse.content || []);
+                        const partsResponse = await ApiService.request('GET', '/parts', { page: 0, size: 200 });
+                        setParts(partsResponse.content || []);
+                    } catch (err) {
+                        setError(`Failed to load necessary data: ${err.message}`);
+                    } finally {
+                        setLoading(false);
+                    }
+                };
+                loadInitialData();
+            }, [user.role]);
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                setSubmitting(true);
+                setSubmitStatus({ error: null, success: null });
+
+                try {
+                    // SỬA LỖI: Loại bỏ parseInt() cho partId vì nó là String
+                    const claimData = {
+                        vehicleId: parseInt(formData.vehicleId),
+                        partId: formData.partId ? formData.partId : null, // Gửi đi chuỗi partId nguyên bản
+                        description: formData.description
+                    };
+
+                    const response = await ApiService.request('POST', '/warranty-claims', claimData);
+
+                    setSubmitStatus({ success: `Successfully created claim #${response.warrantyClaimId}!` });
+                    setFormData({ vehicleId: '', partId: '', description: '' });
+
+                } catch (err) {
+                    setSubmitStatus({ error: `Failed to create claim: ${err.message}` });
+                } finally {
+                    setSubmitting(false);
+                }
+            };
+
+            if (loading) {
+                return <div className="p-6">Loading form data...</div>;
+            }
+
+            if (error) {
+                return <div className="p-6 bg-red-100 text-red-700 rounded">{error}</div>;
+            }
+
+            return (
+                <div className="p-6">
+                    <div className="max-w-2xl mx-auto">
+                        <h1 className="text-2xl font-bold text-gray-900 mb-6">Create New Warranty Claim</h1>
+
+                        {submitStatus.success && (
+                            <div className="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+                                {submitStatus.success}
+                            </div>
+                        )}
+                        {submitStatus.error && (
+                            <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                                {submitStatus.error}
+                            </div>
+                        )}
+
+                        <div className="bg-white p-8 rounded-lg shadow-md">
+                            <form onSubmit={handleSubmit} className="space-y-6">
+                                <div>
+                                    <label htmlFor="vehicleId" className="block text-sm font-medium text-gray-700 mb-1">
+                                        Vehicle <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        id="vehicleId"
+                                        name="vehicleId"
+                                        value={formData.vehicleId}
+                                        onChange={(e) => setFormData({...formData, vehicleId: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                        required
+                                        disabled={submitting}
+                                    >
+                                        <option value="">-- Select a Vehicle --</option>
+                                        {vehicles.map(v => (
+                                            <option key={v.vehicleId} value={v.vehicleId}>
+                                                {v.vehicleName} ({v.vehicleVin})
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label htmlFor="partId" className="block text-sm font-medium text-gray-700 mb-1">
+                                        Related Part (Optional)
+                                    </label>
+                                    <select
+                                        id="partId"
+                                        name="partId"
+                                        value={formData.partId}
+                                        onChange={(e) => setFormData({...formData, partId: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                        disabled={submitting}
+                                    >
+                                        <option value="">-- No specific part --</option>
+                                        {parts.map(p => (
+                                            <option key={p.partId} value={p.partId}>
+                                                {p.partName} ({p.partNumber})
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                                        Description of Issue <span className="text-red-500">*</span>
+                                    </label>
+                                    <textarea
+                                        id="description"
+                                        name="description"
+                                        rows="4"
+                                        value={formData.description}
+                                        onChange={(e) => setFormData({...formData, description: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                        required
+                                        disabled={submitting}
+                                        placeholder="Please describe the problem in detail..."
+                                    />
+                                </div>
+
+                                <div className="text-right">
+                                    <button
+                                        type="submit"
+                                        disabled={submitting}
+                                        className="bg-blue-600 text-white py-2 px-6 rounded-lg hover:bg-blue-700 transition duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {submitting ? (
+                                            <><i className="fas fa-spinner fa-spin mr-2"></i>Submitting...</>
+                                        ) : (
+                                            'Submit Claim'
+                                        )}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // Customer Management Component - FIXED API FIELDS
+        function CustomerManagement() {
+            const { user } = useAuth();
+            const [customers, setCustomers] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+            const [showCreateForm, setShowCreateForm] = useState(false);
+            const [editingCustomer, setEditingCustomer] = useState(null);
+            const [formData, setFormData] = useState({
+                name: '',
+                email: '',
+                phone: '',
+                address: '',
+                userId: ''
+            });
+
+            useEffect(() => {
+                loadCustomers();
+            }, []);
+
+            const loadCustomers = async () => {
+                try {
+                    setLoading(true);
+                    setError(null);
+                    const response = await ApiService.request('GET', '/customers', {
+                        page: 0,
+                        size: 20
+                    });
+                    setCustomers(response.content || []);
+                } catch (err) {
+                    setError(err.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                try {
+                    const customerData = {
+                        ...formData,
+                        userId: formData.userId ? parseInt(formData.userId) : 1
+                    };
+
+                    if (editingCustomer) {
+                        await ApiService.request('PUT', `/customers/${editingCustomer.customerId}`, customerData);
+                    } else {
+                        await ApiService.request('POST', '/customers', customerData);
+                    }
+                    setShowCreateForm(false);
+                    setEditingCustomer(null);
+                    setFormData({ name: '', email: '', phone: '', address: '', userId: '' });
+                    await loadCustomers();
+                } catch (err) {
+                    alert(`Error: ${err.message}`);
+                }
+            };
+
+            const handleEdit = (customer) => {
+                setEditingCustomer(customer);
+                setFormData({
+                    name: customer.name,
+                    email: customer.email,
+                    phone: customer.phone,
+                    address: customer.address,
+                    userId: customer.userId ? customer.userId.toString() : ''
+                });
+                setShowCreateForm(true);
+            };
+
+            const handleDelete = async (customerId) => {
+                if (confirm('Are you sure you want to delete this customer?')) {
+                    try {
+                        await ApiService.request('DELETE', `/customers/${customerId}`);
+                        await loadCustomers();
+                    } catch (err) {
+                        alert(`Error: ${err.message}`);
+                    }
+                }
+            };
+
+            if (loading) {
+                return (
+                    <div className="p-6">
+                        <div className="flex justify-center items-center h-64">
+                            <div className="text-center">
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+                                <p className="mt-4 text-gray-600">Loading customers...</p>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (error) {
+                return (
+                    <div className="p-6">
+                        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                            <i className="fas fa-exclamation-triangle mr-2"></i>
+                            Error loading customers: {error}
+                            <button onClick={loadCustomers} className="ml-4 text-sm underline">Retry</button>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="p-6">
+                    <div className="mb-6 flex justify-between items-center">
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-900">Customer Management</h1>
+                            <p className="text-gray-600 mt-1">Manage customer information</p>
+                        </div>
+                        <div className="flex space-x-2">
+                            { (user?.role === 'ADMIN' || user?.role === 'SC_STAFF' || user?.role === 'EVM_STAFF') && (
+                                <button
+                                    onClick={() => setShowCreateForm(true)}
+                                    className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                                >
+                                    <i className="fas fa-plus mr-2"></i>
+                                    Add Customer
+                                </button>
+                            ) }
+                            <button
+                                onClick={loadCustomers}
+                                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                            >
+                                <i className="fas fa-sync-alt mr-2"></i>
+                                Refresh
+                            </button>
+                        </div>
+                    </div>
+
+                    {showCreateForm && (
+                        <div className="mb-6 bg-white p-6 rounded-lg shadow-md">
+                            <h2 className="text-lg font-semibold mb-4">
+                                {editingCustomer ? 'Edit Customer' : 'Create New Customer'}
+                            </h2>
+                            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                                    <input
+                                        type="text"
+                                        value={formData.name}
+                                        onChange={(e) => setFormData({...formData, name: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                    <input
+                                        type="email"
+                                        value={formData.email}
+                                        onChange={(e) => setFormData({...formData, email: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                                    <input
+                                        type="tel"
+                                        value={formData.phone}
+                                        onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                                    <input
+                                        type="text"
+                                        value={formData.address}
+                                        onChange={(e) => setFormData({...formData, address: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">User ID (Optional)</label>
+                                    <input
+                                        type="number"
+                                        value={formData.userId}
+                                        onChange={(e) => setFormData({...formData, userId: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                        placeholder="Leave empty for default"
+                                    />
+                                </div>
+                                <div className="md:col-span-2 flex justify-end space-x-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setShowCreateForm(false);
+                                            setEditingCustomer(null);
+                                            setFormData({ name: '', email: '', phone: '', address: '', userId: '' });
+                                        }}
+                                        className="px-4 py-2 text-gray-600 border border-gray-300 rounded hover:bg-gray-50"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                    >
+                                        {editingCustomer ? 'Update' : 'Create'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    )}
+
+                    <div className="bg-white shadow-md rounded-lg overflow-hidden">
+                        {customers.length === 0 ? (
+                            <div className="p-8 text-center text-gray-500">
+                                No customers found
+                            </div>
+                        ) : (
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {customers.map((customer) => (
+                                        <tr key={customer.customerId} className="hover:bg-gray-50">
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="text-sm font-medium text-gray-900">{customer.name}</div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="text-sm text-gray-900">{customer.email}</div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="text-sm text-gray-900">{customer.phone}</div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="text-sm text-gray-900">{customer.address}</div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                <button
+                                                    onClick={() => handleEdit(customer)}
+                                                    className="text-indigo-600 hover:text-indigo-900 mr-3"
+                                                >
+                                                    <i className="fas fa-edit mr-1"></i>Edit
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(customer.customerId)}
+                                                    className="text-red-600 hover:text-red-900"
+                                                >
+                                                    <i className="fas fa-trash mr-1"></i>Delete
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        // Vehicle Management Component
+        function VehicleManagement() {
+            const { user } = useAuth();
+            const [vehicles, setVehicles] = useState([]);
+            const [customers, setCustomers] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+            const [showCreateForm, setShowCreateForm] = useState(false);
+            const [editingVehicle, setEditingVehicle] = useState(null);
+            // SỬA LỖI 1: Đồng bộ tên trường trong state để khớp với API
+            const [formData, setFormData] = useState({
+                vehicleVin: '',
+                vehicleName: '',
+                vehicleModel: '',
+                vehicleYear: '',
+                customerId: ''
+            });
+
+            useEffect(() => {
+                loadVehicles();
+                loadCustomers();
+            }, []);
+
+            const loadVehicles = async () => {
+                try {
+                    setLoading(true);
+                    setError(null);
+                    const response = await ApiService.request('GET', '/vehicles', {
+                        page: 0,
+                        size: 20
+                    });
+                    setVehicles(response.content || []);
+                } catch (err) {
+                    setError(err.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const loadCustomers = async () => {
+                try {
+                    const response = await ApiService.request('GET', '/customers', {
+                        page: 0,
+                        size: 100
+                    });
+                    setCustomers(response.content || []);
+                } catch (err) {
+                    console.error('Error loading customers:', err);
+                }
+            };
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                try {
+                    // SỬA LỖI 2: Tạo đối tượng gửi đi với đúng tên trường mà backend yêu cầu
+                    const vehicleData = {
+                        vehicleName: formData.vehicleName,
+                        vehicleModel: formData.vehicleModel,
+                        vehicleVin: formData.vehicleVin,
+                        vehicleYear: formData.vehicleYear ? parseInt(formData.vehicleYear) : null,
+                        customerId: formData.customerId ? formData.customerId : null
+                    };
+
+                    if (editingVehicle) {
+                        await ApiService.request('PUT', `/vehicles/${editingVehicle.vehicleId}`, vehicleData);
+                    } else {
+                        await ApiService.request('POST', '/vehicles', vehicleData);
+                    }
+                    setShowCreateForm(false);
+                    setEditingVehicle(null);
+                    // Reset form state về đúng cấu trúc ban đầu
+                    setFormData({ vehicleVin: '', vehicleName: '', vehicleModel: '', vehicleYear: '', customerId: '' });
+                    await loadVehicles();
+                } catch (err) {
+                    alert(`Error: ${err.message}`);
+                }
+            };
+
+            const handleEdit = (vehicle) => {
+                setEditingVehicle(vehicle);
+                // SỬA LỖI 3: Map đúng dữ liệu từ vehicle response (vehicleYear) vào form state
+                setFormData({
+                    vehicleVin: vehicle.vehicleVin,
+                    vehicleName: vehicle.vehicleName,
+                    vehicleModel: vehicle.vehicleModel,
+                    vehicleYear: vehicle.vehicleYear.toString(),
+                    customerId: vehicle.customerId ? vehicle.customerId.toString() : ''
+                });
+                setShowCreateForm(true);
+            };
+
+            const handleDelete = async (vehicleId) => {
+                if (confirm('Are you sure you want to delete this vehicle?')) {
+                    try {
+                        await ApiService.request('DELETE', `/vehicles/${vehicleId}`);
+                        await loadVehicles();
+                    } catch (err) {
+                        alert(`Error: ${err.message}`);
+                    }
+                }
+            };
+
+            if (loading) {
+                return (
+                    <div className="p-6">
+                        <div className="flex justify-center items-center h-64">
+                            <div className="text-center">
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+                                <p className="mt-4 text-gray-600">Loading vehicles...</p>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (error) {
+                return (
+                    <div className="p-6">
+                        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                            <i className="fas fa-exclamation-triangle mr-2"></i>
+                            Error loading vehicles: {error}
+                            <button onClick={loadVehicles} className="ml-4 text-sm underline">Retry</button>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="p-6">
+                    <div className="mb-6 flex justify-between items-center">
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-900">Vehicle Management</h1>
+                            <p className="text-gray-600 mt-1">Manage vehicle information</p>
+                        </div>
+                        <div className="flex space-x-2">
+                            <button
+                                onClick={() => setShowCreateForm(true)}
+                                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                            >
+                                <i className="fas fa-plus mr-2"></i>
+                                Add Vehicle
+                            </button>
+                            <button
+                                onClick={loadVehicles}
+                                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                            >
+                                <i className="fas fa-sync-alt mr-2"></i>
+                                Refresh
+                            </button>
+                        </div>
+                    </div>
+
+                    {showCreateForm && (
+                        <div className="mb-6 bg-white p-6 rounded-lg shadow-md">
+                            <h2 className="text-lg font-semibold mb-4">
+                                {editingVehicle ? 'Edit Vehicle' : 'Create New Vehicle'}
+                            </h2>
+                            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">VIN</label>
+                                    <input
+                                        type="text"
+                                        value={formData.vehicleVin}
+                                        onChange={(e) => setFormData({...formData, vehicleVin: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Vehicle Name</label>
+                                    <input
+                                        type="text"
+                                        value={formData.vehicleName}
+                                        onChange={(e) => setFormData({...formData, vehicleName: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Model</label>
+                                    <input
+                                        type="text"
+                                        value={formData.vehicleModel}
+                                        onChange={(e) => setFormData({...formData, vehicleModel: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
+                                    <input
+                                        type="number"
+                                        value={formData.vehicleYear}
+                                        onChange={(e) => setFormData({...formData, vehicleYear: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                        required
+                                    />
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Customer</label>
+                                    <select
+                                        value={formData.customerId}
+                                        onChange={(e) => setFormData({...formData, customerId: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                    >
+                                        <option value="">Select Customer (Optional)</option>
+                                        {customers.map((customer) => (
+                                            <option key={customer.customerId} value={customer.customerId}>
+                                                {customer.name} - {customer.email}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="md:col-span-2 flex justify-end space-x-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setShowCreateForm(false);
+                                            setEditingVehicle(null);
+                                            setFormData({ vehicleVin: '', vehicleName: '', vehicleModel: '', vehicleYear: '', customerId: '' });
+                                        }}
+                                        className="px-4 py-2 text-gray-600 border border-gray-300 rounded hover:bg-gray-50"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                    >
+                                        {editingVehicle ? 'Update' : 'Create'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    )}
+
+                    <div className="bg-white shadow-md rounded-lg overflow-hidden">
+                        {vehicles.length === 0 ? (
+                            <div className="p-8 text-center text-gray-500">
+                                No vehicles found
+                            </div>
+                        ) : (
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">VIN</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vehicle Name</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Model</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Year</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                {vehicles.map((vehicle) => (
+                                    <tr key={vehicle.vehicleId} className="hover:bg-gray-50">
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="text-sm font-mono text-gray-900">{vehicle.vehicleVin}</div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="text-sm text-gray-900">{vehicle.vehicleName}</div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="text-sm text-gray-900">{vehicle.vehicleModel}</div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="text-sm text-gray-900">{vehicle.vehicleYear}</div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="text-sm text-gray-900">
+                                                {vehicle.customerName || 'Unassigned'}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                            <button
+                                                onClick={() => handleEdit(vehicle)}
+                                                className="text-indigo-600 hover:text-indigo-900 mr-3"
+                                            >
+                                                <i className="fas fa-edit mr-1"></i>Edit
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(vehicle.vehicleId)}
+                                                className="text-red-600 hover:text-red-900"
+                                            >
+                                                <i className="fas fa-trash mr-1"></i>Delete
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                                </tbody>
+                            </table>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        // Parts Management Component - Rebuilt for Inventory Management
+        function PartsManagement() {
+            const { user } = useAuth();
+            const [parts, setParts] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+            const [showCreateForm, setShowCreateForm] = useState(false);
+            const [editingPart, setEditingPart] = useState(null);
+
+            // SỬA LỖI: Cập nhật state để khớp với API Documentation
+            const [formData, setFormData] = useState({
+                partId: '',
+                partName: '',
+                partNumber: '',
+                partDescription: '',
+                partCategory: 'BATTERY', // Giá trị mặc định
+                partPrice: '',
+                partQuantity: '',
+                partSupplier: '',
+                partWarrantyPeriod: '', // Đơn vị: tháng
+            });
+
+            useEffect(() => {
+                loadParts();
+            }, []);
+
+            const loadParts = async () => {
+                try {
+                    setLoading(true);
+                    setError(null);
+                    const response = await ApiService.request('GET', '/parts', { page: 0, size: 20 });
+                    setParts(response.content || []);
+                } catch (err)
+                {
+                    setError(err.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                try {
+                    // Tạo đối tượng gửi đi với đúng tên trường từ API Doc
+                    const partData = {
+                        partId: formData.partId,
+                        partName: formData.partName,
+                        partNumber: formData.partNumber,
+                        partDescription: formData.partDescription,
+                        partCategory: formData.partCategory,
+                        partPrice: parseFloat(formData.partPrice),
+                        partQuantity: parseInt(formData.partQuantity),
+                        partSupplier: formData.partSupplier,
+                        partWarrantyPeriod: parseInt(formData.partWarrantyPeriod),
+                    };
+
+                    if (editingPart) {
+                        await ApiService.request('PUT', `/parts/${partData.partId}`, partData);
+                    } else {
+                        await ApiService.request('POST', '/parts', partData);
+                    }
+                    setShowCreateForm(false);
+                    setEditingPart(null);
+                    setFormData({ partId: '', partName: '', partNumber: '', partDescription: '', partCategory: 'BATTERY', partPrice: '', partQuantity: '', partSupplier: '', partWarrantyPeriod: '' });
+                    await loadParts();
+                } catch (err) {
+                    alert(`Error: ${err.message}`);
+                }
+            };
+
+            const handleEdit = (part) => {
+                setEditingPart(part);
+                setFormData({
+                    partId: part.partId,
+                    partName: part.partName,
+                    partNumber: part.partNumber,
+                    partDescription: part.partDescription || '',
+                    partCategory: part.partCategory,
+                    partPrice: (part.partPrice || 0).toString(),
+                    partQuantity: (part.partQuantity || 0).toString(),
+                    partSupplier: part.partSupplier || '',
+                    partWarrantyPeriod: (part.partWarrantyPeriod || 0).toString(),
+                });
+                setShowCreateForm(true);
+            };
+
+            const handleDelete = async (partId) => {
+                if (confirm('Are you sure you want to delete this part?')) {
+                    try {
+                        await ApiService.request('DELETE', `/parts/${partId}`);
+                        await loadParts();
+                    } catch (err) {
+                        alert(`Error: ${err.message}`);
+                    }
+                }
+            };
+
+            if (loading) {
+                return <div className="p-6 text-center">Loading parts inventory...</div>;
+            }
+
+            if (error) {
+                return <div className="p-6 bg-red-100 text-red-700 rounded">Error: {error}</div>;
+            }
+
+            return (
+                <div className="p-6">
+                    <div className="mb-6 flex justify-between items-center">
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-900">Parts Inventory Management</h1>
+                            <p className="text-gray-600 mt-1">Manage spare parts inventory</p>
+                        </div>
+                        <div className="flex space-x-2">
+                            {(user?.role === 'ADMIN' || user?.role === 'EVM_STAFF') && (
+                                <button onClick={() => setShowCreateForm(true)} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                                    <i className="fas fa-plus mr-2"></i> Add Part
+                                </button>
+                            )}
+                            <button onClick={loadParts} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                                <i className="fas fa-sync-alt mr-2"></i> Refresh
+                            </button>
+                        </div>
+                    </div>
+
+                    {showCreateForm && (user?.role === 'ADMIN' || user?.role === 'EVM_STAFF') && (
+                        <div className="mb-6 bg-white p-6 rounded-lg shadow-md">
+                            <h2 className="text-lg font-semibold mb-4">{editingPart ? 'Edit Part' : 'Create New Part'}</h2>
+                            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Part ID</label>
+                                    <input type="text" value={formData.partId} onChange={(e) => setFormData({...formData, partId: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-md" required disabled={!!editingPart} />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Part Name</label>
+                                    <input type="text" value={formData.partName} onChange={(e) => setFormData({...formData, partName: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-md" required />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Part Number</label>
+                                    <input type="text" value={formData.partNumber} onChange={(e) => setFormData({...formData, partNumber: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-md" required />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Supplier</label>
+                                    <input type="text" value={formData.partSupplier} onChange={(e) => setFormData({...formData, partSupplier: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-md" required />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
+                                    <input type="number" step="0.01" value={formData.partPrice} onChange={(e) => setFormData({...formData, partPrice: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-md" required />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Quantity in Stock</label>
+                                    <input type="number" value={formData.partQuantity} onChange={(e) => setFormData({...formData, partQuantity: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-md" required />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Warranty Period (Months)</label>
+                                    <input type="number" value={formData.partWarrantyPeriod} onChange={(e) => setFormData({...formData, partWarrantyPeriod: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-md" required />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                                    <select value={formData.partCategory} onChange={(e) => setFormData({...formData, partCategory: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-md" required >
+                                        <option value="BATTERY">BATTERY</option>
+                                        <option value="MOTOR">MOTOR</option>
+                                        <option value="ELECTRONICS">ELECTRONICS</option>
+                                        <option value="OTHER">OTHER</option>
+                                    </select>
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                                    <textarea value={formData.partDescription} onChange={(e) => setFormData({...formData, partDescription: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-md" rows="3" />
+                                </div>
+                                <div className="md:col-span-2 flex justify-end space-x-2">
+                                    <button type="button" onClick={() => { setShowCreateForm(false); setEditingPart(null); setFormData({ partId: '', partName: '', partNumber: '', partDescription: '', partCategory: 'BATTERY', partPrice: '', partQuantity: '', partSupplier: '', partWarrantyPeriod: '' }); }} className="px-4 py-2 text-gray-600 border border-gray-300 rounded hover:bg-gray-50" >Cancel</button>
+                                    <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">{editingPart ? 'Update' : 'Create'}</button>
+                                </div>
+                            </form>
+                        </div>
+                    )}
+
+                    <div className="bg-white shadow-md rounded-lg overflow-hidden">
+                        {parts.length === 0 ? (
+                            <div className="p-8 text-center text-gray-500">No parts found in inventory.</div>
+                        ) : (
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Part Name / ID</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Part Number</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Supplier</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                {parts.map((part) => (
+                                    <tr key={part.partId} className="hover:bg-gray-50">
+                                        <td className="px-6 py-4">
+                                            <div className="text-sm font-medium text-gray-900">{part.partName}</div>
+                                            <div className="text-sm text-gray-500 font-mono">{part.partId}</div>
+                                        </td>
+                                        <td className="px-6 py-4"><div className="text-sm text-gray-900 font-mono">{part.partNumber}</div></td>
+                                        <td className="px-6 py-4"><div className="text-sm text-gray-900">${part.partPrice?.toFixed(2)}</div></td>
+                                        <td className="px-6 py-4"><div className="text-sm text-gray-900">{part.partQuantity}</div></td>
+                                        <td className="px-6 py-4"><div className="text-sm text-gray-900">{part.partSupplier}</div></td>
+                                        <td className="px-6 py-4 text-sm font-medium">
+                                            {(user?.role === 'ADMIN' || user?.role === 'EVM_STAFF') && (
+                                                <button onClick={() => handleEdit(part)} className="text-indigo-600 hover:text-indigo-900 mr-3">Edit</button>
+                                            )}
+                                            {user?.role === 'ADMIN' && (
+                                                <button onClick={() => handleDelete(part.partId)} className="text-red-600 hover:text-red-900">Delete</button>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                                </tbody>
+                            </table>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        // Service History Management Component - FIXED
+        function ServiceHistoryManagement() {
+            const { user } = useAuth();
+            const [serviceHistory, setServiceHistory] = useState([]);
+            const [vehicles, setVehicles] = useState([]);
+            const [parts, setParts] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+            const [showCreateForm, setShowCreateForm] = useState(false);
+            const [editingService, setEditingService] = useState(null);
+
+            // Cập nhật state để khớp với DTO mới từ BE
+            const [formData, setFormData] = useState({
+                vehicleId: '',
+                serviceDate: '',
+                serviceType: '',
+                description: '',
+                cost: '',
+                partId: '',
+                technicianName: ''
+            });
+
+            useEffect(() => {
+                loadInitialData();
+            }, []);
+
+            const loadInitialData = async () => {
+                try {
+                    setLoading(true);
+                    setError(null);
+                    const [historyRes, vehiclesRes, partsRes] = await Promise.all([
+                        ApiService.request('GET', '/service-histories', { page: 0, size: 20 }),
+                        ApiService.request('GET', '/vehicles', { page: 0, size: 200 }),
+                        ApiService.request('GET', '/parts', { page: 0, size: 200 })
+                    ]);
+                    setServiceHistory(historyRes.content || []);
+                    setVehicles(vehiclesRes.content || []);
+                    setParts(partsRes.content || []);
+                } catch (err) {
+                    setError(`Failed to load data: ${err.message}`);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const loadServiceHistory = async () => {
+                try {
+                    const response = await ApiService.request('GET', '/service-histories', { page: 0, size: 20 });
+                    setServiceHistory(response.content || []);
+                } catch(err) {
+                    setError(err.message);
+                }
+            }
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                // Chỉ ADMIN mới có quyền submit
+                if (user?.role !== 'ADMIN') {
+                    alert('You do not have permission to perform this action.');
+                    return;
+                }
+                try {
+                    const serviceData = {
+                        vehicleId: parseInt(formData.vehicleId),
+                        serviceDate: formData.serviceDate,
+                        serviceType: formData.serviceType,
+                        description: formData.description,
+                        cost: parseFloat(formData.cost),
+                        partId: formData.partId || null,
+                        technicianName: formData.technicianName
+                    };
+
+                    if (editingService) {
+                        await ApiService.request('PUT', `/service-histories/${editingService.serviceHistoryId}`, serviceData);
+                    } else {
+                        await ApiService.request('POST', '/service-histories', serviceData);
+                    }
+                    setShowCreateForm(false);
+                    setEditingService(null);
+                    setFormData({ vehicleId: '', serviceDate: '', serviceType: '', description: '', cost: '', partId: '', technicianName: '' });
+                    await loadServiceHistory();
+                } catch (err) {
+                    alert(`Error: ${err.message}`);
+                }
+            };
+
+            const handleEdit = (service) => {
+                // SỬA LỖI: Chỉ ADMIN mới có thể mở form Edit
+                if (user?.role !== 'ADMIN') return;
+                setEditingService(service);
+                setFormData({
+                    vehicleId: (service.vehicleId || '').toString(),
+                    serviceDate: service.serviceDate ? new Date(service.serviceDate).toISOString().split('T')[0] : '',
+                    serviceType: service.serviceType || '',
+                    description: service.description || '',
+                    cost: (service.cost || '0').toString(),
+                    partId: (service.partId || '').toString(),
+                    technicianName: service.technicianName || ''
+                });
+                setShowCreateForm(true);
+            };
+
+            const handleDelete = async (serviceId) => {
+                // SỬA LỖI: Chỉ ADMIN mới có thể xóa
+                if (user?.role !== 'ADMIN') {
+                    alert('You do not have permission to perform this action.');
+                    return;
+                }
+                if (confirm('Are you sure you want to delete this service record?')) {
+                    try {
+                        await ApiService.request('DELETE', `/service-histories/${serviceId}`);
+                        await loadServiceHistory();
+                    } catch (err) {
+                        alert(`Error: ${err.message}`);
+                    }
+                }
+            };
+
+            if (loading) {
+                return <div className="p-6 text-center">Loading service records...</div>;
+            }
+
+            if (error) {
+                return <div className="p-6 bg-red-100 text-red-700 rounded">Error: {error}</div>;
+            }
+
+            return (
+                <div className="p-6">
+                    <div className="mb-6 flex justify-between items-center">
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-900">Service History Management</h1>
+                            <p className="text-gray-600 mt-1">Manage all vehicle service records</p>
+                        </div>
+                        <div className="flex space-x-2">
+                            {/* SỬA LỖI: Chỉ ADMIN mới thấy nút Add */}
+                            {user?.role === 'ADMIN' && (
+                                <button
+                                    onClick={() => {
+                                        setEditingService(null);
+                                        setFormData({ vehicleId: '', serviceDate: '', serviceType: '', description: '', cost: '', partId: '', technicianName: '' });
+                                        setShowCreateForm(true);
+                                    }}
+                                    className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                                >
+                                    <i className="fas fa-plus mr-2"></i>
+                                    Add Service Record
+                                </button>
+                            )}
+                            <button onClick={loadServiceHistory} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                                <i className="fas fa-sync-alt mr-2"></i>Refresh
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* SỬA LỖI: Chỉ ADMIN mới thấy form Add/Edit */}
+                    {showCreateForm && user?.role === 'ADMIN' && (
+                        <div className="mb-6 bg-white p-6 rounded-lg shadow-md">
+                            <h2 className="text-lg font-semibold mb-4">
+                                {editingService ? 'Edit Service Record' : 'Create New Service Record'}
+                            </h2>
+                            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Vehicle</label>
+                                    <select value={formData.vehicleId} onChange={(e) => setFormData({...formData, vehicleId: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-md" required>
+                                        <option value="">-- Select Vehicle --</option>
+                                        {vehicles.map((vehicle) => (
+                                            <option key={vehicle.vehicleId} value={vehicle.vehicleId}>
+                                                {vehicle.vehicleName} ({vehicle.vehicleVin})
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Service Date</label>
+                                    <input type="date" value={formData.serviceDate} onChange={(e) => setFormData({...formData, serviceDate: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-md" required />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Service Type</label>
+                                    <input type="text" value={formData.serviceType} onChange={(e) => setFormData({...formData, serviceType: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-md" required placeholder="e.g., General Maintenance, Battery Repair"/>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Cost</label>
+                                    <input type="number" step="0.01" value={formData.cost} onChange={(e) => setFormData({...formData, cost: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-md" required />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Technician Name</label>
+                                    <input type="text" value={formData.technicianName} onChange={(e) => setFormData({...formData, technicianName: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-md" required />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Part Used (Optional)</label>
+                                    <select value={formData.partId} onChange={(e) => setFormData({...formData, partId: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-md" >
+                                        <option value="">-- No part used --</option>
+                                        {parts.map((part) => (
+                                            <option key={part.partId} value={part.partId}>
+                                                {part.partName} ({part.partNumber})
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                                    <textarea value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-md" rows="3" required />
+                                </div>
+                                <div className="md:col-span-2 flex justify-end space-x-2">
+                                    <button type="button" onClick={() => { setShowCreateForm(false); setEditingService(null); setFormData({ vehicleId: '', serviceDate: '', serviceType: '', description: '', cost: '', partId: '', technicianName: '' }); }} className="px-4 py-2 text-gray-600 border border-gray-300 rounded hover:bg-gray-50" >
+                                        Cancel
+                                    </button>
+                                    <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" >
+                                        {editingService ? 'Update' : 'Create'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    )}
+                    <div className="bg-white shadow-md rounded-lg overflow-hidden">
+                        {serviceHistory.length === 0 ? (
+                            <div className="p-8 text-center text-gray-500">No service history records found.</div>
+                        ) : (
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vehicle</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Service Date</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Service Type</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cost</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                {serviceHistory.map((service) => (
+                                    <tr key={service.serviceHistoryId} className="hover:bg-gray-50">
+                                        <td className="px-6 py-4">
+                                            <div className="text-sm text-gray-900">{service.vehicleName}</div>
+                                            <div className="text-sm text-gray-500 font-mono">{service.vehicleVin}</div>
+                                        </td>
+                                        <td className="px-6 py-4"><div className="text-sm text-gray-900">{new Date(service.serviceDate).toLocaleDateString()}</div></td>
+                                        <td className="px-6 py-4"><div className="text-sm text-gray-900">{service.serviceType}</div></td>
+                                        <td className="px-6 py-4"><div className="text-sm text-gray-900">${service.cost?.toFixed(2)}</div></td>
+                                        <td className="px-6 py-4 text-sm font-medium">
+                                            {/* SỬA LỖI: Chỉ ADMIN mới thấy nút Edit/Delete */}
+                                            {user?.role === 'ADMIN' ? (
+                                                <>
+                                                    <button onClick={() => handleEdit(service)} className="text-indigo-600 hover:text-indigo-900 mr-3">Edit</button>
+                                                    <button onClick={() => handleDelete(service.serviceHistoryId)} className="text-red-600 hover:text-red-900">Delete</button>
+                                                </>
+                                            ) : (
+                                                <span className="text-gray-400 italic">Read-only</span>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                                </tbody>
+                            </table>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        // User Management Component - Full CRUD for ADMIN
+        function UserManagement() {
+            const { user } = useAuth();
+            const [users, setUsers] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+            const [success, setSuccess] = useState(null);
+            const [showCreateForm, setShowCreateForm] = useState(false);
+            const [editingUser, setEditingUser] = useState(null);
+            const [searchQuery, setSearchQuery] = useState('');
+            const [roleFilter, setRoleFilter] = useState('');
+            const [formData, setFormData] = useState({
+                username: '',
+                email: '',
+                password: '',
+                address: '',
+                roleId: ''
+            });
+
+            // ADMIN: roleId mapping
+            const roles = [
+                { id: 1, name: 'ADMIN' },
+                { id: 2, name: 'SC_STAFF' },
+                { id: 3, name: 'SC_TECHNICIAN' },
+                { id: 4, name: 'EVM_STAFF' },
+                { id: 5, name: 'CUSTOMER' }
+            ];
+
+            useEffect(() => {
+                if (user?.role === 'ADMIN') {
+                    loadUsers();
+                }
+            }, [searchQuery, roleFilter]);
+
+            const loadUsers = async () => {
+                try {
+                    setLoading(true);
+                    setError(null);
+                    const response = await ApiService.request('GET', '/admin/users', {
+                        page: 0,
+                        size: 20,
+                        search: searchQuery || undefined,
+                        role: roleFilter || undefined
+                    });
+                    setUsers(response.content || []);
+                } catch (err) {
+                    setError(`Failed to load users: ${err.message}. Note: UserManagementController endpoints need to be fully implemented on the backend.`);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const handleCreateSubmit = async (e) => {
+                e.preventDefault();
+                setError(null);
+                setSuccess(null);
+                setLoading(true);
+
+                try {
+                    let endpoint = '';
+                    let requestData = {};
+
+                    if (user?.role === 'ADMIN') {
+                        endpoint = '/auth/admin/create-user';
+                        requestData = {
+                            username: formData.username,
+                            email: formData.email,
+                            password: formData.password,
+                            address: formData.address,
+                            roleId: parseInt(formData.roleId)
+                        };
+                    } else if (user?.role === 'SC_STAFF') {
+                        endpoint = '/auth/register';
+                        requestData = {
+                            username: formData.username,
+                            email: formData.email,
+                            password: formData.password,
+                            address: formData.address
+                        };
+                    }
+
+                    await ApiService.request('POST', endpoint, requestData);
+                    setSuccess(`User '${formData.username}' created successfully!`);
+                    setFormData({ username: '', email: '', password: '', address: '', roleId: '' });
+                    setShowCreateForm(false);
+
+                    if (user?.role === 'ADMIN') {
+                        await loadUsers();
+                    }
+                    setTimeout(() => setSuccess(null), 3000);
+                } catch (err) {
+                    setError(err.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const handleUpdateRole = async (userId, newRoleId) => {
+                if (confirm('Are you sure you want to change this user\'s role?')) {
+                    try {
+                        await ApiService.request('PATCH', `/admin/users/${userId}/role?newRoleId=${newRoleId}`);
+                        setSuccess('User role updated successfully!');
+                        await loadUsers();
+                        setTimeout(() => setSuccess(null), 3000);
+                    } catch (err) {
+                        setError(err.message);
+                    }
+                }
+            };
+
+            const handleResetPassword = async (userId) => {
+                if (confirm('Are you sure you want to reset this user\'s password?')) {
+                    try {
+                        const response = await ApiService.request('POST', `/admin/users/${userId}/reset-password`);
+                        alert(`Password reset successfully! New password: ${response.newPassword || 'Sent to user email'}`);
+                    } catch (err) {
+                        setError(err.message);
+                    }
+                }
+            };
+
+            const handleDeleteUser = async (userId) => {
+                if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+                    try {
+                        await ApiService.request('DELETE', `/admin/users/${userId}`);
+                        setSuccess('User deleted successfully!');
+                        await loadUsers();
+                        setTimeout(() => setSuccess(null), 3000);
+                    } catch (err) {
+                        setError(err.message);
+                    }
+                }
+            };
+
+            // SC_STAFF view - only create form
+            if (user?.role === 'SC_STAFF') {
+                return (
+                    <div className="p-6">
+                        {/* SC_STAFF create form remains unchanged */}
+                    </div>
+                );
+            }
+
+            // ADMIN view - full CRUD
+            return (
+                <div className="p-6">
+                    <div className="mb-6 flex justify-between items-center">
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
+                            <p className="text-gray-600 mt-1">Manage all user accounts</p>
+                        </div>
+                        <button
+                            onClick={() => setShowCreateForm(!showCreateForm)}
+                            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                        >
+                            <i className="fas fa-plus mr-2"></i>
+                            {showCreateForm ? 'Cancel' : 'Create New User'}
+                        </button>
+                    </div>
+
+                    {success && (
+                        <div className="mb-6 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+                            <i className="fas fa-check-circle mr-2"></i>{success}
+                        </div>
+                    )}
+
+                    {error && (
+                        <div className="mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                            <i className="fas fa-exclamation-triangle mr-2"></i>{error}
+                        </div>
+                    )}
+
+                    {showCreateForm && (
+                        <div className="mb-6 bg-white p-6 rounded-lg shadow-md">
+                            <h2 className="text-lg font-semibold mb-4">Create New User</h2>
+                            <form onSubmit={handleCreateSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Username *</label>
+                                    <input type="text" value={formData.username} onChange={(e) => setFormData({...formData, username: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500" required />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                                    <input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500" required />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Password *</label>
+                                    <input type="password" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500" required minLength="6" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Address *</label>
+                                    <input type="text" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500" required />
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Role *</label>
+                                    <select value={formData.roleId} onChange={(e) => setFormData({...formData, roleId: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500" required >
+                                        <option value="">Select Role</option>
+                                        {roles.map((role) => (<option key={role.id} value={role.id}>{role.name}</option>))}
+                                    </select>
+                                </div>
+                                <div className="md:col-span-2 flex justify-end space-x-2">
+                                    <button type="button" onClick={() => {setShowCreateForm(false); setFormData({ username: '', email: '', password: '', address: '', roleId: '' });}} className="px-4 py-2 text-gray-600 border border-gray-300 rounded hover:bg-gray-50">Cancel</button>
+                                    <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Create User</button>
+                                </div>
+                            </form>
+                        </div>
+                    )}
+
+                    <div className="mb-4 flex gap-4">
+                        <div className="flex-1">
+                            <input type="text" placeholder="Search by username..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500" />
+                        </div>
+                        <select
+                            value={roleFilter}
+                            onChange={(e) => setRoleFilter(e.target.value)}
+                            className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                        >
+                            <option value="">All Roles</option>
+                            {roles.map((role) => (
+                                // Sửa value={role.id} thành value={role.name}
+                                <option key={role.id} value={role.name}>{role.name}</option>
+                            ))}
+                        </select>
+                        <button onClick={loadUsers} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                            <i className="fas fa-sync-alt mr-2"></i>Refresh
+                        </button>
+                    </div>
+
+                    <div className="bg-white shadow-md rounded-lg overflow-hidden">
+                        {loading ? (
+                            <div className="p-8 text-center">
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+                                <p className="mt-4 text-gray-600">Loading users...</p>
+                            </div>
+                        ) : users.length === 0 ? (
+                            <div className="p-8 text-center text-gray-500">No users found</div>
+                        ) : (
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                {users.map((u) => (
+                                    <tr key={u.userId} className="hover:bg-gray-50">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{u.userId}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{u.username}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{u.email}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <select
+                                                value={roles.find(r => r.name === u.roleName)?.id || ''}
+                                                onChange={(e) => handleUpdateRole(u.userId, e.target.value)}
+                                                className="text-sm px-2 py-1 border border-gray-300 rounded"
+                                            >
+                                                {roles.map((role) => (
+                                                    <option key={role.id} value={role.id}>{role.name}</option>
+                                                ))}
+                                            </select>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                            <button
+                                                onClick={() => handleResetPassword(u.userId)}
+                                                className="text-yellow-600 hover:text-yellow-900 mr-3"
+                                                title="Reset Password"
+                                            >
+                                                <i className="fas fa-key"></i>
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteUser(u.userId)}
+                                                className="text-red-600 hover:text-red-900"
+                                                title="Delete User"
+                                            >
+                                                <i className="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                                </tbody>
+                            </table>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        // API Documentation Component
+        function APIDocumentation() {
+            const { user } = useAuth();
+            const [selectedCategory, setSelectedCategory] = useState('auth');
+            const [searchQuery, setSearchQuery] = useState('');
+
+            const apiCategories = {
+                auth: {
+                    title: 'Authentication API',
+                    icon: 'fa-key',
+                    baseUrl: '/api/auth',
+                    endpoints: [
+                        { method: 'POST', path: '/login', auth: 'None', desc: 'User login authentication', roles: 'Public' },
+                        { method: 'POST', path: '/refresh', auth: 'None', desc: 'Refresh access token', roles: 'Public' },
+                        { method: 'POST', path: '/register', auth: 'None', desc: 'Register customer (SC_STAFF only)', roles: 'SC_STAFF' },
+                        { method: 'POST', path: '/admin/create-user', auth: 'Bearer', desc: 'Admin creates user with any role', roles: 'ADMIN' },
+                        { method: 'POST', path: '/logout', auth: 'None', desc: 'User logout', roles: 'Authenticated' },
+                        { method: 'GET', path: '/validate', auth: 'Bearer', desc: 'Validate token', roles: 'Authenticated' }
+                    ]
+                },
+                customers: {
+                    title: 'Customer API',
+                    icon: 'fa-users',
+                    baseUrl: '/api/customers',
+                    endpoints: [
+                        { method: 'GET', path: '/', auth: 'Bearer', desc: 'Get all customers with pagination', roles: 'ADMIN, SC_STAFF, EVM_STAFF' },
+                        { method: 'GET', path: '/{id}', auth: 'Bearer', desc: 'Get customer by ID', roles: 'ADMIN, SC_STAFF, EVM_STAFF' },
+                        { method: 'POST', path: '/', auth: 'Bearer', desc: 'Create new customer', roles: 'ADMIN, SC_STAFF, EVM_STAFF' },
+                        { method: 'PUT', path: '/{id}', auth: 'Bearer', desc: 'Update customer', roles: 'ADMIN, SC_STAFF, EVM_STAFF' },
+                        { method: 'DELETE', path: '/{id}', auth: 'Bearer', desc: 'Delete customer', roles: 'ADMIN' },
+                        { method: 'GET', path: '/search?name=', auth: 'Bearer', desc: 'Search customers by name', roles: 'All authenticated' },
+                        { method: 'GET', path: '/by-email?email=', auth: 'Bearer', desc: 'Get customer by email', roles: 'All authenticated' },
+                        { method: 'GET', path: '/by-phone?phone=', auth: 'Bearer', desc: 'Get customer by phone', roles: 'All authenticated' },
+                        { method: 'PUT', path: '/profile', auth: 'Bearer', desc: 'Customer updates own profile', roles: 'All authenticated' }
+                    ]
+                },
+                vehicles: {
+                    title: 'Vehicle API',
+                    icon: 'fa-car',
+                    baseUrl: '/api/vehicles',
+                    endpoints: [
+                        { method: 'GET', path: '/', auth: 'Bearer', desc: 'Get all vehicles with pagination', roles: 'ADMIN, EVM_STAFF, SC_STAFF' },
+                        { method: 'GET', path: '/{id}', auth: 'Bearer', desc: 'Get vehicle by ID', roles: 'ADMIN, EVM_STAFF, SC_STAFF, CUSTOMER' },
+                        { method: 'POST', path: '/', auth: 'Bearer', desc: 'Create new vehicle', roles: 'ADMIN, EVM_STAFF' },
+                        { method: 'PUT', path: '/{id}', auth: 'Bearer', desc: 'Update vehicle', roles: 'ADMIN, EVM_STAFF, SC_STAFF' },
+                        { method: 'DELETE', path: '/{id}', auth: 'Bearer', desc: 'Delete vehicle', roles: 'ADMIN, EVM_STAFF' },
+                        { method: 'GET', path: '/by-customer/{customerId}', auth: 'Bearer', desc: 'Get vehicles by customer', roles: 'ADMIN, EVM_STAFF, SC_STAFF' },
+                        { method: 'GET', path: '/my-vehicles', auth: 'Bearer', desc: "Customer's own vehicles", roles: 'CUSTOMER' },
+                        { method: 'GET', path: '/by-vin?vin=', auth: 'Bearer', desc: 'Get vehicle by VIN', roles: 'ADMIN, EVM_STAFF, SC_STAFF' },
+                        { method: 'GET', path: '/search?model=&brand=', auth: 'Bearer', desc: 'Search vehicles', roles: 'All authenticated' },
+                        { method: 'GET', path: '/warranty-expiring', auth: 'Bearer', desc: 'Vehicles with expiring warranty', roles: 'ADMIN, EVM_STAFF, SC_STAFF' }
+                    ]
+                },
+                parts: {
+                    title: 'Parts API',
+                    icon: 'fa-cogs',
+                    baseUrl: '/api/parts',
+                    endpoints: [
+                        { method: 'GET', path: '/', auth: 'Bearer', desc: 'Get all parts with pagination', roles: 'ADMIN, EVM_STAFF, SC_STAFF' },
+                        { method: 'GET', path: '/{id}', auth: 'Bearer', desc: 'Get part by ID with usage history', roles: 'All authenticated' },
+                        { method: 'POST', path: '/', auth: 'Bearer', desc: 'Create new part', roles: 'ADMIN, EVM_STAFF' },
+                        { method: 'PUT', path: '/{id}', auth: 'Bearer', desc: 'Update part', roles: 'ADMIN, EVM_STAFF' },
+                        { method: 'DELETE', path: '/{id}', auth: 'Bearer', desc: 'Delete part', roles: 'ADMIN' },
+                        { method: 'GET', path: '/by-vehicle/{vehicleId}', auth: 'Bearer', desc: 'Get parts by vehicle', roles: 'All authenticated' },
+                        { method: 'GET', path: '/by-manufacturer?manufacturer=', auth: 'Bearer', desc: 'Get parts by manufacturer', roles: 'ADMIN, SC_STAFF, EVM_STAFF, SC_TECHNICIAN' },
+                        { method: 'GET', path: '/warranty-expiring', auth: 'Bearer', desc: 'Parts with expiring warranty', roles: 'ADMIN, SC_STAFF, EVM_STAFF' }
+                    ]
+                },
+                warrantyClaims: {
+                    title: 'Warranty Claims API',
+                    icon: 'fa-shield-alt',
+                    baseUrl: '/api/warranty-claims',
+                    endpoints: [
+                        { method: 'GET', path: '/', auth: 'Bearer', desc: 'Get all warranty claims', roles: 'ADMIN, SC_STAFF, EVM_STAFF' },
+                        { method: 'GET', path: '/{id}', auth: 'Bearer', desc: 'Get claim by ID', roles: 'ADMIN, SC_STAFF, EVM_STAFF, SC_TECHNICIAN' },
+                        { method: 'POST', path: '/', auth: 'Bearer', desc: 'Create new claim', roles: 'ADMIN, SC_STAFF, EVM_STAFF, CUSTOMER' },
+                        { method: 'PUT', path: '/{id}', auth: 'Bearer', desc: 'Update claim details', roles: 'ADMIN, SC_STAFF, EVM_STAFF' },
+                        { method: 'PATCH', path: '/{id}/status', auth: 'Bearer', desc: 'Update claim status', roles: 'ADMIN, SC_STAFF, EVM_STAFF' },
+                        { method: 'DELETE', path: '/{id}', auth: 'Bearer', desc: 'Delete claim', roles: 'ADMIN' },
+                        { method: 'POST', path: '/sc-create', auth: 'Bearer', desc: 'SC Staff creates claim (SUBMITTED)', roles: 'SC_STAFF', highlight: true },
+                        { method: 'PATCH', path: '/{id}/evm-accept', auth: 'Bearer', desc: 'EVM accepts claim (SUBMITTED → SC_REVIEW)', roles: 'EVM_STAFF', highlight: true },
+                        { method: 'PATCH', path: '/{id}/evm-reject?reason=', auth: 'Bearer', desc: 'EVM rejects claim (SUBMITTED → REJECTED)', roles: 'EVM_STAFF', highlight: true },
+                        { method: 'PATCH', path: '/{id}/tech-start', auth: 'Bearer', desc: 'Tech starts processing (SC_REVIEW → PROCESSING)', roles: 'SC_TECHNICIAN', highlight: true },
+                        { method: 'PATCH', path: '/{id}/tech-complete?completionNote=', auth: 'Bearer', desc: 'Tech completes claim (PROCESSING → COMPLETED)', roles: 'SC_TECHNICIAN', highlight: true },
+                        { method: 'GET', path: '/by-status/{status}', auth: 'Bearer', desc: 'Get claims by status', roles: 'All authenticated' },
+                        { method: 'GET', path: '/evm-pending', auth: 'Bearer', desc: 'Get pending EVM claims (SUBMITTED)', roles: 'EVM_STAFF' },
+                        { method: 'GET', path: '/tech-pending', auth: 'Bearer', desc: 'Get pending tech claims', roles: 'SC_TECHNICIAN' }
+                    ]
+                },
+                serviceHistory: {
+                    title: 'Service History API',
+                    icon: 'fa-tools',
+                    baseUrl: '/api/service-histories',
+                    endpoints: [
+                        { method: 'GET', path: '/', auth: 'Bearer', desc: 'Get all service histories', roles: 'ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF' },
+                        { method: 'GET', path: '/{id}', auth: 'Bearer', desc: 'Get service history by ID', roles: 'ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF, CUSTOMER (own)' },
+                        { method: 'POST', path: '/', auth: 'Bearer', desc: 'Create service history', roles: 'ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF' },
+                        { method: 'PUT', path: '/{id}', auth: 'Bearer', desc: 'Update service history', roles: 'ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF' },
+                        { method: 'DELETE', path: '/{id}', auth: 'Bearer', desc: 'Delete service history', roles: 'ADMIN' },
+                        { method: 'GET', path: '/by-vehicle/{vehicleId}', auth: 'Bearer', desc: 'Get histories by vehicle', roles: 'ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF, CUSTOMER (own)' },
+                        { method: 'GET', path: '/by-part/{partId}', auth: 'Bearer', desc: 'Get histories by part', roles: 'ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF' },
+                        { method: 'GET', path: '/my-services', auth: 'Bearer', desc: "Customer's own service histories", roles: 'CUSTOMER' },
+                        { method: 'GET', path: '/by-date-range?startDate=&endDate=', auth: 'Bearer', desc: 'Get histories by date range', roles: 'ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF' }
+                    ]
+                },
+                userManagement: {
+                    title: 'User Management API (Admin Only)',
+                    icon: 'fa-user-cog',
+                    baseUrl: '/api/admin/users',
+                    endpoints: [
+                        { method: 'GET', path: '/', auth: 'Bearer', desc: 'Get all users with pagination/filtering', roles: 'ADMIN' },
+                        { method: 'GET', path: '/{userId}', auth: 'Bearer', desc: 'Get user by ID', roles: 'ADMIN' },
+                        { method: 'GET', path: '/search?username=', auth: 'Bearer', desc: 'Search users by username', roles: 'ADMIN' },
+                        { method: 'GET', path: '/by-role/{roleName}', auth: 'Bearer', desc: 'Get users by role', roles: 'ADMIN' },
+                        { method: 'PUT', path: '/{userId}', auth: 'Bearer', desc: 'Update user information', roles: 'ADMIN' },
+                        { method: 'PATCH', path: '/{userId}/role?newRoleId=', auth: 'Bearer', desc: 'Update user role', roles: 'ADMIN' },
+                        { method: 'DELETE', path: '/{userId}', auth: 'Bearer', desc: 'Delete user (soft delete)', roles: 'ADMIN' },
+                        { method: 'POST', path: '/admin/users/{userId}/reset-password', auth: 'Bearer', desc: 'Reset user password', roles: 'ADMIN' },
+                        { method: 'GET', path: '/statistics', auth: 'Bearer', desc: 'Get user statistics', roles: 'ADMIN' }
+                    ]
+                }
+            };
+
+            const getMethodBadgeColor = (method) => {
+                const colors = {
+                    'GET': 'bg-blue-100 text-blue-800',
+                    'POST': 'bg-green-100 text-green-800',
+                    'PUT': 'bg-yellow-100 text-yellow-800',
+                    'PATCH': 'bg-orange-100 text-orange-800',
+                    'DELETE': 'bg-red-100 text-red-800'
+                };
+                return colors[method] || 'bg-gray-100 text-gray-800';
+            };
+
+            const filteredEndpoints = useMemo(() => {
+                if (!searchQuery) return apiCategories[selectedCategory]?.endpoints || [];
+
+                return apiCategories[selectedCategory]?.endpoints.filter(endpoint =>
+                    endpoint.path.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    endpoint.desc.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    endpoint.method.toLowerCase().includes(searchQuery.toLowerCase())
+                ) || [];
+            }, [selectedCategory, searchQuery]);
+
+            return (
+                <div className="p-6">
+                    <div className="mb-8">
+                        <h1 className="text-3xl font-bold text-gray-900 flex items-center">
+                            <i className="fas fa-book mr-3 text-blue-600"></i>
+                            API Documentation
+                        </h1>
+                        <p className="text-gray-600 mt-2">
+                            Complete reference for OEM EV Warranty Management System APIs
+                        </p>
+                        <div className="mt-2 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                            <p className="text-sm text-blue-800">
+                                <i className="fas fa-info-circle mr-2"></i>
+                                <strong>Base URL:</strong> <code className="bg-white px-2 py-1 rounded ml-1">{CONFIG.API_BASE_URL}</code>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                        {/* Category Sidebar */}
+                        <div className="lg:col-span-1">
+                            <div className="bg-white rounded-lg shadow-md p-4 sticky top-4">
+                                <h3 className="text-sm font-semibold text-gray-700 uppercase mb-3">API Categories</h3>
+                                <div className="space-y-1">
+                                    {Object.keys(apiCategories).map((key) => {
+                                        const category = apiCategories[key];
+                                        const isSelected = selectedCategory === key;
+                                        return (
+                                            <button
+                                                key={key}
+                                                onClick={() => {
+                                                    setSelectedCategory(key);
+                                                    setSearchQuery('');
+                                                }}
+                                                className={`w-full text-left px-3 py-2 rounded-md transition-colors ${
+                                                    isSelected
+                                                    ? 'bg-blue-600 text-white'
+                                                    : 'text-gray-700 hover:bg-gray-100'
+                                                }`}
+                                            >
+                                                <i className={`fas ${category.icon} mr-2`}></i>
+                                                <span className="text-sm">{category.title}</span>
+                                                <span className="text-xs ml-2">({category.endpoints.length})</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+
+                                <div className="mt-6 pt-4 border-t border-gray-200">
+                                    <h4 className="text-xs font-semibold text-gray-700 uppercase mb-2">Your Role</h4>
+                                    <div className="bg-blue-50 text-blue-800 px-3 py-2 rounded text-sm">
+                                        <i className="fas fa-user-shield mr-2"></i>
+                                        {user?.role}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Endpoint Documentation */}
+                        <div className="lg:col-span-3">
+                            <div className="mb-4">
+                                <input
+                                    type="text"
+                                    placeholder="Search endpoints..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+
+                            <div className="bg-white rounded-lg shadow-md">
+                                <div className="border-b border-gray-200 px-6 py-4">
+                                    <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                                        <i className={`fas ${apiCategories[selectedCategory].icon} mr-3 text-blue-600`}></i>
+                                        {apiCategories[selectedCategory].title}
+                                    </h2>
+                                    <p className="text-sm text-gray-600 mt-1">
+                                        <code className="bg-gray-100 px-2 py-1 rounded">{apiCategories[selectedCategory].baseUrl}</code>
+                                    </p>
+                                </div>
+
+                                <div className="divide-y divide-gray-200">
+                                    {filteredEndpoints.length === 0 ? (
+                                        <div className="px-6 py-8 text-center text-gray-500">
+                                            <i className="fas fa-search text-3xl mb-2"></i>
+                                            <p>No endpoints match your search</p>
+                                        </div>
+                                    ) : (
+                                        filteredEndpoints.map((endpoint, index) => (
+                                            <div
+                                                key={index}
+                                                className={`px-6 py-4 hover:bg-gray-50 transition-colors ${endpoint.highlight ? 'bg-yellow-50' : ''}`}
+                                            >
+                                                <div className="flex items-start justify-between">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center space-x-3 mb-2">
+                                                            <span className={`px-2 py-1 text-xs font-semibold rounded ${getMethodBadgeColor(endpoint.method)}`}>
+                                                                {endpoint.method}
+                                                            </span>
+                                                            <code className="text-sm font-mono text-gray-900">
+                                                                {apiCategories[selectedCategory].baseUrl}{endpoint.path}
+                                                            </code>
+                                                            {endpoint.highlight && (
+                                                                <span className="px-2 py-1 text-xs font-semibold rounded bg-purple-100 text-purple-800">
+                                                                    <i className="fas fa-star mr-1"></i>
+                                                                    Workflow
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-sm text-gray-700 mb-2">{endpoint.desc}</p>
+                                                        <div className="flex items-center space-x-4 text-xs">
+                                                            <span className="text-gray-500">
+                                                                <i className="fas fa-key mr-1"></i>
+                                                                <strong>Auth:</strong> {endpoint.auth}
+                                                            </span>
+                                                            <span className="text-gray-500">
+                                                                <i className="fas fa-user-shield mr-1"></i>
+                                                                <strong>Roles:</strong> {endpoint.roles}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Status Flow Diagram for Warranty Claims */}
+                            {selectedCategory === 'warrantyClaims' && (
+                                <div className="mt-6 bg-white rounded-lg shadow-md p-6">
+                                    <h3 className="text-lg font-bold text-gray-900 mb-4">
+                                        <i className="fas fa-project-diagram mr-2 text-blue-600"></i>
+                                        Warranty Claim Status Flow
+                                    </h3>
+                                    <div className="bg-gray-50 rounded-lg p-6">
+                                        <div className="flex flex-wrap items-center justify-center gap-4 text-sm">
+                                            <div className="flex items-center">
+                                                <span className="px-3 py-2 bg-blue-100 text-blue-800 rounded font-medium">SUBMITTED</span>
+                                                <i className="fas fa-arrow-right mx-2 text-gray-400"></i>
+                                            </div>
+                                            <div className="flex items-center">
+                                                <span className="px-3 py-2 bg-yellow-100 text-yellow-800 rounded font-medium">SC_REVIEW</span>
+                                                <i className="fas fa-arrow-right mx-2 text-gray-400"></i>
+                                            </div>
+                                            <div className="flex items-center">
+                                                <span className="px-3 py-2 bg-orange-100 text-orange-800 rounded font-medium">PROCESSING</span>
+                                                <i className="fas fa-arrow-right mx-2 text-gray-400"></i>
+                                            </div>
+                                            <span className="px-3 py-2 bg-green-100 text-green-800 rounded font-medium">COMPLETED</span>
+                                        </div>
+                                        <div className="mt-4 text-center">
+                                            <div className="inline-flex items-center px-3 py-2 bg-red-100 text-red-800 rounded font-medium">
+                                                <i className="fas fa-times-circle mr-2"></i>
+                                                REJECTED (can occur at any stage)
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Role Legend */}
+                            <div className="mt-6 bg-white rounded-lg shadow-md p-6">
+                                <h3 className="text-lg font-bold text-gray-900 mb-4">
+                                    <i className="fas fa-users-cog mr-2 text-blue-600"></i>
+                                    Role Definitions
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="bg-gray-50 rounded p-3">
+                                        <h4 className="font-semibold text-gray-900 mb-1">ADMIN</h4>
+                                        <p className="text-sm text-gray-600">System Administrator - Full access to all resources</p>
+                                    </div>
+                                    <div className="bg-gray-50 rounded p-3">
+                                        <h4 className="font-semibold text-gray-900 mb-1">EVM_STAFF</h4>
+                                        <p className="text-sm text-gray-600">EV Manufacturer Staff - Manage vehicles/parts, accept/reject claims</p>
+                                    </div>
+                                    <div className="bg-gray-50 rounded p-3">
+                                        <h4 className="font-semibold text-gray-900 mb-1">SC_STAFF</h4>
+                                        <p className="text-sm text-gray-600">Service Center Staff - Create claims, manage customers/vehicles</p>
+                                    </div>
+                                    <div className="bg-gray-50 rounded p-3">
+                                        <h4 className="font-semibold text-gray-900 mb-1">SC_TECHNICIAN</h4>
+                                        <p className="text-sm text-gray-600">Service Center Technician - Process claims, manage service histories</p>
+                                    </div>
+                                    <div className="bg-gray-50 rounded p-3">
+                                        <h4 className="font-semibold text-gray-900 mb-1">CUSTOMER</h4>
+                                        <p className="text-sm text-gray-600">End Customer - View own data, create warranty claims</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // 1. Dashboard MỚI dành riêng cho Khách hàng
+        function CustomerDashboard() {
+            const { user } = useAuth();
+            // Trong tương lai, bạn có thể gọi API để lấy số liệu thống kê thực tế
+            const stats = {
+                vehicles: 2,
+                activeClaims: 1,
+            };
+
+            const actions = [
+                { name: 'View My Vehicles', icon: 'fa-car', path: '/my-vehicles', description: 'See details and warranty info for your vehicles.' },
+                { name: 'Manage My Claims', icon: 'fa-shield-alt', path: '/my-claims', description: 'Track existing claims or submit a new one.' },
+                { name: 'Check Service History', icon: 'fa-history', path: '/my-service-history', description: 'Review all past maintenance and repair records.' },
+                { name: 'Submit a New Claim', icon: 'fa-plus-circle', path: '/my-claims/create', description: 'Start a new warranty claim process.' }
+            ];
+
+            return (
+                <div className="p-6 bg-gray-50 min-h-screen">
+                    <div className="mb-8">
+                        <h1 className="text-3xl font-bold text-gray-900">
+                            Welcome back, {user?.username}!
+                        </h1>
+                        <p className="text-gray-600 mt-2">
+                            This is your personal EV warranty portal.
+                        </p>
+                    </div>
+
+                    {/* Stats Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div className="bg-white rounded-lg shadow-md p-6 flex items-center">
+                            <i className="fas fa-car text-3xl text-blue-500 mr-4"></i>
+                            <div>
+                                <p className="text-sm text-gray-500">Total Vehicles</p>
+                                <p className="text-2xl font-bold text-gray-900">{stats.vehicles}</p>
+                            </div>
+                        </div>
+                        <div className="bg-white rounded-lg shadow-md p-6 flex items-center">
+                            <i className="fas fa-shield-alt text-3xl text-green-500 mr-4"></i>
+                            <div>
+                                <p className="text-sm text-gray-500">Active Claims</p>
+                                <p className="text-2xl font-bold text-gray-900">{stats.activeClaims}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Quick Actions */}
+                    <div>
+                        <h2 className="text-xl font-semibold text-gray-800 mb-4">Quick Actions</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {actions.map(action => (
+                                <a href={`#${action.path}`} key={action.name} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg hover:bg-blue-50 transition-all duration-200">
+                                    <div className="flex items-center mb-2">
+                                        <i className={`fas ${action.icon} text-xl text-blue-600 mr-3`}></i>
+                                        <h3 className="text-lg font-bold text-gray-900">{action.name}</h3>
+                                    </div>
+                                    <p className="text-gray-600 text-sm">{action.description}</p>
+                                </a>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // 2. Component MỚI: MyVehicles
+        function MyVehicles() {
+            const [vehicles, setVehicles] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+
+            useEffect(() => {
+                const fetchVehicles = async () => {
+                    try {
+                        setLoading(true);
+                        const response = await ApiService.request('GET', '/vehicles/my-vehicles');
+                        setVehicles(response.content || []);
+                    } catch (err) {
+                        setError(err.message);
+                    } finally {
+                        setLoading(false);
+                    }
+                };
+                fetchVehicles();
+            }, []);
+
+            if (loading) return <div className="p-6">Loading your vehicles...</div>;
+            if (error) return <div className="p-6 text-red-500">Error: {error}</div>;
+
+            return (
+                <div className="p-6">
+                    <h1 className="text-2xl font-bold text-gray-900 mb-4">My Vehicles</h1>
+                    <div className="bg-white shadow-md rounded-lg overflow-hidden">
+                        {vehicles.length === 0 ? (
+                            <p className="p-6 text-gray-500">You have no registered vehicles.</p>
+                        ) : (
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">VIN</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Year</th>
+                                </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                {vehicles.map(v => (
+                                    <tr key={v.vehicleId}>
+                                        <td className="px-6 py-4">{v.vehicleName} {v.vehicleModel}</td>
+                                        <td className="px-6 py-4 font-mono">{v.vehicleVin}</td>
+                                        <td className="px-6 py-4">{v.vehicleYear}</td>
+                                    </tr>
+                                ))}
+                                </tbody>
+                            </table>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        // 3. Component MỚI: MyClaims
+        function MyClaims() {
+            const [claims, setClaims] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+
+            useEffect(() => {
+                const fetchClaims = async () => {
+                    try {
+                        setLoading(true);
+                        // Giả định có một API /my-claims tương tự /my-vehicles
+                        const response = await ApiService.request('GET', '/warranty-claims/my-claims');
+                        setClaims(response.content || []);
+                    } catch (err) {
+                        setError(err.message);
+                    } finally {
+                        setLoading(false);
+                    }
+                };
+                fetchClaims();
+            }, []);
+
+            if (loading) return <div className="p-6">Loading your claims...</div>;
+            if (error) return <div className="p-6 text-red-500">Error loading claims. This feature might be under development by the administrator.</div>;
+
+            return (
+                <div className="p-6">
+                    <div className="flex justify-between items-center mb-4">
+                        <h1 className="text-2xl font-bold text-gray-900">My Warranty Claims</h1>
+                        <a href="#/my-claims/create" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                            <i className="fas fa-plus mr-2"></i>New Claim
+                        </a>
+                    </div>
+                    <div className="bg-white shadow-md rounded-lg overflow-hidden">
+                        {claims.length === 0 ? (
+                            <p className="p-6 text-gray-500">You have no warranty claims.</p>
+                        ) : (
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Claim ID</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                {claims.map(c => (
+                                    <tr key={c.warrantyClaimId}>
+                                        <td className="px-6 py-4">#WC-{c.warrantyClaimId}</td>
+                                        <td className="px-6 py-4">{c.description}</td>
+                                        <td className="px-6 py-4">{c.status}</td>
+                                    </tr>
+                                ))}
+                                </tbody>
+                            </table>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        // 4. Component MỚI: MyServiceHistory
+        function MyServiceHistory() {
+            const [history, setHistory] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+
+            useEffect(() => {
+                const fetchHistory = async () => {
+                    try {
+                        setLoading(true);
+                        const response = await ApiService.request('GET', '/service-histories/my-services');
+                        setHistory(response.content || []);
+                    } catch (err) {
+                        setError(err.message);
+                    } finally {
+                        setLoading(false);
+                    }
+                };
+                fetchHistory();
+            }, []);
+
+            if (loading) return <div className="p-6">Loading service history...</div>;
+            if (error) return <div className="p-6 text-red-500">Error: {error}</div>;
+
+            return (
+                <div className="p-6">
+                    <h1 className="text-2xl font-bold text-gray-900 mb-4">My Service History</h1>
+                    <div className="bg-white shadow-md rounded-lg overflow-hidden">
+                        {history.length === 0 ? (
+                            <p className="p-6 text-gray-500">You have no service history records.</p>
+                        ) : (
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vehicle</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Service Type</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Technician</th>
+                                </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                {history.map(s => (
+                                    <tr key={s.serviceHistoryId}>
+                                        <td className="px-6 py-4">{s.vehicleMake} {s.vehicleModel}</td>
+                                        <td className="px-6 py-4">{new Date(s.serviceDate).toLocaleDateString()}</td>
+                                        <td className="px-6 py-4">{s.serviceType}</td>
+                                        <td className="px-6 py-4">{s.technicianName}</td>
+                                    </tr>
+                                ))}
+                                </tbody>
+                            </table>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        // Main App Component
+        function App() {
+            const { user, loading } = useAuth();
+            const [currentPage, setCurrentPage] = useState('/');
+
+            useEffect(() => {
+                const handleHashChange = () => {
+                    const hash = window.location.hash.slice(1) || '/';
+                    setCurrentPage(hash);
+                };
+
+                window.addEventListener('hashchange', handleHashChange);
+                handleHashChange(); // Initial load
+
+                return () => window.removeEventListener('hashchange', handleHashChange);
+            }, []);
+
+            if (loading) {
+                return (
+                    <div className="min-h-screen flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                    </div>
+                );
+            }
+
+            if (!user) {
+                return <Login />;
+            }
+
+            const renderPage = () => {
+                // Luồng 1: Dành riêng cho khách hàng (CUSTOMER)
+                if (user.role === 'CUSTOMER') {
+                    switch (currentPage) {
+                        case '/':
+                        case '/dashboard':
+                            return <CustomerDashboard />;
+                        case '/my-vehicles':
+                            return <MyVehicles />;
+                        case '/my-claims':
+                            return <MyClaims />;
+                        case '/my-service-history':
+                            return <MyServiceHistory />;
+                        case '/api-docs':
+                            return <APIDocumentation />;
+                        default:
+                            return <div className="p-6 text-center">Page not found for your role.</div>;
+                    }
+                }
+
+                // Luồng 2: Dành cho ADMIN và các vai trò STAFF
+                switch (currentPage) {
+                    case '/':
+                    case '/dashboard':
+                        // Tự động chuyển hướng đến trang phù hợp nhất với vai trò
+                        if (user.role === 'ADMIN') {
+                            return <UserManagement />;
+                        }
+                        if (user.role === 'SC_STAFF') {
+                            return <CustomerManagement />;
+                        }
+                        if (user.role === 'EVM_STAFF') {
+                            return <WarrantyClaimsWorkflow />;
+                        }
+                        if (user.role === 'SC_TECHNICIAN') {
+                            return <WarrantyClaimsWorkflow />; // Kỹ thuật viên xem các nhiệm vụ claim
+                        }
+                        // Fallback an toàn cho các trường hợp khác
+                        return <div className="p-6">Welcome, Staff Member!</div>;
+
+                    // Các trang chức năng chung khác
+                    case '/user-management':
+                        // Chỉ ADMIN và SC_STAFF có menu này, nhưng chỉ ADMIN mới có quyền truy cập đầy đủ
+                        if (user.role === 'ADMIN') return <UserManagement />;
+                        if (user.role === 'SC_STAFF') return <CustomerManagement />; // SC_STAFF nên được chuyển hướng đến quản lý khách hàng
+                        return <div className="p-6">Access Denied.</div>;
+                    case '/warranty-claims':
+                    case '/warranty-claims/review':
+                    case '/warranty-claims/tasks':
+                        return <WarrantyClaimsWorkflow />;
+                    case '/warranty-claims/create':
+                        return <CreateWarrantyClaim />;
+                    case '/customers':
+                        return <CustomerManagement />;
+                    case '/vehicles':
+                        return <VehicleManagement />;
+                    case '/parts':
+                        return <PartsManagement />;
+                    case '/service-history':
+                        return <ServiceHistoryManagement />;
+                    case '/api-docs':
+                        return <APIDocumentation />;
+                    default:
+                        return (
+                            <div className="p-6">
+                                <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4" role="alert">
+                                    <p className="font-bold">Page Not Found</p>
+                                    <p>The page "{currentPage}" is not available or under development.</p>
+                                </div>
+                            </div>
+                        );
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-gray-50">
+                    <Navigation />
+                    <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+                        {renderPage()}
+                    </main>
+                </div>
+            );
+        }
+
+        // Root Component with Error Boundary and Auth Provider
+        function Root() {
+            return (
+                <ErrorBoundary>
+                    <AuthProvider>
+                        <App />
+                    </AuthProvider>
+                </ErrorBoundary>
+            );
+        }
+
+        // Render the application
+        ReactDOM.render(<Root />, document.getElementById('root'));
+    </script>
+</body>
+</html>
