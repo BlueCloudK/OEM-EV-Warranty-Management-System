@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { serviceHistoriesApi } from "../../api/serviceHistories";
 
 /**
  * ================================
@@ -84,27 +85,9 @@ const AdminServiceHistoriesManagement = () => {
     try {
       setLoading(true);
       setError("");
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-      const token = localStorage.getItem("token");
-      if (!token) {
-        setHistories(mockHistories);
-        setLoading(false);
-        return;
-      }
-      const res = await fetch(`${API_BASE_URL}/api/service-histories`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/json",
-          "ngrok-skip-browser-warning": "true",
-        },
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const ct = res.headers.get("Content-Type");
-      if (!ct || !ct.includes("application/json"))
-        throw new Error("Non-JSON response");
-      const data = await res.json();
+      const data = await serviceHistoriesApi.list();
       setHistories(
-        Array.isArray(data.content)
+        Array.isArray(data?.content)
           ? data.content
           : Array.isArray(data)
           ? data
@@ -227,29 +210,12 @@ const AdminServiceHistoriesManagement = () => {
 
     setSubmitting(true);
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-      const token = localStorage.getItem("token");
-
-      const response = await fetch(`${API_BASE_URL}/api/service-histories`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-          "ngrok-skip-browser-warning": "true",
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (response.ok) {
-        const newHistory = await response.json();
-        setHistories((prev) => [newHistory, ...prev]);
-        setTotalElements((prev) => prev + 1);
-        alert("Tạo lịch sử bảo dưỡng thành công!");
-        setShowCreateModal(false);
-        resetForm();
-      } else {
-        throw new Error(`HTTP ${response.status}`);
-      }
+      const newHistory = await serviceHistoriesApi.create(formData);
+      setHistories((prev) => [newHistory, ...prev]);
+      setTotalElements((prev) => prev + 1);
+      alert("Tạo lịch sử bảo dưỡng thành công!");
+      setShowCreateModal(false);
+      resetForm();
     } catch (error) {
       console.error("Create service history error:", error);
       alert("Lỗi khi tạo lịch sử bảo dưỡng. Vui lòng thử lại.");
@@ -269,34 +235,17 @@ const AdminServiceHistoriesManagement = () => {
 
     setSubmitting(true);
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-      const token = localStorage.getItem("token");
-
-      const response = await fetch(
-        `${API_BASE_URL}/api/service-histories/${selectedHistory.id}`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-            "ngrok-skip-browser-warning": "true",
-          },
-          body: JSON.stringify(formData),
-        }
+      const updatedHistory = await serviceHistoriesApi.update(
+        selectedHistory.id,
+        formData
       );
-
-      if (response.ok) {
-        const updatedHistory = await response.json();
-        setHistories((prev) =>
-          prev.map((h) => (h.id === selectedHistory.id ? updatedHistory : h))
-        );
-        alert("Cập nhật lịch sử bảo dưỡng thành công!");
-        setShowEditModal(false);
-        setSelectedHistory(null);
-        resetForm();
-      } else {
-        throw new Error(`HTTP ${response.status}`);
-      }
+      setHistories((prev) =>
+        prev.map((h) => (h.id === selectedHistory.id ? updatedHistory : h))
+      );
+      alert("Cập nhật lịch sử bảo dưỡng thành công!");
+      setShowEditModal(false);
+      setSelectedHistory(null);
+      resetForm();
     } catch (error) {
       console.error("Update service history error:", error);
       alert("Lỗi khi cập nhật lịch sử bảo dưỡng. Vui lòng thử lại.");
@@ -311,29 +260,12 @@ const AdminServiceHistoriesManagement = () => {
 
     setSubmitting(true);
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-      const token = localStorage.getItem("token");
-
-      const response = await fetch(
-        `${API_BASE_URL}/api/service-histories/${selectedHistory.id}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "ngrok-skip-browser-warning": "true",
-          },
-        }
-      );
-
-      if (response.ok) {
-        setHistories((prev) => prev.filter((h) => h.id !== selectedHistory.id));
-        setTotalElements((prev) => prev - 1);
-        alert("Xóa lịch sử bảo dưỡng thành công!");
-        setShowDeleteModal(false);
-        setSelectedHistory(null);
-      } else {
-        throw new Error(`HTTP ${response.status}`);
-      }
+      await serviceHistoriesApi.delete(selectedHistory.id);
+      setHistories((prev) => prev.filter((h) => h.id !== selectedHistory.id));
+      setTotalElements((prev) => prev - 1);
+      alert("Xóa lịch sử bảo dưỡng thành công!");
+      setShowDeleteModal(false);
+      setSelectedHistory(null);
     } catch (error) {
       console.error("Delete service history error:", error);
       alert("Lỗi khi xóa lịch sử bảo dưỡng. Vui lòng thử lại.");
