@@ -1,43 +1,30 @@
-// ===========================================================================================
-// PHẦN 1: IMPORT CÁC THƯ VIỆN VÀ COMPONENTS CẦN THIẾT
-// ===========================================================================================
-
-import React from "react";                                    // React core library
-import { Routes, Route, useLocation } from "react-router-dom"; // Router components để quản lý navigation
-
-// ===== IMPORT SHARED COMPONENTS =====
-import Navbar from "./components/Navbar";                      // Navigation bar component
-
-// ===== IMPORT PAGES CHUNG =====
-import Home from "./pages/Home";                               // Trang chủ
-import Login from "./pages/Login";                             // Trang đăng nhập  
-import ForgotPassword from "./pages/ForgotPassword";           // Trang quên mật khẩu
-import ResetPassword from "./pages/ResetPassword";             // Trang đặt lại mật khẩu
-import Logout from "./pages/Logout";                           // Trang đăng xuất
-
-// ===== IMPORT CUSTOMER ROLE COMPONENTS =====
-import Customer from "./Roles/Customer/Customer";              // Dashboard khách hàng
-import CustomerProfile from "./Roles/Customer/CustomerProfile"; // Profile khách hàng
-import Booking from "./Roles/Customer/Booking";                // Đặt lịch bảo hành
-import WarrantyResult from "./Roles/Customer/WarrantyResult";   // Kết quả bảo hành
-import WarrantyHistory from "./Roles/Customer/WarrantyHistory"; // Lịch sử bảo hành
-import PartsWarranty from "./Roles/Customer/PartsWarranty";     // Bảo hành phụ kiện
-
-// ===== IMPORT SC STAFF ROLE COMPONENTS =====
-import SCStaff from "./Roles/SCStaff/SCStaff";                                         // Dashboard SC Staff
-import CustomerManagement from "./Roles/SCStaff/Profile_Management/CustomerManagement"; // Quản lý khách hàng
-import CreateCustomerAccount from "./Roles/SCStaff/Create_Customer_Account/CreateCustomerAccount"; // Tạo tài khoản KH
-import VehicleManagement from "./Roles/SCStaff/Vehicle_Information_Management/VehicleManagement";   // Quản lý xe
-
-// ===== IMPORT ADMIN ROLE COMPONENTS =====
-import Admin from "./Roles/Admin/Admin";                                    // Dashboard Admin
-import AdminUserManagement from "./Roles/Admin/AdminUserManagement";        // Quản lý người dùng (Admin)
-import AdminCustomerManagement from "./Roles/Admin/AdminCustomerManagement"; // Quản lý khách hàng (Admin)
-
-
-// ===========================================================================================
-// PHẦN 2: MAIN APP COMPONENT - COMPONENT CHÍNH CỦA ỨNG DỤNG
-// ===========================================================================================
+import React from "react";
+import { Routes, Route, useLocation } from "react-router-dom";
+import Navbar from "./components/Navbar";
+import Home from "./pages/Home";
+import Login from "./pages/Login";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+import Logout from "./pages/Logout";
+import Customer from "./Roles/Customer/Customer";
+import CustomerProfile from "./Roles/Customer/CustomerProfile";
+import Booking from "./Roles/Customer/Booking";
+import WarrantyResult from "./Roles/Customer/WarrantyResult";
+import WarrantyHistory from "./Roles/Customer/WarrantyHistory";
+import PartsWarranty from "./Roles/Customer/PartsWarranty";
+//
+import SCStaff from "./Roles/SCStaff/SCStaff";
+import CustomerManagement from "./Roles/SCStaff/Profile_Management/CustomerManagement";
+import CreateCustomerAccount from "./Roles/SCStaff/CreateCustomerAccount";
+//
+import Admin from "./Roles/Admin/Admin";
+import AdminUserManagement from "./Roles/Admin/AdminUserManagement";
+import AdminCustomerManagement from "./Roles/Admin/AdminCustomerManagement";
+import EVMStaff from "./Roles/EVMStaff";
+import AdminPartsManagement from "./Roles/Admin/AdminPartsManagement";
+import AdminVehicleManagement from "./Roles/Admin/AdminVehicleManagement";
+import AdminWarrantyClaimsManagement from "./Roles/Admin/AdminWarrantyClaimsManagement";
+import AdminServiceHistoriesManagement from "./Roles/Admin/AdminServiceHistoriesManagement";
 
 export default function App() {
   // Hook để lấy thông tin về route hiện tại
@@ -51,42 +38,49 @@ export default function App() {
       
       {/* ===== ROUTES CONFIGURATION - CẤU HÌNH CÁC ROUTE ===== */}
       <Routes>
-        {/* ===== PUBLIC ROUTES - CÁC ROUTE CÔNG KHAI ===== */}
-        <Route path="/" element={<Home />} />                    {/* Trang chủ */}
-        <Route path="/login" element={<Login />} />              {/* Đăng nhập */}
-        <Route path="/forgot-password" element={<ForgotPassword />} /> {/* Quên mật khẩu */}
-        <Route path="/reset-password" element={<ResetPassword />} />   {/* Đặt lại mật khẩu */}
-        <Route path="/logout" element={<Logout />} />            {/* Đăng xuất */}
-        
-        {/* ===== CUSTOMER ROUTES - CÁC ROUTE CHO KHÁCH HÀNG ===== */}
-        <Route path="/customer/dashboard" element={<Customer />} />           {/* Dashboard KH */}
-        <Route path="/customer/profile" element={<CustomerProfile />} />      {/* Profile KH */}
-        <Route path="/booking" element={<Booking />} />                       {/* Đặt lịch bảo hành */}
-        <Route path="/customer/warranty-result" element={<WarrantyResult />} /> {/* Kết quả bảo hành */}
-        <Route path="/customer/warranty-history" element={<WarrantyHistory />} /> {/* Lịch sử bảo hành */}
-        <Route path="/customer/parts-warranty" element={<PartsWarranty />} />  {/* Bảo hành phụ kiện */}
-        
-        {/* ===== SC STAFF ROUTES - CÁC ROUTE CHO NHÂN VIÊN TRUNG TÂM DỊCH VỤ ===== */}
-        <Route path="/scstaff" element={<SCStaff />} />                       {/* Dashboard SC Staff */}
-        <Route path="/scstaff/dashboard" element={<SCStaff />} />             {/* Dashboard SC Staff (alias) */}
-        <Route path="/scstaff/customers" element={<CustomerManagement />} />  {/* Quản lý khách hàng */}
-        <Route path="/scstaff/create-customer-account" element={<CreateCustomerAccount />} /> {/* Tạo tài khoản KH */}
-        <Route path="/scstaff/vehicles" element={<VehicleManagement />} />    {/* Quản lý thông tin xe */}
-        
-        {/* ===== ADMIN ROUTES - CÁC ROUTE CHO QUẢN TRỊ VIÊN ===== */}
-        <Route path="/admin" element={<Admin />} />                          {/* Dashboard Admin */}
-        <Route path="/admin/dashboard" element={<Admin />} />                {/* Dashboard Admin (alias) */}
-        <Route path="/admin/customers" element={<AdminCustomerManagement />} /> {/* Quản lý KH (Admin) */}
-        <Route path="/admin/users" element={<AdminUserManagement />} />      {/* Quản lý người dùng */}
-        
-        {/* ===== ADMIN ROUTES - COMING SOON (CÁC TÍNH NĂNG ĐANG PHÁT TRIỂN) ===== */}
-        <Route path="/admin/vehicles" element={<div>Admin Vehicle Management - Coming Soon</div>} />     {/* Quản lý xe */}
-        <Route path="/admin/parts" element={<div>Admin Parts Management - Coming Soon</div>} />         {/* Quản lý phụ kiện */}
-        <Route path="/admin/warranty-claims" element={<div>Admin Warranty Claims Management - Coming Soon</div>} /> {/* Quản lý yêu cầu bảo hành */}
-        <Route path="/admin/service-histories" element={<div>Admin Service History Management - Coming Soon</div>} /> {/* Quản lý lịch sử dịch vụ */}
-
-        {/* ===== FALLBACK ROUTES - CÁC ROUTE DỰ PHÒNG ===== */}
-        <Route path="/dashboard" element={<Customer />} />                   {/* Fallback dashboard -> Customer */}
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/logout" element={<Logout />} />
+        // Customer
+        <Route path="/customer/dashboard" element={<Customer />} />
+        <Route path="/customer/profile" element={<CustomerProfile />} />
+        <Route path="/booking" element={<Booking />} />
+        <Route path="/customer/warranty-result" element={<WarrantyResult />} />
+        <Route
+          path="/customer/warranty-history"
+          element={<WarrantyHistory />}
+        />
+        <Route path="/customer/parts-warranty" element={<PartsWarranty />} />
+        // SCStaff
+        <Route path="/scstaff" element={<SCStaff />} />
+        <Route path="/scstaff/dashboard" element={<SCStaff />} />
+        <Route path="/scstaff/customers" element={<CustomerManagement />} />
+        <Route
+          path="/scstaff/create-customer-account"
+          element={<CreateCustomerAccount />}
+        />
+        // Admin
+        <Route path="/admin" element={<Admin />} />
+        <Route path="/admin/dashboard" element={<Admin />} />
+        <Route path="/admin/customers" element={<AdminCustomerManagement />} />
+        <Route path="/admin/vehicles" element={<AdminVehicleManagement />} />
+        <Route path="/admin/parts" element={<AdminPartsManagement />} />
+        <Route
+          path="/admin/warranty-claims"
+          element={<AdminWarrantyClaimsManagement />}
+        />
+        <Route
+          path="/admin/service-histories"
+          element={<AdminServiceHistoriesManagement />}
+        />
+        <Route path="/admin/users" element={<AdminUserManagement />} />
+        // EVM Staff
+        <Route path="/evmstaff" element={<EVMStaff />} />
+        <Route path="/evmstaff/dashboard" element={<EVMStaff />} />
+        // Add fallback dashboard route
+        <Route path="/dashboard" element={<Customer />} />
       </Routes>
       
       {/* ===== FOOTER - CHÂN TRANG ===== */}

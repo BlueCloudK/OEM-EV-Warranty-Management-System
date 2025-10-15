@@ -29,19 +29,15 @@ const AdminVehicleManagement = () => {
 
   // Form Data
   const [formData, setFormData] = useState({
-    vin: "",
-    brand: "",
-    model: "",
-    year: new Date().getFullYear(),
-    ownerName: "",
-    ownerEmail: "",
-    ownerPhone: "",
-    purchaseDate: "",
-    warrantyStartDate: "",
-    batteryCapacity: "",
-    range: "",
-    color: "",
-    notes: "",
+    // strictly follow Vehicle guide required fields for create
+    vehicleName: "",
+    vehicleModel: "",
+    vehicleVin: "",
+    vehicleYear: new Date().getFullYear(),
+    customerId: "",
+    // optional fields kept for edit/view; not sent on create
+    vehicleColor: "",
+    vehicleEngine: "",
   });
 
   // Form Validation
@@ -135,41 +131,30 @@ const AdminVehicleManagement = () => {
   const validateForm = () => {
     const errors = {};
 
-    if (!formData.vin.trim()) {
-      errors.vin = "VIN là bắt buộc";
-    } else if (formData.vin.length < 10) {
-      errors.vin = "VIN phải có ít nhất 10 ký tự";
+    if (!formData.vehicleVin.trim()) {
+      errors.vehicleVin = "vehicleVin là bắt buộc";
+    } else if (formData.vehicleVin.length < 10) {
+      errors.vehicleVin = "VIN phải có ít nhất 10 ký tự";
     }
 
-    if (!formData.brand.trim()) {
-      errors.brand = "Hãng xe là bắt buộc";
+    if (!formData.vehicleName.trim()) {
+      errors.vehicleName = "vehicleName là bắt buộc";
     }
 
-    if (!formData.model.trim()) {
-      errors.model = "Mẫu xe là bắt buộc";
-    }
-
-    if (
-      !formData.year ||
-      formData.year < 1900 ||
-      formData.year > new Date().getFullYear() + 1
-    ) {
-      errors.year = "Năm sản xuất không hợp lệ";
-    }
-
-    if (!formData.ownerName.trim()) {
-      errors.ownerName = "Tên chủ sở hữu là bắt buộc";
+    if (!formData.vehicleModel.trim()) {
+      errors.vehicleModel = "vehicleModel là bắt buộc";
     }
 
     if (
-      formData.ownerEmail &&
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.ownerEmail)
+      !formData.vehicleYear ||
+      formData.vehicleYear < 1900 ||
+      formData.vehicleYear > new Date().getFullYear() + 1
     ) {
-      errors.ownerEmail = "Email không hợp lệ";
+      errors.vehicleYear = "vehicleYear không hợp lệ";
     }
 
-    if (formData.ownerPhone && !/^[0-9+\-\s()]+$/.test(formData.ownerPhone)) {
-      errors.ownerPhone = "Số điện thoại không hợp lệ";
+    if (!formData.customerId.trim()) {
+      errors.customerId = "customerId là bắt buộc";
     }
 
     return errors;
@@ -178,19 +163,13 @@ const AdminVehicleManagement = () => {
   // Reset Form
   const resetForm = () => {
     setFormData({
-      vin: "",
-      brand: "",
-      model: "",
-      year: new Date().getFullYear(),
-      ownerName: "",
-      ownerEmail: "",
-      ownerPhone: "",
-      purchaseDate: "",
-      warrantyStartDate: "",
-      batteryCapacity: "",
-      range: "",
-      color: "",
-      notes: "",
+      vehicleName: "",
+      vehicleModel: "",
+      vehicleVin: "",
+      vehicleYear: new Date().getFullYear(),
+      customerId: "",
+      vehicleColor: "",
+      vehicleEngine: "",
     });
     setFormErrors({});
   };
@@ -233,7 +212,14 @@ const AdminVehicleManagement = () => {
           "Content-Type": "application/json",
           "ngrok-skip-browser-warning": "true",
         },
-        body: JSON.stringify(formData),
+        // send exactly the required fields by guide
+        body: JSON.stringify({
+          vehicleName: formData.vehicleName,
+          vehicleModel: formData.vehicleModel,
+          vehicleVin: formData.vehicleVin,
+          vehicleYear: Number(formData.vehicleYear),
+          customerId: formData.customerId,
+        }),
       });
 
       if (response.ok) {
@@ -342,19 +328,14 @@ const AdminVehicleManagement = () => {
   const openEditModal = (vehicle) => {
     setSelectedVehicle(vehicle);
     setFormData({
-      vin: vehicle.vin || "",
-      brand: vehicle.brand || "",
-      model: vehicle.model || "",
-      year: vehicle.year || new Date().getFullYear(),
-      ownerName: vehicle.ownerName || "",
-      ownerEmail: vehicle.ownerEmail || "",
-      ownerPhone: vehicle.ownerPhone || "",
-      purchaseDate: vehicle.purchaseDate || "",
-      warrantyStartDate: vehicle.warrantyStartDate || "",
-      batteryCapacity: vehicle.batteryCapacity || "",
-      range: vehicle.range || "",
-      color: vehicle.color || "",
-      notes: vehicle.notes || "",
+      vehicleName: vehicle.vehicleName || vehicle.name || "",
+      vehicleModel: vehicle.vehicleModel || vehicle.model || "",
+      vehicleVin: vehicle.vehicleVin || vehicle.vin || "",
+      vehicleYear:
+        vehicle.vehicleYear || vehicle.year || new Date().getFullYear(),
+      customerId: vehicle.customerId || "",
+      vehicleColor: vehicle.vehicleColor || vehicle.color || "",
+      vehicleEngine: vehicle.vehicleEngine || "",
     });
     setShowEditModal(true);
   };
@@ -781,63 +762,90 @@ const AdminVehicleManagement = () => {
               <div className="modal-body">
                 <div className="form-row">
                   <div className="form-group">
-                    <label>VIN *</label>
+                    <label>vehicleVin *</label>
                     <input
                       type="text"
-                      name="vin"
-                      value={formData.vin}
+                      name="vehicleVin"
+                      value={formData.vehicleVin}
                       onChange={handleInputChange}
-                      placeholder="Nhập VIN xe"
-                      className={formErrors.vin ? "error" : ""}
+                      placeholder="VIN"
+                      className={formErrors.vehicleVin ? "error" : ""}
                     />
-                    {formErrors.vin && (
-                      <span className="error-text">{formErrors.vin}</span>
+                    {formErrors.vehicleVin && (
+                      <span className="error-text">
+                        {formErrors.vehicleVin}
+                      </span>
                     )}
                   </div>
                   <div className="form-group">
-                    <label>Hãng xe *</label>
+                    <label>vehicleName *</label>
                     <input
                       type="text"
-                      name="brand"
-                      value={formData.brand}
+                      name="vehicleName"
+                      value={formData.vehicleName}
                       onChange={handleInputChange}
-                      placeholder="Tesla, Hyundai, VinFast..."
-                      className={formErrors.brand ? "error" : ""}
+                      placeholder="Tesla Model Y"
+                      className={formErrors.vehicleName ? "error" : ""}
                     />
-                    {formErrors.brand && (
-                      <span className="error-text">{formErrors.brand}</span>
+                    {formErrors.vehicleName && (
+                      <span className="error-text">
+                        {formErrors.vehicleName}
+                      </span>
                     )}
                   </div>
                 </div>
 
                 <div className="form-row">
                   <div className="form-group">
-                    <label>Mẫu xe *</label>
+                    <label>vehicleModel *</label>
                     <input
                       type="text"
-                      name="model"
-                      value={formData.model}
+                      name="vehicleModel"
+                      value={formData.vehicleModel}
                       onChange={handleInputChange}
-                      placeholder="Model S, Ioniq 5, VF8..."
-                      className={formErrors.model ? "error" : ""}
+                      placeholder="Model Y Long Range"
+                      className={formErrors.vehicleModel ? "error" : ""}
                     />
-                    {formErrors.model && (
-                      <span className="error-text">{formErrors.model}</span>
+                    {formErrors.vehicleModel && (
+                      <span className="error-text">
+                        {formErrors.vehicleModel}
+                      </span>
                     )}
                   </div>
                   <div className="form-group">
-                    <label>Năm sản xuất *</label>
+                    <label>vehicleYear *</label>
                     <input
                       type="number"
-                      name="year"
-                      value={formData.year}
+                      name="vehicleYear"
+                      value={formData.vehicleYear}
                       onChange={handleInputChange}
                       min="1900"
                       max={new Date().getFullYear() + 1}
-                      className={formErrors.year ? "error" : ""}
+                      className={formErrors.vehicleYear ? "error" : ""}
                     />
-                    {formErrors.year && (
-                      <span className="error-text">{formErrors.year}</span>
+                    {formErrors.vehicleYear && (
+                      <span className="error-text">
+                        {formErrors.vehicleYear}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>customerId *</label>
+                    <input
+                      type="text"
+                      name="customerId"
+                      value={formData.customerId}
+                      onChange={handleInputChange}
+                      placeholder="UUID khách hàng"
+                      className={formErrors.customerId ? "error" : ""}
+                    />
+                    {formErrors.customerId && (
+                      <span className="error-text">
+                        {formErrors.customerId}
+                      </span>
                     )}
                   </div>
                 </div>

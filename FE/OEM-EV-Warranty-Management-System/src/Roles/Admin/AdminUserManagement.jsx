@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { adminUsersApi, adminAuthApi } from "../../api/adminUsers";
 
 const AdminUserManagement = () => {
   const navigate = useNavigate();
@@ -126,57 +127,13 @@ const AdminUserManagement = () => {
     const fetchUsers = async () => {
       try {
         setLoading(true);
+        // Use Admin Users API per guide
+        const data = await adminUsersApi.list({ page: 0, size: 50 });
 
-        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-        const token = localStorage.getItem("token");
-
-        if (!token) {
-          console.error("No token found, user not authenticated");
-          const locals = loadPersistedUsers();
-          const merged = mergeUsersUnique(mockUsers, locals);
-          const sorted = [...merged].sort(
-            (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-          );
-          setUsers(sorted);
-          setLoading(false);
-          return;
-        }
-
-        console.log(
-          "🔍 Using Customer API (admin/users not in API guide):",
-          `${API_BASE_URL}/api/customers`
-        );
-
-        // Since /api/admin/users doesn't exist in API_GUIDE, use Customer API as alternative
-        const response = await fetch(`${API_BASE_URL}/api/customers`, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-            Accept: "application/json",
-            "ngrok-skip-browser-warning": "true",
-          },
-        });
-
-        console.log("📊 API Response Status:", response.status);
-        console.log("📊 API Response Headers:", response.headers);
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const contentType = response.headers.get("Content-Type");
-        if (!contentType || !contentType.includes("application/json")) {
-          throw new Error("Non-JSON response");
-        }
-
-        const data = await response.json();
-        console.log("✅ Users fetched successfully:", data);
-
-        const arrayData = Array.isArray(data)
-          ? data
-          : Array.isArray(data?.content)
+        const arrayData = Array.isArray(data?.content)
           ? data.content
+          : Array.isArray(data)
+          ? data
           : [];
         // Normalize various possible backend shapes
         const normalized = arrayData.map((user) => {
@@ -295,117 +252,28 @@ const AdminUserManagement = () => {
     setRegistering(true);
 
     try {
-      // TODO: Replace with actual API call
-      const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/api/auth/admin/create-user`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(formData),
-        }
-      );
+      const apiUser = await adminAuthApi.createUser(formData);
 
-      if (response.ok) {
-        let apiUser = null;
-        try {
-          // Some backends return empty body for 201/204
-          apiUser = await response.json();
-        } catch (_) {
-          apiUser = null;
-        }
-
-        // Build a complete row for immediate rendering
-        const createdUser = {
-          id:
-            apiUser?.id ||
-            apiUser?.userId ||
-            Math.floor(Math.random() * 1000) + 100,
-          username: apiUser?.username || formData.username,
-          email: apiUser?.email || formData.email,
-          roleId: apiUser?.roleId || formData.roleId,
-          roleName:
-            apiUser?.roleName ||
-            roles.find((r) => r.id === (apiUser?.roleId || formData.roleId))
-              ?.name ||
-            "UNKNOWN",
-          address: apiUser?.address || formData.address,
-          createdAt: apiUser?.createdAt || new Date().toISOString(),
-          isActive: apiUser?.active !== undefined ? apiUser.active : true,
-        };
-
-        // Persist locally cho lần F5 sau vẫn còn
-        const locals = loadPersistedUsers();
-        const updatedLocals = [createdUser, ...locals];
-        savePersistedUsers(updatedLocals);
-        setUsers((prev) => [createdUser, ...prev]);
-
-        // Reset form
-        setFormData({
-          username: "",
-          email: "",
-          password: "",
-          address: "",
-          roleId: 2,
-        });
-        setShowRegisterForm(false);
-        alert("User registered successfully!");
-      } else {
-        // If server returns 4xx with error body or HTML, still add local row so user sees the entry
-        let serverMessage = "";
-        try {
-          const errJson = await response.json();
-          serverMessage = errJson?.message || "";
-        } catch (_) {
-          serverMessage = "";
-        }
-
-        const fallbackUser = {
-          id: Math.floor(Math.random() * 1000) + 100,
-          username: formData.username,
-          email: formData.email,
-          roleId: formData.roleId,
-          roleName:
-            roles.find((r) => r.id === formData.roleId)?.name || "UNKNOWN",
-          address: formData.address,
-          createdAt: new Date().toISOString(),
-          isActive: true,
-        };
-        const locals2 = loadPersistedUsers();
-        const updatedLocals2 = [fallbackUser, ...locals2];
-        savePersistedUsers(updatedLocals2);
-        setUsers((prev) => [fallbackUser, ...prev]);
-
-        setFormData({
-          username: "",
-          email: "",
-          password: "",
-          address: "",
-          roleId: 2,
-        });
-        setShowRegisterForm(false);
-        alert(
-          `Registration fallback: ${serverMessage || "Row added locally."}`
-        );
-      }
-    } catch (error) {
-      console.error("Registration error:", error);
-
-      // For demo purposes, simulate successful registration
-      const newUser = {
-        id: users.length + 1,
-        ...formData,
+      const createdUser = {
+        id: apiUser?.id || apiUser?.userId,
+        username: apiUser?.username || formData.username,
+        email: apiUser?.email || formData.email,
+        roleId: apiUser?.roleId || formData.roleId,
         roleName:
-          roles.find((r) => r.id === formData.roleId)?.name || "UNKNOWN",
-        createdAt: new Date().toISOString(),
-        isActive: true,
+          apiUser?.roleName ||
+          roles.find((r) => r.id === (apiUser?.roleId || formData.roleId))
+            ?.name ||
+          "UNKNOWN",
+        address: apiUser?.address || formData.address,
+        createdAt: apiUser?.createdAt || new Date().toISOString(),
+        isActive: apiUser?.active !== undefined ? apiUser.active : true,
       };
 
-      setUsers((prev) => [...prev, newUser]);
+      const locals = loadPersistedUsers();
+      const updatedLocals = [createdUser, ...locals];
+      savePersistedUsers(updatedLocals);
+      setUsers((prev) => [createdUser, ...prev]);
 
-      // Reset form
       setFormData({
         username: "",
         email: "",
@@ -414,8 +282,10 @@ const AdminUserManagement = () => {
         roleId: 2,
       });
       setShowRegisterForm(false);
-
-      alert("User registered successfully! (Demo mode)");
+      alert("User registered successfully!");
+    } catch (error) {
+      console.error("Registration error:", error);
+      alert(error?.message || "Registration failed");
     }
 
     setRegistering(false);
@@ -449,35 +319,15 @@ const AdminUserManagement = () => {
 
   const refreshUsers = async () => {
     setLoading(true);
-
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-      const token = localStorage.getItem("token");
-
-      if (!token) {
-        console.error("No token found");
-        setUsers(mockUsers);
-        setLoading(false);
-        return;
-      }
-
-      const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      const transformedUsers = data.map((user) => ({
-        id: user.id,
+      const data = await adminUsersApi.list({ page: 0, size: 50 });
+      const arrayData = Array.isArray(data?.content)
+        ? data.content
+        : Array.isArray(data)
+        ? data
+        : [];
+      const transformedUsers = arrayData.map((user) => ({
+        id: user.id ?? user.userId,
         username: user.username,
         email: user.email,
         roleId: user.roleId,
@@ -486,7 +336,6 @@ const AdminUserManagement = () => {
         createdAt: user.createdAt || new Date().toISOString(),
         isActive: user.active !== undefined ? user.active : true,
       }));
-
       setUsers(transformedUsers);
     } catch (error) {
       console.error("Error refreshing users:", error);

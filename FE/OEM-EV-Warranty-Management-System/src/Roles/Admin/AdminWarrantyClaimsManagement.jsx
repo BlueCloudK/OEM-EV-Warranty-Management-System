@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { warrantyClaimsApi } from "../../api/warrantyClaims";
 
 /**
  * ================================
@@ -29,6 +30,11 @@ const AdminWarrantyClaimsManagement = () => {
   // Form Data
   const [formData, setFormData] = useState({
     code: "",
+    // strictly required fields for create per guide
+    partId: "",
+    vehicleId: "",
+    issueDescription: "",
+    // optional/display fields kept for edit/view only
     customerName: "",
     customerEmail: "",
     customerPhone: "",
@@ -37,7 +43,6 @@ const AdminWarrantyClaimsManagement = () => {
     vehicleModel: "",
     partName: "",
     partNumber: "",
-    issueDescription: "",
     claimDate: "",
     purchaseDate: "",
     warrantyStartDate: "",
@@ -87,27 +92,9 @@ const AdminWarrantyClaimsManagement = () => {
     try {
       setLoading(true);
       setError("");
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-      const token = localStorage.getItem("token");
-      if (!token) {
-        setClaims(mockClaims);
-        setLoading(false);
-        return;
-      }
-      const res = await fetch(`${API_BASE_URL}/api/warranty-claims`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/json",
-          "ngrok-skip-browser-warning": "true",
-        },
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const ct = res.headers.get("Content-Type");
-      if (!ct || !ct.includes("application/json"))
-        throw new Error("Non-JSON response");
-      const data = await res.json();
+      const data = await warrantyClaimsApi.list();
       setClaims(
-        Array.isArray(data.content)
+        Array.isArray(data?.content)
           ? data.content
           : Array.isArray(data)
           ? data
@@ -128,46 +115,14 @@ const AdminWarrantyClaimsManagement = () => {
   const validateForm = () => {
     const errors = {};
 
-    if (!formData.customerName.trim()) {
-      errors.customerName = "Tên khách hàng là bắt buộc";
-    }
-
-    if (!formData.customerEmail.trim()) {
-      errors.customerEmail = "Email khách hàng là bắt buộc";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.customerEmail)) {
-      errors.customerEmail = "Email không hợp lệ";
-    }
-
-    if (!formData.customerPhone.trim()) {
-      errors.customerPhone = "Số điện thoại là bắt buộc";
-    } else if (!/^[0-9+\-\s()]+$/.test(formData.customerPhone)) {
-      errors.customerPhone = "Số điện thoại không hợp lệ";
-    }
-
-    if (!formData.vehicleVin.trim()) {
-      errors.vehicleVin = "VIN xe là bắt buộc";
-    } else if (formData.vehicleVin.length < 10) {
-      errors.vehicleVin = "VIN phải có ít nhất 10 ký tự";
-    }
-
-    if (!formData.vehicleBrand.trim()) {
-      errors.vehicleBrand = "Hãng xe là bắt buộc";
-    }
-
-    if (!formData.vehicleModel.trim()) {
-      errors.vehicleModel = "Mẫu xe là bắt buộc";
-    }
-
-    if (!formData.partName.trim()) {
-      errors.partName = "Tên phụ tùng là bắt buộc";
-    }
-
     if (!formData.issueDescription.trim()) {
       errors.issueDescription = "Mô tả vấn đề là bắt buộc";
     }
-
-    if (!formData.claimDate) {
-      errors.claimDate = "Ngày yêu cầu bảo hành là bắt buộc";
+    if (!formData.partId) {
+      errors.partId = "partId là bắt buộc";
+    }
+    if (!formData.vehicleId) {
+      errors.vehicleId = "vehicleId là bắt buộc";
     }
 
     if (formData.estimatedCost && formData.estimatedCost < 0) {
@@ -181,6 +136,8 @@ const AdminWarrantyClaimsManagement = () => {
   const resetForm = () => {
     setFormData({
       code: "",
+      partId: "",
+      vehicleId: "",
       customerName: "",
       customerEmail: "",
       customerPhone: "",
@@ -241,34 +198,24 @@ const AdminWarrantyClaimsManagement = () => {
 
     setSubmitting(true);
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-      const token = localStorage.getItem("token");
-
-      const claimData = {
-        ...formData,
-        code: formData.code || generateClaimCode(),
+      // build payload exactly as guide requires
+      const payload = {
+        description: formData.issueDescription,
+        partId:
+          typeof formData.partId === "string"
+            ? formData.partId.trim()
+            : formData.partId,
+        vehicleId:
+          typeof formData.vehicleId === "string"
+            ? Number(formData.vehicleId)
+            : formData.vehicleId,
       };
-
-      const response = await fetch(`${API_BASE_URL}/api/warranty-claims`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-          "ngrok-skip-browser-warning": "true",
-        },
-        body: JSON.stringify(claimData),
-      });
-
-      if (response.ok) {
-        const newClaim = await response.json();
-        setClaims((prev) => [newClaim, ...prev]);
-        setTotalElements((prev) => prev + 1);
-        alert("Tạo yêu cầu bảo hành thành công!");
-        setShowCreateModal(false);
-        resetForm();
-      } else {
-        throw new Error(`HTTP ${response.status}`);
-      }
+      const newClaim = await warrantyClaimsApi.create(payload);
+      setClaims((prev) => [newClaim, ...prev]);
+      setTotalElements((prev) => prev + 1);
+      alert("Tạo yêu cầu bảo hành thành công!");
+      setShowCreateModal(false);
+      resetForm();
     } catch (error) {
       console.error("Create claim error:", error);
       alert("Lỗi khi tạo yêu cầu bảo hành. Vui lòng thử lại.");
@@ -288,34 +235,17 @@ const AdminWarrantyClaimsManagement = () => {
 
     setSubmitting(true);
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-      const token = localStorage.getItem("token");
-
-      const response = await fetch(
-        `${API_BASE_URL}/api/warranty-claims/${selectedClaim.id}`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-            "ngrok-skip-browser-warning": "true",
-          },
-          body: JSON.stringify(formData),
-        }
+      const updatedClaim = await warrantyClaimsApi.update(
+        selectedClaim.id,
+        formData
       );
-
-      if (response.ok) {
-        const updatedClaim = await response.json();
-        setClaims((prev) =>
-          prev.map((c) => (c.id === selectedClaim.id ? updatedClaim : c))
-        );
-        alert("Cập nhật yêu cầu bảo hành thành công!");
-        setShowEditModal(false);
-        setSelectedClaim(null);
-        resetForm();
-      } else {
-        throw new Error(`HTTP ${response.status}`);
-      }
+      setClaims((prev) =>
+        prev.map((c) => (c.id === selectedClaim.id ? updatedClaim : c))
+      );
+      alert("Cập nhật yêu cầu bảo hành thành công!");
+      setShowEditModal(false);
+      setSelectedClaim(null);
+      resetForm();
     } catch (error) {
       console.error("Update claim error:", error);
       alert("Lỗi khi cập nhật yêu cầu bảo hành. Vui lòng thử lại.");
@@ -330,29 +260,12 @@ const AdminWarrantyClaimsManagement = () => {
 
     setSubmitting(true);
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-      const token = localStorage.getItem("token");
-
-      const response = await fetch(
-        `${API_BASE_URL}/api/warranty-claims/${selectedClaim.id}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "ngrok-skip-browser-warning": "true",
-          },
-        }
-      );
-
-      if (response.ok) {
-        setClaims((prev) => prev.filter((c) => c.id !== selectedClaim.id));
-        setTotalElements((prev) => prev - 1);
-        alert("Xóa yêu cầu bảo hành thành công!");
-        setShowDeleteModal(false);
-        setSelectedClaim(null);
-      } else {
-        throw new Error(`HTTP ${response.status}`);
-      }
+      await warrantyClaimsApi.delete(selectedClaim.id);
+      setClaims((prev) => prev.filter((c) => c.id !== selectedClaim.id));
+      setTotalElements((prev) => prev - 1);
+      alert("Xóa yêu cầu bảo hành thành công!");
+      setShowDeleteModal(false);
+      setSelectedClaim(null);
     } catch (error) {
       console.error("Delete claim error:", error);
       alert("Lỗi khi xóa yêu cầu bảo hành. Vui lòng thử lại.");
@@ -365,31 +278,14 @@ const AdminWarrantyClaimsManagement = () => {
   const handleStatusUpdate = async (claimId, newStatus) => {
     setSubmitting(true);
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-      const token = localStorage.getItem("token");
-
-      const response = await fetch(
-        `${API_BASE_URL}/api/warranty-claims/${claimId}`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-            "ngrok-skip-browser-warning": "true",
-          },
-          body: JSON.stringify({ status: newStatus }),
-        }
+      const updatedClaim = await warrantyClaimsApi.updateStatus(
+        claimId,
+        newStatus
       );
-
-      if (response.ok) {
-        const updatedClaim = await response.json();
-        setClaims((prev) =>
-          prev.map((c) => (c.id === claimId ? updatedClaim : c))
-        );
-        alert(`Cập nhật trạng thái thành ${newStatus} thành công!`);
-      } else {
-        throw new Error(`HTTP ${response.status}`);
-      }
+      setClaims((prev) =>
+        prev.map((c) => (c.id === claimId ? updatedClaim : c))
+      );
+      alert(`Cập nhật trạng thái thành ${newStatus} thành công!`);
     } catch (error) {
       console.error("Update status error:", error);
       alert("Lỗi khi cập nhật trạng thái. Vui lòng thử lại.");
@@ -942,135 +838,45 @@ const AdminWarrantyClaimsManagement = () => {
                   </div>
                 </div>
 
+                {/* Tối giản theo guide: chỉ nhập partId, vehicleId, description khi tạo */}
                 <div className="form-section">
-                  <h4>Thông tin khách hàng</h4>
+                  <h4>Dữ liệu bắt buộc theo guide</h4>
                   <div className="form-row">
                     <div className="form-group">
-                      <label>Tên khách hàng *</label>
+                      <label>partId *</label>
                       <input
                         type="text"
-                        name="customerName"
-                        value={formData.customerName}
+                        name="partId"
+                        value={formData.partId}
                         onChange={handleInputChange}
-                        placeholder="Họ và tên khách hàng"
-                        className={formErrors.customerName ? "error" : ""}
+                        className={formErrors.partId ? "error" : ""}
+                        placeholder="VD: PART-001 hoặc id số"
                       />
-                      {formErrors.customerName && (
-                        <span className="error-text">
-                          {formErrors.customerName}
-                        </span>
+                      {formErrors.partId && (
+                        <span className="error-text">{formErrors.partId}</span>
                       )}
                     </div>
                     <div className="form-group">
-                      <label>Email khách hàng *</label>
+                      <label>vehicleId *</label>
                       <input
-                        type="email"
-                        name="customerEmail"
-                        value={formData.customerEmail}
+                        type="number"
+                        name="vehicleId"
+                        value={formData.vehicleId}
                         onChange={handleInputChange}
-                        placeholder="email@example.com"
-                        className={formErrors.customerEmail ? "error" : ""}
+                        className={formErrors.vehicleId ? "error" : ""}
+                        placeholder="VD: 1"
+                        min="1"
                       />
-                      {formErrors.customerEmail && (
+                      {formErrors.vehicleId && (
                         <span className="error-text">
-                          {formErrors.customerEmail}
+                          {formErrors.vehicleId}
                         </span>
                       )}
-                    </div>
-                  </div>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Số điện thoại *</label>
-                      <input
-                        type="tel"
-                        name="customerPhone"
-                        value={formData.customerPhone}
-                        onChange={handleInputChange}
-                        placeholder="0123456789"
-                        className={formErrors.customerPhone ? "error" : ""}
-                      />
-                      {formErrors.customerPhone && (
-                        <span className="error-text">
-                          {formErrors.customerPhone}
-                        </span>
-                      )}
-                    </div>
-                    <div className="form-group">
-                      <label>Ngày mua xe</label>
-                      <input
-                        type="date"
-                        name="purchaseDate"
-                        value={formData.purchaseDate}
-                        onChange={handleInputChange}
-                      />
                     </div>
                   </div>
                 </div>
 
-                <div className="form-section">
-                  <h4>Thông tin xe</h4>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>VIN xe *</label>
-                      <input
-                        type="text"
-                        name="vehicleVin"
-                        value={formData.vehicleVin}
-                        onChange={handleInputChange}
-                        placeholder="VIN-1234567890"
-                        className={formErrors.vehicleVin ? "error" : ""}
-                      />
-                      {formErrors.vehicleVin && (
-                        <span className="error-text">
-                          {formErrors.vehicleVin}
-                        </span>
-                      )}
-                    </div>
-                    <div className="form-group">
-                      <label>Hãng xe *</label>
-                      <input
-                        type="text"
-                        name="vehicleBrand"
-                        value={formData.vehicleBrand}
-                        onChange={handleInputChange}
-                        placeholder="Tesla, Hyundai, VinFast..."
-                        className={formErrors.vehicleBrand ? "error" : ""}
-                      />
-                      {formErrors.vehicleBrand && (
-                        <span className="error-text">
-                          {formErrors.vehicleBrand}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Mẫu xe *</label>
-                      <input
-                        type="text"
-                        name="vehicleModel"
-                        value={formData.vehicleModel}
-                        onChange={handleInputChange}
-                        placeholder="Model S, Ioniq 5, VF8..."
-                        className={formErrors.vehicleModel ? "error" : ""}
-                      />
-                      {formErrors.vehicleModel && (
-                        <span className="error-text">
-                          {formErrors.vehicleModel}
-                        </span>
-                      )}
-                    </div>
-                    <div className="form-group">
-                      <label>Ngày bắt đầu bảo hành</label>
-                      <input
-                        type="date"
-                        name="warrantyStartDate"
-                        value={formData.warrantyStartDate}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                  </div>
-                </div>
+                {/* Các thông tin bổ sung khác giữ lại cho chỉnh sửa sau, không bắt buộc khi tạo */}
 
                 <div className="form-section">
                   <h4>Thông tin phụ tùng</h4>
