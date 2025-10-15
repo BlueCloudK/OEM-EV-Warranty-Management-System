@@ -36,10 +36,10 @@ public class ServiceHistoryController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String search) {
-        logger.info("Get all service histories request: page={}, size={}, search={}\n", page, size, search);
+        logger.info("Get all service histories request: page={}, size={}, search={}", page, size, search);
         PagedResponse<ServiceHistoryResponseDTO> historiesPage = serviceHistoryService.getAllServiceHistoriesPage(
             PageRequest.of(page, size), search);
-        logger.info("Get all service histories success, totalElements={}\n", historiesPage.getTotalElements());
+        logger.info("Get all service histories success, totalElements={}", historiesPage.getTotalElements());
         return ResponseEntity.ok(historiesPage);
     }
 
@@ -47,13 +47,13 @@ public class ServiceHistoryController {
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN') or hasRole('EVM_STAFF') or hasRole('CUSTOMER')")
     public ResponseEntity<ServiceHistoryResponseDTO> getServiceHistoryById(@PathVariable Long id) {
-        logger.info("Get service history by id: {}\n", id);
+        logger.info("Get service history by id: {}", id);
         ServiceHistoryResponseDTO history = serviceHistoryService.getServiceHistoryById(id);
         if (history != null) {
-            logger.info("Service history found: {}\n", id);
+            logger.info("Service history found: {}", id);
             return ResponseEntity.ok(history);
         }
-        logger.warn("Service history not found: {}\n", id);
+        logger.warn("Service history not found: {}", id);
         return ResponseEntity.notFound().build();
     }
 
@@ -61,13 +61,13 @@ public class ServiceHistoryController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN') or hasRole('EVM_STAFF')")
     public ResponseEntity<ServiceHistoryResponseDTO> createServiceHistory(@Valid @RequestBody ServiceHistoryRequestDTO requestDTO) {
-        logger.info("Create service history request: {}\n", requestDTO);
+        logger.info("Create service history request: {}", requestDTO);
         try {
             ServiceHistoryResponseDTO responseDTO = serviceHistoryService.createServiceHistory(requestDTO);
-            logger.info("Service history created: {}\n", responseDTO.getServiceHistoryId());
+            logger.info("Service history created: {}", responseDTO.getServiceHistoryId());
             return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
         } catch (RuntimeException e) {
-            logger.error("Create service history failed: {}\n", e.getMessage());
+            logger.error("Create service history failed: {}", e.getMessage());
             return ResponseEntity.badRequest().build();
         }
     }
@@ -77,17 +77,17 @@ public class ServiceHistoryController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN') or hasRole('EVM_STAFF')")
     public ResponseEntity<ServiceHistoryResponseDTO> updateServiceHistory(@PathVariable Long id,
                                                                         @Valid @RequestBody ServiceHistoryRequestDTO requestDTO) {
-        logger.info("Update service history request: id={}, data={}\n", id, requestDTO);
+        logger.info("Update service history request: id={}, data={}", id, requestDTO);
         try {
             ServiceHistoryResponseDTO updatedHistory = serviceHistoryService.updateServiceHistory(id, requestDTO);
             if (updatedHistory != null) {
-                logger.info("Service history updated: {}\n", id);
+                logger.info("Service history updated: {}", id);
                 return ResponseEntity.ok(updatedHistory);
             }
-            logger.warn("Service history not found for update: {}\n", id);
+            logger.warn("Service history not found for update: {}", id);
             return ResponseEntity.notFound().build();
         } catch (RuntimeException e) {
-            logger.error("Update service history failed: {}\n", e.getMessage());
+            logger.error("Update service history failed: {}", e.getMessage());
             return ResponseEntity.badRequest().build();
         }
     }
@@ -96,13 +96,13 @@ public class ServiceHistoryController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteServiceHistory(@PathVariable Long id) {
-        logger.info("Delete service history request: {}\n", id);
+        logger.info("Delete service history request: {}", id);
         boolean deleted = serviceHistoryService.deleteServiceHistory(id);
         if (deleted) {
-            logger.info("Service history deleted: {}\n", id);
+            logger.info("Service history deleted: {}", id);
             return ResponseEntity.noContent().build();
         }
-        logger.warn("Service history not found for delete: {}\n", id);
+        logger.warn("Service history not found for delete: {}", id);
         return ResponseEntity.notFound().build();
     }
 
@@ -113,10 +113,10 @@ public class ServiceHistoryController {
             @PathVariable Long vehicleId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        logger.info("Get service histories by vehicleId: {}, page={}, size={}\n", vehicleId, page, size);
+        logger.info("Get service histories by vehicleId: {}, page={}, size={}", vehicleId, page, size);
         PagedResponse<ServiceHistoryResponseDTO> historiesPage = serviceHistoryService.getServiceHistoriesByVehicleId(
             vehicleId, PageRequest.of(page, size));
-        logger.info("Get service histories by vehicleId success, totalElements={}\n", historiesPage.getTotalElements());
+        logger.info("Get service histories by vehicleId success, totalElements={}", historiesPage.getTotalElements());
         return ResponseEntity.ok(historiesPage);
     }
 
@@ -127,8 +127,10 @@ public class ServiceHistoryController {
             @PathVariable String partId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
+        logger.info("Get service histories by partId: {}, page={}, size={}", partId, page, size);
         PagedResponse<ServiceHistoryResponseDTO> historiesPage = serviceHistoryService.getServiceHistoriesByPartId(
             partId, PageRequest.of(page, size));
+        logger.info("Get service histories by partId success, totalElements={}", historiesPage.getTotalElements());
         return ResponseEntity.ok(historiesPage);
     }
 
@@ -139,11 +141,14 @@ public class ServiceHistoryController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestHeader("Authorization") String authorizationHeader) {
+        logger.info("Get my service histories request: page={}, size={}", page, size);
         try {
             PagedResponse<ServiceHistoryResponseDTO> historiesPage = serviceHistoryService.getServiceHistoriesByCurrentUser(
                 authorizationHeader, PageRequest.of(page, size));
+            logger.info("Get my service histories success, totalElements={}", historiesPage.getTotalElements());
             return ResponseEntity.ok(historiesPage);
         } catch (RuntimeException e) {
+            logger.error("Get my service histories failed: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
     }
@@ -156,11 +161,14 @@ public class ServiceHistoryController {
             @RequestParam String endDate,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
+        logger.info("Get service histories by date range: startDate={}, endDate={}, page={}, size={}", startDate, endDate, page, size);
         try {
             PagedResponse<ServiceHistoryResponseDTO> historiesPage = serviceHistoryService.getServiceHistoriesByDateRange(
                 startDate, endDate, PageRequest.of(page, size));
+            logger.info("Get service histories by date range success, totalElements={}", historiesPage.getTotalElements());
             return ResponseEntity.ok(historiesPage);
         } catch (RuntimeException e) {
+            logger.error("Get service histories by date range failed: {}", e.getMessage());
             return ResponseEntity.badRequest().build();
         }
     }
