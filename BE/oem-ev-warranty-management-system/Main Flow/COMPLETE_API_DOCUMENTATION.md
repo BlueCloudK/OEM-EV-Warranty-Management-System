@@ -795,18 +795,18 @@ Response (200):
 }
 ```
 
-## 🚨 SECURITY MATRIX (UPDATED)
+## 🚨 SECURITY MATRIX
 
-| Endpoint Category | ADMIN | EVM_STAFF | SC_STAFF | SC_TECHNICIAN | CUSTOMER |
-|------------------|-------|-----------|----------|---------------|----------|
-| **Auth** | ✅ All | ✅ All | ✅ Register | ✅ All | ✅ Basic |
-| **Customers** | ✅ CRUD | ✅ CRU | ✅ CRUD | ❌ Search only | ✅ Profile |
-| **Vehicles** | ✅ CRUD | ✅ CRUD | ✅ CRUD | ❌ Read only | ✅ Own only |
-| **Parts** | ✅ CRUD | ✅ CRU | ✅ Read | ✅ Read | ✅ Read |
-| **Warranty Claims** | ✅ CRUD | ✅ Accept/Reject | ✅ CRUD + Create | ✅ Process | ✅ Own only |
-| **Service Histories** | ✅ CRUD | ✅ **Read** ✅ | ✅ Read | ✅ Read | ✅ Own only |
-| **User Info** | ✅ All | ✅ All | ✅ All | ✅ All | ✅ All |
-| **User Management** | ✅ **Full CRUD** ✅ | ❌ | ❌ | ❌ | ❌ |
+| Endpoint Category     | ADMIN      | EVM_STAFF         | SC_STAFF         | SC_TECHNICIAN     | CUSTOMER        |
+|----------------------|------------|-------------------|------------------|-------------------|----------------|
+| **Auth**             | ✅ All      | ✅ All             | ✅ Register       | ✅ All            | ✅ Basic        |
+| **Customers**        | ✅ CRUD     | ✅ CRU             | ✅ CRUD           | ❌                | ✅ Profile      |
+| **Vehicles**         | ✅ CRUD     | ✅ CRUD            | ✅ CRUD           | ❌                | ✅ Own only     |
+| **Parts**            | ✅ CRUD     | ✅ CRU             | ✅ Read           | ✅ Read           | ✅ Read         |
+| **Warranty Claims**  | ✅ CRUD     | ✅ Accept/Reject   | ✅ CRUD + Create  | ✅ Process        | ✅ Own only     |
+| **Service Histories**| ✅ CRUD     | ✅ CRUD            | ✅ CRUD           | ✅ CRUD           | ✅ Own only     |
+| **User Info**        | ✅ All      | ❌                | ✅ Some           | ❌                | ❌             |
+| **User Management**  | ✅ Full CRUD| ❌                | ❌                | ❌                | ❌             |
 
 **Legend:** C=Create, R=Read, U=Update, D=Delete
 
@@ -823,10 +823,3 @@ Response (200):
 - **POST** `/api/admin/users/{id}/reset-password` - Reset user password
 - **GET** `/api/admin/users/statistics` - Get user statistics
 
-### Security Enforcement:
-- **403 Forbidden** returned for non-ADMIN access attempts
-- **JWT validation** required for all endpoints
-- **Input sanitization** on all user data modifications
-- **Audit logging** for all administrative actions
-
----
