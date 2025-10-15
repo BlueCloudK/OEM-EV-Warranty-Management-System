@@ -1,23 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 /**
  * ================================
  * 🔐 ADMIN CUSTOMER MANAGEMENT
  * ================================
- * 
+ *
  * 📋 API ENDPOINTS SỬ DỤNG:
- * 
+ *
  * 1️⃣ GET /api/customers              → Lấy danh sách khách hàng (có phân trang + tìm kiếm)
  * 2️⃣ GET /api/customers/{id}         → Xem chi tiết 1 khách hàng
  * 3️⃣ POST /api/customers             → Tạo khách hàng mới
  * 4️⃣ PUT /api/customers/{id}         → Cập nhật thông tin khách hàng
  * 5️⃣ DELETE /api/customers/{id}      → Xóa khách hàng (ADMIN only)
- * 
+ *
  * 🔑 PERMISSIONS:
  * - Đọc/Tạo/Sửa: ADMIN, SC_STAFF, EVM_STAFF
  * - Xóa: Chỉ ADMIN
- * 
+ *
  * 📝 VALIDATION RULES:
  * - Name: 5-100 ký tự
  * - Email: Format hợp lệ
@@ -37,18 +37,34 @@ const AdminCustomerManagement = () => {
   const [viewingCustomer, setViewingCustomer] = useState(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    address: '',
-    userId: ''
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    userId: "",
   });
   const [formErrors, setFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
+
+  // Local storage for demo customers persistence
+  const LOCAL_CUSTOMERS_KEY = "admin_local_customers";
+  const loadLocalCustomers = () => {
+    try {
+      const stored = localStorage.getItem(LOCAL_CUSTOMERS_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  };
+  const saveLocalCustomers = (list) => {
+    try {
+      localStorage.setItem(LOCAL_CUSTOMERS_KEY, JSON.stringify(list));
+    } catch {}
+  };
 
   // Mock customers data for demo
   const mockCustomers = [
@@ -60,7 +76,7 @@ const AdminCustomerManagement = () => {
       address: "123 Lê Lợi, Quận 1, TP. Hồ Chí Minh",
       createdAt: "2024-01-15T10:30:00.000+00:00",
       userId: 5,
-      username: "an_nguyen"
+      username: "an_nguyen",
     },
     {
       customerId: "456e7890-e89b-12d3-a456-426614174001",
@@ -70,7 +86,7 @@ const AdminCustomerManagement = () => {
       address: "456 Nguyễn Huệ, Quận 1, TP. Hồ Chí Minh",
       createdAt: "2024-02-10T09:15:00.000+00:00",
       userId: 6,
-      username: "binh_tran"
+      username: "binh_tran",
     },
     {
       customerId: "789e1234-e89b-12d3-a456-426614174002",
@@ -80,8 +96,8 @@ const AdminCustomerManagement = () => {
       address: "789 Điện Biên Phủ, Quận 3, TP. Hồ Chí Minh",
       createdAt: "2024-03-05T14:20:00.000+00:00",
       userId: 7,
-      username: "chau_le"
-    }
+      username: "chau_le",
+    },
   ];
 
   useEffect(() => {
@@ -96,60 +112,70 @@ const AdminCustomerManagement = () => {
   const fetchCustomers = async () => {
     try {
       setLoading(true);
-      
+
       const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-      const token = localStorage.getItem('token');
-      
+      const token = localStorage.getItem("token");
+
       if (!token) {
-        console.error('No token found, user not authenticated');
-        setCustomers(mockCustomers);
-        setTotalElements(mockCustomers.length);
+        console.error("No token found, user not authenticated");
+        const locals = loadLocalCustomers();
+        const merged = [...mockCustomers, ...locals];
+        setCustomers(merged);
+        setTotalElements(merged.length);
         setTotalPages(1);
         setLoading(false);
         return;
       }
 
-      console.log('🔍 Fetching customers from API:', `${API_BASE_URL}/api/customers`);
-      
+      console.log(
+        "🔍 Fetching customers from API:",
+        `${API_BASE_URL}/api/customers`
+      );
+
       // Build query parameters
       const params = new URLSearchParams({
         page: currentPage,
-        size: 10
-      });
-      
-      if (searchTerm.trim()) {
-        params.append('search', searchTerm);
-      }
-      
-      const response = await fetch(`${API_BASE_URL}/api/customers?${params}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
+        size: 10,
       });
 
-      console.log('📊 Customer API Response Status:', response.status);
+      if (searchTerm.trim()) {
+        params.append("search", searchTerm);
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/customers?${params}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "ngrok-skip-browser-warning": "true",
+        },
+      });
+
+      console.log("📊 Customer API Response Status:", response.status);
 
       if (!response.ok) {
         // Check if response is HTML (error page)
-        const contentType = response.headers.get('Content-Type');
-        if (contentType && contentType.includes('text/html')) {
-          throw new Error(`API endpoint not found (returned HTML). Status: ${response.status}`);
+        const contentType = response.headers.get("Content-Type");
+        if (contentType && contentType.includes("text/html")) {
+          throw new Error(
+            `API endpoint not found (returned HTML). Status: ${response.status}`
+          );
         }
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       // Check if response is actually JSON
-      const contentType = response.headers.get('Content-Type');
-      if (!contentType || !contentType.includes('application/json')) {
-        console.warn('⚠️ API returned non-JSON response:', contentType);
-        throw new Error('API returned non-JSON response (likely HTML error page)');
+      const contentType = response.headers.get("Content-Type");
+      if (!contentType || !contentType.includes("application/json")) {
+        console.warn("⚠️ API returned non-JSON response:", contentType);
+        throw new Error(
+          "API returned non-JSON response (likely HTML error page)"
+        );
       }
 
       const data = await response.json();
-      console.log('✅ Customers fetched successfully:', data);
+      console.log("✅ Customers fetched successfully:", data);
 
       // Handle paginated response
       if (data.content) {
@@ -162,25 +188,31 @@ const AdminCustomerManagement = () => {
         setTotalElements(data.length);
         setTotalPages(1);
       }
-      
+
       setLoading(false);
-      
     } catch (error) {
-      console.error('❌ Error fetching customers:', error);
-      
+      console.error("❌ Error fetching customers:", error);
+
       // More specific error handling
-      if (error.message.includes('<!DOCTYPE') || error.message.includes('Unexpected token')) {
-        console.error('🚨 API returned HTML instead of JSON - endpoint may have issues');
-      } else if (error.message.includes('fetch')) {
-        console.error('🌐 Network error - check API server status');
+      if (
+        error.message.includes("<!DOCTYPE") ||
+        error.message.includes("Unexpected token")
+      ) {
+        console.error(
+          "🚨 API returned HTML instead of JSON - endpoint may have issues"
+        );
+      } else if (error.message.includes("fetch")) {
+        console.error("🌐 Network error - check API server status");
       } else {
-        console.error('🔧 API error:', error.message);
+        console.error("🔧 API error:", error.message);
       }
-      
-      // Fallback to mock data
-      console.log('🔄 Falling back to mock data');
-      setCustomers(mockCustomers);
-      setTotalElements(mockCustomers.length);
+
+      // Fallback to mock data + local storage
+      console.log("🔄 Falling back to mock data");
+      const locals = loadLocalCustomers();
+      const merged = [...mockCustomers, ...locals];
+      setCustomers(merged);
+      setTotalElements(merged.length);
       setTotalPages(1);
       setLoading(false);
     }
@@ -195,53 +227,58 @@ const AdminCustomerManagement = () => {
     try {
       setLoadingDetails(true);
       setShowViewModal(true);
-      
+
       const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-      const token = localStorage.getItem('token');
-      
+      const token = localStorage.getItem("token");
+
       if (!token) {
-        console.error('No token found, using cached data');
+        console.error("No token found, using cached data");
         setViewingCustomer(customer);
         setLoadingDetails(false);
         return;
       }
 
-      console.log('👁️ Fetching customer details:', customer.customerId);
+      console.log("👁️ Fetching customer details:", customer.customerId);
 
-      const response = await fetch(`${API_BASE_URL}/api/customers/${customer.customerId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
+      const response = await fetch(
+        `${API_BASE_URL}/api/customers/${customer.customerId}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            "ngrok-skip-browser-warning": "true",
+          },
         }
-      });
+      );
 
-      console.log('📊 Customer Details API Response Status:', response.status);
+      console.log("📊 Customer Details API Response Status:", response.status);
 
       if (!response.ok) {
-        const contentType = response.headers.get('Content-Type');
-        if (contentType && contentType.includes('text/html')) {
-          throw new Error(`API endpoint not found (returned HTML). Status: ${response.status}`);
+        const contentType = response.headers.get("Content-Type");
+        if (contentType && contentType.includes("text/html")) {
+          throw new Error(
+            `API endpoint not found (returned HTML). Status: ${response.status}`
+          );
         }
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const contentType = response.headers.get('Content-Type');
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('API returned non-JSON response');
+      const contentType = response.headers.get("Content-Type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("API returned non-JSON response");
       }
 
       const detailData = await response.json();
-      console.log('✅ Customer details fetched successfully:', detailData);
+      console.log("✅ Customer details fetched successfully:", detailData);
 
       setViewingCustomer(detailData);
-      
     } catch (error) {
-      console.error('❌ Error fetching customer details:', error);
-      
+      console.error("❌ Error fetching customer details:", error);
+
       // Fallback to cached customer data
-      console.log('🔄 Using cached customer data for details view');
+      console.log("🔄 Using cached customer data for details view");
       setViewingCustomer(customer);
     } finally {
       setLoadingDetails(false);
@@ -250,57 +287,58 @@ const AdminCustomerManagement = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
-    
+
     if (formErrors[name]) {
-      setFormErrors(prev => ({
+      setFormErrors((prev) => ({
         ...prev,
-        [name]: ''
+        [name]: "",
       }));
     }
   };
 
   const validateForm = () => {
     const errors = {};
-    
+
     // Name validation
     if (!formData.name.trim()) {
-      errors.name = 'Tên khách hàng là bắt buộc';
+      errors.name = "Tên khách hàng là bắt buộc";
     } else if (formData.name.length < 5 || formData.name.length > 100) {
-      errors.name = 'Tên phải từ 5 đến 100 ký tự';
+      errors.name = "Tên phải từ 5 đến 100 ký tự";
     }
-    
+
     // Email validation
     if (!formData.email.trim()) {
-      errors.email = 'Email là bắt buộc';
+      errors.email = "Email là bắt buộc";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      errors.email = 'Định dạng email không hợp lệ';
+      errors.email = "Định dạng email không hợp lệ";
     }
-    
+
     // Phone validation
     if (!formData.phone.trim()) {
-      errors.phone = 'Số điện thoại là bắt buộc';
+      errors.phone = "Số điện thoại là bắt buộc";
     } else if (!/^(\+84|0)[0-9]{9,10}$/.test(formData.phone)) {
-      errors.phone = 'Số điện thoại không hợp lệ (VD: +84901234567 hoặc 0901234567)';
+      errors.phone =
+        "Số điện thoại không hợp lệ (VD: +84901234567 hoặc 0901234567)";
     }
-    
+
     // Address validation
     if (!formData.address.trim()) {
-      errors.address = 'Địa chỉ là bắt buộc';
+      errors.address = "Địa chỉ là bắt buộc";
     } else if (formData.address.length > 255) {
-      errors.address = 'Địa chỉ không được vượt quá 255 ký tự';
+      errors.address = "Địa chỉ không được vượt quá 255 ký tự";
     }
-    
+
     // User ID validation
     if (!formData.userId) {
-      errors.userId = 'User ID là bắt buộc';
+      errors.userId = "User ID là bắt buộc";
     } else if (isNaN(formData.userId) || formData.userId <= 0) {
-      errors.userId = 'User ID phải là số nguyên dương';
+      errors.userId = "User ID phải là số nguyên dương";
     }
-    
+
     return errors;
   };
 
@@ -312,85 +350,147 @@ const AdminCustomerManagement = () => {
   // ================================
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       return;
     }
-    
+
     setSubmitting(true);
-    
+
     try {
       const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-      const token = localStorage.getItem('token');
-      
+      const token = localStorage.getItem("token");
+
       if (!token) {
-        alert('Token không tìm thấy. Vui lòng đăng nhập lại.');
+        alert("Token không tìm thấy. Vui lòng đăng nhập lại.");
         setSubmitting(false);
         return;
       }
 
-      const url = editingCustomer 
+      const url = editingCustomer
         ? `${API_BASE_URL}/api/customers/${editingCustomer.customerId}`
         : `${API_BASE_URL}/api/customers`;
-      
-      const method = editingCustomer ? 'PUT' : 'POST';
 
-      console.log(`🔑 ${editingCustomer ? 'Updating' : 'Creating'} customer:`, formData);
+      const method = editingCustomer ? "PUT" : "POST";
+
+      console.log(
+        `🔑 ${editingCustomer ? "Updating" : "Creating"} customer:`,
+        formData
+      );
 
       const response = await fetch(url, {
         method: method,
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "ngrok-skip-browser-warning": "true",
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(formData),
       });
 
-      console.log('📊 Customer API Response Status:', response.status);
+      console.log("📊 Customer API Response Status:", response.status);
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (jsonError) {
+          console.log("⚠️ API returned non-JSON error response");
+          // Use default error message for non-JSON responses
+        }
+        throw new Error(errorMessage);
       }
 
       const result = await response.json();
-      console.log('✅ Customer operation successful:', result);
+      console.log("✅ Customer operation successful:", result);
 
       // Update customers list
       if (editingCustomer) {
-        setCustomers(prev => prev.map(customer => 
-          customer.customerId === editingCustomer.customerId ? result : customer
-        ));
-        alert('Cập nhật khách hàng thành công!');
+        setCustomers((prev) =>
+          prev.map((customer) =>
+            customer.customerId === editingCustomer.customerId
+              ? result
+              : customer
+          )
+        );
+        alert("Cập nhật khách hàng thành công!");
       } else {
-        setCustomers(prev => [result, ...prev]);
-        setTotalElements(prev => prev + 1);
-        alert('Tạo khách hàng thành công!');
+        setCustomers((prev) => [result, ...prev]);
+        setTotalElements((prev) => prev + 1);
+        alert("Tạo khách hàng thành công!");
       }
 
       // Reset form
       setFormData({
-        name: '',
-        email: '',
-        phone: '',
-        address: '',
-        userId: ''
+        name: "",
+        email: "",
+        phone: "",
+        address: "",
+        userId: "",
       });
       setShowCreateForm(false);
       setShowEditForm(false);
       setEditingCustomer(null);
-      
     } catch (error) {
-      console.error('❌ Customer operation error:', error);
+      console.error("❌ Customer operation error:", error);
+
+      // Check if it's a 403 Forbidden error (no permission)
+      if (
+        error.message.includes("403") ||
+        error.message.includes("Forbidden")
+      ) {
+        console.log(
+          "🔒 API returned 403 Forbidden - falling back to demo mode"
+        );
+        alert("API không có quyền tạo customer. Đang chuyển sang chế độ demo.");
+
+        // Create demo customer
+        const demoCustomer = {
+          customerId: Date.now(),
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          address: formData.address,
+          userId: formData.userId,
+          createdAt: new Date().toISOString(),
+        };
+
+        // Save to localStorage for persistence
+        const locals = loadLocalCustomers();
+        const updatedLocals = [demoCustomer, ...locals];
+        saveLocalCustomers(updatedLocals);
+
+        setCustomers((prev) => [demoCustomer, ...prev]);
+        setTotalElements((prev) => prev + 1);
+        alert("Tạo khách hàng thành công! (Demo mode)");
+
+        // Reset form
+        setFormData({
+          name: "",
+          email: "",
+          phone: "",
+          address: "",
+          userId: "",
+        });
+        setShowCreateForm(false);
+        setShowEditForm(false);
+        setEditingCustomer(null);
+        return;
+      }
+
       alert(`Lỗi: ${error.message}`);
-      
+
       // Fallback to demo mode for development
-      if (error.message.includes('fetch') || error.message.includes('NetworkError')) {
-        console.log('🔄 Network error - falling back to demo mode');
-        
+      if (
+        error.message.includes("fetch") ||
+        error.message.includes("NetworkError")
+      ) {
+        console.log("🔄 Network error - falling back to demo mode");
+
         const newCustomer = {
           customerId: Date.now().toString(),
           name: formData.name,
@@ -399,33 +499,42 @@ const AdminCustomerManagement = () => {
           address: formData.address,
           createdAt: new Date().toISOString(),
           userId: parseInt(formData.userId),
-          username: formData.email.split('@')[0]
+          username: formData.email.split("@")[0],
         };
-        
+
+        // Save to localStorage for persistence
+        const locals = loadLocalCustomers();
+        const updatedLocals = [newCustomer, ...locals];
+        saveLocalCustomers(updatedLocals);
+
         if (editingCustomer) {
-          setCustomers(prev => prev.map(customer => 
-            customer.customerId === editingCustomer.customerId ? {...editingCustomer, ...formData} : customer
-          ));
-          alert('Cập nhật khách hàng thành công! (Demo mode)');
+          setCustomers((prev) =>
+            prev.map((customer) =>
+              customer.customerId === editingCustomer.customerId
+                ? { ...editingCustomer, ...formData }
+                : customer
+            )
+          );
+          alert("Cập nhật khách hàng thành công! (Demo mode)");
         } else {
-          setCustomers(prev => [newCustomer, ...prev]);
-          setTotalElements(prev => prev + 1);
-          alert('Tạo khách hàng thành công! (Demo mode)');
+          setCustomers((prev) => [newCustomer, ...prev]);
+          setTotalElements((prev) => prev + 1);
+          alert("Tạo khách hàng thành công! (Demo mode)");
         }
-        
+
         setFormData({
-          name: '',
-          email: '',
-          phone: '',
-          address: '',
-          userId: ''
+          name: "",
+          email: "",
+          phone: "",
+          address: "",
+          userId: "",
         });
         setShowCreateForm(false);
         setShowEditForm(false);
         setEditingCustomer(null);
       }
     }
-    
+
     setSubmitting(false);
   };
 
@@ -436,7 +545,7 @@ const AdminCustomerManagement = () => {
       email: customer.email,
       phone: customer.phone,
       address: customer.address,
-      userId: customer.userId.toString()
+      userId: customer.userId.toString(),
     });
     setShowEditForm(true);
     setShowCreateForm(false);
@@ -454,43 +563,55 @@ const AdminCustomerManagement = () => {
 
     try {
       const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-      const token = localStorage.getItem('token');
-      
+      const token = localStorage.getItem("token");
+
       if (!token) {
-        alert('Token không tìm thấy. Vui lòng đăng nhập lại.');
+        alert("Token không tìm thấy. Vui lòng đăng nhập lại.");
         return;
       }
 
-      console.log('🗑️ Deleting customer:', customer.customerId);
+      console.log("🗑️ Deleting customer:", customer.customerId);
 
-      const response = await fetch(`${API_BASE_URL}/api/customers/${customer.customerId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
+      const response = await fetch(
+        `${API_BASE_URL}/api/customers/${customer.customerId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "ngrok-skip-browser-warning": "true",
+          },
         }
-      });
+      );
 
-      console.log('📊 Delete Customer Response Status:', response.status);
+      console.log("📊 Delete Customer Response Status:", response.status);
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+        throw new Error(
+          errorData.message || `HTTP ${response.status}: ${response.statusText}`
+        );
       }
 
       // Remove from list
-      setCustomers(prev => prev.filter(c => c.customerId !== customer.customerId));
-      setTotalElements(prev => prev - 1);
-      alert('Xóa khách hàng thành công!');
-      
+      setCustomers((prev) =>
+        prev.filter((c) => c.customerId !== customer.customerId)
+      );
+      setTotalElements((prev) => prev - 1);
+      alert("Xóa khách hàng thành công!");
     } catch (error) {
-      console.error('❌ Delete customer error:', error);
+      console.error("❌ Delete customer error:", error);
       alert(`Lỗi khi xóa: ${error.message}`);
-      
+
       // Fallback to demo mode
-      if (error.message.includes('fetch') || error.message.includes('NetworkError')) {
-        setCustomers(prev => prev.filter(c => c.customerId !== customer.customerId));
-        setTotalElements(prev => prev - 1);
-        alert('Xóa khách hàng thành công! (Demo mode)');
+      if (
+        error.message.includes("fetch") ||
+        error.message.includes("NetworkError")
+      ) {
+        setCustomers((prev) =>
+          prev.filter((c) => c.customerId !== customer.customerId)
+        );
+        setTotalElements((prev) => prev - 1);
+        alert("Xóa khách hàng thành công! (Demo mode)");
       }
     }
   };
@@ -510,18 +631,18 @@ const AdminCustomerManagement = () => {
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('vi-VN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
+    return new Date(dateString).toLocaleDateString("vi-VN", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   const formatPhone = (phone) => {
-    if (phone.startsWith('+84')) {
-      return phone.replace('+84', '0');
+    if (phone.startsWith("+84")) {
+      return phone.replace("+84", "0");
     }
     return phone;
   };
@@ -541,9 +662,9 @@ const AdminCustomerManagement = () => {
     <div className="customer-management">
       <div className="page-header">
         <div className="header-left">
-          <button 
+          <button
             className="btn btn-back"
-            onClick={() => navigate('/admin')}
+            onClick={() => navigate("/admin")}
             title="Quay lại Admin Dashboard"
           >
             <i className="fas fa-arrow-left"></i>
@@ -551,36 +672,38 @@ const AdminCustomerManagement = () => {
           </button>
           <div className="header-title">
             <h2>Quản lý Khách hàng</h2>
-            <p className="header-subtitle">Quản lý thông tin khách hàng và hồ sơ</p>
+            <p className="header-subtitle">
+              Quản lý thông tin khách hàng và hồ sơ
+            </p>
           </div>
         </div>
         <div className="header-actions">
-          <button 
+          <button
             className="btn btn-secondary"
             onClick={fetchCustomers}
             disabled={loading}
             title="Làm mới danh sách"
           >
-            <i className={`fas fa-sync-alt ${loading ? 'fa-spin' : ''}`}></i>
+            <i className={`fas fa-sync-alt ${loading ? "fa-spin" : ""}`}></i>
             Làm mới
           </button>
-          <button 
+          <button
             className="btn btn-primary"
             onClick={() => {
               setShowCreateForm(!showCreateForm);
               setShowEditForm(false);
               setEditingCustomer(null);
               setFormData({
-                name: '',
-                email: '',
-                phone: '',
-                address: '',
-                userId: ''
+                name: "",
+                email: "",
+                phone: "",
+                address: "",
+                userId: "",
               });
             }}
           >
             <i className="fas fa-plus"></i>
-            {showCreateForm ? 'Hủy' : 'Thêm Khách hàng'}
+            {showCreateForm ? "Hủy" : "Thêm Khách hàng"}
           </button>
         </div>
       </div>
@@ -612,10 +735,14 @@ const AdminCustomerManagement = () => {
               <div className="header-icon">
                 <i className="fas fa-user-plus"></i>
               </div>
-              <h3>{editingCustomer ? 'Cập nhật Khách hàng' : 'Thêm Khách hàng Mới'}</h3>
+              <h3>
+                {editingCustomer
+                  ? "Cập nhật Khách hàng"
+                  : "Thêm Khách hàng Mới"}
+              </h3>
               <p>Điền thông tin khách hàng theo API guide</p>
             </div>
-            
+
             <form onSubmit={handleSubmit} className="customer-form">
               <div className="form-row">
                 <div className="form-group">
@@ -631,10 +758,12 @@ const AdminCustomerManagement = () => {
                       name="name"
                       value={formData.name}
                       onChange={handleInputChange}
-                      className={formErrors.name ? 'error' : ''}
+                      className={formErrors.name ? "error" : ""}
                       placeholder="VD: Nguyễn Văn An"
                     />
-                    {formErrors.name && <span className="error-message">{formErrors.name}</span>}
+                    {formErrors.name && (
+                      <span className="error-message">{formErrors.name}</span>
+                    )}
                   </div>
                 </div>
 
@@ -651,10 +780,12 @@ const AdminCustomerManagement = () => {
                       name="email"
                       value={formData.email}
                       onChange={handleInputChange}
-                      className={formErrors.email ? 'error' : ''}
+                      className={formErrors.email ? "error" : ""}
                       placeholder="user@example.com"
                     />
-                    {formErrors.email && <span className="error-message">{formErrors.email}</span>}
+                    {formErrors.email && (
+                      <span className="error-message">{formErrors.email}</span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -673,10 +804,12 @@ const AdminCustomerManagement = () => {
                       name="phone"
                       value={formData.phone}
                       onChange={handleInputChange}
-                      className={formErrors.phone ? 'error' : ''}
+                      className={formErrors.phone ? "error" : ""}
                       placeholder="+84901234567 hoặc 0901234567"
                     />
-                    {formErrors.phone && <span className="error-message">{formErrors.phone}</span>}
+                    {formErrors.phone && (
+                      <span className="error-message">{formErrors.phone}</span>
+                    )}
                   </div>
                 </div>
 
@@ -693,11 +826,13 @@ const AdminCustomerManagement = () => {
                       name="userId"
                       value={formData.userId}
                       onChange={handleInputChange}
-                      className={formErrors.userId ? 'error' : ''}
+                      className={formErrors.userId ? "error" : ""}
                       placeholder="ID tài khoản người dùng"
                       min="1"
                     />
-                    {formErrors.userId && <span className="error-message">{formErrors.userId}</span>}
+                    {formErrors.userId && (
+                      <span className="error-message">{formErrors.userId}</span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -714,11 +849,13 @@ const AdminCustomerManagement = () => {
                     name="address"
                     value={formData.address}
                     onChange={handleInputChange}
-                    className={formErrors.address ? 'error' : ''}
+                    className={formErrors.address ? "error" : ""}
                     placeholder="Nhập địa chỉ đầy đủ bao gồm quận, huyện, thành phố"
                     rows="3"
                   />
-                  {formErrors.address && <span className="error-message">{formErrors.address}</span>}
+                  {formErrors.address && (
+                    <span className="error-message">{formErrors.address}</span>
+                  )}
                 </div>
               </div>
 
@@ -744,12 +881,18 @@ const AdminCustomerManagement = () => {
                   {submitting ? (
                     <>
                       <i className="fas fa-spinner fa-spin"></i>
-                      {editingCustomer ? 'Đang cập nhật...' : 'Đang tạo...'}
+                      {editingCustomer ? "Đang cập nhật..." : "Đang tạo..."}
                     </>
                   ) : (
                     <>
-                      <i className={`fas ${editingCustomer ? 'fa-save' : 'fa-user-plus'}`}></i>
-                      {editingCustomer ? 'Cập nhật Khách hàng' : 'Tạo Khách hàng'}
+                      <i
+                        className={`fas ${
+                          editingCustomer ? "fa-save" : "fa-user-plus"
+                        }`}
+                      ></i>
+                      {editingCustomer
+                        ? "Cập nhật Khách hàng"
+                        : "Tạo Khách hàng"}
                     </>
                   )}
                 </button>
@@ -768,14 +911,14 @@ const AdminCustomerManagement = () => {
                 <i className="fas fa-user-circle"></i>
               </div>
               <h3>Chi tiết Khách hàng</h3>
-              <button 
+              <button
                 className="modal-close"
                 onClick={() => setShowViewModal(false)}
               >
                 <i className="fas fa-times"></i>
               </button>
             </div>
-            
+
             <div className="modal-body">
               {loadingDetails ? (
                 <div className="details-loading">
@@ -845,8 +988,12 @@ const AdminCustomerManagement = () => {
                         Tài khoản
                       </div>
                       <div className="detail-value user-info">
-                        <div className="username">{viewingCustomer.username}</div>
-                        <div className="user-id">User ID: {viewingCustomer.userId}</div>
+                        <div className="username">
+                          {viewingCustomer.username}
+                        </div>
+                        <div className="user-id">
+                          User ID: {viewingCustomer.userId}
+                        </div>
                       </div>
                     </div>
 
@@ -863,7 +1010,7 @@ const AdminCustomerManagement = () => {
 
                   {/* Action buttons in modal */}
                   <div className="modal-actions">
-                    <button 
+                    <button
                       className="btn btn-edit"
                       onClick={() => {
                         setShowViewModal(false);
@@ -873,7 +1020,7 @@ const AdminCustomerManagement = () => {
                       <i className="fas fa-edit"></i>
                       Chỉnh sửa
                     </button>
-                    <button 
+                    <button
                       className="btn btn-delete"
                       onClick={() => {
                         setShowViewModal(false);
@@ -911,7 +1058,7 @@ const AdminCustomerManagement = () => {
             </div>
           )}
         </div>
-        
+
         {customers.length > 0 && (
           <>
             <div className="table-responsive">
@@ -928,37 +1075,41 @@ const AdminCustomerManagement = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {customers.map(customer => (
+                  {customers.map((customer) => (
                     <tr key={customer.customerId}>
                       <td className="customer-name">{customer.name}</td>
                       <td>{customer.email}</td>
                       <td>{formatPhone(customer.phone)}</td>
-                      <td className="address" title={customer.address}>{customer.address}</td>
+                      <td className="address" title={customer.address}>
+                        {customer.address}
+                      </td>
                       <td>
                         <div className="user-info">
                           <span className="username">{customer.username}</span>
-                          <small className="user-id">ID: {customer.userId}</small>
+                          <small className="user-id">
+                            ID: {customer.userId}
+                          </small>
                         </div>
                       </td>
                       <td>{formatDate(customer.createdAt)}</td>
                       <td>
                         <div className="action-buttons">
-                          <button 
-                            className="btn-action view" 
+                          <button
+                            className="btn-action view"
                             title="Xem chi tiết"
                             onClick={() => handleViewCustomer(customer)}
                           >
                             <i className="fas fa-eye"></i>
                           </button>
-                          <button 
-                            className="btn-action edit" 
+                          <button
+                            className="btn-action edit"
                             title="Chỉnh sửa"
                             onClick={() => handleEdit(customer)}
                           >
                             <i className="fas fa-edit"></i>
                           </button>
-                          <button 
-                            className="btn-action delete" 
+                          <button
+                            className="btn-action delete"
                             title="Xóa khách hàng"
                             onClick={() => handleDelete(customer)}
                           >
@@ -975,7 +1126,7 @@ const AdminCustomerManagement = () => {
             {/* Pagination */}
             {totalPages > 1 && (
               <div className="pagination">
-                <button 
+                <button
                   className="pagination-btn"
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 0}
@@ -983,13 +1134,13 @@ const AdminCustomerManagement = () => {
                   <i className="fas fa-chevron-left"></i>
                   Trước
                 </button>
-                
+
                 <div className="pagination-info">
-                  Trang {currentPage + 1} / {totalPages} 
+                  Trang {currentPage + 1} / {totalPages}
                   <small>({totalElements} khách hàng)</small>
                 </div>
-                
-                <button 
+
+                <button
                   className="pagination-btn"
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage >= totalPages - 1}
@@ -1003,7 +1154,7 @@ const AdminCustomerManagement = () => {
         )}
       </div>
 
-      <style jsx>{`
+      <style>{`
         .customer-management {
           padding: 20px;
           max-width: 1400px;

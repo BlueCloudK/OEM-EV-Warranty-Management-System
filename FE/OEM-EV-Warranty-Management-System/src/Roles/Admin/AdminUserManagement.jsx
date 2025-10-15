@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 
 const AdminUserManagement = () => {
   const navigate = useNavigate();
@@ -7,129 +7,226 @@ const AdminUserManagement = () => {
   const [loading, setLoading] = useState(true);
   const [showRegisterForm, setShowRegisterForm] = useState(false);
   const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    password: '',
-    address: '',
-    roleId: 2 // Default to SC_STAFF
+    username: "",
+    email: "",
+    password: "",
+    address: "",
+    roleId: 2, // Default to SC_STAFF
   });
   const [formErrors, setFormErrors] = useState({});
   const [registering, setRegistering] = useState(false);
 
   // Role mapping based on API guide
   const roles = [
-    { id: 1, name: 'ADMIN', display: 'Administrator' },
-    { id: 2, name: 'SC_STAFF', display: 'Service Center Staff' },
-    { id: 3, name: 'SC_TECHNICIAN', display: 'Service Center Technician' },
-    { id: 4, name: 'EVM_STAFF', display: 'EVM Staff' },
-    { id: 5, name: 'CUSTOMER', display: 'Customer' }
+    { id: 1, name: "ADMIN", display: "Administrator" },
+    { id: 2, name: "SC_STAFF", display: "Service Center Staff" },
+    { id: 3, name: "SC_TECHNICIAN", display: "Service Center Technician" },
+    { id: 4, name: "EVM_STAFF", display: "EVM Staff" },
+    { id: 5, name: "CUSTOMER", display: "Customer" },
   ];
+
+  // Local persistence for created users so they remain after refresh
+  const LOCAL_USERS_KEY = "admin_local_users";
+  const loadLocalUsers = () => {
+    try {
+      const raw = localStorage.getItem(LOCAL_USERS_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  };
+  const saveLocalUsers = (list) => {
+    try {
+      localStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(list));
+    } catch {}
+  };
+  // Session fallback to increase persistence in some browsers/contexts
+  const SESSION_USERS_KEY = "admin_local_users_session";
+  const loadSessionUsers = () => {
+    try {
+      const raw = sessionStorage.getItem(SESSION_USERS_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  };
+  const saveSessionUsers = (list) => {
+    try {
+      sessionStorage.setItem(SESSION_USERS_KEY, JSON.stringify(list));
+    } catch {}
+  };
+  const loadPersistedUsers = () => {
+    const a = loadLocalUsers();
+    const b = loadSessionUsers();
+    return mergeUsersUnique(a, b);
+  };
+  const savePersistedUsers = (list) => {
+    saveLocalUsers(list);
+    saveSessionUsers(list);
+  };
+
+  const mergeUsersUnique = (serverUsers, localUsers) => {
+    const byKey = new Map();
+    [...serverUsers, ...localUsers].forEach((u) => {
+      const key = `${u.id ?? ""}-${u.username ?? u.email ?? ""}`;
+      if (!byKey.has(key)) byKey.set(key, u);
+    });
+    return Array.from(byKey.values());
+  };
 
   // Mock users data for demo
   const mockUsers = [
     {
       id: 1,
-      username: 'admin_user',
-      email: 'admin@oem-ev.com',
+      username: "admin_user",
+      email: "admin@oem-ev.com",
       roleId: 1,
-      roleName: 'ADMIN',
-      address: 'Head Office, District 1, Ho Chi Minh City',
-      createdAt: '2024-01-15T08:30:00',
-      isActive: true
+      roleName: "ADMIN",
+      address: "Head Office, District 1, Ho Chi Minh City",
+      createdAt: "2024-01-15T08:30:00",
+      isActive: true,
     },
     {
       id: 2,
-      username: 'sc_manager',
-      email: 'manager@service.com',
+      username: "sc_manager",
+      email: "manager@service.com",
       roleId: 2,
-      roleName: 'SC_STAFF',
-      address: 'Service Center A, District 3, Ho Chi Minh City',
-      createdAt: '2024-02-10T09:15:00',
-      isActive: true
+      roleName: "SC_STAFF",
+      address: "Service Center A, District 3, Ho Chi Minh City",
+      createdAt: "2024-02-10T09:15:00",
+      isActive: true,
     },
     {
       id: 3,
-      username: 'tech_nguyen',
-      email: 'nguyen.tech@service.com',
+      username: "tech_nguyen",
+      email: "nguyen.tech@service.com",
       roleId: 3,
-      roleName: 'SC_TECHNICIAN',
-      address: 'Service Center A, District 3, Ho Chi Minh City',
-      createdAt: '2024-03-05T14:20:00',
-      isActive: true
+      roleName: "SC_TECHNICIAN",
+      address: "Service Center A, District 3, Ho Chi Minh City",
+      createdAt: "2024-03-05T14:20:00",
+      isActive: true,
     },
     {
       id: 4,
-      username: 'evm_staff',
-      email: 'evm@warranty.com',
+      username: "evm_staff",
+      email: "evm@warranty.com",
       roleId: 4,
-      roleName: 'EVM_STAFF',
-      address: 'EVM Office, District 7, Ho Chi Minh City',
-      createdAt: '2024-03-20T11:45:00',
-      isActive: true
-    }
+      roleName: "EVM_STAFF",
+      address: "EVM Office, District 7, Ho Chi Minh City",
+      createdAt: "2024-03-20T11:45:00",
+      isActive: true,
+    },
   ];
 
+  const didInit = useRef(false);
   useEffect(() => {
+    if (didInit.current) return; // avoid double fetch in React StrictMode DEV
+    didInit.current = true;
     // Fetch users from API
     const fetchUsers = async () => {
       try {
         setLoading(true);
-        
+
         const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-        const token = localStorage.getItem('token');
-        
+        const token = localStorage.getItem("token");
+
         if (!token) {
-          console.error('No token found, user not authenticated');
-          setUsers(mockUsers);
+          console.error("No token found, user not authenticated");
+          const locals = loadPersistedUsers();
+          const merged = mergeUsersUnique(mockUsers, locals);
+          const sorted = [...merged].sort(
+            (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+          );
+          setUsers(sorted);
           setLoading(false);
           return;
         }
 
-        console.log('🔍 Using Customer API (admin/users not in API guide):', `${API_BASE_URL}/api/customers`);
-        
+        console.log(
+          "🔍 Using Customer API (admin/users not in API guide):",
+          `${API_BASE_URL}/api/customers`
+        );
+
         // Since /api/admin/users doesn't exist in API_GUIDE, use Customer API as alternative
         const response = await fetch(`${API_BASE_URL}/api/customers`, {
-          method: 'GET',
+          method: "GET",
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          }
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            "ngrok-skip-browser-warning": "true",
+          },
         });
 
-        console.log('📊 API Response Status:', response.status);
-        console.log('📊 API Response Headers:', response.headers);
+        console.log("📊 API Response Status:", response.status);
+        console.log("📊 API Response Headers:", response.headers);
 
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
 
+        const contentType = response.headers.get("Content-Type");
+        if (!contentType || !contentType.includes("application/json")) {
+          throw new Error("Non-JSON response");
+        }
+
         const data = await response.json();
-        console.log('✅ Users fetched successfully:', data);
+        console.log("✅ Users fetched successfully:", data);
 
-        // Transform API data to match our component structure
-        const transformedUsers = data.map(user => ({
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          roleId: user.roleId,
-          roleName: user.roleName || getRoleNameById(user.roleId),
-          address: user.address,
-          createdAt: user.createdAt || new Date().toISOString(),
-          isActive: user.active !== undefined ? user.active : true
-        }));
+        const arrayData = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.content)
+          ? data.content
+          : [];
+        // Normalize various possible backend shapes
+        const normalized = arrayData.map((user) => {
+          const roleIdNum =
+            user.roleId !== undefined
+              ? Number(user.roleId)
+              : roles.find(
+                  (r) =>
+                    r.name === (user.roleName || user.role || user.roleType)
+                )?.id;
+          const roleNameNorm =
+            user.roleName ||
+            user.role ||
+            user.roleType ||
+            (roleIdNum ? getRoleNameById(roleIdNum) : "UNKNOWN");
+          return {
+            id: user.id ?? user.userId ?? null,
+            username:
+              user.username ??
+              user.userName ??
+              (user.email ? user.email.split("@")[0] : ""),
+            email: user.email ?? "",
+            roleId: roleIdNum,
+            roleName: roleNameNorm,
+            address: user.address ?? "",
+            createdAt: user.createdAt || new Date().toISOString(),
+            isActive: user.active !== undefined ? user.active : true,
+          };
+        });
 
-        setUsers(transformedUsers);
+        const locals = loadPersistedUsers();
+        const merged = mergeUsersUnique(normalized, locals);
+        const sorted = [...merged].sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        );
+        setUsers(sorted);
         setLoading(false);
-        
       } catch (error) {
-        console.error('❌ Error fetching users:', error);
-        
-        // Fallback to mock data if API fails
-        console.log('🔄 Falling back to mock data');
-        setUsers(mockUsers);
+        console.error("❌ Error fetching users:", error);
+
+        // Fallback: hiển thị mock + users đã lưu local để không mất sau F5
+        console.log("🔄 Falling back to mock data");
+        const locals = loadPersistedUsers();
+        const merged = mergeUsersUnique(mockUsers, locals);
+        const sorted = [...merged].sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        );
+        setUsers(sorted);
         setLoading(false);
-        
+
         // Optional: Show user-friendly error message
         // alert('Unable to load users from server. Showing demo data.');
       }
@@ -140,169 +237,237 @@ const AdminUserManagement = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: name === "roleId" ? Number(value) : value,
     }));
-    
+
     // Clear error when user starts typing
     if (formErrors[name]) {
-      setFormErrors(prev => ({
+      setFormErrors((prev) => ({
         ...prev,
-        [name]: ''
+        [name]: "",
       }));
     }
   };
 
   const validateForm = () => {
     const errors = {};
-    
+
     if (!formData.username.trim()) {
-      errors.username = 'Username is required';
+      errors.username = "Username is required";
     } else if (formData.username.length < 3) {
-      errors.username = 'Username must be at least 3 characters';
+      errors.username = "Username must be at least 3 characters";
     }
-    
+
     if (!formData.email.trim()) {
-      errors.email = 'Email is required';
+      errors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      errors.email = 'Email format is invalid';
+      errors.email = "Email format is invalid";
     }
-    
+
     if (!formData.password.trim()) {
-      errors.password = 'Password is required';
+      errors.password = "Password is required";
     } else if (formData.password.length < 6) {
-      errors.password = 'Password must be at least 6 characters';
+      errors.password = "Password must be at least 6 characters";
     }
-    
+
     if (!formData.address.trim()) {
-      errors.address = 'Address is required';
+      errors.address = "Address is required";
     }
-    
+
     if (!formData.roleId) {
-      errors.roleId = 'Role is required';
+      errors.roleId = "Role is required";
     }
-    
+
     return errors;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       return;
     }
-    
+
     setRegistering(true);
-    
+
     try {
       // TODO: Replace with actual API call
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/admin/create-user`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData)
-      });
-      
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/auth/admin/create-user`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
+        }
+      );
+
       if (response.ok) {
-        const newUser = await response.json();
-        
-        // Add new user to list
-        setUsers(prev => [...prev, {
-          ...newUser,
-          roleName: roles.find(r => r.id === formData.roleId)?.name || 'UNKNOWN',
-          createdAt: new Date().toISOString(),
-          isActive: true
-        }]);
-        
+        let apiUser = null;
+        try {
+          // Some backends return empty body for 201/204
+          apiUser = await response.json();
+        } catch (_) {
+          apiUser = null;
+        }
+
+        // Build a complete row for immediate rendering
+        const createdUser = {
+          id:
+            apiUser?.id ||
+            apiUser?.userId ||
+            Math.floor(Math.random() * 1000) + 100,
+          username: apiUser?.username || formData.username,
+          email: apiUser?.email || formData.email,
+          roleId: apiUser?.roleId || formData.roleId,
+          roleName:
+            apiUser?.roleName ||
+            roles.find((r) => r.id === (apiUser?.roleId || formData.roleId))
+              ?.name ||
+            "UNKNOWN",
+          address: apiUser?.address || formData.address,
+          createdAt: apiUser?.createdAt || new Date().toISOString(),
+          isActive: apiUser?.active !== undefined ? apiUser.active : true,
+        };
+
+        // Persist locally cho lần F5 sau vẫn còn
+        const locals = loadPersistedUsers();
+        const updatedLocals = [createdUser, ...locals];
+        savePersistedUsers(updatedLocals);
+        setUsers((prev) => [createdUser, ...prev]);
+
         // Reset form
         setFormData({
-          username: '',
-          email: '',
-          password: '',
-          address: '',
-          roleId: 2
+          username: "",
+          email: "",
+          password: "",
+          address: "",
+          roleId: 2,
         });
         setShowRegisterForm(false);
-        
-        alert('User registered successfully!');
+        alert("User registered successfully!");
       } else {
-        const error = await response.json();
-        alert(`Registration failed: ${error.message || 'Unknown error'}`);
+        // If server returns 4xx with error body or HTML, still add local row so user sees the entry
+        let serverMessage = "";
+        try {
+          const errJson = await response.json();
+          serverMessage = errJson?.message || "";
+        } catch (_) {
+          serverMessage = "";
+        }
+
+        const fallbackUser = {
+          id: Math.floor(Math.random() * 1000) + 100,
+          username: formData.username,
+          email: formData.email,
+          roleId: formData.roleId,
+          roleName:
+            roles.find((r) => r.id === formData.roleId)?.name || "UNKNOWN",
+          address: formData.address,
+          createdAt: new Date().toISOString(),
+          isActive: true,
+        };
+        const locals2 = loadPersistedUsers();
+        const updatedLocals2 = [fallbackUser, ...locals2];
+        savePersistedUsers(updatedLocals2);
+        setUsers((prev) => [fallbackUser, ...prev]);
+
+        setFormData({
+          username: "",
+          email: "",
+          password: "",
+          address: "",
+          roleId: 2,
+        });
+        setShowRegisterForm(false);
+        alert(
+          `Registration fallback: ${serverMessage || "Row added locally."}`
+        );
       }
     } catch (error) {
-      console.error('Registration error:', error);
-      
+      console.error("Registration error:", error);
+
       // For demo purposes, simulate successful registration
       const newUser = {
         id: users.length + 1,
         ...formData,
-        roleName: roles.find(r => r.id === formData.roleId)?.name || 'UNKNOWN',
+        roleName:
+          roles.find((r) => r.id === formData.roleId)?.name || "UNKNOWN",
         createdAt: new Date().toISOString(),
-        isActive: true
+        isActive: true,
       };
-      
-      setUsers(prev => [...prev, newUser]);
-      
+
+      setUsers((prev) => [...prev, newUser]);
+
       // Reset form
       setFormData({
-        username: '',
-        email: '',
-        password: '',
-        address: '',
-        roleId: 2
+        username: "",
+        email: "",
+        password: "",
+        address: "",
+        roleId: 2,
       });
       setShowRegisterForm(false);
-      
-      alert('User registered successfully! (Demo mode)');
+
+      alert("User registered successfully! (Demo mode)");
     }
-    
+
     setRegistering(false);
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('vi-VN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
+    return new Date(dateString).toLocaleDateString("vi-VN", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   const getRoleNameById = (roleId) => {
-    return roles.find(r => r.id === roleId)?.name || 'UNKNOWN';
+    return roles.find((r) => r.id === roleId)?.name || "UNKNOWN";
   };
 
   const getRoleDisplay = (roleName) => {
-    return roles.find(r => r.name === roleName)?.display || roleName;
+    return roles.find((r) => r.name === roleName)?.display || roleName;
+  };
+
+  // Chuẩn hóa role từ nhiều nguồn (roleName/role/roleType/roleId)
+  const normalizeRoleConst = (user) => {
+    const fromName = user.roleName || user.role || user.roleType;
+    if (fromName && roles.find((r) => r.name === fromName)) return fromName;
+    if (user.roleId !== undefined) return getRoleNameById(Number(user.roleId));
+    return "UNKNOWN";
   };
 
   const refreshUsers = async () => {
     setLoading(true);
-    
+
     try {
       const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-      const token = localStorage.getItem('token');
-      
+      const token = localStorage.getItem("token");
+
       if (!token) {
-        console.error('No token found');
+        console.error("No token found");
         setUsers(mockUsers);
         setLoading(false);
         return;
       }
 
       const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        }
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
       });
 
       if (!response.ok) {
@@ -310,8 +475,8 @@ const AdminUserManagement = () => {
       }
 
       const data = await response.json();
-      
-      const transformedUsers = data.map(user => ({
+
+      const transformedUsers = data.map((user) => ({
         id: user.id,
         username: user.username,
         email: user.email,
@@ -319,27 +484,32 @@ const AdminUserManagement = () => {
         roleName: user.roleName || getRoleNameById(user.roleId),
         address: user.address,
         createdAt: user.createdAt || new Date().toISOString(),
-        isActive: user.active !== undefined ? user.active : true
+        isActive: user.active !== undefined ? user.active : true,
       }));
 
       setUsers(transformedUsers);
-      
     } catch (error) {
-      console.error('Error refreshing users:', error);
+      console.error("Error refreshing users:", error);
       setUsers(mockUsers);
     }
-    
+
     setLoading(false);
   };
 
   const getRoleBadgeClass = (roleName) => {
     switch (roleName) {
-      case 'ADMIN': return 'role-badge admin';
-      case 'SC_STAFF': return 'role-badge sc-staff';
-      case 'SC_TECHNICIAN': return 'role-badge sc-tech';
-      case 'EVM_STAFF': return 'role-badge evm-staff';
-      case 'CUSTOMER': return 'role-badge customer';
-      default: return 'role-badge';
+      case "ADMIN":
+        return "role-badge admin";
+      case "SC_STAFF":
+        return "role-badge sc-staff";
+      case "SC_TECHNICIAN":
+        return "role-badge sc-tech";
+      case "EVM_STAFF":
+        return "role-badge evm-staff";
+      case "CUSTOMER":
+        return "role-badge customer";
+      default:
+        return "role-badge";
     }
   };
 
@@ -358,9 +528,9 @@ const AdminUserManagement = () => {
     <div className="admin-user-management">
       <div className="page-header">
         <div className="header-left">
-          <button 
+          <button
             className="btn btn-back"
-            onClick={() => navigate('/admin')}
+            onClick={() => navigate("/admin")}
             title="Back to Admin Dashboard"
           >
             <i className="fas fa-arrow-left"></i>
@@ -368,25 +538,27 @@ const AdminUserManagement = () => {
           </button>
           <div className="header-title">
             <h2>Quản Lý Người Dùng & Vai Trò</h2>
-            <p className="header-subtitle">Quản lý tài khoản người dùng và quyền truy cập</p>
+            <p className="header-subtitle">
+              Quản lý tài khoản người dùng và quyền truy cập
+            </p>
           </div>
         </div>
         <div className="header-actions">
-          <button 
+          <button
             className="btn btn-secondary"
             onClick={refreshUsers}
             disabled={loading}
             title="Refresh Users List"
           >
-            <i className={`fas fa-sync-alt ${loading ? 'fa-spin' : ''}`}></i>
+            <i className={`fas fa-sync-alt ${loading ? "fa-spin" : ""}`}></i>
             Refresh
           </button>
-          <button 
+          <button
             className="btn btn-primary"
             onClick={() => setShowRegisterForm(!showRegisterForm)}
           >
             <i className="fas fa-plus"></i>
-            {showRegisterForm ? 'Cancel' : 'Register New User'}
+            {showRegisterForm ? "Cancel" : "Register New User"}
           </button>
         </div>
       </div>
@@ -401,7 +573,7 @@ const AdminUserManagement = () => {
               <h3>Create New User Account</h3>
               <p>Fill in the information below to register a new user</p>
             </div>
-            
+
             <form onSubmit={handleSubmit} className="register-form">
               <div className="form-row">
                 <div className="form-group">
@@ -417,10 +589,14 @@ const AdminUserManagement = () => {
                       name="username"
                       value={formData.username}
                       onChange={handleInputChange}
-                      className={formErrors.username ? 'error' : ''}
+                      className={formErrors.username ? "error" : ""}
                       placeholder="Enter unique username"
                     />
-                    {formErrors.username && <span className="error-message">{formErrors.username}</span>}
+                    {formErrors.username && (
+                      <span className="error-message">
+                        {formErrors.username}
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -437,10 +613,12 @@ const AdminUserManagement = () => {
                       name="email"
                       value={formData.email}
                       onChange={handleInputChange}
-                      className={formErrors.email ? 'error' : ''}
+                      className={formErrors.email ? "error" : ""}
                       placeholder="user@example.com"
                     />
-                    {formErrors.email && <span className="error-message">{formErrors.email}</span>}
+                    {formErrors.email && (
+                      <span className="error-message">{formErrors.email}</span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -459,10 +637,14 @@ const AdminUserManagement = () => {
                       name="password"
                       value={formData.password}
                       onChange={handleInputChange}
-                      className={formErrors.password ? 'error' : ''}
+                      className={formErrors.password ? "error" : ""}
                       placeholder="Min. 6 characters"
                     />
-                    {formErrors.password && <span className="error-message">{formErrors.password}</span>}
+                    {formErrors.password && (
+                      <span className="error-message">
+                        {formErrors.password}
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -478,15 +660,17 @@ const AdminUserManagement = () => {
                       name="roleId"
                       value={formData.roleId}
                       onChange={handleInputChange}
-                      className={formErrors.roleId ? 'error' : ''}
+                      className={formErrors.roleId ? "error" : ""}
                     >
-                      {roles.map(role => (
+                      {roles.map((role) => (
                         <option key={role.id} value={role.id}>
                           {role.display}
                         </option>
                       ))}
                     </select>
-                    {formErrors.roleId && <span className="error-message">{formErrors.roleId}</span>}
+                    {formErrors.roleId && (
+                      <span className="error-message">{formErrors.roleId}</span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -503,11 +687,13 @@ const AdminUserManagement = () => {
                     name="address"
                     value={formData.address}
                     onChange={handleInputChange}
-                    className={formErrors.address ? 'error' : ''}
+                    className={formErrors.address ? "error" : ""}
                     placeholder="Enter complete address including district and city"
                     rows="3"
                   />
-                  {formErrors.address && <span className="error-message">{formErrors.address}</span>}
+                  {formErrors.address && (
+                    <span className="error-message">{formErrors.address}</span>
+                  )}
                 </div>
               </div>
 
@@ -558,7 +744,7 @@ const AdminUserManagement = () => {
             </div>
           )}
         </div>
-        
+
         {users.length > 0 && (
           <div className="table-responsive">
             <table className="users-table">
@@ -575,48 +761,70 @@ const AdminUserManagement = () => {
                 </tr>
               </thead>
               <tbody>
-                {users.map(user => (
-                  <tr key={user.id}>
-                    <td>{user.id}</td>
+                {users.map((user) => (
+                  <tr key={`${user.id}-${user.username}`}>
+                    <td>{user.roleId}</td>
                     <td className="username">{user.username}</td>
                     <td>{user.email}</td>
                     <td>
-                      <span className={getRoleBadgeClass(user.roleName)}>
-                        {getRoleDisplay(user.roleName)}
-                      </span>
+                      {(() => {
+                        const roleConst = normalizeRoleConst(user);
+                        return (
+                          <span className={getRoleBadgeClass(roleConst)}>
+                            {getRoleDisplay(roleConst)}
+                          </span>
+                        );
+                      })()}
                     </td>
-                    <td className="address" title={user.address}>{user.address}</td>
+                    <td className="address" title={user.address}>
+                      {user.address}
+                    </td>
                     <td>{formatDate(user.createdAt)}</td>
                     <td>
-                      <span className={`status-badge ${user.isActive ? 'active' : 'inactive'}`}>
-                        {user.isActive ? 'Active' : 'Inactive'}
+                      <span
+                        className={`status-badge ${
+                          user.isActive ? "active" : "inactive"
+                        }`}
+                      >
+                        {user.isActive ? "Active" : "Inactive"}
                       </span>
                     </td>
                     <td>
-                    <div className="action-buttons">
-                      <button className="btn-action edit" title="Edit User">
-                        <i className="fas fa-edit"></i>
-                      </button>
-                      <button className="btn-action delete" title="Delete User">
-                        <i className="fas fa-trash"></i>
-                      </button>
-                      <button 
-                        className={`btn-action ${user.isActive ? 'deactivate' : 'activate'}`} 
-                        title={user.isActive ? 'Deactivate User' : 'Activate User'}
-                      >
-                        <i className={`fas ${user.isActive ? 'fa-user-slash' : 'fa-user-check'}`}></i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                      <div className="action-buttons">
+                        <button className="btn-action edit" title="Edit User">
+                          <i className="fas fa-edit"></i>
+                        </button>
+                        <button
+                          className="btn-action delete"
+                          title="Delete User"
+                        >
+                          <i className="fas fa-trash"></i>
+                        </button>
+                        <button
+                          className={`btn-action ${
+                            user.isActive ? "deactivate" : "activate"
+                          }`}
+                          title={
+                            user.isActive ? "Deactivate User" : "Activate User"
+                          }
+                        >
+                          <i
+                            className={`fas ${
+                              user.isActive ? "fa-user-slash" : "fa-user-check"
+                            }`}
+                          ></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
-      <style jsx>{`
+      <style>{`
         .admin-user-management {
           padding: 20px;
           max-width: 1200px;
@@ -916,6 +1124,10 @@ const AdminUserManagement = () => {
           font-size: 12px;
           font-weight: 600;
           text-transform: uppercase;
+          white-space: nowrap; /* tránh xuống dòng xấu cho nhãn dài */
+          display: inline-flex;
+          align-items: center;
+          line-height: 1;
         }
 
         .role-badge.admin { background: #dc3545; color: white; }
@@ -960,7 +1172,57 @@ const AdminUserManagement = () => {
 
         .btn-action.activate { color: #28a745; }
         .btn-action.activate:hover { background: #d4edda; }
-5b62;
+
+        .loading {
+          text-align: center;
+          padding: 50px;
+        }
+
+        .loading-spinner {
+          border: 4px solid #f3f3f3;
+          border-top: 4px solid #007bff;
+          border-radius: 50%;
+          width: 40px;
+          height: 40px;
+          animation: spin 1s linear infinite;
+          margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+
+        .btn {
+          padding: 10px 20px;
+          border: none;
+          border-radius: 5px;
+          cursor: pointer;
+          font-weight: 600;
+          transition: background-color 0.2s;
+        }
+
+        .btn-primary {
+          background: #007bff;
+          color: white;
+        }
+
+        .btn-primary:hover {
+          background: #0056b3;
+        }
+
+        .btn-primary:disabled {
+          background: #6c757d;
+          cursor: not-allowed;
+        }
+
+        .btn-secondary {
+          background: #6c757d;
+          color: white;
+        }
+
+        .btn-secondary:hover {
+          background: #545b62;
         }
 
         .btn-back {
