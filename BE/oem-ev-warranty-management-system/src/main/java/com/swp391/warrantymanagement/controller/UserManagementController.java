@@ -45,11 +45,11 @@ public class UserManagementController {
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String role) {
 
-        logger.info("\n========================================");
+        logger.info("========================================");
         logger.info("GET ALL USERS REQUEST");
         logger.info("Page: {}, Size: {}", page, size);
         logger.info("Search: {}, Role: {}", search, role);
-        logger.info("========================================\n");
+        logger.info("========================================");
 
         try {
             Page<User> userPage = userService.getAllUsers(PageRequest.of(page, size), search, role);
@@ -66,11 +66,11 @@ public class UserManagementController {
             response.put("first", userPage.isFirst());
             response.put("last", userPage.isLast());
 
-            logger.info("Get all users successful - Total: {}\n", userPage.getTotalElements());
+            logger.info("Get all users successful - Total: {}", userPage.getTotalElements());
             return ResponseEntity.ok(response);
 
         } catch (RuntimeException e) {
-            logger.error("Get all users failed: {}\n", e.getMessage());
+            logger.error("Get all users failed: {}", e.getMessage());
             return ResponseEntity.badRequest()
                 .body(Map.of("success", false, "message", e.getMessage()));
         }
@@ -82,17 +82,17 @@ public class UserManagementController {
      */
     @GetMapping("/{userId}")
     public ResponseEntity<UserResponseDTO> getUserById(@PathVariable Long userId) {
-        logger.info("\n>>> GET USER BY ID: {}\n", userId);
+        logger.info(">>> GET USER BY ID: {}", userId);
 
         try {
             User user = userService.getUserById(userId);
             UserResponseDTO response = UserMapper.toResponseDTO(user);
 
-            logger.info("User found: {}\n", userId);
+            logger.info("User found: {}", userId);
             return ResponseEntity.ok(response);
 
         } catch (RuntimeException e) {
-            logger.error("Get user by id failed: {} - Error: {}\n", userId, e.getMessage());
+            logger.error("Get user by id failed: {} - Error: {}", userId, e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
     }
@@ -107,7 +107,7 @@ public class UserManagementController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
-        logger.info("\n>>> SEARCH USERS: username={}, page={}, size={}\n", username, page, size);
+        logger.info(">>> SEARCH USERS: username={}, page={}, size={}", username, page, size);
 
         try {
             Page<User> userPage = userService.searchByUsername(username, PageRequest.of(page, size));
@@ -124,11 +124,11 @@ public class UserManagementController {
             response.put("first", userPage.isFirst());
             response.put("last", userPage.isLast());
 
-            logger.info("Search successful - Found: {} users\n", userPage.getTotalElements());
+            logger.info("Search successful - Found: {} users", userPage.getTotalElements());
             return ResponseEntity.ok(response);
 
         } catch (RuntimeException e) {
-            logger.error("Search failed: {}\n", e.getMessage());
+            logger.error("Search failed: {}", e.getMessage());
             return ResponseEntity.badRequest()
                 .body(Map.of("success", false, "message", e.getMessage()));
         }
@@ -144,7 +144,7 @@ public class UserManagementController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
-        logger.info("\n>>> GET USERS BY ROLE: {}, page={}, size={}\n", roleName, page, size);
+        logger.info(">>> GET USERS BY ROLE: {}, page={}, size={}", roleName, page, size);
 
         try {
             Page<User> userPage = userService.getUsersByRole(roleName, PageRequest.of(page, size));
@@ -161,11 +161,11 @@ public class UserManagementController {
             response.put("first", userPage.isFirst());
             response.put("last", userPage.isLast());
 
-            logger.info("Get by role successful - Found: {} users\n", userPage.getTotalElements());
+            logger.info("Get by role successful - Found: {} users", userPage.getTotalElements());
             return ResponseEntity.ok(response);
 
         } catch (RuntimeException e) {
-            logger.error("Get by role failed: {}\n", e.getMessage());
+            logger.error("Get by role failed: {}", e.getMessage());
             return ResponseEntity.badRequest()
                 .body(Map.of("success", false, "message", e.getMessage()));
         }
@@ -180,11 +180,11 @@ public class UserManagementController {
             @PathVariable Long userId,
             @Valid @RequestBody Map<String, Object> updateRequest) {
 
-        logger.info("\n========================================");
+        logger.info("========================================");
         logger.info("UPDATE USER REQUEST");
         logger.info("User ID: {}", userId);
         logger.info("Data: {}", updateRequest);
-        logger.info("========================================\n");
+        logger.info("========================================");
 
         try {
             User updatedUser = userService.updateUser(userId, updateRequest);
@@ -196,11 +196,11 @@ public class UserManagementController {
             response.put("updatedFields", updateRequest.keySet());
             response.put("user", UserMapper.toResponseDTO(updatedUser)); // Use DTO
 
-            logger.info("Update user successful: {}\n", userId);
+            logger.info("Update user successful: {}", userId);
             return ResponseEntity.ok(response);
 
         } catch (RuntimeException e) {
-            logger.error("Update user failed: {} - Error: {}\n", userId, e.getMessage());
+            logger.error("Update user failed: {} - Error: {}", userId, e.getMessage());
             return ResponseEntity.badRequest()
                 .body(Map.of("success", false, "message", e.getMessage()));
         }
@@ -215,7 +215,7 @@ public class UserManagementController {
             @PathVariable Long userId,
             @RequestParam Long newRoleId) {
 
-        logger.info("\n>>> UPDATE USER ROLE: userId={}, newRoleId={}\n", userId, newRoleId);
+        logger.info(">>> UPDATE USER ROLE: userId={}, newRoleId={}", userId, newRoleId);
 
         try {
             User updatedUser = userService.updateUserRole(userId, newRoleId);
@@ -228,11 +228,11 @@ public class UserManagementController {
             response.put("newRoleName", updatedUser.getRole().getRoleName());
             response.put("user", UserMapper.toResponseDTO(updatedUser)); // ✅ Use DTO
 
-            logger.info("Update role successful: {} → {}\n", userId, updatedUser.getRole().getRoleName());
+            logger.info("Update role successful: {} → {}", userId, updatedUser.getRole().getRoleName());
             return ResponseEntity.ok(response);
 
         } catch (RuntimeException e) {
-            logger.error("Update role failed: {}\n", e.getMessage());
+            logger.error("Update role failed: {}", e.getMessage());
             return ResponseEntity.badRequest()
                 .body(Map.of("success", false, "message", e.getMessage()));
         }
@@ -244,7 +244,7 @@ public class UserManagementController {
      */
     @DeleteMapping("/{userId}")
     public ResponseEntity<Map<String, Object>> deleteUser(@PathVariable Long userId) {
-        logger.info("\nDELETE USER REQUEST: {}\n", userId);
+        logger.info("DELETE USER REQUEST: {}", userId);
 
         try {
             userService.deleteUser(userId);
@@ -254,11 +254,11 @@ public class UserManagementController {
             response.put("message", "User deleted successfully");
             response.put("userId", userId);
 
-            logger.info("Delete user successful: {}\n", userId);
+            logger.info("Delete user successful: {}", userId);
             return ResponseEntity.ok(response);
 
         } catch (RuntimeException e) {
-            logger.error("Delete user failed: {} - Error: {}\n", userId, e.getMessage());
+            logger.error("Delete user failed: {} - Error: {}", userId, e.getMessage());
             return ResponseEntity.badRequest()
                 .body(Map.of("success", false, "message", e.getMessage()));
         }
@@ -273,7 +273,7 @@ public class UserManagementController {
             @PathVariable Long userId,
             @RequestParam(required = false) String newPassword) {
 
-        logger.info("\nRESET PASSWORD REQUEST: userId={}\n", userId);
+        logger.info("RESET PASSWORD REQUEST: userId={}", userId);
 
         try {
             String resetPassword = userService.resetUserPassword(userId, newPassword);
@@ -289,11 +289,11 @@ public class UserManagementController {
                 response.put("note", "Please share this password securely with the user");
             }
 
-            logger.info("Reset password successful: {}\n", userId);
+            logger.info("Reset password successful: {}", userId);
             return ResponseEntity.ok(response);
 
         } catch (RuntimeException e) {
-            logger.error("Reset password failed: {}\n", e.getMessage());
+            logger.error("Reset password failed: {}", e.getMessage());
             return ResponseEntity.badRequest()
                 .body(Map.of("success", false, "message", e.getMessage()));
         }
@@ -305,16 +305,16 @@ public class UserManagementController {
      */
     @GetMapping("/statistics")
     public ResponseEntity<Map<String, Object>> getUserStatistics() {
-        logger.info("\nGET USER STATISTICS REQUEST\n");
+        logger.info("GET USER STATISTICS REQUEST");
 
         try {
             Map<String, Object> statistics = userService.getUserStatistics();
 
-            logger.info("Get statistics successful\n");
+            logger.info("Get statistics successful");
             return ResponseEntity.ok(statistics);
 
         } catch (RuntimeException e) {
-            logger.error("Get statistics failed: {}\n", e.getMessage());
+            logger.error("Get statistics failed: {}", e.getMessage());
             return ResponseEntity.badRequest()
                 .body(Map.of("success", false, "message", e.getMessage()));
         }
