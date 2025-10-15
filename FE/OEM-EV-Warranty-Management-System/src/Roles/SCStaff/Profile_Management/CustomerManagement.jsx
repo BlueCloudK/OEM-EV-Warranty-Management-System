@@ -1,43 +1,68 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+// ===========================================================================================
+// PHẦN 1: IMPORT CÁC THƯ VIỆN VÀ COMPONENTS CẦN THIẾT
+// ===========================================================================================
+
+import React, { useState, useEffect } from 'react'; // React hooks để quản lý state và lifecycle
+import { useNavigate } from 'react-router-dom'; // Hook để điều hướng giữa các trang
 import { 
-  FaUsers, 
-  FaPlus, 
-  FaEdit, 
-  FaEye, 
-  FaTrash, 
-  FaSearch,
-  FaUserPlus,
-  FaArrowLeft,
-  FaPhone,
-  FaEnvelope,
-  FaMapMarkerAlt,
-  FaCalendar,
-  FaSpinner
+  FaUsers,        // Icon nhóm người (cho tiêu đề)
+  FaPlus,         // Icon dấu cộng (thêm mới)
+  FaEdit,         // Icon bút chì (chỉnh sửa)
+  FaEye,          // Icon mắt (xem chi tiết)
+  FaTrash,        // Icon thùng rác (xóa)
+  FaSearch,       // Icon kính lúp (tìm kiếm)
+  FaUserPlus,     // Icon thêm người dùng
+  FaArrowLeft,    // Icon mũi tên quay lại
+  FaPhone,        // Icon điện thoại
+  FaEnvelope,     // Icon thư (email)
+  FaMapMarkerAlt, // Icon vị trí (địa chỉ)
+  FaCalendar,     // Icon lịch (ngày tạo)
+  FaSpinner       // Icon loading xoay tròn
 } from 'react-icons/fa';
 
+// ===========================================================================================
+// PHẦN 2: COMPONENT CHÍNH VÀ KHAI BÁO CÁC STATE
+// ===========================================================================================
+
 const CustomerManagement = () => {
+  // Hook để điều hướng trang
   const navigate = useNavigate();
-  const [customers, setCustomers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchType, setSearchType] = useState('name'); // name, email, phone
-  const [currentPage, setCurrentPage] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
-  const [totalPages, setTotalPages] = useState(0);
-  const [totalElements, setTotalElements] = useState(0);
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  
+  // ===== CÁC STATE QUẢN LÝ DỮ LIỆU KHÁCH HÀNG =====
+  const [customers, setCustomers] = useState([]);              // Danh sách khách hàng
+  const [loading, setLoading] = useState(true);                // Trạng thái loading khi fetch data
+  
+  // ===== CÁC STATE QUẢN LÝ TÌM KIẾM =====
+  const [searchTerm, setSearchTerm] = useState('');            // Từ khóa tìm kiếm
+  const [searchType, setSearchType] = useState('name');        // Loại tìm kiếm: name, email, phone
+  
+  // ===== CÁC STATE QUẢN LÝ PHÂN TRANG =====
+  const [currentPage, setCurrentPage] = useState(0);          // Trang hiện tại (bắt đầu từ 0)
+  const [pageSize, setPageSize] = useState(10);               // Số item mỗi trang
+  const [totalPages, setTotalPages] = useState(0);            // Tổng số trang
+  const [totalElements, setTotalElements] = useState(0);      // Tổng số khách hàng
+  
+  // ===== CÁC STATE QUẢN LÝ FORM =====
+  const [showCreateForm, setShowCreateForm] = useState(false); // Hiển thị form tạo/sửa
+  const [selectedCustomer, setSelectedCustomer] = useState(null); // Khách hàng được chọn để sửa
+  
+  // State chứa dữ liệu form
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    address: '',
-    userId: ''
+    name: '',     // Tên khách hàng
+    email: '',    // Email khách hàng
+    phone: '',    // Số điện thoại
+    address: '',  // Địa chỉ
+    userId: ''    // ID người dùng liên kết
   });
+  
+  // State chứa lỗi validation
   const [formErrors, setFormErrors] = useState({});
 
-  // Mock data for demo
+  // ===========================================================================================
+  // PHẦN 3: DỮ LIỆU MOCK - DỮ LIỆU MẪU CHO DEMO
+  // ===========================================================================================
+  
+  // Dữ liệu khách hàng mẫu để test khi API không hoạt động
   const mockCustomers = [
     {
       customerId: "123e4567-e89b-12d3-a456-426614174000",
@@ -71,18 +96,28 @@ const CustomerManagement = () => {
     }
   ];
 
-  // Fetch customers from API
+  // ===========================================================================================
+  // PHẦN 4: USEEFFECT - TẢI DỮ LIỆU KHI COMPONENT MOUNT VÀ KHI THAY ĐỔI TRANG
+  // ===========================================================================================
+  
+  // Gọi API lấy danh sách khách hàng khi component mount hoặc khi thay đổi trang/pageSize
   useEffect(() => {
     fetchCustomers();
-  }, [currentPage, pageSize]);
+  }, [currentPage, pageSize]); // Dependencies: chạy lại khi currentPage hoặc pageSize thay đổi
 
+  // ===========================================================================================
+  // PHẦN 5: HÀM FETCH CUSTOMERS - LẤY DANH SÁCH KHÁCH HÀNG TỪ API
+  // ===========================================================================================
+  
   const fetchCustomers = async () => {
     try {
-      setLoading(true);
-      const token = localStorage.getItem('token');
+      setLoading(true); // Bật trạng thái loading
+      const token = localStorage.getItem('token'); // Lấy token xác thực
       
+      // ===== KIỂM TRA TOKEN =====
       if (!token) {
         console.error('No token found');
+        // Fallback: sử dụng dữ liệu mock khi không có token
         setCustomers(mockCustomers);
         setTotalElements(mockCustomers.length);
         setTotalPages(1);
@@ -90,9 +125,11 @@ const CustomerManagement = () => {
         return;
       }
 
+      // ===== XÂY DỰNG URL API DỰA TRÊN LOẠI TÌM KIẾM =====
       const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
       let url = `${API_BASE_URL}/api/customers?page=${currentPage}&size=${pageSize}`;
       
+      // Nếu có từ khóa tìm kiếm, thay đổi URL tương ứng
       if (searchTerm) {
         if (searchType === 'name') {
           url = `${API_BASE_URL}/api/customers/search?name=${encodeURIComponent(searchTerm)}&page=${currentPage}&size=${pageSize}`;
@@ -105,68 +142,86 @@ const CustomerManagement = () => {
 
       console.log('🔍 Fetching customers from:', url);
 
+      // ===== GỬI REQUEST TỚI API =====
       const response = await fetch(url, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${token}`, // Thêm token để xác thực
           'Content-Type': 'application/json'
         }
       });
 
+      // ===== XỬ LÝ RESPONSE THÀNH CÔNG =====
       if (response.ok) {
         const data = await response.json();
         console.log('✅ Customers fetched:', data);
         
+        // Xử lý dữ liệu response khác nhau cho từng loại tìm kiếm
         if (searchType === 'email' || searchType === 'phone') {
-          // Single customer response
+          // Response trả về 1 khách hàng duy nhất (search by email/phone)
           setCustomers([data]);
           setTotalElements(1);
           setTotalPages(1);
         } else {
-          // Paginated response
+          // Response trả về dữ liệu phân trang (search by name hoặc get all)
           setCustomers(data.content || []);
           setTotalElements(data.totalElements || 0);
           setTotalPages(data.totalPages || 1);
         }
       } else {
+        // ===== XỬ LÝ KHI API TRẢ VỀ LỖI =====
         console.error('Failed to fetch customers:', response.status);
-        // Use mock data as fallback
+        // Fallback: sử dụng dữ liệu mock
         setCustomers(mockCustomers);
         setTotalElements(mockCustomers.length);
         setTotalPages(1);
       }
     } catch (error) {
+      // ===== XỬ LÝ LỖI NETWORK/CONNECTION =====
       console.error('Error fetching customers:', error);
-      // Use mock data as fallback
+      // Fallback: sử dụng dữ liệu mock
       setCustomers(mockCustomers);
       setTotalElements(mockCustomers.length);
       setTotalPages(1);
     } finally {
+      // ===== LUÔN TẮT LOADING SAU KHI XONG =====
       setLoading(false);
     }
   };
 
+  // ===========================================================================================
+  // PHẦN 6: CÁC HÀM XỬ LÝ TÌM KIẾM
+  // ===========================================================================================
+  
+  // Thực hiện tìm kiếm (reset về trang đầu và gọi lại API)
   const handleSearch = () => {
-    setCurrentPage(0);
-    fetchCustomers();
+    setCurrentPage(0);  // Reset về trang đầu tiên
+    fetchCustomers();   // Gọi lại API với từ khóa tìm kiếm
   };
 
+  // Xóa từ khóa tìm kiếm và load lại toàn bộ dữ liệu
   const clearSearch = () => {
-    setSearchTerm('');
-    setCurrentPage(0);
-    fetchCustomers();
+    setSearchTerm('');    // Xóa từ khóa
+    setCurrentPage(0);    // Reset về trang đầu
+    fetchCustomers();     // Load lại toàn bộ dữ liệu
   };
 
+  // ===========================================================================================
+  // PHẦN 7: HÀM XỬ LÝ TẠO KHÁCH HÀNG MỚI
+  // ===========================================================================================
+  
   const handleCreateCustomer = async (e) => {
-    e.preventDefault();
+    e.preventDefault(); // Ngăn form reload trang
     
+    // ===== BƯỚC 1: VALIDATE DỮ LIỆU =====
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
-      return;
+      return; // Dừng lại nếu có lỗi validation
     }
 
     try {
+      // ===== BƯỚC 2: CHUẨN BỊ VÀ GỬI REQUEST =====
       const token = localStorage.getItem('token');
       const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -176,60 +231,77 @@ const CustomerManagement = () => {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(formData) // Gửi dữ liệu form dưới dạng JSON
       });
 
+      // ===== BƯỚC 3: XỬ LÝ RESPONSE THÀNH CÔNG =====
       if (response.ok) {
         const newCustomer = await response.json();
         console.log('✅ Customer created:', newCustomer);
         
-        // Add to local state
+        // Thêm khách hàng mới vào đầu danh sách (hiển thị ngay)
         setCustomers(prev => [newCustomer, ...prev]);
-        setTotalElements(prev => prev + 1);
+        setTotalElements(prev => prev + 1); // Tăng tổng số khách hàng
         
-        // Reset form
+        // Reset form sau khi tạo thành công
         setFormData({ name: '', email: '', phone: '', address: '', userId: '' });
-        setShowCreateForm(false);
+        setShowCreateForm(false); // Đóng form
         
         alert('Khách hàng đã được tạo thành công!');
       } else {
+        // ===== BƯỚC 4: XỬ LÝ LỖI TỪ API =====
         const error = await response.json();
         alert(`Tạo khách hàng thất bại: ${error.message || 'Unknown error'}`);
       }
     } catch (error) {
+      // ===== BƯỚC 5: XỬ LÝ LỖI NETWORK =====
       console.error('Error creating customer:', error);
       alert('Lỗi khi tạo khách hàng. Vui lòng thử lại.');
     }
   };
 
+  // ===========================================================================================
+  // PHẦN 8: HÀM VALIDATION FORM - KIỂM TRA DỮ LIỆU ĐẦU VÀO
+  // ===========================================================================================
+  
   const validateForm = () => {
     const errors = {};
     
+    // ===== VALIDATION CHO TÊN KHÁCH HÀNG =====
     if (!formData.name.trim()) {
       errors.name = 'Tên khách hàng là bắt buộc';
     }
     
+    // ===== VALIDATION CHO EMAIL =====
     if (!formData.email.trim()) {
       errors.email = 'Email là bắt buộc';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       errors.email = 'Email không hợp lệ';
     }
     
+    // ===== VALIDATION CHO SỐ ĐIỆN THOẠI =====
     if (!formData.phone.trim()) {
       errors.phone = 'Số điện thoại là bắt buộc';
     } else if (!/^(\+84|0)[0-9]{9,10}$/.test(formData.phone.replace(/\s/g, ''))) {
       errors.phone = 'Số điện thoại không hợp lệ';
     }
     
+    // ===== VALIDATION CHO ĐỊA CHỈ =====
     if (!formData.address.trim()) {
       errors.address = 'Địa chỉ là bắt buộc';
     }
     
-    return errors;
+    return errors; // Trả về object chứa các lỗi
   };
 
+  // ===========================================================================================
+  // PHẦN 9: HÀM XỬ LÝ CHỈNH SỬA KHÁCH HÀNG
+  // ===========================================================================================
+  
+  // Mở form chỉnh sửa với dữ liệu của khách hàng được chọn
   const handleEdit = (customer) => {
-    setSelectedCustomer(customer);
+    setSelectedCustomer(customer);          // Lưu khách hàng được chọn
+    // Điền dữ liệu khách hàng vào form
     setFormData({
       name: customer.name,
       email: customer.email,
@@ -237,15 +309,21 @@ const CustomerManagement = () => {
       address: customer.address,
       userId: customer.userId
     });
-    setShowCreateForm(true);
+    setShowCreateForm(true);               // Hiển thị form (dùng chung form create/edit)
   };
 
+  // ===========================================================================================
+  // PHẦN 10: HÀM XỬ LÝ XÓA KHÁCH HÀNG
+  // ===========================================================================================
+  
   const handleDelete = async (customerId) => {
+    // ===== BƯỚC 1: XÁC NHẬN XÓA =====
     if (!window.confirm('Bạn có chắc chắn muốn xóa khách hàng này?')) {
-      return;
+      return; // Hủy bỏ nếu user không xác nhận
     }
 
     try {
+      // ===== BƯỚC 2: GỬI REQUEST XÓA =====
       const token = localStorage.getItem('token');
       const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -256,37 +334,51 @@ const CustomerManagement = () => {
         }
       });
 
+      // ===== BƯỚC 3: XỬ LÝ RESPONSE =====
       if (response.ok) {
+        // Xóa khách hàng khỏi danh sách local (cập nhật UI ngay lập tức)
         setCustomers(prev => prev.filter(c => c.customerId !== customerId));
-        setTotalElements(prev => prev - 1);
+        setTotalElements(prev => prev - 1); // Giảm tổng số khách hàng
         alert('Khách hàng đã được xóa thành công!');
       } else {
         alert('Xóa khách hàng thất bại!');
       }
     } catch (error) {
+      // ===== BƯỚC 4: XỬ LÝ LỖI =====
       console.error('Error deleting customer:', error);
       alert('Lỗi khi xóa khách hàng.');
     }
   };
 
+  // ===========================================================================================
+  // PHẦN 11: HÀM TIỆN ÍCH - FORMAT NGÀY THÁNG
+  // ===========================================================================================
+  
+  // Chuyển đổi string ISO date thành định dạng ngày tháng Việt Nam
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('vi-VN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
+      year: 'numeric',    // Năm đầy đủ (VD: 2024)
+      month: '2-digit',   // Tháng 2 chữ số (VD: 01, 12)
+      day: '2-digit',     // Ngày 2 chữ số (VD: 05, 25)
+      hour: '2-digit',    // Giờ 2 chữ số (VD: 09, 14)
+      minute: '2-digit'   // Phút 2 chữ số (VD: 30, 45)
     });
   };
 
+  // ===========================================================================================
+  // PHẦN 12: RENDER UI - HIỂN THỊ GIAO DIỆN NGƯỜI DÙNG
+  // ===========================================================================================
+  
   return (
+    // Container chính với background gradient
     <div style={{ 
       minHeight: '100vh', 
       background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
       padding: '20px'
     }}>
       <div style={{ maxWidth: '1200px', margin: 'auto' }}>
-        {/* Header */}
+        
+        {/* ===== HEADER SECTION - TIÊU ĐỀ VÀ CÁC NÚT HÀNH ĐỘNG ===== */}
         <div style={{
           background: '#fff',
           borderRadius: '12px',
@@ -296,6 +388,7 @@ const CustomerManagement = () => {
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {/* Nút quay lại Dashboard */}
               <button
                 onClick={() => navigate('/scstaff/dashboard')}
                 style={{
@@ -312,6 +405,7 @@ const CustomerManagement = () => {
               >
                 <FaArrowLeft /> Quay lại
               </button>
+              {/* Tiêu đề và mô tả trang */}
               <div>
                 <h1 style={{ margin: 0, color: '#1f2937', display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <FaUsers style={{ color: '#3b82f6' }} />
@@ -322,11 +416,12 @@ const CustomerManagement = () => {
                 </p>
               </div>
             </div>
+            {/* Nút tạo khách hàng mới */}
             <button
               onClick={() => {
-                setShowCreateForm(true);
-                setSelectedCustomer(null);
-                setFormData({ name: '', email: '', phone: '', address: '', userId: '' });
+                setShowCreateForm(true);           // Hiển thị form
+                setSelectedCustomer(null);         // Reset customer được chọn (để biết là tạo mới)
+                setFormData({ name: '', email: '', phone: '', address: '', userId: '' }); // Reset form data
               }}
               style={{
                 background: '#10b981',
@@ -346,13 +441,14 @@ const CustomerManagement = () => {
             </button>
           </div>
 
-          {/* Search Section */}
+          {/* ===== SEARCH SECTION - PHẦN TÌM KIẾM ===== */}
           <div style={{
             display: 'flex',
             gap: '12px',
             alignItems: 'center',
             flexWrap: 'wrap'
           }}>
+            {/* Dropdown chọn loại tìm kiếm */}
             <select
               value={searchType}
               onChange={(e) => setSearchType(e.target.value)}
@@ -367,6 +463,7 @@ const CustomerManagement = () => {
               <option value="email">Tìm theo email</option>
               <option value="phone">Tìm theo SĐT</option>
             </select>
+            {/* Input nhập từ khóa tìm kiếm */}
             <input
               type="text"
               placeholder={`Nhập ${searchType === 'name' ? 'tên khách hàng' : searchType === 'email' ? 'email' : 'số điện thoại'}...`}
@@ -378,8 +475,9 @@ const CustomerManagement = () => {
                 borderRadius: '6px',
                 minWidth: '250px'
               }}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+              onKeyPress={(e) => e.key === 'Enter' && handleSearch()} // Cho phép search bằng Enter
             />
+            {/* Nút tìm kiếm */}
             <button
               onClick={handleSearch}
               style={{
@@ -396,6 +494,7 @@ const CustomerManagement = () => {
             >
               <FaSearch /> Tìm kiếm
             </button>
+            {/* Nút xóa bộ lọc (chỉ hiện khi có từ khóa) */}
             {searchTerm && (
               <button
                 onClick={clearSearch}
@@ -413,7 +512,7 @@ const CustomerManagement = () => {
             )}
           </div>
 
-          {/* Stats */}
+          {/* ===== STATS SECTION - THỐNG KÊ SỐ LIỆU ===== */}
           <div style={{
             display: 'flex',
             gap: '16px',
@@ -426,8 +525,9 @@ const CustomerManagement = () => {
           </div>
         </div>
 
-        {/* Customer List */}
+        {/* ===== CUSTOMER LIST SECTION - DANH SÁCH KHÁCH HÀNG ===== */}
         {loading ? (
+          // Hiển thị loading spinner khi đang tải dữ liệu
           <div style={{
             background: 'white',
             borderRadius: '12px',
@@ -439,6 +539,7 @@ const CustomerManagement = () => {
             <p style={{ marginTop: '12px', color: '#6b7280' }}>Đang tải danh sách khách hàng...</p>
           </div>
         ) : customers.length === 0 ? (
+          // Hiển thị empty state khi không có khách hàng
           <div style={{
             background: 'white',
             borderRadius: '12px',
@@ -469,6 +570,7 @@ const CustomerManagement = () => {
             </button>
           </div>
         ) : (
+          // Hiển thị bảng danh sách khách hàng
           <div style={{
             background: 'white',
             borderRadius: '12px',
@@ -476,6 +578,7 @@ const CustomerManagement = () => {
             boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)'
           }}>
             <div style={{ overflowX: 'auto' }}>
+              {/* ===== TABLE HEADER - TIÊU ĐỀ BẢNG ===== */}
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e5e7eb' }}>
@@ -496,8 +599,10 @@ const CustomerManagement = () => {
                     </th>
                   </tr>
                 </thead>
+                {/* ===== TABLE BODY - NỘI DUNG BẢNG ===== */}
                 <tbody>
                   {customers.map((customer, index) => (
+                    // Mỗi hàng trong bảng đại diện cho 1 khách hàng
                     <tr 
                       key={customer.customerId} 
                       style={{ 
@@ -505,6 +610,7 @@ const CustomerManagement = () => {
                         '&:hover': { background: '#f9fafb' }
                       }}
                     >
+                      {/* Cột thông tin khách hàng */}
                       <td style={{ padding: '16px' }}>
                         <div>
                           <div style={{ fontWeight: '500', color: '#111827', marginBottom: '4px' }}>
@@ -518,6 +624,7 @@ const CustomerManagement = () => {
                           </div>
                         </div>
                       </td>
+                      {/* Cột thông tin liên hệ */}
                       <td style={{ padding: '16px' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px' }}>
@@ -530,20 +637,24 @@ const CustomerManagement = () => {
                           </div>
                         </div>
                       </td>
+                      {/* Cột địa chỉ */}
                       <td style={{ padding: '16px' }}>
                         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', fontSize: '14px' }}>
                           <FaMapMarkerAlt style={{ color: '#6b7280', fontSize: '12px', marginTop: '2px' }} />
                           <span style={{ lineHeight: '1.4' }}>{customer.address}</span>
                         </div>
                       </td>
+                      {/* Cột ngày tạo */}
                       <td style={{ padding: '16px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', color: '#6b7280' }}>
                           <FaCalendar style={{ fontSize: '12px' }} />
                           {formatDate(customer.createdAt)}
                         </div>
                       </td>
+                      {/* Cột các nút thao tác */}
                       <td style={{ padding: '16px', textAlign: 'center' }}>
                         <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                          {/* Nút chỉnh sửa */}
                           <button
                             onClick={() => handleEdit(customer)}
                             style={{
@@ -559,6 +670,7 @@ const CustomerManagement = () => {
                           >
                             <FaEdit />
                           </button>
+                          {/* Nút xóa */}
                           <button
                             onClick={() => handleDelete(customer.customerId)}
                             style={{
@@ -582,7 +694,7 @@ const CustomerManagement = () => {
               </table>
             </div>
 
-            {/* Pagination */}
+            {/* ===== PAGINATION SECTION - PHÂN TRANG ===== */}
             {totalPages > 1 && (
               <div style={{
                 padding: '16px',
@@ -591,9 +703,11 @@ const CustomerManagement = () => {
                 justifyContent: 'space-between',
                 alignItems: 'center'
               }}>
+                {/* Thông tin số lượng hiển thị */}
                 <div style={{ fontSize: '14px', color: '#6b7280' }}>
                   Hiển thị {currentPage * pageSize + 1} - {Math.min((currentPage + 1) * pageSize, totalElements)} của {totalElements} khách hàng
                 </div>
+                {/* Các nút điều hướng phân trang */}
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button
                     onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
@@ -630,20 +744,22 @@ const CustomerManagement = () => {
           </div>
         )}
 
-        {/* Create/Edit Form Modal */}
+        {/* ===== CREATE/EDIT FORM MODAL - FORM TẠO/CHỈNH SỬA KHÁCH HÀNG ===== */}
         {showCreateForm && (
+          // Overlay che màn hình
           <div style={{
             position: 'fixed',
             top: 0,
             left: 0,
             right: 0,
             bottom: 0,
-            background: 'rgba(0, 0, 0, 0.5)',
+            background: 'rgba(0, 0, 0, 0.5)', // Nền đen mờ
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            zIndex: 1000
+            zIndex: 1000 // Hiển thị trên cùng
           }}>
+            {/* Modal content */}
             <div style={{
               background: 'white',
               borderRadius: '12px',
@@ -653,11 +769,13 @@ const CustomerManagement = () => {
               maxHeight: '90vh',
               overflow: 'auto'
             }}>
+              {/* Tiêu đề form */}
               <h2 style={{ marginBottom: '20px', color: '#1f2937' }}>
                 {selectedCustomer ? 'Chỉnh sửa khách hàng' : 'Tạo khách hàng mới'}
               </h2>
               
               <form onSubmit={handleCreateCustomer}>
+                {/* ===== TRƯỜNG TÊN KHÁCH HÀNG ===== */}
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', color: '#374151' }}>
                     Tên khách hàng *
@@ -682,6 +800,7 @@ const CustomerManagement = () => {
                   )}
                 </div>
 
+                {/* ===== TRƯỜNG EMAIL ===== */}
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', color: '#374151' }}>
                     Email *
@@ -706,6 +825,7 @@ const CustomerManagement = () => {
                   )}
                 </div>
 
+                {/* ===== TRƯỜNG SỐ ĐIỆN THOẠI ===== */}
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', color: '#374151' }}>
                     Số điện thoại *
@@ -730,6 +850,7 @@ const CustomerManagement = () => {
                   )}
                 </div>
 
+                {/* ===== TRƯỜNG ĐỊA CHỈ ===== */}
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', color: '#374151' }}>
                     Địa chỉ *
@@ -755,6 +876,7 @@ const CustomerManagement = () => {
                   )}
                 </div>
 
+                {/* ===== TRƯỜNG USER ID (TÙY CHỌN) ===== */}
                 <div style={{ marginBottom: '24px' }}>
                   <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', color: '#374151' }}>
                     User ID (tùy chọn)
@@ -774,14 +896,16 @@ const CustomerManagement = () => {
                   />
                 </div>
 
+                {/* ===== CÁC NÚT HÀNH ĐỘNG ===== */}
                 <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                  {/* Nút Hủy */}
                   <button
                     type="button"
                     onClick={() => {
-                      setShowCreateForm(false);
-                      setSelectedCustomer(null);
-                      setFormData({ name: '', email: '', phone: '', address: '', userId: '' });
-                      setFormErrors({});
+                      setShowCreateForm(false);        // Đóng form
+                      setSelectedCustomer(null);       // Reset customer được chọn
+                      setFormData({ name: '', email: '', phone: '', address: '', userId: '' }); // Reset form data
+                      setFormErrors({});               // Reset lỗi
                     }}
                     style={{
                       padding: '10px 20px',
@@ -793,6 +917,7 @@ const CustomerManagement = () => {
                   >
                     Hủy
                   </button>
+                  {/* Nút Submit */}
                   <button
                     type="submit"
                     style={{
