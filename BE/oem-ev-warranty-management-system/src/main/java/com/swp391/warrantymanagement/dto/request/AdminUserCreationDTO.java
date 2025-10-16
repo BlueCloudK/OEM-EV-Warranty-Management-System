@@ -1,4 +1,4 @@
-package com.swp391.warrantymanagement.dto.request.user;
+package com.swp391.warrantymanagement.dto.request;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;

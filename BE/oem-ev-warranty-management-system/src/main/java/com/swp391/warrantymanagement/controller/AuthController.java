@@ -6,7 +6,7 @@ import com.swp391.warrantymanagement.dto.request.auth.UserRegistrationDTO;
 import com.swp391.warrantymanagement.dto.request.auth.ForgotPasswordRequestDTO;
 import com.swp391.warrantymanagement.dto.request.auth.ResetPasswordRequestDTO;
 import com.swp391.warrantymanagement.dto.request.auth.LogoutRequestDTO;
-import com.swp391.warrantymanagement.dto.request.user.AdminUserCreationDTO;
+import com.swp391.warrantymanagement.dto.request.AdminUserCreationDTO;
 import com.swp391.warrantymanagement.dto.response.AuthResponseDTO;
 import com.swp391.warrantymanagement.service.AuthService;
 import jakarta.validation.Valid;
