@@ -2,6 +2,7 @@ package com.swp391.warrantymanagement.dto.request.auth;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;
+import lombok.ToString;
 
 /** DTO chức năng: Quên mật khẩu */
 @Data
@@ -12,4 +13,5 @@ public class ForgotPasswordRequestDTO {
             message = "Email format is invalid"
     )
     private String email;
+
 }

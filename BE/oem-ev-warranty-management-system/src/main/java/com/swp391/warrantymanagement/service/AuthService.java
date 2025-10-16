@@ -1,7 +1,7 @@
 package com.swp391.warrantymanagement.service;
 
 import com.swp391.warrantymanagement.dto.request.auth.*;
-import com.swp391.warrantymanagement.dto.request.user.AdminUserCreationDTO;
+import com.swp391.warrantymanagement.dto.request.AdminUserCreationDTO;
 import com.swp391.warrantymanagement.dto.response.AuthResponseDTO;
 import com.swp391.warrantymanagement.entity.User;
 
