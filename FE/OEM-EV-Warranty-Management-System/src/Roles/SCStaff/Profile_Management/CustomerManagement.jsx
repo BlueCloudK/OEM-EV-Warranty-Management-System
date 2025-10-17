@@ -229,7 +229,8 @@ const CustomerManagement = () => {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
         body: JSON.stringify(formData) // Gửi dữ liệu form dưới dạng JSON
       });

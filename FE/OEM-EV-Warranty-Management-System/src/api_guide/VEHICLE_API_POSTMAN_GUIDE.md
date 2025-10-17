@@ -81,7 +81,7 @@ Authorization: Bearer {jwt_token}
 ### 3. Create Vehicle
 **POST** `/api/vehicles`
 
-**Permissions:** ADMIN, EVM_STAFF only
+**Permissions:** ADMIN, EVM_STAFF ,SC_STAFF only
 
 **Request Body:**
 ```json
