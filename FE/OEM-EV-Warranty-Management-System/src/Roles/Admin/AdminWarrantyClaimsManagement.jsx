@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { warrantyClaimsApi } from "../../api/warrantyClaims";
 
 /**
@@ -15,6 +15,7 @@ import { warrantyClaimsApi } from "../../api/warrantyClaims";
 
 const AdminWarrantyClaimsManagement = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [claims, setClaims] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -88,22 +89,141 @@ const AdminWarrantyClaimsManagement = () => {
     fetchClaims();
   }, []);
 
+  // Open create modal with prefilled data when navigated from Parts page
+  useEffect(() => {
+    const incoming = location?.state;
+    const maybePrefill = incoming?.prefillClaim;
+    const shouldOpen = incoming?.openCreate && maybePrefill;
+    if (shouldOpen) {
+      setFormData((prev) => ({
+        ...prev,
+        // keep DB id if provided
+        partDbId: maybePrefill.partDbId ?? prev.partDbId,
+        partId:
+          typeof maybePrefill.partId === "string"
+            ? maybePrefill.partId
+            : maybePrefill.partId ?? prev.partId,
+        vehicleId:
+          typeof maybePrefill.vehicleId === "string"
+            ? maybePrefill.vehicleId
+            : maybePrefill.vehicleId ?? prev.vehicleId,
+        partName:
+          (maybePrefill.partName && String(maybePrefill.partName)) ||
+          prev.partName ||
+          "Phụ tùng", // graceful fallback
+        partNumber:
+          (maybePrefill.partNumber && String(maybePrefill.partNumber)) ||
+          (maybePrefill.partId && String(maybePrefill.partId)) ||
+          prev.partNumber,
+      }));
+      setShowCreateModal(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
+
+  const normalizeClaim = (raw) => {
+    if (!raw || typeof raw !== "object") return {};
+    return {
+      // unify ids and basic fields from various BE shapes
+      id: raw.id ?? raw.warrantyClaimId ?? raw.claimId ?? raw.claimID,
+      code:
+        raw.code ||
+        raw.claimCode ||
+        raw.claimNumber ||
+        (raw.warrantyClaimId ? `CLM-${raw.warrantyClaimId}` : undefined),
+      customerName: raw.customerName,
+      vehicleVin: raw.vehicleVin,
+      partName: raw.partName || raw.part,
+      status: raw.status || raw.claimStatus || "SUBMITTED",
+      createdAt: raw.createdAt || raw.claimDate || raw.createdOn,
+      // carry full object for view/edit
+      ...raw,
+    };
+  };
+
   const fetchClaims = async () => {
     try {
       setLoading(true);
       setError("");
       const data = await warrantyClaimsApi.list();
-      setClaims(
-        Array.isArray(data?.content)
-          ? data.content
-          : Array.isArray(data)
-          ? data
-          : []
+      const raw = Array.isArray(data?.content)
+        ? data.content
+        : Array.isArray(data)
+        ? data
+        : [];
+      const normalized = raw.map(normalizeClaim);
+      // Enrich: fetch vehicleVin, customerName, partName when missing
+      const enriched = await Promise.all(
+        normalized.map(async (c) => {
+          try {
+            let full = c;
+            if (c.id) {
+              const fromServer = await warrantyClaimsApi.getById(c.id);
+              if (fromServer) full = { ...c, ...fromServer };
+            }
+            // try vehicle details using vehicleId
+            if (
+              (!full.vehicleVin ||
+                !full.customerName ||
+                !full.vehicleBrand ||
+                !full.vehicleModel ||
+                !full.vehicleYear) &&
+              full.vehicleId
+            ) {
+              const v = await (async () => {
+                try {
+                  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+                  const token = localStorage.getItem("token");
+                  if (!API_BASE_URL || !token) return null;
+                  const res = await fetch(
+                    `${API_BASE_URL}/api/vehicles/${full.vehicleId}`,
+                    {
+                      headers: {
+                        Authorization: `Bearer ${token}`,
+                        Accept: "application/json",
+                        "ngrok-skip-browser-warning": "true",
+                      },
+                    }
+                  );
+                  if (!res.ok) return null;
+                  const ct = res.headers.get("Content-Type") || "";
+                  if (!ct.includes("application/json")) return null;
+                  return await res.json();
+                } catch {
+                  return null;
+                }
+              })();
+              if (v) {
+                full.vehicleVin =
+                  full.vehicleVin || v.vehicleVin || v.vin || v.vehicleVIN;
+                full.customerName =
+                  full.customerName || v.customerName || v.ownerName;
+                full.vehicleBrand =
+                  full.vehicleBrand || v.vehicleName || v.brand || v.make;
+                full.vehicleModel =
+                  full.vehicleModel || v.vehicleModel || v.model;
+                full.vehicleYear = full.vehicleYear || v.vehicleYear || v.year;
+              }
+            }
+            // try part details using partId
+            if ((!full.partName || !full.partNumber) && full.partId) {
+              const p = await fetchPartById(full.partId);
+              if (p) {
+                full.partName = full.partName || p.partName || p.name;
+                full.partNumber = full.partNumber || p.partNumber;
+              }
+            }
+            return full;
+          } catch {
+            return c;
+          }
+        })
       );
+      setClaims(enriched);
     } catch (e) {
       console.error("Fetch claims failed:", e);
       setError("Không tải được danh sách claims. Hiển thị dữ liệu demo.");
-      setClaims(mockClaims);
+      setClaims(mockClaims.map(normalizeClaim));
     } finally {
       setLoading(false);
     }
@@ -111,12 +231,36 @@ const AdminWarrantyClaimsManagement = () => {
 
   const formatDate = (d) => new Date(d).toLocaleString("vi-VN");
 
+  // Ensure part exists and hydrate vehicleId from BE if missing/mismatched
+  const fetchPartById = async (pid) => {
+    try {
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+      const token = localStorage.getItem("token");
+      if (!pid || !API_BASE_URL || !token) return null;
+      const res = await fetch(`${API_BASE_URL}/api/parts/${pid}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+          "ngrok-skip-browser-warning": "true",
+        },
+      });
+      if (!res.ok) return null;
+      const ct = res.headers.get("Content-Type") || "";
+      if (!ct.includes("application/json")) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  };
+
   // Form Validation
   const validateForm = () => {
     const errors = {};
 
     if (!formData.issueDescription.trim()) {
       errors.issueDescription = "Mô tả vấn đề là bắt buộc";
+    } else if (formData.issueDescription.trim().length < 10) {
+      errors.issueDescription = "Mô tả tối thiểu 10 ký tự";
     }
     if (!formData.partId) {
       errors.partId = "partId là bắt buộc";
@@ -198,18 +342,27 @@ const AdminWarrantyClaimsManagement = () => {
 
     setSubmitting(true);
     try {
-      // build payload exactly as guide requires
+      // If user only typed partId, try to hydrate vehicleId from BE to satisfy validation
+      if (formData.partId && !formData.vehicleId) {
+        const part = await fetchPartById(formData.partId);
+        if (part?.vehicleId) {
+          setFormData((prev) => ({ ...prev, vehicleId: part.vehicleId }));
+        }
+      }
+
+      // Backend requires only description, partId (string code), vehicleId (number)
       const payload = {
-        description: formData.issueDescription,
+        description: formData.issueDescription.trim(),
         partId:
           typeof formData.partId === "string"
             ? formData.partId.trim()
-            : formData.partId,
+            : String(formData.partId),
         vehicleId:
           typeof formData.vehicleId === "string"
             ? Number(formData.vehicleId)
             : formData.vehicleId,
       };
+      console.log("📮 Creating warranty claim with payload:", payload);
       const newClaim = await warrantyClaimsApi.create(payload);
       setClaims((prev) => [newClaim, ...prev]);
       setTotalElements((prev) => prev + 1);
@@ -218,7 +371,12 @@ const AdminWarrantyClaimsManagement = () => {
       resetForm();
     } catch (error) {
       console.error("Create claim error:", error);
-      alert("Lỗi khi tạo yêu cầu bảo hành. Vui lòng thử lại.");
+      const details =
+        error?.data?.message ||
+        error?.raw ||
+        error?.message ||
+        "Lỗi khi tạo yêu cầu bảo hành.";
+      alert(details);
     } finally {
       setSubmitting(false);
     }
@@ -320,9 +478,114 @@ const AdminWarrantyClaimsManagement = () => {
   };
 
   // Open View Modal
-  const openViewModal = (claim) => {
-    setSelectedClaim(claim);
-    setShowViewModal(true);
+  const openViewModal = async (claim) => {
+    try {
+      let full = claim;
+      if (claim?.id) {
+        const server = await warrantyClaimsApi.getById(claim.id);
+        if (server) full = { ...claim, ...server };
+      }
+      // normalize important fields for detail view
+      const normalized = {
+        ...full,
+        id: full.id ?? full.warrantyClaimId,
+        code:
+          full.code ||
+          full.claimCode ||
+          full.claimNumber ||
+          (full.warrantyClaimId ? `CLM-${full.warrantyClaimId}` : claim.code),
+        createdAt: full.createdAt || full.claimDate || claim.createdAt,
+        issueDescription: full.issueDescription || full.description || "",
+        priority:
+          full.priority || full.claimPriority || claim.priority || "MEDIUM",
+        estimatedCost:
+          full.estimatedCost || full.cost || claim.estimatedCost || null,
+      };
+      // map possible vehicle fields from server payload
+      normalized.vehicleBrand =
+        normalized.vehicleBrand || full.vehicleName || full.brand || full.make;
+      normalized.vehicleModel =
+        normalized.vehicleModel || full.vehicleModel || full.model;
+      normalized.vehicleYear =
+        normalized.vehicleYear || full.vehicleYear || full.year;
+      // fill missing vehicle/part display
+      if (
+        (!normalized.vehicleVin || !normalized.customerName) &&
+        normalized.vehicleId
+      ) {
+        try {
+          const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+          const token = localStorage.getItem("token");
+          if (API_BASE_URL && token) {
+            const res = await fetch(
+              `${API_BASE_URL}/api/vehicles/${normalized.vehicleId}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  Accept: "application/json",
+                  "ngrok-skip-browser-warning": "true",
+                },
+              }
+            );
+            if (
+              res.ok &&
+              (res.headers.get("Content-Type") || "").includes(
+                "application/json"
+              )
+            ) {
+              const v = await res.json();
+              normalized.vehicleVin =
+                normalized.vehicleVin || v.vehicleVin || v.vin || v.vehicleVIN;
+              normalized.customerName =
+                normalized.customerName ||
+                v.customerName ||
+                v.ownerName ||
+                v.customer?.name ||
+                "-";
+              normalized.customerEmail =
+                normalized.customerEmail ||
+                v.customerEmail ||
+                v.email ||
+                v.customer?.email ||
+                "";
+              normalized.customerPhone =
+                normalized.customerPhone ||
+                v.customerPhone ||
+                v.phone ||
+                v.customer?.phone ||
+                "";
+              normalized.customerAddress =
+                normalized.customerAddress ||
+                v.customerAddress ||
+                v.address ||
+                v.customer?.address ||
+                "";
+              normalized.vehicleBrand =
+                normalized.vehicleBrand || v.vehicleName || v.brand || v.make;
+              normalized.vehicleModel =
+                normalized.vehicleModel || v.vehicleModel || v.model;
+              normalized.vehicleYear =
+                normalized.vehicleYear || v.vehicleYear || v.year;
+            }
+          }
+        } catch {}
+      }
+      if (
+        (!normalized.partName || !normalized.partNumber) &&
+        normalized.partId
+      ) {
+        const p = await fetchPartById(normalized.partId);
+        if (p) {
+          normalized.partName = normalized.partName || p.partName || p.name;
+          normalized.partNumber = normalized.partNumber || p.partNumber;
+        }
+      }
+      setSelectedClaim(normalized);
+      setShowViewModal(true);
+    } catch {
+      setSelectedClaim(claim);
+      setShowViewModal(true);
+    }
   };
 
   // Open Delete Modal
@@ -1290,7 +1553,12 @@ const AdminWarrantyClaimsManagement = () => {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="modal-header">
-              <h3>Chi tiết yêu cầu bảo hành - {selectedClaim.claimNumber}</h3>
+              <h3>
+                Chi tiết yêu cầu bảo hành -{" "}
+                {selectedClaim.code ||
+                  selectedClaim.claimNumber ||
+                  (selectedClaim.id ? `CLM-${selectedClaim.id}` : "")}
+              </h3>
               <button
                 className="btn-close"
                 onClick={() => setShowViewModal(false)}
@@ -1362,6 +1630,12 @@ const AdminWarrantyClaimsManagement = () => {
                     <span className="detail-label">Phụ tùng:</span>
                     <span className="detail-value">
                       {selectedClaim.partName}
+                    </span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Mã phụ tùng:</span>
+                    <span className="detail-value">
+                      {selectedClaim.partNumber || "-"}
                     </span>
                   </div>
                   <div className="detail-row">

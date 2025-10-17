@@ -18,6 +18,9 @@ const AdminPartsManagement = () => {
   const [parts, setParts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [currentRole, setCurrentRole] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
+  const canManage = currentRole === "ADMIN" || currentRole === "EVM_STAFF";
 
   // CRUD Modal States
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -29,8 +32,10 @@ const AdminPartsManagement = () => {
 
   // Form Data
   const [formData, setFormData] = useState({
+    partId: "",
     partNumber: "",
     name: "",
+    manufacturer: "",
     description: "",
     category: "",
     warrantyMonths: 12,
@@ -38,6 +43,9 @@ const AdminPartsManagement = () => {
     minStock: 5,
     maxStock: 100,
     unitPrice: "",
+    installationDate: "",
+    warrantyExpirationDate: "",
+    vehicleId: "",
     supplier: "",
     supplierContact: "",
     notes: "",
@@ -74,8 +82,43 @@ const AdminPartsManagement = () => {
   ];
 
   useEffect(() => {
+    const validateRole = async () => {
+      try {
+        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+        const token = localStorage.getItem("token");
+        if (!token) return;
+        const res = await fetch(`${API_BASE_URL}/api/auth/validate`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "ngrok-skip-browser-warning": "true",
+          },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setCurrentRole(data?.roleName || null);
+        }
+      } catch (e) {
+        console.warn("validateRole failed", e);
+      } finally {
+        setAuthChecked(true);
+      }
+    };
+
+    validateRole();
     fetchParts();
   }, []);
+
+  // Normalize BE -> FE fields so UI renders consistently
+  const normalizePart = (p) => {
+    if (!p || typeof p !== "object") return p;
+    return {
+      ...p,
+      // prefer existing name; fallback to partName from BE DTO
+      name: p.name ?? p.partName ?? "",
+      // prefer unitPrice; fallback to price from BE DTO
+      unitPrice: p.unitPrice ?? p.price ?? undefined,
+    };
+  };
 
   const fetchParts = async () => {
     try {
@@ -100,17 +143,16 @@ const AdminPartsManagement = () => {
       if (!ct || !ct.includes("application/json"))
         throw new Error("Non-JSON response");
       const data = await res.json();
-      setParts(
-        Array.isArray(data.content)
-          ? data.content
-          : Array.isArray(data)
-          ? data
-          : []
-      );
+      const raw = Array.isArray(data.content)
+        ? data.content
+        : Array.isArray(data)
+        ? data
+        : [];
+      setParts(raw.map(normalizePart));
     } catch (e) {
       console.error("Fetch parts failed:", e);
       setError("Không tải được danh sách phụ tùng. Hiển thị dữ liệu demo.");
-      setParts(mockParts);
+      setParts(mockParts.map(normalizePart));
     } finally {
       setLoading(false);
     }
@@ -122,6 +164,14 @@ const AdminPartsManagement = () => {
   const validateForm = () => {
     const errors = {};
 
+    // partId - required, uppercase letters, digits and hyphens
+    if (!formData.partId || !formData.partId.trim()) {
+      errors.partId = "ID phụ tùng (partId) là bắt buộc";
+    } else if (!/^[A-Z0-9-]+$/.test(formData.partId.trim())) {
+      errors.partId =
+        "partId chỉ cho phép CHỮ HOA, số và dấu gạch ngang (VD: BAT-001)";
+    }
+
     if (!formData.partNumber.trim()) {
       errors.partNumber = "Mã phụ tùng là bắt buộc";
     } else if (formData.partNumber.length < 3) {
@@ -130,6 +180,10 @@ const AdminPartsManagement = () => {
 
     if (!formData.name.trim()) {
       errors.name = "Tên phụ tùng là bắt buộc";
+    }
+
+    if (!formData.manufacturer || !formData.manufacturer.trim()) {
+      errors.manufacturer = "Nhà sản xuất là bắt buộc";
     }
 
     if (!formData.category.trim()) {
@@ -156,6 +210,48 @@ const AdminPartsManagement = () => {
       errors.unitPrice = "Giá đơn vị không được âm";
     }
 
+    // Map to DTO validations
+    const price = Number(formData.unitPrice);
+    if (!(price > 0)) {
+      errors.unitPrice = errors.unitPrice || "Giá đơn vị phải > 0";
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (!formData.installationDate) {
+      errors.installationDate = "Ngày lắp đặt là bắt buộc";
+    } else {
+      const ins = new Date(formData.installationDate);
+      if (isNaN(ins.getTime())) {
+        errors.installationDate = "Ngày lắp đặt không hợp lệ";
+      } else if (ins.getTime() > today.getTime()) {
+        errors.installationDate = "Ngày lắp đặt không được lớn hơn hôm nay";
+      }
+    }
+    if (!formData.warrantyExpirationDate) {
+      errors.warrantyExpirationDate = "Ngày hết hạn bảo hành là bắt buộc";
+    } else {
+      const exp = new Date(formData.warrantyExpirationDate);
+      const ins = formData.installationDate
+        ? new Date(formData.installationDate)
+        : null;
+      if (isNaN(exp.getTime())) {
+        errors.warrantyExpirationDate = "Ngày hết hạn không hợp lệ";
+      } else if (exp.getTime() <= today.getTime()) {
+        errors.warrantyExpirationDate = "Ngày hết hạn phải lớn hơn hôm nay";
+      } else if (
+        ins &&
+        !isNaN(ins.getTime()) &&
+        exp.getTime() <= ins.getTime()
+      ) {
+        errors.warrantyExpirationDate = "Ngày hết hạn phải sau ngày lắp đặt";
+      }
+    }
+
+    if (!formData.vehicleId || Number(formData.vehicleId) <= 0) {
+      errors.vehicleId = "vehicleId phải là số dương";
+    }
+
     if (
       formData.supplierContact &&
       !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.supplierContact)
@@ -169,8 +265,10 @@ const AdminPartsManagement = () => {
   // Reset Form
   const resetForm = () => {
     setFormData({
+      partId: "",
       partNumber: "",
       name: "",
+      manufacturer: "",
       description: "",
       category: "",
       warrantyMonths: 12,
@@ -178,6 +276,9 @@ const AdminPartsManagement = () => {
       minStock: 5,
       maxStock: 100,
       unitPrice: "",
+      installationDate: "",
+      warrantyExpirationDate: "",
+      vehicleId: "",
       supplier: "",
       supplierContact: "",
       notes: "",
@@ -211,10 +312,27 @@ const AdminPartsManagement = () => {
       return;
     }
 
+    if (authChecked && !canManage) {
+      alert("Bạn không có quyền tạo phụ tùng (chỉ ADMIN hoặc EVM_STAFF).");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
       const token = localStorage.getItem("token");
+
+      // Build DTO payload expected by BE
+      const payload = {
+        partId: formData.partId.trim(),
+        partName: formData.name.trim(),
+        partNumber: formData.partNumber.trim(),
+        manufacturer: (formData.manufacturer || formData.supplier || "").trim(),
+        price: Number(formData.unitPrice),
+        installationDate: formData.installationDate,
+        warrantyExpirationDate: formData.warrantyExpirationDate,
+        vehicleId: Number(formData.vehicleId),
+      };
 
       const response = await fetch(`${API_BASE_URL}/api/parts`, {
         method: "POST",
@@ -223,22 +341,33 @@ const AdminPartsManagement = () => {
           "Content-Type": "application/json",
           "ngrok-skip-browser-warning": "true",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
         const newPart = await response.json();
-        setParts((prev) => [newPart, ...prev]);
+        setParts((prev) => [normalizePart(newPart), ...prev]);
         setTotalElements((prev) => prev + 1);
         alert("Tạo phụ tùng thành công!");
         setShowCreateModal(false);
         resetForm();
       } else {
-        throw new Error(`HTTP ${response.status}`);
+        const errorBody = await response.text().catch(() => "");
+        if (response.status === 403) {
+          throw new Error(
+            "Bạn không có quyền tạo phụ tùng (cần quyền ADMIN hoặc EVM_STAFF)."
+          );
+        }
+        // Hiển thị chi tiết validation từ BE nếu có
+        const msg =
+          errorBody && errorBody.trim().length
+            ? `HTTP ${response.status}: ${errorBody}`
+            : `HTTP ${response.status}`;
+        throw new Error(msg);
       }
     } catch (error) {
       console.error("Create part error:", error);
-      alert("Lỗi khi tạo phụ tùng. Vui lòng thử lại.");
+      alert(error?.message || "Lỗi khi tạo phụ tùng. Vui lòng thử lại.");
     } finally {
       setSubmitting(false);
     }
@@ -259,7 +388,7 @@ const AdminPartsManagement = () => {
       const token = localStorage.getItem("token");
 
       const response = await fetch(
-        `${API_BASE_URL}/api/parts/${selectedPart.id}`,
+        `${API_BASE_URL}/api/parts/${selectedPart.partId || selectedPart.id}`,
         {
           method: "PUT",
           headers: {
@@ -274,7 +403,11 @@ const AdminPartsManagement = () => {
       if (response.ok) {
         const updatedPart = await response.json();
         setParts((prev) =>
-          prev.map((p) => (p.id === selectedPart.id ? updatedPart : p))
+          prev.map((p) =>
+            (p.partId || p.id) === (selectedPart.partId || selectedPart.id)
+              ? updatedPart
+              : p
+          )
         );
         alert("Cập nhật phụ tùng thành công!");
         setShowEditModal(false);
@@ -301,7 +434,7 @@ const AdminPartsManagement = () => {
       const token = localStorage.getItem("token");
 
       const response = await fetch(
-        `${API_BASE_URL}/api/parts/${selectedPart.id}`,
+        `${API_BASE_URL}/api/parts/${selectedPart.partId || selectedPart.id}`,
         {
           method: "DELETE",
           headers: {
@@ -312,7 +445,12 @@ const AdminPartsManagement = () => {
       );
 
       if (response.ok) {
-        setParts((prev) => prev.filter((p) => p.id !== selectedPart.id));
+        setParts((prev) =>
+          prev.filter(
+            (p) =>
+              (p.partId || p.id) !== (selectedPart.partId || selectedPart.id)
+          )
+        );
         setTotalElements((prev) => prev - 1);
         alert("Xóa phụ tùng thành công!");
         setShowDeleteModal(false);
@@ -332,15 +470,24 @@ const AdminPartsManagement = () => {
   const openEditModal = (part) => {
     setSelectedPart(part);
     setFormData({
+      partId: part.partId || "",
       partNumber: part.partNumber || "",
-      name: part.name || "",
+      name: part.name || part.partName || "",
+      manufacturer: part.manufacturer || part.supplier || "",
       description: part.description || "",
       category: part.category || "",
       warrantyMonths: part.warrantyMonths || 12,
       stock: part.stock || 0,
       minStock: part.minStock || 5,
       maxStock: part.maxStock || 100,
-      unitPrice: part.unitPrice || "",
+      unitPrice: part.unitPrice || part.price || "",
+      installationDate: part.installationDate
+        ? String(part.installationDate).slice(0, 10)
+        : "",
+      warrantyExpirationDate: part.warrantyExpirationDate
+        ? String(part.warrantyExpirationDate).slice(0, 10)
+        : "",
+      vehicleId: part.vehicleId || "",
       supplier: part.supplier || "",
       supplierContact: part.supplierContact || "",
       notes: part.notes || "",
@@ -366,6 +513,7 @@ const AdminPartsManagement = () => {
       !searchTerm ||
       part.partNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       part.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      part.partName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       part.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       part.supplier?.toLowerCase().includes(searchTerm.toLowerCase());
 
@@ -433,6 +581,7 @@ const AdminPartsManagement = () => {
           <button
             className="btn btn-primary"
             onClick={() => setShowCreateModal(true)}
+            disabled={!canManage}
           >
             <i className="fas fa-plus"></i>
             Thêm phụ tùng mới
@@ -443,6 +592,21 @@ const AdminPartsManagement = () => {
           </button>
         </div>
       </div>
+
+      {authChecked && !canManage && (
+        <div
+          style={{
+            background: "#fff3cd",
+            color: "#856404",
+            padding: "12px 16px",
+            borderRadius: 8,
+            marginBottom: 16,
+          }}
+        >
+          Bạn đang đăng nhập với quyền {currentRole || "UNKNOWN"}. Chỉ ADMIN
+          hoặc EVM_STAFF mới có thể tạo/sửa/xóa phụ tùng.
+        </div>
+      )}
 
       {error && (
         <div
@@ -615,7 +779,7 @@ const AdminPartsManagement = () => {
                   textAlign: "left",
                 }}
               >
-                Bảo hành (tháng)
+                Giá (VNĐ)
               </th>
               <th
                 style={{
@@ -624,7 +788,7 @@ const AdminPartsManagement = () => {
                   textAlign: "left",
                 }}
               >
-                Tồn kho
+                Ngày lắp đặt
               </th>
               <th
                 style={{
@@ -633,7 +797,7 @@ const AdminPartsManagement = () => {
                   textAlign: "left",
                 }}
               >
-                Ngày tạo
+                Ngày hết hạn
               </th>
               <th
                 style={{
@@ -649,7 +813,7 @@ const AdminPartsManagement = () => {
           </thead>
           <tbody>
             {filteredParts.map((p, index) => (
-              <tr key={`part-${p.id || p.partNumber || index}`}>
+              <tr key={`part-${p.partId || p.id || p.partNumber || index}`}>
                 <td
                   style={{
                     padding: "12px 15px",
@@ -673,7 +837,9 @@ const AdminPartsManagement = () => {
                     borderBottom: "1px solid #e0e0e0",
                   }}
                 >
-                  {p.warrantyMonths}
+                  {p.unitPrice
+                    ? `${Number(p.unitPrice).toLocaleString()} VNĐ`
+                    : "-"}
                 </td>
                 <td
                   style={{
@@ -681,7 +847,7 @@ const AdminPartsManagement = () => {
                     borderBottom: "1px solid #e0e0e0",
                   }}
                 >
-                  {p.stock ?? "-"}
+                  {p.installationDate ? formatDate(p.installationDate) : "-"}
                 </td>
                 <td
                   style={{
@@ -689,7 +855,9 @@ const AdminPartsManagement = () => {
                     borderBottom: "1px solid #e0e0e0",
                   }}
                 >
-                  {p.createdAt ? formatDate(p.createdAt) : "-"}
+                  {p.warrantyExpirationDate
+                    ? formatDate(p.warrantyExpirationDate)
+                    : "-"}
                 </td>
                 <td
                   style={{
@@ -711,6 +879,26 @@ const AdminPartsManagement = () => {
                       title="Xem chi tiết"
                     >
                       <i className="fas fa-eye"></i>
+                    </button>
+                    <button
+                      className="btn btn-sm btn-success"
+                      onClick={() =>
+                        navigate("/admin/warranty-claims", {
+                          state: {
+                            openCreate: true,
+                            prefillClaim: {
+                              partDbId: p.id || p.partId,
+                              partId: p.partId || p.id,
+                              vehicleId: p.vehicleId,
+                              partName: p.name || p.partName,
+                              partNumber: p.partNumber,
+                            },
+                          },
+                        })
+                      }
+                      title="Tạo yêu cầu bảo hành"
+                    >
+                      <i className="fas fa-life-ring"></i>
                     </button>
                     <button
                       className="btn btn-sm btn-warning"
@@ -754,6 +942,20 @@ const AdminPartsManagement = () => {
               <div className="modal-body">
                 <div className="form-row">
                   <div className="form-group">
+                    <label>partId *</label>
+                    <input
+                      type="text"
+                      name="partId"
+                      value={formData.partId}
+                      onChange={handleInputChange}
+                      placeholder="BAT-001"
+                      className={formErrors.partId ? "error" : ""}
+                    />
+                    {formErrors.partId && (
+                      <span className="error-text">{formErrors.partId}</span>
+                    )}
+                  </div>
+                  <div className="form-group">
                     <label>Mã phụ tùng *</label>
                     <input
                       type="text"
@@ -786,6 +988,22 @@ const AdminPartsManagement = () => {
                 </div>
 
                 <div className="form-row">
+                  <div className="form-group">
+                    <label>Nhà sản xuất *</label>
+                    <input
+                      type="text"
+                      name="manufacturer"
+                      value={formData.manufacturer}
+                      onChange={handleInputChange}
+                      placeholder="OEM"
+                      className={formErrors.manufacturer ? "error" : ""}
+                    />
+                    {formErrors.manufacturer && (
+                      <span className="error-text">
+                        {formErrors.manufacturer}
+                      </span>
+                    )}
+                  </div>
                   <div className="form-group">
                     <label>Danh mục *</label>
                     <select
@@ -896,6 +1114,59 @@ const AdminPartsManagement = () => {
                     />
                     {formErrors.unitPrice && (
                       <span className="error-text">{formErrors.unitPrice}</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Ngày lắp đặt *</label>
+                    <input
+                      type="date"
+                      name="installationDate"
+                      value={formData.installationDate}
+                      onChange={handleInputChange}
+                      className={formErrors.installationDate ? "error" : ""}
+                    />
+                    {formErrors.installationDate && (
+                      <span className="error-text">
+                        {formErrors.installationDate}
+                      </span>
+                    )}
+                  </div>
+                  <div className="form-group">
+                    <label>Ngày hết hạn bảo hành *</label>
+                    <input
+                      type="date"
+                      name="warrantyExpirationDate"
+                      value={formData.warrantyExpirationDate}
+                      onChange={handleInputChange}
+                      className={
+                        formErrors.warrantyExpirationDate ? "error" : ""
+                      }
+                    />
+                    {formErrors.warrantyExpirationDate && (
+                      <span className="error-text">
+                        {formErrors.warrantyExpirationDate}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>vehicleId *</label>
+                    <input
+                      type="number"
+                      name="vehicleId"
+                      value={formData.vehicleId}
+                      onChange={handleInputChange}
+                      min="1"
+                      placeholder="1"
+                      className={formErrors.vehicleId ? "error" : ""}
+                    />
+                    {formErrors.vehicleId && (
+                      <span className="error-text">{formErrors.vehicleId}</span>
                     )}
                   </div>
                 </div>
@@ -1310,7 +1581,9 @@ const AdminPartsManagement = () => {
                   </div>
                   <div className="detail-row">
                     <span className="detail-label">ID:</span>
-                    <span className="detail-value">{selectedPart.id}</span>
+                    <span className="detail-value">
+                      {selectedPart.partId || selectedPart.id}
+                    </span>
                   </div>
                 </div>
               </div>

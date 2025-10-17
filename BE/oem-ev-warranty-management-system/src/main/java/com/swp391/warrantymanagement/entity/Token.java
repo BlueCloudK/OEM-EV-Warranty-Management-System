@@ -7,38 +7,51 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-@Entity //map/ánh xạ class này với bảng trong database
-@Table(name = "tokens") //đặt tên bảng trong database
-@Data //tự động tạo getter, setter, toString, hashCode, equals
-@AllArgsConstructor //tự động tạo constructor với tất cả các tham số
-@NoArgsConstructor //tự động tạo constructor không tham số
+/**
+ * Entity để lưu trữ refresh token
+ * - Mỗi user có thể có nhiều token (multi-device login)
+ * - Token có thời gian hết hạn để bảo mật
+ * - Tự động khởi tạo createdAt khi tạo mới
+ */
+@Entity // map/ánh xạ class này với bảng trong database
+@Table(name = "tokens") // đặt tên bảng trong database
+@Data // tự động tạo getter, setter, toString, hashCode, equals
+@AllArgsConstructor // tự động tạo constructor với tất cả các tham số
+@NoArgsConstructor // tự động tạo constructor không tham số
 public class Token {
+
     @Id
-    @Column(name = "token_id", length = 100)
-    private String id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "token_id")
+    private Long tokenId;
 
     @Column(name = "token", nullable = false, unique = true, length = 500)
     private String token;
 
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
-
-    @Column(name = "token_type", nullable = false, length = 20)
-    private String tokenType; // ACCESS, REFRESH, ...
-
-    @Column(name = "expired", nullable = false) // expired: hết hạn
-    private boolean expired = false;
-
-    @Column(name = "revoked", nullable = false) // revoked: thu hồi
-    private boolean revoked = false;
+    @Column(name = "expiration_date", nullable = false)
+    private LocalDateTime expirationDate;
 
     @Column(name = "created_at", nullable = false)
-    private java.time.LocalDateTime createdAt = java.time.LocalDateTime.now();
+    private LocalDateTime createdAt;
 
-    @Column(name = "expires_at")
-    private java.time.LocalDateTime expiresAt;
+    @Column(name = "token_type", nullable = false, length = 20)
+    private String tokenType; // "REFRESH" hoặc "RESET"
+
+    /**
+     * Tự động set createdAt khi tạo mới entity
+     * Được gọi trước khi persist vào database
+     */
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
+
+    // Kiểm tra token đã hết hạn chưa // <<extended>>
+    public boolean isExpired() {
+        return LocalDateTime.now().isAfter(this.expirationDate);
+    }
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", insertable = false, updatable = false)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 }

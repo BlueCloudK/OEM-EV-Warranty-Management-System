@@ -1,7 +1,8 @@
-package com.swp391.warrantymanagement.dto;
+package com.swp391.warrantymanagement.dto.request.auth;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;
+import org.hibernate.annotations.Nationalized;
 
 @Data
 public class UserRegistrationDTO {
@@ -11,17 +12,18 @@ public class UserRegistrationDTO {
     private String username;
 
     @NotBlank(message = "Email is required")
-    @Email(message = "Email should be valid")
+    @Pattern(
+            regexp ="^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$", // may be 99% email hiện tại ^_^
+            message = "Email format is invalid"
+    )
     private String email;
 
     @NotBlank(message = "Password is required")
     @Size(min = 6, max = 255, message = "Password must be at least 6 characters")
+    @Nationalized
     private String password;
 
     @NotBlank(message = "Address is required")
     @Size(min = 10, max = 255, message = "Address must be between 10 and 255 characters")
     private String address;
-
-    // Role will be handled separately or set to default
-    private Long roleId;
 }
