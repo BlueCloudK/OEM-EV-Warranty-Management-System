@@ -29,16 +29,20 @@ const AdminVehicleManagement = () => {
 
   // Form Data
   const [formData, setFormData] = useState({
-    // strictly follow Vehicle guide required fields for create
+    // Required fields for Vehicle API
     vehicleName: "",
     vehicleModel: "",
     vehicleVin: "",
     vehicleYear: new Date().getFullYear(),
-    customerId: "",
-    // optional fields kept for edit/view; not sent on create
     vehicleColor: "",
     vehicleEngine: "",
+    customerId: "",
   });
+
+  // Customer list for dropdown
+  const [customers, setCustomers] = useState([]);
+  const [loadingCustomers, setLoadingCustomers] = useState(false);
+  const [selectedCustomerInfo, setSelectedCustomerInfo] = useState(null);
 
   // Form Validation
   const [formErrors, setFormErrors] = useState({});
@@ -74,7 +78,40 @@ const AdminVehicleManagement = () => {
 
   useEffect(() => {
     fetchVehicles();
+    fetchCustomers(); // Load customers for dropdown
   }, []);
+
+  // Fetch Customers for dropdown
+  const fetchCustomers = async () => {
+    setLoadingCustomers(true);
+    try {
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+      const token = localStorage.getItem("token");
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/customers?page=0&size=100`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "ngrok-skip-browser-warning": "true",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("📋 Fetched customers:", data);
+      setCustomers(Array.isArray(data.content) ? data.content : []);
+    } catch (e) {
+      console.error("Fetch customers failed:", e);
+      setCustomers([]);
+    } finally {
+      setLoadingCustomers(false);
+    }
+  };
 
   const fetchVehicles = async () => {
     try {
@@ -133,8 +170,9 @@ const AdminVehicleManagement = () => {
 
     if (!formData.vehicleVin.trim()) {
       errors.vehicleVin = "vehicleVin là bắt buộc";
-    } else if (formData.vehicleVin.length < 10) {
-      errors.vehicleVin = "VIN phải có ít nhất 10 ký tự";
+    } else if (!/^\d{2}-MĐ-\d{3}\.\d{2}$/.test(formData.vehicleVin)) {
+      errors.vehicleVin =
+        "VIN phải đúng định dạng XX-MĐ-YYY.ZZ (ví dụ: 12-MĐ-345.67)";
     }
 
     if (!formData.vehicleName.trim()) {
@@ -143,6 +181,14 @@ const AdminVehicleManagement = () => {
 
     if (!formData.vehicleModel.trim()) {
       errors.vehicleModel = "vehicleModel là bắt buộc";
+    }
+
+    if (!formData.vehicleColor.trim()) {
+      errors.vehicleColor = "vehicleColor là bắt buộc";
+    }
+
+    if (!formData.vehicleEngine.trim()) {
+      errors.vehicleEngine = "vehicleEngine là bắt buộc";
     }
 
     if (
@@ -172,15 +218,57 @@ const AdminVehicleManagement = () => {
       vehicleEngine: "",
     });
     setFormErrors({});
+    setSelectedCustomerInfo(null);
   };
 
   // Handle Form Input Change
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+
+    console.log("🔄 Input change:", { name, value });
+
+    // Auto-fill customer info when customerId changes
+    if (name === "customerId" && value) {
+      console.log("👤 Customer selected:", value);
+      console.log("👤 All customers:", customers);
+
+      // Try different ID field names
+      let selectedCustomer = customers.find(
+        (customer) => customer.customerId === value
+      );
+      if (!selectedCustomer) {
+        selectedCustomer = customers.find((customer) => customer.id === value);
+      }
+      if (!selectedCustomer) {
+        selectedCustomer = customers.find(
+          (customer) => customer.uuid === value
+        );
+      }
+      if (!selectedCustomer) {
+        // Fallback: use index
+        const index = parseInt(value);
+        if (!isNaN(index)) {
+          selectedCustomer = customers[index];
+        }
+      }
+
+      console.log("👤 Selected customer data:", selectedCustomer);
+      if (selectedCustomer) {
+        setFormData((prev) => ({
+          ...prev,
+          [name]: selectedCustomer.customerId,
+        }));
+        // Set selected customer info for display
+        setSelectedCustomerInfo(selectedCustomer);
+      } else {
+        setSelectedCustomerInfo(null);
+      }
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
 
     // Clear error when user starts typing
     if (formErrors[name]) {
@@ -205,6 +293,51 @@ const AdminVehicleManagement = () => {
       const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
       const token = localStorage.getItem("token");
 
+      // Debug payload
+      const payload = {
+        vehicleName: formData.vehicleName,
+        vehicleModel: formData.vehicleModel,
+        vehicleVin: formData.vehicleVin,
+        vehicleYear: Number(formData.vehicleYear),
+        vehicleColor: formData.vehicleColor,
+        vehicleEngine: formData.vehicleEngine,
+        customerId: formData.customerId,
+      };
+
+      console.log("🚗 Creating vehicle with payload:", payload);
+      console.log("🔗 API URL:", `${API_BASE_URL}/api/vehicles`);
+      console.log("🔑 Token:", token ? "Present" : "Missing");
+
+      // 1) Pre-check VIN trùng để báo lỗi thân thiện (BE trả 400 không body)
+      try {
+        const vinCheckRes = await fetch(
+          `${API_BASE_URL}/api/vehicles/by-vin?vin=${encodeURIComponent(
+            payload.vehicleVin
+          )}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: "application/json",
+              "ngrok-skip-browser-warning": "true",
+            },
+          }
+        );
+        if (vinCheckRes.ok) {
+          // Đã tồn tại VIN
+          const existed = await vinCheckRes.json().catch(() => null);
+          alert(
+            `VIN đã tồn tại trong hệ thống${
+              existed?.vehicleId ? ` (ID: ${existed.vehicleId})` : ""
+            }. Vui lòng nhập VIN khác hoặc chỉnh sửa bản ghi hiện có.`
+          );
+          return;
+        }
+        // 404 => không tồn tại -> tiếp tục tạo
+      } catch (vinErr) {
+        console.warn("VIN pre-check failed, continue create:", vinErr);
+      }
+
       const response = await fetch(`${API_BASE_URL}/api/vehicles`, {
         method: "POST",
         headers: {
@@ -212,29 +345,48 @@ const AdminVehicleManagement = () => {
           "Content-Type": "application/json",
           "ngrok-skip-browser-warning": "true",
         },
-        // send exactly the required fields by guide
-        body: JSON.stringify({
-          vehicleName: formData.vehicleName,
-          vehicleModel: formData.vehicleModel,
-          vehicleVin: formData.vehicleVin,
-          vehicleYear: Number(formData.vehicleYear),
-          customerId: formData.customerId,
-        }),
+        body: JSON.stringify(payload),
       });
+
+      console.log("📊 Response status:", response.status);
+      console.log(
+        "📊 Response headers:",
+        Object.fromEntries(response.headers.entries())
+      );
 
       if (response.ok) {
         const newVehicle = await response.json();
+        console.log("✅ Vehicle created successfully:", newVehicle);
         setVehicles((prev) => [newVehicle, ...prev]);
         setTotalElements((prev) => prev + 1);
         alert("Tạo xe thành công!");
         setShowCreateModal(false);
         resetForm();
       } else {
-        throw new Error(`HTTP ${response.status}`);
+        // Log detailed error response
+        const errorText = await response.text().catch(() => "");
+        console.error("❌ Server error response:", errorText);
+        console.error("❌ Response status:", response.status);
+        console.error("❌ Response statusText:", response.statusText);
+
+        // Thông điệp thân thiện hơn cho 400 khi body rỗng (thường do trùng VIN hoặc dữ liệu không hợp lệ)
+        if (response.status === 400) {
+          const friendly = errorText?.trim()?.length
+            ? errorText
+            : "Yêu cầu không hợp lệ (HTTP 400). Kiểm tra: VIN không trùng, vehicleYear hợp lệ, customerId đúng.";
+          throw new Error(friendly);
+        }
+
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
     } catch (error) {
-      console.error("Create vehicle error:", error);
-      alert("Lỗi khi tạo xe. Vui lòng thử lại.");
+      console.error("💥 Create vehicle error:", error);
+      console.error("💥 Error details:", {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+      });
+      alert(`Lỗi khi tạo xe: ${error.message}`);
     } finally {
       setSubmitting(false);
     }
@@ -255,7 +407,9 @@ const AdminVehicleManagement = () => {
       const token = localStorage.getItem("token");
 
       const response = await fetch(
-        `${API_BASE_URL}/api/vehicles/${selectedVehicle.id}`,
+        `${API_BASE_URL}/api/vehicles/${
+          selectedVehicle.vehicleId || selectedVehicle.id
+        }`,
         {
           method: "PUT",
           headers: {
@@ -270,7 +424,12 @@ const AdminVehicleManagement = () => {
       if (response.ok) {
         const updatedVehicle = await response.json();
         setVehicles((prev) =>
-          prev.map((v) => (v.id === selectedVehicle.id ? updatedVehicle : v))
+          prev.map((v) =>
+            (v.vehicleId || v.id) ===
+            (selectedVehicle.vehicleId || selectedVehicle.id)
+              ? updatedVehicle
+              : v
+          )
         );
         alert("Cập nhật xe thành công!");
         setShowEditModal(false);
@@ -297,7 +456,9 @@ const AdminVehicleManagement = () => {
       const token = localStorage.getItem("token");
 
       const response = await fetch(
-        `${API_BASE_URL}/api/vehicles/${selectedVehicle.id}`,
+        `${API_BASE_URL}/api/vehicles/${
+          selectedVehicle.vehicleId || selectedVehicle.id
+        }`,
         {
           method: "DELETE",
           headers: {
@@ -308,7 +469,13 @@ const AdminVehicleManagement = () => {
       );
 
       if (response.ok) {
-        setVehicles((prev) => prev.filter((v) => v.id !== selectedVehicle.id));
+        setVehicles((prev) =>
+          prev.filter(
+            (v) =>
+              (v.vehicleId || v.id) !==
+              (selectedVehicle.vehicleId || selectedVehicle.id)
+          )
+        );
         setTotalElements((prev) => prev - 1);
         alert("Xóa xe thành công!");
         setShowDeleteModal(false);
@@ -337,6 +504,17 @@ const AdminVehicleManagement = () => {
       vehicleColor: vehicle.vehicleColor || vehicle.color || "",
       vehicleEngine: vehicle.vehicleEngine || "",
     });
+
+    // Find and set customer info for edit modal
+    if (vehicle.customerId) {
+      const customer = customers.find(
+        (c) => c.customerId === vehicle.customerId
+      );
+      setSelectedCustomerInfo(customer || null);
+    } else {
+      setSelectedCustomerInfo(null);
+    }
+
     setShowEditModal(true);
   };
 
@@ -356,23 +534,34 @@ const AdminVehicleManagement = () => {
   const filteredVehicles = vehicles.filter((vehicle) => {
     const matchesSearch =
       !searchTerm ||
-      vehicle.vin?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      vehicle.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      vehicle.model?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      vehicle.ownerName?.toLowerCase().includes(searchTerm.toLowerCase());
+      (vehicle.vehicleVin || vehicle.vin)
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      (vehicle.vehicleName || vehicle.brand)
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      (vehicle.vehicleModel || vehicle.model)
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      (vehicle.customerName || vehicle.ownerName)
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase());
 
-    const matchesBrand = !filterBrand || vehicle.brand === filterBrand;
-    const matchesYear = !filterYear || vehicle.year?.toString() === filterYear;
+    const matchesBrand =
+      !filterBrand || (vehicle.vehicleName || vehicle.brand) === filterBrand;
+    const matchesYear =
+      !filterYear ||
+      (vehicle.vehicleYear || vehicle.year)?.toString() === filterYear;
 
     return matchesSearch && matchesBrand && matchesYear;
   });
 
   // Get Unique Brands and Years for filters
   const uniqueBrands = [
-    ...new Set(vehicles.map((v) => v.brand).filter(Boolean)),
+    ...new Set(vehicles.map((v) => v.vehicleName || v.brand).filter(Boolean)),
   ];
   const uniqueYears = [
-    ...new Set(vehicles.map((v) => v.year).filter(Boolean)),
+    ...new Set(vehicles.map((v) => v.vehicleYear || v.year).filter(Boolean)),
   ].sort((a, b) => b - a);
 
   if (loading) {
@@ -649,7 +838,7 @@ const AdminVehicleManagement = () => {
           </thead>
           <tbody>
             {filteredVehicles.map((v, index) => (
-              <tr key={v.id || v.vin || index}>
+              <tr key={v.vehicleId || v.id || v.vehicleVin || v.vin || index}>
                 <td
                   style={{
                     padding: "12px 15px",
@@ -657,7 +846,7 @@ const AdminVehicleManagement = () => {
                     fontFamily: "monospace",
                   }}
                 >
-                  {v.vin}
+                  {v.vehicleVin || v.vin}
                 </td>
                 <td
                   style={{
@@ -665,7 +854,7 @@ const AdminVehicleManagement = () => {
                     borderBottom: "1px solid #e0e0e0",
                   }}
                 >
-                  {v.brand}
+                  {v.vehicleName || v.brand}
                 </td>
                 <td
                   style={{
@@ -673,7 +862,7 @@ const AdminVehicleManagement = () => {
                     borderBottom: "1px solid #e0e0e0",
                   }}
                 >
-                  {v.model}
+                  {v.vehicleModel || v.model}
                 </td>
                 <td
                   style={{
@@ -681,7 +870,7 @@ const AdminVehicleManagement = () => {
                     borderBottom: "1px solid #e0e0e0",
                   }}
                 >
-                  {v.year}
+                  {v.vehicleYear || v.year}
                 </td>
                 <td
                   style={{
@@ -689,7 +878,7 @@ const AdminVehicleManagement = () => {
                     borderBottom: "1px solid #e0e0e0",
                   }}
                 >
-                  {v.ownerName || "-"}
+                  {v.customerName || v.ownerName || "-"}
                 </td>
                 <td
                   style={{
@@ -833,15 +1022,42 @@ const AdminVehicleManagement = () => {
 
                 <div className="form-row">
                   <div className="form-group">
-                    <label>customerId *</label>
-                    <input
-                      type="text"
+                    <label>Khách hàng *</label>
+                    <select
                       name="customerId"
                       value={formData.customerId}
-                      onChange={handleInputChange}
-                      placeholder="UUID khách hàng"
+                      onChange={(e) => {
+                        console.log("🎯 Select changed:", e.target.value);
+                        handleInputChange(e);
+                      }}
                       className={formErrors.customerId ? "error" : ""}
-                    />
+                      disabled={loadingCustomers}
+                      style={{
+                        width: "100%",
+                        padding: "8px",
+                        border: "1px solid #ccc",
+                        borderRadius: "4px",
+                        backgroundColor: "white",
+                      }}
+                    >
+                      <option value="">
+                        {loadingCustomers ? "Đang tải..." : "Chọn khách hàng"}
+                      </option>
+                      {customers.length > 0 ? (
+                        customers.map((customer, index) => (
+                          <option
+                            key={customer.customerId || `customer-${index}`}
+                            value={customer.customerId}
+                          >
+                            {customer.name}
+                          </option>
+                        ))
+                      ) : (
+                        <option value="" disabled>
+                          Không có khách hàng nào
+                        </option>
+                      )}
+                    </select>
                     {formErrors.customerId && (
                       <span className="error-text">
                         {formErrors.customerId}
@@ -850,122 +1066,96 @@ const AdminVehicleManagement = () => {
                   </div>
                 </div>
 
+                {/* Customer Information Display */}
+                {selectedCustomerInfo && (
+                  <div className="customer-info-section">
+                    <h4
+                      style={{
+                        margin: "20px 0 15px 0",
+                        color: "#333",
+                        borderBottom: "2px solid #007bff",
+                        paddingBottom: "5px",
+                      }}
+                    >
+                      <i className="fas fa-user"></i> Thông tin khách hàng đã
+                      chọn
+                    </h4>
+                    <div className="customer-info-grid">
+                      <div className="customer-info-item">
+                        <span className="info-label">Tên:</span>
+                        <span className="info-value">
+                          {selectedCustomerInfo.name || "-"}
+                        </span>
+                      </div>
+                      <div className="customer-info-item">
+                        <span className="info-label">Email:</span>
+                        <span className="info-value">
+                          {selectedCustomerInfo.email || "-"}
+                        </span>
+                      </div>
+                      <div className="customer-info-item">
+                        <span className="info-label">Số điện thoại:</span>
+                        <span className="info-value">
+                          {selectedCustomerInfo.phone || "-"}
+                        </span>
+                      </div>
+                      <div className="customer-info-item">
+                        <span className="info-label">Địa chỉ:</span>
+                        <span className="info-value">
+                          {selectedCustomerInfo.address || "-"}
+                        </span>
+                      </div>
+                      <div className="customer-info-item">
+                        <span className="info-label">ID khách hàng:</span>
+                        <span className="info-value">
+                          {selectedCustomerInfo.customerId || "-"}
+                        </span>
+                      </div>
+                      <div className="customer-info-item">
+                        <span className="info-label">Ngày tạo:</span>
+                        <span className="info-value">
+                          {selectedCustomerInfo.createdAt
+                            ? formatDate(selectedCustomerInfo.createdAt)
+                            : "-"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="form-row">
                   <div className="form-group">
-                    <label>Tên chủ sở hữu *</label>
+                    <label>vehicleColor *</label>
                     <input
                       type="text"
-                      name="ownerName"
-                      value={formData.ownerName}
+                      name="vehicleColor"
+                      value={formData.vehicleColor}
                       onChange={handleInputChange}
-                      placeholder="Họ và tên chủ sở hữu"
-                      className={formErrors.ownerName ? "error" : ""}
+                      placeholder="Màu xe (ví dụ: Xanh, Đỏ, Trắng)"
+                      className={formErrors.vehicleColor ? "error" : ""}
                     />
-                    {formErrors.ownerName && (
-                      <span className="error-text">{formErrors.ownerName}</span>
-                    )}
-                  </div>
-                  <div className="form-group">
-                    <label>Email chủ sở hữu</label>
-                    <input
-                      type="email"
-                      name="ownerEmail"
-                      value={formData.ownerEmail}
-                      onChange={handleInputChange}
-                      placeholder="email@example.com"
-                      className={formErrors.ownerEmail ? "error" : ""}
-                    />
-                    {formErrors.ownerEmail && (
+                    {formErrors.vehicleColor && (
                       <span className="error-text">
-                        {formErrors.ownerEmail}
+                        {formErrors.vehicleColor}
                       </span>
                     )}
                   </div>
-                </div>
-
-                <div className="form-row">
                   <div className="form-group">
-                    <label>Số điện thoại</label>
+                    <label>vehicleEngine *</label>
                     <input
-                      type="tel"
-                      name="ownerPhone"
-                      value={formData.ownerPhone}
+                      type="text"
+                      name="vehicleEngine"
+                      value={formData.vehicleEngine}
                       onChange={handleInputChange}
-                      placeholder="0123456789"
-                      className={formErrors.ownerPhone ? "error" : ""}
+                      placeholder="Động cơ (ví dụ: Electric Motor, Dual Motor AWD)"
+                      className={formErrors.vehicleEngine ? "error" : ""}
                     />
-                    {formErrors.ownerPhone && (
+                    {formErrors.vehicleEngine && (
                       <span className="error-text">
-                        {formErrors.ownerPhone}
+                        {formErrors.vehicleEngine}
                       </span>
                     )}
                   </div>
-                  <div className="form-group">
-                    <label>Ngày mua</label>
-                    <input
-                      type="date"
-                      name="purchaseDate"
-                      value={formData.purchaseDate}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Ngày bắt đầu bảo hành</label>
-                    <input
-                      type="date"
-                      name="warrantyStartDate"
-                      value={formData.warrantyStartDate}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Dung lượng pin (kWh)</label>
-                    <input
-                      type="number"
-                      name="batteryCapacity"
-                      value={formData.batteryCapacity}
-                      onChange={handleInputChange}
-                      placeholder="75"
-                      step="0.1"
-                    />
-                  </div>
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Tầm hoạt động (km)</label>
-                    <input
-                      type="number"
-                      name="range"
-                      value={formData.range}
-                      onChange={handleInputChange}
-                      placeholder="500"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Màu sắc</label>
-                    <input
-                      type="text"
-                      name="color"
-                      value={formData.color}
-                      onChange={handleInputChange}
-                      placeholder="Đỏ, Xanh, Trắng..."
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label>Ghi chú</label>
-                  <textarea
-                    name="notes"
-                    value={formData.notes}
-                    onChange={handleInputChange}
-                    placeholder="Ghi chú thêm về xe..."
-                    rows="3"
-                  />
                 </div>
               </div>
               <div className="modal-footer">
@@ -1012,14 +1202,16 @@ const AdminVehicleManagement = () => {
                     <label>VIN *</label>
                     <input
                       type="text"
-                      name="vin"
-                      value={formData.vin}
+                      name="vehicleVin"
+                      value={formData.vehicleVin}
                       onChange={handleInputChange}
-                      placeholder="Nhập VIN xe"
-                      className={formErrors.vin ? "error" : ""}
+                      placeholder="Nhập VIN xe (định dạng: 12-MĐ-345.67)"
+                      className={formErrors.vehicleVin ? "error" : ""}
                     />
-                    {formErrors.vin && (
-                      <span className="error-text">{formErrors.vin}</span>
+                    {formErrors.vehicleVin && (
+                      <span className="error-text">
+                        {formErrors.vehicleVin}
+                      </span>
                     )}
                   </div>
                   <div className="form-group">
@@ -1069,6 +1261,109 @@ const AdminVehicleManagement = () => {
                     )}
                   </div>
                 </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Khách hàng *</label>
+                    <select
+                      name="customerId"
+                      value={formData.customerId}
+                      onChange={(e) => {
+                        console.log("🎯 Edit Select changed:", e.target.value);
+                        handleInputChange(e);
+                      }}
+                      className={formErrors.customerId ? "error" : ""}
+                      disabled={loadingCustomers}
+                      style={{
+                        width: "100%",
+                        padding: "8px",
+                        border: "1px solid #ccc",
+                        borderRadius: "4px",
+                        backgroundColor: "white",
+                      }}
+                    >
+                      <option value="">
+                        {loadingCustomers ? "Đang tải..." : "Chọn khách hàng"}
+                      </option>
+                      {customers.length > 0 ? (
+                        customers.map((customer, index) => (
+                          <option
+                            key={customer.customerId || `customer-${index}`}
+                            value={customer.customerId}
+                          >
+                            {customer.name}
+                          </option>
+                        ))
+                      ) : (
+                        <option value="" disabled>
+                          Không có khách hàng nào
+                        </option>
+                      )}
+                    </select>
+                    {formErrors.customerId && (
+                      <span className="error-text">
+                        {formErrors.customerId}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Customer Information Display in Edit Modal */}
+                {selectedCustomerInfo && (
+                  <div className="customer-info-section">
+                    <h4
+                      style={{
+                        margin: "20px 0 15px 0",
+                        color: "#333",
+                        borderBottom: "2px solid #007bff",
+                        paddingBottom: "5px",
+                      }}
+                    >
+                      <i className="fas fa-user"></i> Thông tin khách hàng đã
+                      chọn
+                    </h4>
+                    <div className="customer-info-grid">
+                      <div className="customer-info-item">
+                        <span className="info-label">Tên:</span>
+                        <span className="info-value">
+                          {selectedCustomerInfo.name || "-"}
+                        </span>
+                      </div>
+                      <div className="customer-info-item">
+                        <span className="info-label">Email:</span>
+                        <span className="info-value">
+                          {selectedCustomerInfo.email || "-"}
+                        </span>
+                      </div>
+                      <div className="customer-info-item">
+                        <span className="info-label">Số điện thoại:</span>
+                        <span className="info-value">
+                          {selectedCustomerInfo.phone || "-"}
+                        </span>
+                      </div>
+                      <div className="customer-info-item">
+                        <span className="info-label">Địa chỉ:</span>
+                        <span className="info-value">
+                          {selectedCustomerInfo.address || "-"}
+                        </span>
+                      </div>
+                      <div className="customer-info-item">
+                        <span className="info-label">ID khách hàng:</span>
+                        <span className="info-value">
+                          {selectedCustomerInfo.customerId || "-"}
+                        </span>
+                      </div>
+                      <div className="customer-info-item">
+                        <span className="info-label">Ngày tạo:</span>
+                        <span className="info-value">
+                          {selectedCustomerInfo.createdAt
+                            ? formatDate(selectedCustomerInfo.createdAt)
+                            : "-"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="form-row">
                   <div className="form-group">
@@ -1676,6 +1971,35 @@ const AdminVehicleManagement = () => {
           color: #dc3545;
           font-weight: 600;
           margin-top: 15px;
+        }
+
+        /* Customer Information Display Styles */
+        .customer-info-section {
+          background: #f8f9fa;
+          border: 1px solid #e9ecef;
+          border-radius: 8px;
+          padding: 20px;
+          margin: 20px 0;
+        }
+        .customer-info-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+          gap: 15px;
+        }
+        .customer-info-item {
+          display: flex;
+          align-items: center;
+          padding: 8px 0;
+        }
+        .info-label {
+          font-weight: 600;
+          color: #495057;
+          min-width: 120px;
+          margin-right: 10px;
+        }
+        .info-value {
+          color: #212529;
+          flex: 1;
         }
       `}</style>
     </div>

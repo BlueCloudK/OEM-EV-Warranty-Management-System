@@ -73,7 +73,7 @@ Authorization: Bearer {jwt_token}
   "username": "john_doe"
 }
 ```
-
+T
 ### 3. Create Customer
 **POST** `/api/customers`
 
@@ -102,7 +102,7 @@ Authorization: Bearer {jwt_token}
   "userId": 6,
   "username": "jane_smith"
 }
-```
+```ua 
 
 ### 4. Update Customer
 **PUT** `/api/customers/{id}`

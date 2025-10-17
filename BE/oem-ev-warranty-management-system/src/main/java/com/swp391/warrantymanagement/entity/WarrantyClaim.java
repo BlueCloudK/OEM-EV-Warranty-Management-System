@@ -20,16 +20,13 @@ public class WarrantyClaim {
     private Long warrantyClaimId;
 
     @Column(name = "claim_date", nullable = false)
-    @NotNull(message = "Claim date is required")
     private Date claimDate;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    @NotNull(message = "Status is required")
     private WarrantyClaimStatus status = WarrantyClaimStatus.SUBMITTED;
 
     @Column(name = "description", length = 255, columnDefinition = "nvarchar(255)")
-    @Size(max = 255, message = "Description must be at most 255 characters")
     private String description;
 
     @Column(name = "resolution_date")
@@ -37,11 +34,9 @@ public class WarrantyClaim {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "part_id", nullable = false)
-    @NotNull(message = "Part is required")
     private Part part;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vehicle_id", nullable = false)
-    @NotNull(message = "Vehicle is required")
     private Vehicle vehicle;
 }

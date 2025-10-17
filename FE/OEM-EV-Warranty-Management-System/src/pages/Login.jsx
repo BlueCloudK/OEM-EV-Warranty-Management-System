@@ -2,7 +2,7 @@
 // PHẦN 1: IMPORT CÁC THƯ VIỆN VÀ COMPONENTS CẦN THIẾT
 // ===========================================================================================
 
-import React, { useState } from "react";      // React hook để quản lý state
+import React, { useState } from "react"; // React hook để quản lý state
 import { useNavigate, Link } from "react-router-dom"; // Hook điều hướng và component Link
 import { FaCar, FaUser, FaLock } from "react-icons/fa"; // Icons cho giao diện
 
@@ -13,17 +13,17 @@ import { FaCar, FaUser, FaLock } from "react-icons/fa"; // Icons cho giao diện
 export default function Login() {
   // Hook để điều hướng giữa các trang
   const navigate = useNavigate();
-  
+
   // ===== CÁC STATE QUẢN LÝ FORM LOGIN =====
-  const [username, setUsername] = useState("");      // Tên đăng nhập
-  const [password, setPassword] = useState("");      // Mật khẩu
+  const [username, setUsername] = useState(""); // Tên đăng nhập
+  const [password, setPassword] = useState(""); // Mật khẩu
   const [isLoading, setIsLoading] = useState(false); // Trạng thái loading khi đăng nhập
   const [errorMessage, setErrorMessage] = useState(""); // Thông báo lỗi
 
   // ===========================================================================================
   // PHẦN 3: HÀM XỬ LÝ ĐĂNG NHẬP - GỬI REQUEST TỚI API
   // ===========================================================================================
-  
+
   const handleLogin = async (e) => {
     e.preventDefault(); // Ngăn form reload trang
     setIsLoading(true); // Bật trạng thái loading
@@ -50,6 +50,7 @@ export default function Login() {
       if (data.message && data.message.toLowerCase().includes("success")) {
         // Lưu token vào localStorage để xác thực các request sau
         localStorage.setItem("token", data.accessToken);
+        localStorage.setItem("accessToken", data.accessToken); // Backup token
 
         // Lưu thông tin user và role
         const userRole = data.roleName || "CUSTOMER";
@@ -62,19 +63,27 @@ export default function Login() {
           })
         );
 
+        console.log("Login successful - Role:", userRole);
+        console.log("Token saved:", data.accessToken ? "Yes" : "No");
+        console.log("Full response data:", data);
+
         // ===== BƯỚC 3: ĐIỀU HƯỚNG THEO ROLE =====
         const roleRedirects = {
-          ADMIN: "/admin/dashboard",           // Admin -> Dashboard Admin
-          SC_STAFF: "/scstaff/dashboard",      // SC Staff -> Dashboard SC Staff  
+          ADMIN: "/admin/dashboard", // Admin -> Dashboard Admin
+          SC_STAFF: "/scstaff/dashboard", // SC Staff -> Dashboard SC Staff
           SC_TECHNICIAN: "/sctechnician/dashboard", // SC Technician -> Dashboard SC Tech
-          EVM_STAFF: "/evmstaff/dashboard",    // EVM Staff -> Dashboard EVM
-          CUSTOMER: "/customer/dashboard",     // Customer -> Dashboard Customer
+          EVM_STAFF: "/evmstaff/dashboard", // EVM Staff -> Dashboard EVM
+          CUSTOMER: "/customer/dashboard", // Customer -> Dashboard Customer
         };
 
         const redirectPath = roleRedirects[userRole] || "/customer/dashboard";
+        console.log("Redirecting to:", redirectPath);
 
-        alert(`Đăng nhập thành công! Role: ${userRole}`);
-        navigate(redirectPath); // Chuyển hướng đến trang tương ứng
+        // Delay navigation to ensure localStorage is saved
+        setTimeout(() => {
+          alert(`Đăng nhập thành công! Role: ${userRole}`);
+          navigate(redirectPath); // Chuyển hướng đến trang tương ứng
+        }, 100);
       } else {
         // ===== BƯỚC 4: XỬ LÝ LỖI TỪ API =====
         setErrorMessage(data.message || "Đăng nhập thất bại.");
@@ -91,7 +100,7 @@ export default function Login() {
   // ===========================================================================================
   // PHẦN 4: RENDER UI - HIỂN THỊ GIAO DIỆN ĐĂNG NHẬP
   // ===========================================================================================
-  
+
   return (
     // Container chính với background image
     <div
@@ -154,7 +163,7 @@ export default function Login() {
           >
             <FaCar /> EV Warranty Portal
           </h1>
-          
+
           {/* ===== LOGIN FORM - FORM ĐĂNG NHẬP ===== */}
           <form
             onSubmit={handleLogin}
@@ -194,9 +203,7 @@ export default function Login() {
               onMouseOver={(e) =>
                 (e.currentTarget.style.background = "#06694e")
               }
-              onMouseOut={(e) =>
-                (e.currentTarget.style.background = "#044835")
-              }
+              onMouseOut={(e) => (e.currentTarget.style.background = "#044835")}
             >
               {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
             </button>
@@ -208,16 +215,20 @@ export default function Login() {
 
             {/* Link quên mật khẩu */}
             <div style={{ textAlign: "center", marginTop: "15px" }}>
-              <Link 
-                to="/forgot-password" 
+              <Link
+                to="/forgot-password"
                 style={{
                   color: "#044835",
                   textDecoration: "none",
                   fontSize: "14px",
-                  cursor: "pointer"
+                  cursor: "pointer",
                 }}
-                onMouseOver={(e) => (e.currentTarget.style.textDecoration = "underline")}
-                onMouseOut={(e) => (e.currentTarget.style.textDecoration = "none")}
+                onMouseOver={(e) =>
+                  (e.currentTarget.style.textDecoration = "underline")
+                }
+                onMouseOut={(e) =>
+                  (e.currentTarget.style.textDecoration = "none")
+                }
               >
                 Quên mật khẩu?
               </Link>
@@ -249,11 +260,11 @@ export default function Login() {
 const inputWrapper = {
   display: "flex",
   alignItems: "center",
-  gap: "10px",                    // Khoảng cách giữa icon và input
+  gap: "10px", // Khoảng cách giữa icon và input
   padding: "12px 15px",
   borderRadius: "10px",
   border: "1px solid #ccc",
-  background: "#fafafa",          // Màu nền nhẹ
+  background: "#fafafa", // Màu nền nhẹ
 };
 
 // Style cho input field
@@ -261,8 +272,8 @@ const inputStyle = {
   border: "none",
   outline: "none",
   fontSize: "15px",
-  flex: 1,                        // Chiếm toàn bộ không gian còn lại
-  background: "transparent",      // Trong suốt để thấy background của wrapper
+  flex: 1, // Chiếm toàn bộ không gian còn lại
+  background: "transparent", // Trong suốt để thấy background của wrapper
 };
 
 // Style cho nút đăng nhập
@@ -270,11 +281,11 @@ const loginBtn = {
   padding: "12px",
   border: "none",
   borderRadius: "10px",
-  background: "#044835",          // Màu xanh đậm
+  background: "#044835", // Màu xanh đậm
   color: "#fff",
   fontWeight: "600",
   fontSize: "15px",
   cursor: "pointer",
-  transition: "0.3s",             // Hiệu ứng chuyển màu mượt
+  transition: "0.3s", // Hiệu ứng chuyển màu mượt
   marginTop: "10px",
 };

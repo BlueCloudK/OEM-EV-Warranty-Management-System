@@ -2,6 +2,8 @@ package com.swp391.warrantymanagement.repository;
 
 import com.swp391.warrantymanagement.entity.WarrantyClaim;
 import com.swp391.warrantymanagement.entity.WarrantyClaimStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,12 +18,12 @@ public interface WarrantyClaimRepository extends JpaRepository<WarrantyClaim, Lo
     // Derived query methods - Spring automatically generates queries
     List<WarrantyClaim> findByStatus(WarrantyClaimStatus status);
 
+    // Paginated version for status filtering
+    Page<WarrantyClaim> findByStatus(WarrantyClaimStatus status, Pageable pageable);
+
+    // Find claims by multiple statuses (for tech pending claims)
+    Page<WarrantyClaim> findByStatusIn(List<WarrantyClaimStatus> statuses, Pageable pageable);
+
+    // Sửa từ findByVehicleId thành findByVehicleVehicleId để match với WarrantyClaim.vehicle.vehicleId
     List<WarrantyClaim> findByVehicleVehicleId(Long vehicleId);
-
-    // Custom query for better performance with joins
-    @Query("SELECT wc FROM WarrantyClaim wc JOIN FETCH wc.vehicle v WHERE v.vehicleId = :vehicleId")
-    List<WarrantyClaim> findByVehicleIdWithVehicle(@Param("vehicleId") Long vehicleId);
-
-    @Query("SELECT wc FROM WarrantyClaim wc JOIN FETCH wc.part p WHERE wc.status = :status")
-    List<WarrantyClaim> findByStatusWithPart(@Param("status") WarrantyClaimStatus status);
 }
