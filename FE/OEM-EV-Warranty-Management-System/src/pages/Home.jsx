@@ -16,9 +16,6 @@ export default function Home() {
               Theo dõi bảo hành xe của bạn, đặt lịch dịch vụ và quản lý xe điện của bạn một cách dễ dàng.
             </p>
             <div className="hero-buttons">
-              <Link to="/register" className="btn-primary large">
-                Đăng ký
-              </Link>
               <Link to="/login" className="btn-primary large" >
                 Đăng nhập
               </Link>
