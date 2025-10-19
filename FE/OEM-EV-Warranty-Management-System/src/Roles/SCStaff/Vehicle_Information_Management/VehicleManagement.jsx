@@ -18,10 +18,10 @@ import {
   FaCogs,       // Icon động cơ
   FaUser,       // Icon người dùng
   FaBarcode,    // Icon mã vạch (VIN)
-  FaPlus,       // Icon thêm
   FaSave,       // Icon lưu
   FaTimes,      // Icon đóng
-  FaTrash       // Icon xóa
+  FaTrash,      // Icon xóa
+  FaClipboardCheck // Icon bảo hành
 } from 'react-icons/fa';
 
 // ===========================================================================================
@@ -51,21 +51,8 @@ const VehicleManagement = () => {
   const [totalElements, setTotalElements] = useState(0);
   
   // View states
-  const [activeView, setActiveView] = useState('list'); // list, form, detail
-  const [formMode, setFormMode] = useState('create'); // create, edit
+  const [activeView, setActiveView] = useState('list'); // list, detail
   const [selectedVehicle, setSelectedVehicle] = useState(null);
-  
-  // Form states
-  const [formData, setFormData] = useState({
-    vehicleName: '',
-    vehicleModel: '',
-    vehicleVin: '',
-    vehicleYear: new Date().getFullYear(),
-    vehicleColor: '',
-    vehicleEngine: '',
-    customerId: ''
-  });
-  const [formErrors, setFormErrors] = useState({});
 
   // ===========================================================================================
   // MOCK DATA - For fallback when API is not available
@@ -221,40 +208,6 @@ const VehicleManagement = () => {
   // ===========================================================================================
   // CRUD OPERATIONS
   // ===========================================================================================
-  
-  // Open create form
-  const openCreateForm = () => {
-    setFormMode('create');
-    setSelectedVehicle(null);
-    setFormData({
-      vehicleName: '',
-      vehicleModel: '',
-      vehicleVin: '',
-      vehicleYear: new Date().getFullYear(),
-      vehicleColor: '',
-      vehicleEngine: '',
-      customerId: ''
-    });
-    setFormErrors({});
-    setActiveView('form');
-  };
-
-  // Open edit form
-  const openEditForm = (vehicle) => {
-    setFormMode('edit');
-    setSelectedVehicle(vehicle);
-    setFormData({
-      vehicleName: vehicle.vehicleName,
-      vehicleModel: vehicle.vehicleModel,
-      vehicleVin: vehicle.vehicleVin,
-      vehicleYear: vehicle.vehicleYear,
-      vehicleColor: vehicle.vehicleColor || '',
-      vehicleEngine: vehicle.vehicleEngine || '',
-      customerId: vehicle.customerId
-    });
-    setFormErrors({});
-    setActiveView('form');
-  };
 
   // View vehicle detail
   const viewVehicleDetail = (vehicle) => {
@@ -262,93 +215,34 @@ const VehicleManagement = () => {
     setActiveView('detail');
   };
 
+  // Navigate to warranty claims with pre-filled vehicle info
+  const createWarrantyClaim = (vehicle) => {
+    // Prepare vehicle data to pass to warranty claims
+    const vehicleData = {
+      vehicleId: vehicle.vehicleId,
+      vehicleName: vehicle.vehicleName,
+      vehicleModel: vehicle.vehicleModel,
+      vehicleVin: vehicle.vehicleVin,
+      vehicleYear: vehicle.vehicleYear,
+      vehicleColor: vehicle.vehicleColor,
+      vehicleEngine: vehicle.vehicleEngine,
+      customerId: vehicle.customerId,
+      customerName: vehicle.customerName
+    };
+    
+    // Navigate to warranty claims with vehicle data as state
+    navigate('/scstaff/warranty-claims', { 
+      state: { 
+        prefilledVehicle: vehicleData,
+        openCreateForm: true 
+      } 
+    });
+  };
+
   // Close form and return to list
   const closeForm = () => {
     setActiveView('list');
     setSelectedVehicle(null);
-    setFormErrors({});
-  };
-
-  // Submit vehicle form (create or update)
-  const handleSubmitVehicle = async () => {
-    const errors = validateForm();
-    setFormErrors(errors);
-
-    if (Object.keys(errors).length > 0) return;
-
-    try {
-      const token = localStorage.getItem('token');
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-      
-      if (!token) {
-        alert('Không tìm thấy token xác thực. Vui lòng đăng nhập lại.');
-        return;
-      }
-      
-      if (!API_BASE_URL) {
-        alert('Lỗi cấu hình: Không tìm thấy VITE_API_BASE_URL');
-        return;
-      }
-
-      // Prepare payload according to API specification
-      const payload = {
-        vehicleName: formData.vehicleName,
-        vehicleModel: formData.vehicleModel,
-        vehicleVin: formData.vehicleVin,
-        vehicleYear: parseInt(formData.vehicleYear),
-        vehicleColor: formData.vehicleColor,
-        vehicleEngine: formData.vehicleEngine,
-        customerId: formData.customerId
-      };
-
-      let url, method;
-      if (formMode === 'edit' && selectedVehicle) {
-        url = `${API_BASE_URL}/api/vehicles/${selectedVehicle.vehicleId}`;
-        method = 'PUT';
-      } else {
-        url = `${API_BASE_URL}/api/vehicles`;
-        method = 'POST';
-      }
-
-      console.log(`${method} Vehicle:`, payload);
-
-      const response = await fetch(url, {
-        method: method,
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        console.log(`✅ Vehicle ${formMode === 'edit' ? 'updated' : 'created'}:`, result);
-        
-        await fetchVehicles();
-        closeForm();
-        alert(`Xe đã được ${formMode === 'edit' ? 'cập nhật' : 'tạo'} thành công!`);
-      } else {
-        let errorBody = null;
-        try {
-          const contentType = response.headers.get('content-type') || '';
-          if (contentType.includes('application/json')) {
-            errorBody = await response.json();
-          } else {
-            errorBody = await response.text();
-          }
-        } catch (err) {
-          errorBody = 'Không đọc được nội dung trả về';
-        }
-        
-        console.error(`Vehicle ${method} failed:`, response.status, errorBody);
-        const message = (errorBody && (errorBody.message || errorBody.error || JSON.stringify(errorBody))) || response.statusText || 'Unknown error';
-        alert(`${formMode === 'edit' ? 'Cập nhật' : 'Tạo'} xe thất bại (status ${response.status}): ${message}`);
-      }
-    } catch (error) {
-      console.error('Error in vehicle operation:', error);
-      alert(`Lỗi khi ${formMode === 'edit' ? 'cập nhật' : 'tạo'} xe. Vui lòng thử lại.`);
-    }
   };
 
   // Delete vehicle (only for ADMIN/EVM_STAFF)
@@ -375,38 +269,6 @@ const VehicleManagement = () => {
       console.error('Error deleting vehicle:', error);
       alert('Lỗi khi xóa xe. Vui lòng thử lại.');
     }
-  };
-
-  // ===========================================================================================
-  // FORM VALIDATION
-  // ===========================================================================================
-  
-  const validateForm = () => {
-    const errors = {};
-    
-    if (!formData.vehicleName.trim()) {
-      errors.vehicleName = 'Tên xe là bắt buộc';
-    }
-    
-    if (!formData.vehicleModel.trim()) {
-      errors.vehicleModel = 'Model xe là bắt buộc';
-    }
-    
-    if (!formData.vehicleVin.trim()) {
-      errors.vehicleVin = 'VIN là bắt buộc';
-    } else if (formData.vehicleVin.length !== 17) {
-      errors.vehicleVin = 'VIN phải có đúng 17 ký tự';
-    }
-    
-    if (!formData.vehicleYear || formData.vehicleYear < 1900 || formData.vehicleYear > new Date().getFullYear() + 1) {
-      errors.vehicleYear = 'Năm sản xuất không hợp lệ';
-    }
-    
-    if (!formData.customerId || !formData.customerId.trim()) {
-      errors.customerId = 'Customer ID là bắt buộc';
-    }
-    
-    return errors;
   };
 
   // ===========================================================================================
@@ -495,33 +357,12 @@ const VehicleManagement = () => {
                   Quản lý Thông Tin Xe
                 </h1>
                 <p style={{ margin: '4px 0 0 0', color: '#6b7280' }}>
-                  {activeView === 'list' && 'Danh sách và quản lý thông tin xe điện'}
-                  {activeView === 'form' && (formMode === 'create' ? 'Tạo thông tin xe mới' : 'Cập nhật thông tin xe')}
-                  {activeView === 'detail' && 'Xem chi tiết thông tin xe'}
+                  {activeView === 'list' && 'Danh sách xe điện, quản lý thông tin và tạo yêu cầu bảo hành'}
+                  {activeView === 'form' && 'Cập nhật thông tin xe'}
+                  {activeView === 'detail' && 'Xem chi tiết thông tin xe và tạo yêu cầu bảo hành'}
                 </p>
               </div>
             </div>
-            
-            {/* Create button */}
-            {activeView === 'list' && (
-              <button
-                onClick={openCreateForm}
-                style={{
-                  background: '#10b981',
-                  color: 'white',
-                  border: 'none',
-                  padding: '10px 20px',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  fontWeight: '500'
-                }}
-              >
-                <FaPlus /> Tạo xe mới
-              </button>
-            )}
           </div>
 
           {/* ===== SEARCH SECTION ===== */}
@@ -637,38 +478,44 @@ const VehicleManagement = () => {
                           <td style={{ padding: '12px' }}>{vehicle.vehicleYear}</td>
                           <td style={{ padding: '12px' }}>{vehicle.customerName || vehicle.customerId}</td>
                           <td style={{ padding: '12px', textAlign: 'center' }}>
-                            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                            <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', alignItems: 'center' }}>
                               <button
                                 onClick={() => viewVehicleDetail(vehicle)}
                                 style={{
                                   background: '#3b82f6',
                                   color: 'white',
                                   border: 'none',
-                                  padding: '6px 12px',
+                                  padding: '6px 10px',
                                   borderRadius: '4px',
                                   cursor: 'pointer',
                                   display: 'flex',
                                   alignItems: 'center',
-                                  gap: '4px'
+                                  gap: '4px',
+                                  fontSize: '12px'
                                 }}
                               >
                                 <FaEye /> Xem
                               </button>
                               <button
-                                onClick={() => openEditForm(vehicle)}
+                                onClick={() => createWarrantyClaim(vehicle)}
                                 style={{
-                                  background: '#f59e0b',
+                                  background: '#10b981',
                                   color: 'white',
                                   border: 'none',
-                                  padding: '6px 12px',
+                                  padding: '6px 10px',
                                   borderRadius: '4px',
                                   cursor: 'pointer',
                                   display: 'flex',
                                   alignItems: 'center',
-                                  gap: '4px'
+                                  gap: '4px',
+                                  fontSize: '12px',
+                                  transition: 'background-color 0.2s'
                                 }}
+                                title="Tạo yêu cầu bảo hành cho xe này"
+                                onMouseOver={(e) => e.target.style.background = '#059669'}
+                                onMouseOut={(e) => e.target.style.background = '#10b981'}
                               >
-                                <FaEdit /> Sửa
+                                <FaClipboardCheck /> Bảo hành
                               </button>
                             </div>
                           </td>
@@ -785,7 +632,7 @@ const VehicleManagement = () => {
               {/* VIN */}
               <div>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
-                  VIN (17 ký tự) *
+                  VIN  *
                 </label>
                 <input
                   type="text"
@@ -956,7 +803,7 @@ const VehicleManagement = () => {
                   gap: '8px'
                 }}
               >
-                <FaSave /> {formMode === 'create' ? 'Tạo xe' : 'Cập nhật'}
+                <FaSave /> Cập nhật
               </button>
             </div>
           </div>
@@ -1021,6 +868,27 @@ const VehicleManagement = () => {
                 }}
               >
                 <FaEdit /> Chỉnh sửa
+              </button>
+              <button
+                onClick={() => createWarrantyClaim(selectedVehicle)}
+                style={{
+                  background: '#10b981',
+                  color: 'white',
+                  border: 'none',
+                  padding: '12px 20px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontWeight: '500',
+                  transition: 'background-color 0.2s'
+                }}
+                title="Tạo yêu cầu bảo hành cho xe này"
+                onMouseOver={(e) => e.target.style.background = '#059669'}
+                onMouseOut={(e) => e.target.style.background = '#10b981'}
+              >
+                <FaClipboardCheck /> Tạo yêu cầu bảo hành
               </button>
             </div>
           </div>
