@@ -108,18 +108,6 @@ const AdminPartsManagement = () => {
     fetchParts();
   }, []);
 
-  // Normalize BE -> FE fields so UI renders consistently
-  const normalizePart = (p) => {
-    if (!p || typeof p !== "object") return p;
-    return {
-      ...p,
-      // prefer existing name; fallback to partName from BE DTO
-      name: p.name ?? p.partName ?? "",
-      // prefer unitPrice; fallback to price from BE DTO
-      unitPrice: p.unitPrice ?? p.price ?? undefined,
-    };
-  };
-
   const fetchParts = async () => {
     try {
       setLoading(true);
@@ -143,16 +131,17 @@ const AdminPartsManagement = () => {
       if (!ct || !ct.includes("application/json"))
         throw new Error("Non-JSON response");
       const data = await res.json();
-      const raw = Array.isArray(data.content)
-        ? data.content
-        : Array.isArray(data)
-        ? data
-        : [];
-      setParts(raw.map(normalizePart));
+      setParts(
+        Array.isArray(data.content)
+          ? data.content
+          : Array.isArray(data)
+          ? data
+          : []
+      );
     } catch (e) {
       console.error("Fetch parts failed:", e);
       setError("Không tải được danh sách phụ tùng. Hiển thị dữ liệu demo.");
-      setParts(mockParts.map(normalizePart));
+      setParts(mockParts);
     } finally {
       setLoading(false);
     }
@@ -346,7 +335,7 @@ const AdminPartsManagement = () => {
 
       if (response.ok) {
         const newPart = await response.json();
-        setParts((prev) => [normalizePart(newPart), ...prev]);
+        setParts((prev) => [newPart, ...prev]);
         setTotalElements((prev) => prev + 1);
         alert("Tạo phụ tùng thành công!");
         setShowCreateModal(false);
@@ -472,7 +461,7 @@ const AdminPartsManagement = () => {
     setFormData({
       partId: part.partId || "",
       partNumber: part.partNumber || "",
-      name: part.name || part.partName || "",
+      name: part.name || "",
       manufacturer: part.manufacturer || part.supplier || "",
       description: part.description || "",
       category: part.category || "",
@@ -513,7 +502,6 @@ const AdminPartsManagement = () => {
       !searchTerm ||
       part.partNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       part.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      part.partName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       part.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       part.supplier?.toLowerCase().includes(searchTerm.toLowerCase());
 
@@ -779,7 +767,7 @@ const AdminPartsManagement = () => {
                   textAlign: "left",
                 }}
               >
-                Giá (VNĐ)
+                Bảo hành (tháng)
               </th>
               <th
                 style={{
@@ -788,7 +776,7 @@ const AdminPartsManagement = () => {
                   textAlign: "left",
                 }}
               >
-                Ngày lắp đặt
+                Tồn kho
               </th>
               <th
                 style={{
@@ -797,7 +785,7 @@ const AdminPartsManagement = () => {
                   textAlign: "left",
                 }}
               >
-                Ngày hết hạn
+                Ngày tạo
               </th>
               <th
                 style={{
@@ -837,9 +825,7 @@ const AdminPartsManagement = () => {
                     borderBottom: "1px solid #e0e0e0",
                   }}
                 >
-                  {p.unitPrice
-                    ? `${Number(p.unitPrice).toLocaleString()} VNĐ`
-                    : "-"}
+                  {p.warrantyMonths}
                 </td>
                 <td
                   style={{
@@ -847,7 +833,7 @@ const AdminPartsManagement = () => {
                     borderBottom: "1px solid #e0e0e0",
                   }}
                 >
-                  {p.installationDate ? formatDate(p.installationDate) : "-"}
+                  {p.stock ?? "-"}
                 </td>
                 <td
                   style={{
@@ -855,9 +841,7 @@ const AdminPartsManagement = () => {
                     borderBottom: "1px solid #e0e0e0",
                   }}
                 >
-                  {p.warrantyExpirationDate
-                    ? formatDate(p.warrantyExpirationDate)
-                    : "-"}
+                  {p.createdAt ? formatDate(p.createdAt) : "-"}
                 </td>
                 <td
                   style={{
@@ -879,26 +863,6 @@ const AdminPartsManagement = () => {
                       title="Xem chi tiết"
                     >
                       <i className="fas fa-eye"></i>
-                    </button>
-                    <button
-                      className="btn btn-sm btn-success"
-                      onClick={() =>
-                        navigate("/admin/warranty-claims", {
-                          state: {
-                            openCreate: true,
-                            prefillClaim: {
-                              partDbId: p.id || p.partId,
-                              partId: p.partId || p.id,
-                              vehicleId: p.vehicleId,
-                              partName: p.name || p.partName,
-                              partNumber: p.partNumber,
-                            },
-                          },
-                        })
-                      }
-                      title="Tạo yêu cầu bảo hành"
-                    >
-                      <i className="fas fa-life-ring"></i>
                     </button>
                     <button
                       className="btn btn-sm btn-warning"

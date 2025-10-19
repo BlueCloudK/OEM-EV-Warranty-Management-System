@@ -38,7 +38,7 @@ const readTextSafe = async (res) => {
 
 export async function httpRequest(
   path,
-  { method = "GET", body, headers } = {}
+  { method = "GET", body, headers, suppressAuthRedirect } = {}
 ) {
   const base = getBaseUrl();
   const url = `${base}${path.startsWith("/") ? path : `/${path}`}`;
@@ -50,17 +50,21 @@ export async function httpRequest(
   });
 
   if (res.status === 401 || res.status === 403) {
-    // Clear stale auth and redirect to login
-    try {
-      localStorage.removeItem("token");
-      localStorage.removeItem("role");
-      // keep user info cleanup optional
-    } catch {}
-    if (
-      typeof window !== "undefined" &&
-      !window.location.pathname.startsWith("/login")
-    ) {
-      window.location.href = "/login";
+    if (suppressAuthRedirect) {
+      // let caller handle unauthorized
+    } else {
+      // Clear stale auth and redirect to login
+      try {
+        localStorage.removeItem("token");
+        localStorage.removeItem("role");
+        // keep user info cleanup optional
+      } catch {}
+      if (
+        typeof window !== "undefined" &&
+        !window.location.pathname.startsWith("/login")
+      ) {
+        window.location.href = "/login";
+      }
     }
   }
 
