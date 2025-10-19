@@ -37,33 +37,7 @@ const normalizeListOrPage = (data) => {
   return data;
 };
 
-export const serviceHistoriesApi = {
-  list: async ({ page, size } = {}) => {
-    const params = new URLSearchParams();
-    if (page !== undefined) params.set("page", page);
-    if (size !== undefined) params.set("size", size);
-    const { data } = await http.get(
-      `${base}${params.toString() ? `?${params}` : ""}`
-    );
-    return normalizeListOrPage(data);
-  },
-  getById: async (id) => {
-    const { data } = await http.get(`${base}/${id}`);
-    return normalizeHistory(data);
-  },
-  create: async (payload) => {
-    const { data } = await http.post(base, payload);
-    return normalizeHistory(data);
-  },
-  update: async (id, payload) => {
-    const { data } = await http.put(`${base}/${id}`, payload);
-    return normalizeHistory(data);
-  },
-  delete: async (id) => {
-    const { data } = await http.delete(`${base}/${id}`);
-    return data;
-  },
-};
+// ...existing code...
 // ===========================================================================================
 // Service Histories API - Quản lý Lịch sử Bảo dưỡng
 // ===========================================================================================
@@ -99,27 +73,20 @@ const handleResponse = async (response) => {
 };
 
 export const serviceHistoriesApi = {
-  // ===========================================================================================
   // GET ALL SERVICE HISTORIES - Lấy danh sách tất cả lịch sử bảo dưỡng
-  // ===========================================================================================
   getAllServiceHistories: async (params = {}) => {
     try {
       const queryParams = new URLSearchParams();
-      
-      // Thêm các query parameters
       if (params.page !== undefined) queryParams.append('page', params.page);
       if (params.size !== undefined) queryParams.append('size', params.size);
       if (params.search) queryParams.append('search', params.search);
       if (params.vehicleId) queryParams.append('vehicleId', params.vehicleId);
       if (params.status) queryParams.append('status', params.status);
-      
       const url = `${API_BASE_URL}/api/service-histories${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
-      
       const response = await fetch(url, {
         method: 'GET',
         headers: getAuthHeaders()
       });
-      
       return await handleResponse(response);
     } catch (error) {
       console.error('❌ Error getting service histories:', error);
@@ -127,16 +94,13 @@ export const serviceHistoriesApi = {
     }
   },
 
-  // ===========================================================================================
   // GET SERVICE HISTORY BY ID - Lấy thông tin lịch sử bảo dưỡng theo ID
-  // ===========================================================================================
   getServiceHistoryById: async (id) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/service-histories/${id}`, {
         method: 'GET',
         headers: getAuthHeaders()
       });
-      
       return await handleResponse(response);
     } catch (error) {
       console.error(`❌ Error getting service history ${id}:`, error);
@@ -144,9 +108,7 @@ export const serviceHistoriesApi = {
     }
   },
 
-  // ===========================================================================================
   // CREATE SERVICE HISTORY - Tạo lịch sử bảo dưỡng mới
-  // ===========================================================================================
   createServiceHistory: async (serviceHistoryData) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/service-histories`, {
@@ -154,7 +116,6 @@ export const serviceHistoriesApi = {
         headers: getAuthHeaders(),
         body: JSON.stringify(serviceHistoryData)
       });
-      
       return await handleResponse(response);
     } catch (error) {
       console.error('❌ Error creating service history:', error);
@@ -162,9 +123,7 @@ export const serviceHistoriesApi = {
     }
   },
 
-  // ===========================================================================================
   // UPDATE SERVICE HISTORY - Cập nhật lịch sử bảo dưỡng
-  // ===========================================================================================
   updateServiceHistory: async (id, serviceHistoryData) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/service-histories/${id}`, {
@@ -172,7 +131,6 @@ export const serviceHistoriesApi = {
         headers: getAuthHeaders(),
         body: JSON.stringify(serviceHistoryData)
       });
-      
       return await handleResponse(response);
     } catch (error) {
       console.error(`❌ Error updating service history ${id}:`, error);
@@ -180,16 +138,13 @@ export const serviceHistoriesApi = {
     }
   },
 
-  // ===========================================================================================
   // DELETE SERVICE HISTORY - Xóa lịch sử bảo dưỡng
-  // ===========================================================================================
   deleteServiceHistory: async (id) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/service-histories/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
-      
       return await handleResponse(response);
     } catch (error) {
       console.error(`❌ Error deleting service history ${id}:`, error);
@@ -197,23 +152,17 @@ export const serviceHistoriesApi = {
     }
   },
 
-  // ===========================================================================================
   // GET SERVICE HISTORIES BY VEHICLE ID - Lấy lịch sử bảo dưỡng theo xe
-  // ===========================================================================================
   getServiceHistoriesByVehicle: async (vehicleId, params = {}) => {
     try {
       const queryParams = new URLSearchParams();
-      
       if (params.page !== undefined) queryParams.append('page', params.page);
       if (params.size !== undefined) queryParams.append('size', params.size);
-      
       const url = `${API_BASE_URL}/api/service-histories/by-vehicle/${vehicleId}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
-      
       const response = await fetch(url, {
         method: 'GET',
         headers: getAuthHeaders()
       });
-      
       return await handleResponse(response);
     } catch (error) {
       console.error(`❌ Error getting service histories for vehicle ${vehicleId}:`, error);
@@ -221,23 +170,17 @@ export const serviceHistoriesApi = {
     }
   },
 
-  // ===========================================================================================
   // GET SERVICE HISTORIES BY CUSTOMER - Lấy lịch sử bảo dưỡng theo khách hàng
-  // ===========================================================================================
   getServiceHistoriesByCustomer: async (customerId, params = {}) => {
     try {
       const queryParams = new URLSearchParams();
-      
       if (params.page !== undefined) queryParams.append('page', params.page);
       if (params.size !== undefined) queryParams.append('size', params.size);
-      
       const url = `${API_BASE_URL}/api/service-histories/by-customer/${customerId}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
-      
       const response = await fetch(url, {
         method: 'GET',
         headers: getAuthHeaders()
       });
-      
       return await handleResponse(response);
     } catch (error) {
       console.error(`❌ Error getting service histories for customer ${customerId}:`, error);
@@ -245,23 +188,17 @@ export const serviceHistoriesApi = {
     }
   },
 
-  // ===========================================================================================
   // GET MY SERVICE HISTORIES (Customer Self-Service) - Khách hàng xem lịch sử của mình
-  // ===========================================================================================
   getMyServiceHistories: async (params = {}) => {
     try {
       const queryParams = new URLSearchParams();
-      
       if (params.page !== undefined) queryParams.append('page', params.page);
       if (params.size !== undefined) queryParams.append('size', params.size);
-      
       const url = `${API_BASE_URL}/api/service-histories/my-histories${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
-      
       const response = await fetch(url, {
         method: 'GET',
         headers: getAuthHeaders()
       });
-      
       return await handleResponse(response);
     } catch (error) {
       console.error('❌ Error getting my service histories:', error);
