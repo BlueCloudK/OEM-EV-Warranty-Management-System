@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { warrantyClaimsApi } from "../api/warrantyClaims";
 import { serviceHistoriesApi } from "../api/serviceHistories";
+import { getServiceCenters, getTechnicians, getParts } from "../api/mockLookup";
 
 export default function SCTechnician() {
   const navigate = useNavigate();
@@ -13,6 +14,11 @@ export default function SCTechnician() {
   const [search, setSearch] = useState("");
   const [showServiceHistoryModal, setShowServiceHistoryModal] = useState(false);
   const [selectedClaim, setSelectedClaim] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showWorkLogModal, setShowWorkLogModal] = useState(false);
+  const [showPartRequestModal, setShowPartRequestModal] = useState(false);
+  const [claimIdToWorkLogs, setClaimIdToWorkLogs] = useState({});
+  const [claimIdToPartRequests, setClaimIdToPartRequests] = useState({});
   const [serviceHistoryForm, setServiceHistoryForm] = useState({
     serviceDate: new Date().toISOString().slice(0, 16),
     serviceType: "REPAIR",
@@ -22,6 +28,16 @@ export default function SCTechnician() {
     serviceCenterId: "",
     technicianId: "",
     partsUsed: [],
+  });
+  const [workLogForm, setWorkLogForm] = useState({
+    startTime: new Date().toISOString().slice(0, 16),
+    endTime: new Date().toISOString().slice(0, 16),
+    notes: "",
+  });
+  const [partRequestForm, setPartRequestForm] = useState({
+    partId: "",
+    quantity: 1,
+    note: "",
   });
   const [serviceCenters, setServiceCenters] = useState([]);
   const [technicians, setTechnicians] = useState([]);
@@ -207,86 +223,14 @@ export default function SCTechnician() {
 
   const fetchLookupData = async () => {
     try {
-      // Mock data for service centers and technicians
-      setServiceCenters([
-        {
-          id: 1,
-          name: "Trung tâm dịch vụ Hà Nội",
-          address: "123 Đường ABC, Hà Nội",
-        },
-        {
-          id: 2,
-          name: "Trung tâm dịch vụ TP.HCM",
-          address: "456 Đường XYZ, TP.HCM",
-        },
-        {
-          id: 3,
-          name: "Trung tâm dịch vụ Đà Nẵng",
-          address: "789 Đường DEF, Đà Nẵng",
-        },
+      const [centers, techs, partsList] = await Promise.all([
+        getServiceCenters(),
+        getTechnicians(),
+        getParts(),
       ]);
-
-      setTechnicians([
-        {
-          id: 1,
-          name: "Nguyễn Văn A",
-          email: "tech1@example.com",
-          serviceCenterId: 1,
-        },
-        {
-          id: 2,
-          name: "Trần Thị B",
-          email: "tech2@example.com",
-          serviceCenterId: 1,
-        },
-        {
-          id: 3,
-          name: "Lê Văn C",
-          email: "tech3@example.com",
-          serviceCenterId: 2,
-        },
-        {
-          id: 4,
-          name: "Phạm Thị D",
-          email: "tech4@example.com",
-          serviceCenterId: 3,
-        },
-      ]);
-
-      // SC_TECHNICIAN doesn't have access to parts API, use mock data directly
-      console.log("SC_TECHNICIAN role detected, using mock parts data");
-      setParts([
-        {
-          partId: "BAT-001",
-          partName: "Battery Pack",
-          partNumber: "BAT-001",
-          price: 1000000,
-        },
-        {
-          partId: "MOT-002",
-          partName: "Electric Motor",
-          partNumber: "MOT-002",
-          price: 2500000,
-        },
-        {
-          partId: "CHG-003",
-          partName: "Charging Port",
-          partNumber: "CHG-003",
-          price: 500000,
-        },
-        {
-          partId: "CTR-004",
-          partName: "Controller Unit",
-          partNumber: "CTR-004",
-          price: 800000,
-        },
-        {
-          partId: "BRK-005",
-          partName: "Brake System",
-          partNumber: "BRK-005",
-          price: 1200000,
-        },
-      ]);
+      setServiceCenters(centers);
+      setTechnicians(techs);
+      setParts(partsList);
     } catch (e) {
       console.error("Failed to fetch lookup data:", e);
     }
@@ -324,6 +268,57 @@ export default function SCTechnician() {
       partsUsed: [],
     });
     setShowServiceHistoryModal(true);
+  };
+
+  const openWorkLogModal = (claim) => {
+    setSelectedClaim(claim);
+    setWorkLogForm({
+      startTime: new Date().toISOString().slice(0, 16),
+      endTime: new Date().toISOString().slice(0, 16),
+      notes: claim.description || "",
+    });
+    setShowWorkLogModal(true);
+  };
+
+  const submitWorkLog = () => {
+    if (!selectedClaim) return;
+    const newLog = {
+      id: Date.now(),
+      claimId: selectedClaim.id,
+      startTime: new Date(workLogForm.startTime).toISOString(),
+      endTime: new Date(workLogForm.endTime).toISOString(),
+      notes: workLogForm.notes,
+    };
+    setClaimIdToWorkLogs((prev) => ({
+      ...prev,
+      [selectedClaim.id]: [newLog, ...(prev[selectedClaim.id] || [])],
+    }));
+    setShowWorkLogModal(false);
+    alert("Đã ghi nhận Work Log (mock)");
+  };
+
+  const openPartRequestModal = (claim) => {
+    setSelectedClaim(claim);
+    setPartRequestForm({ partId: claim.partId || "", quantity: 1, note: "" });
+    setShowPartRequestModal(true);
+  };
+
+  const submitPartRequest = () => {
+    if (!selectedClaim || !partRequestForm.partId) return;
+    const req = {
+      id: Date.now(),
+      claimId: selectedClaim.id,
+      partId: partRequestForm.partId,
+      quantity: Number(partRequestForm.quantity || 1),
+      note: partRequestForm.note,
+      requestedAt: new Date().toISOString(),
+    };
+    setClaimIdToPartRequests((prev) => ({
+      ...prev,
+      [selectedClaim.id]: [req, ...(prev[selectedClaim.id] || [])],
+    }));
+    setShowPartRequestModal(false);
+    alert("Đã gửi yêu cầu phụ tùng (mock)");
   };
 
   const handleServiceHistorySubmit = async () => {
@@ -558,10 +553,27 @@ export default function SCTechnician() {
                       >
                         <button
                           className="btn btn-info"
-                          onClick={() => alert(JSON.stringify(c, null, 2))}
+                          onClick={() => {
+                            setSelectedClaim(c);
+                            setShowDetailModal(true);
+                          }}
                           style={{ fontSize: "12px", padding: "6px 8px" }}
                         >
                           Xem
+                        </button>
+                        <button
+                          className="btn btn-secondary"
+                          onClick={() => openWorkLogModal(c)}
+                          style={{ fontSize: "12px", padding: "6px 8px" }}
+                        >
+                          Ghi Work Log
+                        </button>
+                        <button
+                          className="btn btn-secondary"
+                          onClick={() => openPartRequestModal(c)}
+                          style={{ fontSize: "12px", padding: "6px 8px" }}
+                        >
+                          Yêu cầu phụ tùng
                         </button>
                         {c.status === "APPROVED" && (
                           <button
@@ -851,6 +863,351 @@ export default function SCTechnician() {
         </div>
       )}
 
+      {/* Claim Detail Modal */}
+      {showDetailModal && selectedClaim && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+        >
+          <div
+            style={{
+              background: "white",
+              padding: 24,
+              borderRadius: 8,
+              width: "95%",
+              maxWidth: 800,
+              maxHeight: "90vh",
+              overflow: "auto",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <h3 style={{ marginTop: 0 }}>Chi tiết yêu cầu bảo hành</h3>
+              <button
+                className="btn btn-secondary"
+                onClick={() => setShowDetailModal(false)}
+              >
+                Đóng
+              </button>
+            </div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+                gap: 12,
+                marginBottom: 16,
+              }}
+            >
+              <Info
+                label="Mã"
+                value={selectedClaim.code || selectedClaim.claimCode || "-"}
+              />
+              <Info label="Trạng thái" value={selectedClaim.status || "-"} />
+              <Info
+                label="Khách hàng"
+                value={selectedClaim.customerName || "-"}
+              />
+              <Info label="VIN" value={selectedClaim.vehicleVin || "-"} mono />
+              <Info label="Phụ tùng" value={selectedClaim.partName || "-"} />
+              <Info
+                label="Mô tả"
+                value={
+                  selectedClaim.description ||
+                  selectedClaim.issueDescription ||
+                  "-"
+                }
+                full
+              />
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 16,
+              }}
+            >
+              <div
+                style={{ background: "#f8f9fa", padding: 12, borderRadius: 6 }}
+              >
+                <h4 style={{ marginTop: 0 }}>Work Logs</h4>
+                {(claimIdToWorkLogs[selectedClaim.id] || []).length === 0 ? (
+                  <p style={{ color: "#777" }}>Chưa có work log</p>
+                ) : (
+                  <ul style={{ margin: 0, paddingLeft: 18 }}>
+                    {(claimIdToWorkLogs[selectedClaim.id] || []).map((w) => (
+                      <li key={w.id} style={{ marginBottom: 8 }}>
+                        <div style={{ fontFamily: "monospace", fontSize: 12 }}>
+                          {new Date(w.startTime).toLocaleString("vi-VN")} →{" "}
+                          {new Date(w.endTime).toLocaleString("vi-VN")}
+                        </div>
+                        <div>{w.notes}</div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div
+                style={{ background: "#f8f9fa", padding: 12, borderRadius: 6 }}
+              >
+                <h4 style={{ marginTop: 0 }}>Yêu cầu phụ tùng</h4>
+                {(claimIdToPartRequests[selectedClaim.id] || []).length ===
+                0 ? (
+                  <p style={{ color: "#777" }}>Chưa có yêu cầu</p>
+                ) : (
+                  <ul style={{ margin: 0, paddingLeft: 18 }}>
+                    {(claimIdToPartRequests[selectedClaim.id] || []).map(
+                      (r) => (
+                        <li key={r.id} style={{ marginBottom: 8 }}>
+                          <div>
+                            <strong>Part:</strong> {r.partId} —{" "}
+                            <strong>SL:</strong> {r.quantity}
+                          </div>
+                          <div style={{ fontSize: 12, color: "#555" }}>
+                            {new Date(r.requestedAt).toLocaleString("vi-VN")} |{" "}
+                            {r.note || "-"}
+                          </div>
+                        </li>
+                      )
+                    )}
+                  </ul>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Work Log Modal */}
+      {showWorkLogModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+        >
+          <div
+            style={{
+              background: "white",
+              padding: 24,
+              borderRadius: 8,
+              width: "90%",
+              maxWidth: 520,
+            }}
+          >
+            <h3 style={{ marginTop: 0 }}>Ghi Work Log</h3>
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: "block", fontWeight: 600 }}>
+                Bắt đầu
+              </label>
+              <input
+                type="datetime-local"
+                value={workLogForm.startTime}
+                onChange={(e) =>
+                  setWorkLogForm((p) => ({ ...p, startTime: e.target.value }))
+                }
+                style={{
+                  width: "100%",
+                  padding: 8,
+                  border: "1px solid #ddd",
+                  borderRadius: 4,
+                }}
+              />
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: "block", fontWeight: 600 }}>
+                Kết thúc
+              </label>
+              <input
+                type="datetime-local"
+                value={workLogForm.endTime}
+                onChange={(e) =>
+                  setWorkLogForm((p) => ({ ...p, endTime: e.target.value }))
+                }
+                style={{
+                  width: "100%",
+                  padding: 8,
+                  border: "1px solid #ddd",
+                  borderRadius: 4,
+                }}
+              />
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: "block", fontWeight: 600 }}>
+                Ghi chú
+              </label>
+              <textarea
+                rows={4}
+                value={workLogForm.notes}
+                onChange={(e) =>
+                  setWorkLogForm((p) => ({ ...p, notes: e.target.value }))
+                }
+                style={{
+                  width: "100%",
+                  padding: 8,
+                  border: "1px solid #ddd",
+                  borderRadius: 4,
+                }}
+              />
+            </div>
+            <div
+              style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}
+            >
+              <button
+                className="btn btn-secondary"
+                onClick={() => setShowWorkLogModal(false)}
+              >
+                Hủy
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={submitWorkLog}
+                disabled={!workLogForm.startTime || !workLogForm.endTime}
+              >
+                Lưu
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Part Request Modal */}
+      {showPartRequestModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+        >
+          <div
+            style={{
+              background: "white",
+              padding: 24,
+              borderRadius: 8,
+              width: "90%",
+              maxWidth: 520,
+            }}
+          >
+            <h3 style={{ marginTop: 0 }}>Yêu cầu phụ tùng</h3>
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: "block", fontWeight: 600 }}>
+                Phụ tùng
+              </label>
+              <select
+                value={partRequestForm.partId}
+                onChange={(e) =>
+                  setPartRequestForm((p) => ({ ...p, partId: e.target.value }))
+                }
+                style={{
+                  width: "100%",
+                  padding: 8,
+                  border: "1px solid #ddd",
+                  borderRadius: 4,
+                }}
+              >
+                <option value="">Chọn phụ tùng</option>
+                {parts.map((p) => (
+                  <option key={p.partId || p.id} value={p.partId || p.id}>
+                    {(p.partName || p.name) +
+                      " (" +
+                      (p.partNumber || p.partId) +
+                      ")"}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: "block", fontWeight: 600 }}>
+                Số lượng
+              </label>
+              <input
+                type="number"
+                min={1}
+                value={partRequestForm.quantity}
+                onChange={(e) =>
+                  setPartRequestForm((p) => ({
+                    ...p,
+                    quantity: e.target.value,
+                  }))
+                }
+                style={{
+                  width: "100%",
+                  padding: 8,
+                  border: "1px solid #ddd",
+                  borderRadius: 4,
+                }}
+              />
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: "block", fontWeight: 600 }}>
+                Ghi chú
+              </label>
+              <textarea
+                rows={3}
+                value={partRequestForm.note}
+                onChange={(e) =>
+                  setPartRequestForm((p) => ({ ...p, note: e.target.value }))
+                }
+                style={{
+                  width: "100%",
+                  padding: 8,
+                  border: "1px solid #ddd",
+                  borderRadius: 4,
+                }}
+              />
+            </div>
+            <div
+              style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}
+            >
+              <button
+                className="btn btn-secondary"
+                onClick={() => setShowPartRequestModal(false)}
+              >
+                Hủy
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={submitPartRequest}
+                disabled={!partRequestForm.partId || !partRequestForm.quantity}
+              >
+                Gửi yêu cầu
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`
         .btn { padding: 8px 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
         .btn-secondary { background:#6c757d; color:#fff; }
@@ -873,3 +1230,25 @@ export default function SCTechnician() {
 const th = { background: "#f5f5f5", padding: "12px 15px", textAlign: "left" };
 const td = { padding: "12px 15px", borderBottom: "1px solid #e0e0e0" };
 const tdMono = { ...td, fontFamily: "monospace" };
+
+function Info({ label, value, full, mono }) {
+  return (
+    <div style={{ gridColumn: full ? "1 / -1" : undefined }}>
+      <div style={{ fontSize: 12, color: "#666", marginBottom: 4 }}>
+        {label}
+      </div>
+      <div
+        style={{
+          background: "white",
+          border: "1px solid #eee",
+          borderRadius: 6,
+          padding: 8,
+          fontFamily: mono ? "monospace" : undefined,
+          whiteSpace: "pre-wrap",
+        }}
+      >
+        {value}
+      </div>
+    </div>
+  );
+}

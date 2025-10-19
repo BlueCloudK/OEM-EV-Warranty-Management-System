@@ -1,9 +1,17 @@
+:root {
+  --brand-primary: #0b6b61; /* OEM green-teal */
+  --brand-secondary: #0f766e;
+  --brand-accent: #1e293b;
+  --brand-surface: #ffffff;
+  --brand-bg: #f5f7f9;
+  --brand-border: #e5e7eb;
+}
+
 body {
   margin: 0;
-  font-family: "Segoe UI", sans-serif;
-  /* Outer background changed from white to teal-blue to match design */
-  background: #f7f9f9;
-  color: #181313;
+  font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+  background: var(--brand-bg);
+  color: #111827;
 }
 
 .container {
@@ -13,12 +21,17 @@ body {
 }
 
 .topbar {
-  background: #fff;
-  padding: 1rem 0;
-  border-bottom: 1px solid #eee;
+  background: linear-gradient(
+    90deg,
+    var(--brand-primary),
+    var(--brand-secondary)
+  );
+  padding: 14px 0;
   position: sticky;
   top: 0;
   z-index: 1000;
+  color: #fff;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
 }
 
 .nav-inner {
@@ -28,23 +41,37 @@ body {
 }
 
 .logo {
-  font-size: 1.5rem;
-  font-weight: bold;
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.logo span {
+  display: block;
+}
+.logo .sub {
+  font-weight: 500;
+  opacity: 0.85;
+  font-size: 0.8rem;
 }
 
 .nav-link {
   margin-left: 1.5rem;
   text-decoration: none;
-  color: #333;
+  color: #eef2ff;
+  opacity: 0.9;
+}
+.nav-link:hover {
+  opacity: 1;
 }
 
 .nav-cta {
   margin-left: 1.5rem;
-  padding: 0.5rem 1rem;
-  background: #0077ff;
-  color: white;
-  border-radius: 5px;
+  padding: 10px 14px;
+  background: #ffffff;
+  color: var(--brand-primary);
+  border-radius: 8px;
   text-decoration: none;
+  font-weight: 600;
 }
 
 .hero {
@@ -79,13 +106,14 @@ body {
 }
 
 .btn-primary {
-  background: #0077ff;
-  color: white;
+  background: var(--brand-primary);
+  color: #fff;
 }
 
 .btn-secondary {
-  border: 1px solid #0077ff;
-  color: #0077ff;
+  border: 1px solid var(--brand-primary);
+  color: var(--brand-primary);
+  background: #fff;
 }
 
 .hero-image img {
@@ -120,5 +148,3 @@ body {
   border-radius: 5px;
   margin-top: 1rem;
 }
-
-

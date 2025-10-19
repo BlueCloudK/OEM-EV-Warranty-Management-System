@@ -27,7 +27,10 @@ import AdminPartsManagement from "./Roles/Admin/AdminPartsManagement";
 import AdminVehicleManagement from "./Roles/Admin/AdminVehicleManagement";
 import AdminWarrantyClaimsManagement from "./Roles/Admin/AdminWarrantyClaimsManagement";
 import AdminServiceHistoriesManagement from "./Roles/Admin/AdminServiceHistoriesManagement";
+import AdminServiceCenters from "./Roles/Admin/AdminServiceCenters";
 import SCTechnician from "./Roles/SCTechnician";
+import AdminFeedback from "./Roles/Admin/AdminFeedback";
+import AdminPartRequests from "./Roles/Admin/AdminPartRequests";
 
 export default function App() {
   // Hook để lấy thông tin về route hiện tại
@@ -74,6 +77,12 @@ export default function App() {
           path="/admin/service-histories"
           element={<AdminServiceHistoriesManagement />}
         />
+        <Route
+          path="/admin/service-centers"
+          element={<AdminServiceCenters />}
+        />
+        <Route path="/admin/part-requests" element={<AdminPartRequests />} />
+        <Route path="/admin/feedback" element={<AdminFeedback />} />
         <Route path="/admin/users" element={<AdminUserManagement />} />
         // EVM Staff
         <Route path="/evmstaff" element={<EVMStaff />} />
