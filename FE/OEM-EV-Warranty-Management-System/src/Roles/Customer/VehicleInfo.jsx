@@ -1,21 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  FaCar, 
-  FaBolt, 
-  FaCalendar, 
+import {
+  FaCalendar,
   FaIdCard,
   FaSpinner,
   FaArrowLeft,
   FaPlus,
-  FaEdit,
-  FaTrash,
   FaEye,
   FaShieldAlt,
-  FaBatteryFull,
-  FaRoad,
   FaUser,
-  FaCogs
+  FaCar
 } from 'react-icons/fa';
 
 const VehicleInfo = () => {
@@ -33,33 +27,34 @@ const VehicleInfo = () => {
 
   useEffect(() => {
     fetchMyVehicles();
-    
-    // Add keyboard shortcut for back navigation
-    const handleKeyDown = (event) => {
-      if (event.key === 'Escape') {
-        navigate('/customer/dashboard');
-      }
-    };
 
-    document.addEventListener('keydown', handleKeyDown);
-    
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') navigate('/customer/dashboard');
     };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
   }, [navigate]);
 
-  // Main function to fetch customer's vehicles using GET /api/vehicles/my-vehicles
+  // Normalize response: accept array, page object with content, or single object
+  const normalizeVehicles = (data) => {
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data.content)) return data.content;
+    // Single object -> wrap
+    if (data.vehicleId || data.vehicleVin) return [data];
+    return [];
+  };
+
   const fetchMyVehicles = async (page = 0, size = 10) => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
       const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-      
+
       console.group('🚗 Fetching My Vehicles');
       console.log('Token present:', !!token);
       console.log('API Base URL:', API_BASE_URL);
-      console.log('Query params:', { page, size });
-      
+
       if (!token || !API_BASE_URL) {
         console.warn('Missing token or API_BASE_URL, using mock data');
         setMockVehicles();
@@ -67,15 +62,11 @@ const VehicleInfo = () => {
         return;
       }
 
-      // Call GET /api/vehicles/my-vehicles with pagination
-      const queryParams = new URLSearchParams({
-        page: page.toString(),
-        size: size.toString()
-      });
-      
-      console.log(`📡 Calling GET /api/vehicles/my-vehicles?${queryParams}`);
-      
-      const response = await fetch(`${API_BASE_URL}/api/vehicles/my-vehicles?${queryParams}`, {
+      const params = new URLSearchParams();
+      params.set('page', String(page));
+      params.set('size', String(size));
+
+      const res = await fetch(`${API_BASE_URL}/api/vehicles/my-vehicles?${params}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -83,45 +74,37 @@ const VehicleInfo = () => {
         }
       });
 
-      console.log('Response status:', response.status);
-
-      if (response.ok) {
-        const vehicleData = await response.json();
-        console.log('✅ Vehicle data received:', vehicleData);
-        
-        // Validate response format matches expected structure
-        if (vehicleData && vehicleData.content) {
-          setVehicles(vehicleData.content);
-          setPagination({
-            pageNumber: vehicleData.pageNumber || 0,
-            pageSize: vehicleData.pageSize || 10,
-            totalElements: vehicleData.totalElements || 0,
-            totalPages: vehicleData.totalPages || 0,
-            first: vehicleData.first || true,
-            last: vehicleData.last || true
-          });
-          
-          console.log('✅ My vehicles loaded successfully');
-          console.log('📊 Pagination info:', {
-            page: vehicleData.pageNumber,
-            size: vehicleData.pageSize,
-            total: vehicleData.totalElements,
-            totalPages: vehicleData.totalPages
-          });
-        } else {
-          console.error('❌ Invalid vehicle data format:', vehicleData);
-          throw new Error('Invalid vehicle data format');
-        }
-      } else {
-        const errorText = await response.text();
-        console.error('❌ API Error:', response.status, errorText);
-        throw new Error(`API Error: ${response.status} - ${errorText}`);
+      console.log('Response status:', res.status);
+      if (!res.ok) {
+        const text = await res.text();
+        console.error('API Error:', res.status, text);
+        throw new Error(text || `HTTP ${res.status}`);
       }
-      
+
+      const data = await res.json();
+      console.log('Vehicle payload:', data);
+
+      const list = normalizeVehicles(data);
+      setVehicles(list);
+
+      // If paged response, populate pagination
+      if (data && typeof data === 'object' && Array.isArray(data.content)) {
+        setPagination({
+          pageNumber: data.pageNumber ?? 0,
+          pageSize: data.pageSize ?? size,
+          totalElements: data.totalElements ?? list.length,
+          totalPages: data.totalPages ?? 1,
+          first: data.first ?? true,
+          last: data.last ?? true
+        });
+      } else {
+        // single page
+        setPagination({ pageNumber: 0, pageSize: list.length, totalElements: list.length, totalPages: 1, first: true, last: true });
+      }
+
       console.groupEnd();
-    } catch (error) {
-      console.error('❌ Error fetching my vehicles:', error);
-      console.warn('🔄 Falling back to mock data');
+    } catch (err) {
+      console.error('❌ Error fetching vehicles:', err);
       setMockVehicles();
       console.groupEnd();
     } finally {
@@ -129,595 +112,133 @@ const VehicleInfo = () => {
     }
   };
 
-  // Set mock data matching the exact API response format
+  // Mock response matching user's sample
   const setMockVehicles = () => {
-    const mockResponse = {
+    const mock = {
       content: [
         {
-          vehicleId: 1,
-          vehicleName: "Tesla Model 3",
-          vehicleModel: "Model 3 Standard Range",
-          vehicleVin: "1HGBH41JXMN109186",
-          vehicleYear: 2023,
-          vehicleColor: "White",
-          vehicleEngine: "Electric Motor",
-          customerId: "123e4567-e89b-12d3-a456-426614174000",
-          customerName: "John Doe"
-        },
-        {
-          vehicleId: 2,
-          vehicleName: "VinFast VF8",
-          vehicleModel: "VF8 Plus",
-          vehicleVin: "VF8ABC123DEF456789",
-          vehicleYear: 2024,
-          vehicleColor: "Ocean Blue",
-          vehicleEngine: "Electric Motor",
-          customerId: "123e4567-e89b-12d3-a456-426614174000",
-          customerName: "John Doe"
+          vehicleId: 0,
+          vehicleName: 'string',
+          vehicleModel: 'string',
+          vehicleYear: 0,
+          vehicleVin: 'string',
+          customerId: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+          customerName: 'Le Minh Khoi'
         }
       ],
       pageNumber: 0,
       pageSize: 10,
-      totalElements: 2,
+      totalElements: 1,
       totalPages: 1,
       first: true,
       last: true
     };
-    
-    setVehicles(mockResponse.content);
+    setVehicles(mock.content);
     setPagination({
-      pageNumber: mockResponse.pageNumber,
-      pageSize: mockResponse.pageSize,
-      totalElements: mockResponse.totalElements,
-      totalPages: mockResponse.totalPages,
-      first: mockResponse.first,
-      last: mockResponse.last
+      pageNumber: mock.pageNumber,
+      pageSize: mock.pageSize,
+      totalElements: mock.totalElements,
+      totalPages: mock.totalPages,
+      first: mock.first,
+      last: mock.last
     });
-    
-    console.log('🔧 Mock vehicles set:', mockResponse);
   };
 
-  const formatDate = (dateString) => {
-    try {
-      return new Date(dateString).toLocaleDateString('vi-VN', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-    } catch (error) {
-      return 'Không xác định';
-    }
+  const formatDate = (d) => {
+    try { return new Date(d).toLocaleDateString('vi-VN'); } catch { return '-'; }
   };
 
   const handlePageChange = (newPage) => {
-    if (newPage >= 0 && newPage < pagination.totalPages) {
-      fetchMyVehicles(newPage, pagination.pageSize);
-    }
+    if (newPage >= 0 && newPage < pagination.totalPages) fetchMyVehicles(newPage, pagination.pageSize);
   };
 
   if (loading) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}>
-        <div style={{
-          background: 'rgba(255, 255, 255, 0.9)',
-          borderRadius: '16px',
-          padding: '40px',
-          textAlign: 'center',
-          backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(255, 255, 255, 0.3)'
-        }}>
-          <FaSpinner style={{ 
-            fontSize: '3rem', 
-            color: '#f5576c', 
-            animation: 'spin 1s linear infinite',
-            marginBottom: '20px'
-          }} />
-          <p style={{ margin: 0, color: '#4a5568', fontSize: '1.2rem' }}>
-            Đang tải danh sách xe của bạn...
-          </p>
-          <p style={{ margin: '8px 0 0 0', color: '#718096', fontSize: '0.9rem' }}>
-            Gọi API GET /api/vehicles/my-vehicles
-          </p>
+      <div style={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center' }}>
+          <FaSpinner style={{ fontSize: '3rem', color: '#f5576c', animation: 'spin 1s linear infinite' }} />
+          <p style={{ marginTop: 12 }}>Đang tải danh sách xe của bạn...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-      padding: '20px'
-    }}>
+    <div style={{ padding: 20, minHeight: '100vh', background: 'linear-gradient(120deg,#fdfbfb,#ebedee)' }}>
       <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-        @keyframes slideInUp {
-          from { opacity: 0; transform: translateY(30px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes pulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.05); }
-        }
-        .vehicle-card {
-          animation: slideInUp 0.6s ease-out;
-          transition: all 0.3s ease;
-        }
-        .vehicle-card:hover {
-          transform: translateY(-8px);
-          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-        }
-        .back-button {
-          transition: all 0.3s ease;
-          position: relative;
-          overflow: hidden;
-        }
-        .back-button:hover {
-          background: rgba(255, 255, 255, 0.3) !important;
-          transform: translateY(-2px);
-          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-        }
-        .back-button::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: -100%;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-          transition: left 0.5s;
-        }
-        .back-button:hover::before {
-          left: 100%;
-        }
-        .page-button {
-          transition: all 0.2s ease;
-        }
-        .page-button:hover {
-          transform: translateY(-2px);
-        }
+        @keyframes spin {0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+        .container { max-width:1200px;margin:0 auto }
+        .header { display:flex;align-items:center;gap:16px;margin-bottom:18px }
+        .card-grid { display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px }
+        .vehicle-card { background:#fff;border-radius:12px;padding:18px;box-shadow:0 8px 20px rgba(16,24,40,0.06);transition:transform .18s,box-shadow .18s }
+        .vehicle-card:hover{ transform:translateY(-6px); box-shadow:0 18px 40px rgba(16,24,40,0.08) }
+        .meta { display:flex;align-items:center;gap:12px }
+        .vin { font-family:monospace;background:#f3f4f6;padding:6px 8px;border-radius:8px }
+        .empty { text-align:center;padding:40px;background:#fff;border-radius:12px }
       `}</style>
 
-      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-        {/* Header */}
-        <div style={{
-          background: 'rgba(255, 255, 255, 0.15)',
-          backdropFilter: 'blur(20px)',
-          borderRadius: '16px',
-          padding: '24px',
-          marginBottom: '24px',
-          border: '1px solid rgba(255, 255, 255, 0.2)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-            <button
-              className="back-button"
-              onClick={() => navigate('/customer/dashboard')}
-              style={{
-                background: 'rgba(255, 255, 255, 0.2)',
-                color: '#fff',
-                border: '2px solid rgba(255, 255, 255, 0.3)',
-                padding: '12px 20px',
-                borderRadius: '12px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                fontSize: '15px',
-                fontWeight: '600',
-                backdropFilter: 'blur(10px)',
-                position: 'relative',
-                overflow: 'hidden'
-              }}
-              title="Quay lại Dashboard (ESC)"
-            >
-              <FaArrowLeft style={{ fontSize: '14px' }} /> 
-              <span>Quay lại Dashboard</span>
-            </button>
-            
-            <div style={{ flex: 1 }}>
-              <h1 style={{ 
-                margin: 0, 
-                color: '#fff', 
-                fontSize: '1.8rem',
-                fontWeight: '700'
-              }}>
-                🚗 Danh sách xe của tôi
-              </h1>
-              <p style={{ 
-                margin: '4px 0 0 0', 
-                color: 'rgba(255, 255, 255, 0.8)',
-                fontSize: '1rem'
-              }}>
-                API: GET /api/vehicles/my-vehicles (Customer Self-Service)
-              </p>
-            </div>
-
-            {/* Stats */}
-            <div style={{
-              display: 'flex',
-              gap: '12px',
-              flexWrap: 'wrap'
-            }}>
-              <div style={{
-                background: 'rgba(255, 255, 255, 0.2)',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
-                borderRadius: '12px',
-                padding: '8px 16px',
-                fontSize: '14px',
-                color: '#fff',
-                fontWeight: '600'
-              }}>
-                {pagination.totalElements} xe
-              </div>
-              
-              {pagination.totalPages > 1 && (
-                <div style={{
-                  background: 'rgba(255, 255, 255, 0.2)',
-                  border: '1px solid rgba(255, 255, 255, 0.3)',
-                  borderRadius: '12px',
-                  padding: '8px 16px',
-                  fontSize: '14px',
-                  color: '#fff',
-                  fontWeight: '600'
-                }}>
-                  Trang {pagination.pageNumber + 1}/{pagination.totalPages}
-                </div>
-              )}
-            </div>
+      <div className="container">
+        <div className="header">
+          <button onClick={() => navigate('/customer/dashboard')} style={{ border: 'none', background: '#fff', padding: 10, borderRadius: 10, cursor: 'pointer' }} title="Quay lại">
+            <FaArrowLeft />
+          </button>
+          <div style={{ flex: 1 }}>
+            <h2 style={{ margin: 0, color: '#0f172a' }}><FaCar style={{ marginRight: 8, color: '#ef4444' }} />Xe của tôi</h2>
           </div>
         </div>
 
-        {/* Vehicles Grid */}
         {vehicles.length === 0 ? (
-          <div style={{
-            background: 'rgba(255, 255, 255, 0.95)',
-            borderRadius: '20px',
-            padding: '60px 40px',
-            textAlign: 'center',
-            border: '1px solid rgba(255, 255, 255, 0.3)',
-            backdropFilter: 'blur(20px)'
-          }}>
-            <div style={{
-              fontSize: '5rem',
-              marginBottom: '20px',
-              opacity: '0.5'
-            }}>
-              🚗
-            </div>
-            <h3 style={{
-              margin: '0 0 12px 0',
-              color: '#4a5568',
-              fontSize: '1.5rem'
-            }}>
-              Chưa có xe nào
-            </h3>
-            <p style={{
-              margin: '0 0 24px 0',
-              color: '#718096',
-              fontSize: '1rem'
-            }}>
-              Hiện tại bạn chưa có xe nào được đăng ký trong hệ thống
-            </p>
-            <button
-              onClick={() => navigate('/customer/register-vehicle')}
-              style={{
-                background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                color: '#fff',
-                border: 'none',
-                padding: '12px 24px',
-                borderRadius: '10px',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                fontSize: '14px',
-                fontWeight: '600'
-              }}
-            >
+          <div className="empty">
+            <p style={{ fontSize: 42 }}>🚗</p>
+            <h3>Chưa có xe nào</h3>
+            <p style={{ color: '#64748b' }}>Bạn chưa đăng ký xe nào trong hệ thống.</p>
+            <button onClick={() => navigate('/customer/register-vehicle')} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '10px 14px', borderRadius: 10, cursor: 'pointer' }}>
               <FaPlus /> Đăng ký xe mới
             </button>
           </div>
         ) : (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
-            gap: '24px'
-          }}>
-            {vehicles.map((vehicle, index) => (
-              <div
-                key={vehicle.vehicleId || index}
-                className="vehicle-card"
-                style={{
-                  background: 'rgba(255, 255, 255, 0.95)',
-                  borderRadius: '20px',
-                  overflow: 'hidden',
-                  border: '1px solid rgba(255, 255, 255, 0.3)',
-                  backdropFilter: 'blur(20px)',
-                  boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)',
-                  animationDelay: `${index * 0.1}s`
-                }}
-              >
-                {/* Vehicle Header */}
-                <div style={{
-                  background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                  padding: '24px',
-                  textAlign: 'center',
-                  position: 'relative'
-                }}>
-                  <div style={{
-                    fontSize: '3rem',
-                    marginBottom: '12px',
-                    animation: 'pulse 3s infinite'
-                  }}>
-                    🚗
+          <div className="card-grid">
+            {vehicles.map((v, idx) => (
+              <div key={v.vehicleId ?? idx} className="vehicle-card">
+                <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 12 }}>
+                  <div style={{ width: 56, height: 56, borderRadius: 12, background: '#fff5f5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <FaCar style={{ color: '#ef4444', fontSize: 22 }} />
                   </div>
-                  
-                  <h3 style={{
-                    margin: '0 0 8px 0',
-                    color: '#fff',
-                    fontSize: '1.4rem',
-                    fontWeight: '700'
-                  }}>
-                    {vehicle.vehicleName || 'Không xác định'}
-                  </h3>
-                  
-                  <p style={{
-                    margin: '0 0 12px 0',
-                    color: 'rgba(255, 255, 255, 0.9)',
-                    fontSize: '1rem'
-                  }}>
-                    {vehicle.vehicleModel || 'Model không xác định'}
-                  </p>
-                  
-                  <div style={{
-                    background: 'rgba(255, 255, 255, 0.2)',
-                    borderRadius: '20px',
-                    padding: '8px 16px',
-                    display: 'inline-block',
-                    fontSize: '14px',
-                    color: '#fff',
-                    fontFamily: 'monospace',
-                    fontWeight: '600',
-                    letterSpacing: '1px'
-                  }}>
-                    ID: {vehicle.vehicleId}
+                  <div style={{ flex: 1 }}>
+                    <div style={{ marginBottom: 8, display: 'flex', gap: 8, alignItems: 'baseline' }}>
+                      <div style={{ fontSize: 12, color: '#94a3b8', minWidth: 120 }}>Chủ sở hữu:</div>
+                      <div style={{ fontWeight: 700, color: '#0f172a' }}>{v.customerName || 'Không xác định'}</div>
+                    </div>
+
+                    <div style={{ marginBottom: 8, display: 'flex', gap: 8, alignItems: 'baseline' }}>
+                      <div style={{ fontSize: 12, color: '#94a3b8', minWidth: 120 }}>Tên xe:</div>
+                      <div style={{ fontWeight: 700 }}>{v.vehicleName || 'Không xác định'}</div>
+                    </div>
+
+                    <div style={{ marginBottom: 8, display: 'flex', gap: 8, alignItems: 'baseline' }}>
+                      <div style={{ fontSize: 12, color: '#94a3b8', minWidth: 120 }}>Model:</div>
+                      <div style={{ fontWeight: 600 }}>{v.vehicleModel || '-'}</div>
+                    </div>
+
+                    <div style={{ marginBottom: 8, display: 'flex', gap: 8, alignItems: 'baseline' }}>
+                      <div style={{ fontSize: 12, color: '#94a3b8', minWidth: 120 }}>Năm:</div>
+                      <div style={{ fontWeight: 600 }}>{v.vehicleYear ?? 'N/A'}</div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
+                      <div style={{ fontSize: 12, color: '#94a3b8', minWidth: 120 }}>Mã VIN:</div>
+                      <div className="vin" style={{ marginTop: 0 }}>{v.vehicleVin || 'Không có'}</div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Vehicle Details */}
-                <div style={{ padding: '24px' }}>
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1fr',
-                    gap: '16px',
-                    marginBottom: '20px'
-                  }}>
-                    {/* Year & Color */}
-                    <div>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        marginBottom: '8px'
-                      }}>
-                        <FaCalendar style={{ color: '#f5576c', fontSize: '14px' }} />
-                        <span style={{
-                          fontSize: '12px',
-                          color: '#718096',
-                          fontWeight: '600'
-                        }}>
-                          Năm sản xuất
-                        </span>
-                      </div>
-                      <div style={{
-                        color: '#2d3748',
-                        fontWeight: '600',
-                        fontSize: '16px'
-                      }}>
-                        {vehicle.vehicleYear || 'N/A'}
-                      </div>
-                    </div>
-
-                    <div>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        marginBottom: '8px'
-                      }}>
-                        <div style={{
-                          width: '14px',
-                          height: '14px',
-                          borderRadius: '50%',
-                          background: '#f5576c'
-                        }} />
-                        <span style={{
-                          fontSize: '12px',
-                          color: '#718096',
-                          fontWeight: '600'
-                        }}>
-                          Màu sắc
-                        </span>
-                      </div>
-                      <div style={{
-                        color: '#2d3748',
-                        fontWeight: '600',
-                        fontSize: '16px'
-                      }}>
-                        {vehicle.vehicleColor || 'N/A'}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Engine & VIN */}
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr',
-                    gap: '16px',
-                    marginBottom: '20px'
-                  }}>
-                    <div>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        marginBottom: '8px'
-                      }}>
-                        <FaCogs style={{ color: '#22c55e', fontSize: '14px' }} />
-                        <span style={{
-                          fontSize: '12px',
-                          color: '#718096',
-                          fontWeight: '600'
-                        }}>
-                          Loại động cơ
-                        </span>
-                      </div>
-                      <div style={{
-                        color: '#2d3748',
-                        fontWeight: '600',
-                        fontSize: '16px'
-                      }}>
-                        {vehicle.vehicleEngine || 'N/A'}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* VIN Number */}
-                  <div style={{
-                    background: '#f8fafc',
-                    borderRadius: '12px',
-                    padding: '16px',
-                    marginBottom: '20px'
-                  }}>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      marginBottom: '8px'
-                    }}>
-                      <FaIdCard style={{ color: '#3b82f6', fontSize: '14px' }} />
-                      <span style={{
-                        fontSize: '12px',
-                        color: '#718096',
-                        fontWeight: '600'
-                      }}>
-                        Vehicle Identification Number (VIN)
-                      </span>
-                    </div>
-                    <div style={{
-                      color: '#2d3748',
-                      fontWeight: '600',
-                      fontSize: '14px',
-                      fontFamily: 'monospace',
-                      letterSpacing: '1px',
-                      wordBreak: 'break-all'
-                    }}>
-                      {vehicle.vehicleVin || 'Không có thông tin'}
-                    </div>
-                  </div>
-
-                  {/* Customer Info */}
-                  <div style={{
-                    background: '#f0f9ff',
-                    borderRadius: '12px',
-                    padding: '16px',
-                    marginBottom: '20px'
-                  }}>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      marginBottom: '8px'
-                    }}>
-                      <FaUser style={{ color: '#0ea5e9', fontSize: '14px' }} />
-                      <span style={{
-                        fontSize: '12px',
-                        color: '#718096',
-                        fontWeight: '600'
-                      }}>
-                        Chủ sở hữu
-                      </span>
-                    </div>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between'
-                    }}>
-                      <span style={{
-                        color: '#0ea5e9',
-                        fontWeight: '600',
-                        fontSize: '16px'
-                      }}>
-                        {vehicle.customerName || 'Không xác định'}
-                      </span>
-                      <span style={{
-                        fontSize: '12px',
-                        color: '#718096',
-                        fontFamily: 'monospace'
-                      }}>
-                        ID: {vehicle.customerId?.slice(-8) || 'N/A'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div style={{
-                    display: 'flex',
-                    gap: '12px',
-                    paddingTop: '16px',
-                    borderTop: '1px solid #e2e8f0'
-                  }}>
-                    <button
-                      onClick={() => navigate(`/customer/vehicle/${vehicle.vehicleId}/details`)}
-                      style={{
-                        flex: 1,
-                        background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                        color: '#fff',
-                        border: 'none',
-                        padding: '10px 16px',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px',
-                        fontSize: '13px',
-                        fontWeight: '600'
-                      }}
-                    >
-                      <FaEye /> Chi tiết
-                    </button>
-                    
-                    <button
-                      onClick={() => navigate(`/customer/vehicle/${vehicle.vehicleId}/warranty`)}
-                      style={{
-                        flex: 1,
-                        background: '#fff',
-                        color: '#f5576c',
-                        border: '2px solid #f5576c',
-                        padding: '10px 16px',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px',
-                        fontSize: '13px',
-                        fontWeight: '600'
-                      }}
-                    >
-                      <FaShieldAlt /> Bảo hành
-                    </button>
-                  </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                  <button onClick={() => navigate(`/customer/vehicle/${v.vehicleId}/details`)} style={{ border: 'none', background: '#eef2ff', color: '#4338ca', padding: '8px 10px', borderRadius: 8, cursor: 'pointer' }}>
+                    <FaEye />
+                  </button>
+                  <button onClick={() => navigate(`/customer/vehicle/${v.vehicleId}/warranty`)} style={{ border: 'none', background: '#fff', color: '#ef4444', padding: '8px 10px', borderRadius: 8, cursor: 'pointer', border: '1px solid #fee2e2' }}>
+                    <FaShieldAlt />
+                  </button>
                 </div>
               </div>
             ))}
@@ -726,133 +247,12 @@ const VehicleInfo = () => {
 
         {/* Pagination */}
         {pagination.totalPages > 1 && (
-          <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            gap: '12px',
-            marginTop: '32px',
-            padding: '20px'
-          }}>
-            <button
-              className="page-button"
-              onClick={() => handlePageChange(pagination.pageNumber - 1)}
-              disabled={pagination.first}
-              style={{
-                background: pagination.first ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.2)',
-                color: pagination.first ? 'rgba(255, 255, 255, 0.5)' : '#fff',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
-                padding: '10px 16px',
-                borderRadius: '8px',
-                cursor: pagination.first ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                fontSize: '14px',
-                fontWeight: '600'
-              }}
-            >
-              ← Trước
-            </button>
-
-            <div style={{
-              background: 'rgba(255, 255, 255, 0.2)',
-              borderRadius: '8px',
-              padding: '10px 16px',
-              color: '#fff',
-              fontSize: '14px',
-              fontWeight: '600'
-            }}>
-              {pagination.pageNumber + 1} / {pagination.totalPages}
-            </div>
-
-            <button
-              className="page-button"
-              onClick={() => handlePageChange(pagination.pageNumber + 1)}
-              disabled={pagination.last}
-              style={{
-                background: pagination.last ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.2)',
-                color: pagination.last ? 'rgba(255, 255, 255, 0.5)' : '#fff',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
-                padding: '10px 16px',
-                borderRadius: '8px',
-                cursor: pagination.last ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                fontSize: '14px',
-                fontWeight: '600'
-              }}
-            >
-              Sau →
-            </button>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 20 }}>
+            <button onClick={() => handlePageChange(pagination.pageNumber - 1)} disabled={pagination.first} style={{ padding: '8px 12px', borderRadius: 8, border: 'none', background: pagination.first ? '#f1f5f9' : '#fff' }}>← Trước</button>
+            <div style={{ padding: '8px 12px', borderRadius: 8, background: '#fff' }}>{pagination.pageNumber + 1} / {pagination.totalPages}</div>
+            <button onClick={() => handlePageChange(pagination.pageNumber + 1)} disabled={pagination.last} style={{ padding: '8px 12px', borderRadius: 8, border: 'none', background: pagination.last ? '#f1f5f9' : '#fff' }}>Sau →</button>
           </div>
         )}
-
-        {/* Add Vehicle Button (if has vehicles) */}
-        {vehicles.length > 0 && (
-          <div style={{
-            textAlign: 'center',
-            marginTop: '32px'
-          }}>
-            <button
-              onClick={() => navigate('/customer/register-vehicle')}
-              style={{
-                background: 'rgba(255, 255, 255, 0.2)',
-                color: '#fff',
-                border: '2px solid rgba(255, 255, 255, 0.3)',
-                padding: '16px 32px',
-                borderRadius: '12px',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '12px',
-                fontSize: '16px',
-                fontWeight: '600',
-                backdropFilter: 'blur(10px)'
-              }}
-            >
-              <FaPlus /> Đăng ký xe mới
-            </button>
-          </div>
-        )}
-
-        {/* API Info Card */}
-        <div style={{
-          background: 'rgba(255, 255, 255, 0.15)',
-          backdropFilter: 'blur(20px)',
-          borderRadius: '16px',
-          padding: '20px',
-          marginTop: '24px',
-          border: '1px solid rgba(255, 255, 255, 0.2)'
-        }}>
-          <h4 style={{
-            margin: '0 0 12px 0',
-            color: '#fff',
-            fontSize: '1.1rem',
-            fontWeight: '600'
-          }}>
-            📡 API Integration Details
-          </h4>
-          <div style={{
-            color: 'rgba(255, 255, 255, 0.9)',
-            fontSize: '14px',
-            lineHeight: '1.6'
-          }}>
-            <p style={{ margin: '0 0 8px 0' }}>
-              <strong>API Endpoint:</strong> GET /api/vehicles/my-vehicles
-            </p>
-            <p style={{ margin: '0 0 8px 0' }}>
-              <strong>Permissions:</strong> CUSTOMER only (Customer Self-Service)
-            </p>
-            <p style={{ margin: '0 0 8px 0' }}>
-              <strong>Pagination:</strong> page={pagination.pageNumber}, size={pagination.pageSize}
-            </p>
-            <p style={{ margin: '0' }}>
-              <strong>Response Fields:</strong> vehicleId, vehicleName, vehicleModel, vehicleVin, vehicleYear, vehicleColor, vehicleEngine, customerId, customerName
-            </p>
-          </div>
-        </div>
       </div>
     </div>
   );

@@ -304,22 +304,21 @@ const WarrantyHistory = () => {
     return (
       <div style={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+        background: '#f3f4f6',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center'
       }}>
         <div style={{
-          background: 'rgba(255, 255, 255, 0.9)',
+          background: '#ffffff',
           borderRadius: '16px',
           padding: '40px',
           textAlign: 'center',
-          backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(255, 255, 255, 0.3)'
+          border: '1px solid #e6edf3'
         }}>
           <FaSpinner style={{ 
             fontSize: '3rem', 
-            color: '#4facfe', 
+            color: '#0f172a', 
             animation: 'spin 1s linear infinite',
             marginBottom: '20px'
           }} />
@@ -337,8 +336,9 @@ const WarrantyHistory = () => {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-      padding: '20px'
+      background: '#f3f4f6',
+      padding: '20px',
+      color: '#1f2937'
     }}>
       <style>{`
         @keyframes spin {
@@ -395,21 +395,20 @@ const WarrantyHistory = () => {
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         {/* Header */}
         <div style={{
-          background: 'rgba(255, 255, 255, 0.15)',
-          backdropFilter: 'blur(20px)',
+          background: '#ffffff',
           borderRadius: '16px',
           padding: '24px',
           marginBottom: '24px',
-          border: '1px solid rgba(255, 255, 255, 0.2)'
+          border: '1px solid #e6edf3'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
             <button
               className="back-button"
               onClick={() => navigate('/customer/dashboard')}
               style={{
-                background: 'rgba(255, 255, 255, 0.2)',
-                color: '#fff',
-                border: '2px solid rgba(255, 255, 255, 0.3)',
+                background: '#f3f4f6',
+                color: '#1f2937',
+                border: '2px solid #e5e7eb',
                 padding: '12px 20px',
                 borderRadius: '12px',
                 cursor: 'pointer',
@@ -418,28 +417,27 @@ const WarrantyHistory = () => {
                 gap: '10px',
                 fontSize: '15px',
                 fontWeight: '600',
-                backdropFilter: 'blur(10px)',
                 position: 'relative',
                 overflow: 'hidden'
               }}
               title="Quay lại Dashboard (ESC)"
             >
-              <FaArrowLeft style={{ fontSize: '14px' }} /> 
-              <span>Quay lại Dashboard</span>
+              <FaArrowLeft style={{ fontSize: '14px', color: '#1f2937' }} /> 
+              <span>Quay lại</span>
             </button>
             
             <div style={{ flex: 1 }}>
               <h1 style={{ 
                 margin: 0, 
-                color: '#fff', 
+                color: '#1f2937', 
                 fontSize: '1.8rem',
                 fontWeight: '700'
               }}>
-                🛡️ Lịch sử bảo hành
+                🛡️ Xem trạng thái bảo hành
               </h1>
               <p style={{ 
                 margin: '4px 0 0 0', 
-                color: 'rgba(255, 255, 255, 0.8)',
+                color: '#4b5563',
                 fontSize: '1rem'
               }}>
                 Theo dõi tình trạng yêu cầu bảo hành của bạn
@@ -453,12 +451,12 @@ const WarrantyHistory = () => {
               flexWrap: 'wrap'
             }}>
               <div style={{
-                background: 'rgba(255, 255, 255, 0.2)',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
+                background: '#eef2f6',
+                border: '1px solid #e5e7eb',
                 borderRadius: '12px',
                 padding: '8px 16px',
                 fontSize: '14px',
-                color: '#fff',
+                color: '#1f2937',
                 fontWeight: '600'
               }}>
                 {pagination.totalElements} yêu cầu
@@ -466,12 +464,12 @@ const WarrantyHistory = () => {
               
               {pagination.totalPages > 1 && (
                 <div style={{
-                  background: 'rgba(255, 255, 255, 0.2)',
-                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  background: '#eef2f6',
+                  border: '1px solid #e5e7eb',
                   borderRadius: '12px',
                   padding: '8px 16px',
                   fontSize: '14px',
-                  color: '#fff',
+                  color: '#1f2937',
                   fontWeight: '600'
                 }}>
                   Trang {pagination.pageNumber + 1}/{pagination.totalPages}
@@ -542,18 +540,17 @@ const WarrantyHistory = () => {
                 key={request.claimId || index}
                 className="warranty-card"
                 style={{
-                  background: 'rgba(255, 255, 255, 0.95)',
+                  background: '#ffffff',
                   borderRadius: '20px',
                   overflow: 'hidden',
-                  border: '1px solid rgba(255, 255, 255, 0.3)',
-                  backdropFilter: 'blur(20px)',
-                  boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)',
+                  border: '1px solid #e6edf3',
+                  boxShadow: '0 10px 30px rgba(0, 0, 0, 0.06)',
                   animationDelay: `${index * 0.1}s`
                 }}
               >
                 {/* Request Header */}
                 <div style={{
-                  background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                  background: 'linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%)',
                   padding: '20px 24px',
                   display: 'flex',
                   alignItems: 'center',
@@ -571,7 +568,7 @@ const WarrantyHistory = () => {
                     <div>
                       <h3 style={{
                         margin: '0 0 4px 0',
-                        color: '#fff',
+                        color: '#1f2937',
                         fontSize: '1.2rem',
                         fontWeight: '700'
                       }}>
@@ -579,7 +576,7 @@ const WarrantyHistory = () => {
                       </h3>
                       <p style={{
                         margin: 0,
-                        color: 'rgba(255, 255, 255, 0.9)',
+                        color: '#374151',
                         fontSize: '0.9rem'
                       }}>
                         {request.vehicleName} - {request.vehicleModel}
@@ -608,18 +605,7 @@ const WarrantyHistory = () => {
                       {request.statusText || request.status}
                     </div>
 
-                    {/* Priority Badge */}
-                    <div style={{
-                      background: 'rgba(255, 255, 255, 0.2)',
-                      border: `1px solid ${getPriorityColor(request.priority)}`,
-                      color: '#fff',
-                      padding: '6px 12px',
-                      borderRadius: '20px',
-                      fontSize: '13px',
-                      fontWeight: '600'
-                    }}>
-                      {request.priorityText || request.priority}
-                    </div>
+                    {/* Priority badge removed by request */}
                   </div>
                 </div>
 
@@ -886,9 +872,9 @@ const WarrantyHistory = () => {
               onClick={() => handlePageChange(pagination.pageNumber - 1)}
               disabled={pagination.first}
               style={{
-                background: pagination.first ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.2)',
-                color: pagination.first ? 'rgba(255, 255, 255, 0.5)' : '#fff',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
+                background: pagination.first ? '#eef2f6' : '#e6f0fb',
+                color: pagination.first ? '#9ca3af' : '#1f2937',
+                border: '1px solid #e5e7eb',
                 padding: '10px 16px',
                 borderRadius: '8px',
                 cursor: pagination.first ? 'not-allowed' : 'pointer',
@@ -903,10 +889,10 @@ const WarrantyHistory = () => {
             </button>
 
             <div style={{
-              background: 'rgba(255, 255, 255, 0.2)',
+              background: '#eef2f6',
               borderRadius: '8px',
               padding: '10px 16px',
-              color: '#fff',
+              color: '#1f2937',
               fontSize: '14px',
               fontWeight: '600'
             }}>
@@ -918,9 +904,9 @@ const WarrantyHistory = () => {
               onClick={() => handlePageChange(pagination.pageNumber + 1)}
               disabled={pagination.last}
               style={{
-                background: pagination.last ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.2)',
-                color: pagination.last ? 'rgba(255, 255, 255, 0.5)' : '#fff',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
+                background: pagination.last ? '#eef2f6' : '#e6f0fb',
+                color: pagination.last ? '#9ca3af' : '#1f2937',
+                border: '1px solid #e5e7eb',
                 padding: '10px 16px',
                 borderRadius: '8px',
                 cursor: pagination.last ? 'not-allowed' : 'pointer',
@@ -941,60 +927,9 @@ const WarrantyHistory = () => {
           textAlign: 'center',
           marginTop: '32px'
         }}>
-          <button
-            onClick={() => navigate('/customer/warranty/new-claim')}
-            style={{
-              background: 'rgba(255, 255, 255, 0.2)',
-              color: '#fff',
-              border: '2px solid rgba(255, 255, 255, 0.3)',
-              padding: '16px 32px',
-              borderRadius: '12px',
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '12px',
-              fontSize: '16px',
-              fontWeight: '600',
-              backdropFilter: 'blur(10px)'
-            }}
-          >
-            <FaPlus /> Tạo yêu cầu bảo hành mới
-          </button>
         </div>
 
-        {/* API Info Card */}
-        <div style={{
-          background: 'rgba(255, 255, 255, 0.15)',
-          backdropFilter: 'blur(20px)',
-          borderRadius: '16px',
-          padding: '20px',
-          marginTop: '24px',
-          border: '1px solid rgba(255, 255, 255, 0.2)'
-        }}>
-          <h4 style={{
-            margin: '0 0 12px 0',
-            color: '#fff',
-            fontSize: '1.1rem',
-            fontWeight: '600'
-          }}>
-            📡 API Integration Details
-          </h4>
-          <div style={{
-            color: 'rgba(255, 255, 255, 0.9)',
-            fontSize: '14px',
-            lineHeight: '1.6'
-          }}>
-            <p style={{ margin: '0 0 8px 0' }}>
-              <strong>API Endpoint:</strong> GET /api/warranty-claims/my-claims
-            </p>
-            <p style={{ margin: '0 0 8px 0' }}>
-              <strong>Features:</strong> Customer warranty claims history with pagination
-            </p>
-            <p style={{ margin: '0' }}>
-              <strong>Status Types:</strong> PENDING, IN_PROGRESS, COMPLETED, REJECTED
-            </p>
-          </div>
-        </div>
+
       </div>
     </div>
   );

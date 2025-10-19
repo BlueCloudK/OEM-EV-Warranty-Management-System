@@ -458,6 +458,21 @@ const CustomerProfile = () => {
         .back-button:hover::before {
           left: 100%;
         }
+        .field-row {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 12px;
+        }
+        .field-label {
+          width: 150px;
+          color: #4a5568;
+          font-size: 14px;
+          font-weight: 600;
+        }
+        .field-value {
+          flex: 1;
+        }
       `}</style>
 
       <div style={{ maxWidth: '800px', margin: '0 auto' }}>
@@ -502,35 +517,17 @@ const CustomerProfile = () => {
             </button>
             
             <div style={{ flex: 1 }}>
-              <h1 style={{ 
-                margin: 0, 
-                color: '#fff', 
-                fontSize: '1.8rem',
-                fontWeight: '700'
-              }}>
-                👤 Thông tin cá nhân
-              </h1>
-              <p style={{ 
-                margin: '4px 0 0 0', 
-                color: 'rgba(255, 255, 255, 0.8)',
-                fontSize: '1rem'
-              }}>
-                Dữ liệu từ API: GET /api/customers/by-user/{'{userId}'}
-              </p>
+                <h1 style={{ 
+                  margin: 0, 
+                  color: '#fff', 
+                  fontSize: '1.8rem',
+                  fontWeight: '700'
+                }}>
+                  👤 Thông tin cá nhân
+                </h1>
             </div>
 
-            {/* API Status Indicator */}
-            <div style={{
-              background: 'rgba(34, 197, 94, 0.2)',
-              border: '1px solid rgba(34, 197, 94, 0.3)',
-              borderRadius: '12px',
-              padding: '8px 12px',
-              fontSize: '12px',
-              color: '#22c55e',
-              fontWeight: '600'
-            }}>
-              ✅ API by-user Connected
-            </div>
+            {/* API badge removed per request */}
           </div>
         </div>
 
@@ -620,333 +617,211 @@ const CustomerProfile = () => {
             )}
           </div>
 
-          {/* Profile Body */}
-          <div style={{ padding: '32px' }}>
+          {/* Profile Body (compact) */}
+          <div style={{ padding: '20px' }}>
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-              gap: '32px'
+              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+              gap: '18px'
             }}>
               {/* Personal Information */}
               <div>
                 <h3 style={{
-                  margin: '0 0 24px 0',
+                  margin: '0 0 12px 0',
                   color: '#2d3748',
-                  fontSize: '1.3rem',
+                  fontSize: '1.15rem',
                   fontWeight: '600',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px'
                 }}>
                   <FaUser style={{ color: '#667eea' }} />
-                  Thông tin cá nhân
+                  Thông tin
                 </h3>
                 
                 {/* Name */}
-                <div style={{ marginBottom: '20px' }}>
-                  <label style={{
-                    display: 'block',
-                    marginBottom: '8px',
-                    color: '#4a5568',
-                    fontSize: '14px',
-                    fontWeight: '600'
-                  }}>
-                    Họ và tên *
-                  </label>
-                  {editing ? (
-                    <input
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) => handleInputChange('name', e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '12px 16px',
-                        border: formErrors.name ? '2px solid #e53e3e' : '2px solid #e2e8f0',
-                        borderRadius: '10px',
-                        fontSize: '16px',
-                        backgroundColor: '#fff'
-                      }}
-                      placeholder="Nhập họ và tên"
-                    />
-                  ) : (
-                    <div style={{
-                      padding: '12px 16px',
-                      background: '#f7fafc',
-                      borderRadius: '10px',
-                      fontSize: '16px',
-                      color: '#2d3748',
-                      border: '2px solid transparent'
-                    }}>
-                      {profile?.name || 'Chưa có thông tin'}
-                    </div>
-                  )}
-                  {formErrors.name && (
-                    <p style={{ color: '#e53e3e', fontSize: '12px', margin: '6px 0 0 0' }}>
-                      {formErrors.name}
-                    </p>
-                  )}
+                <div className="field-row">
+                  <div className="field-label">Họ và tên *</div>
+                  <div className="field-value">
+                    {editing ? (
+                      <input
+                        type="text"
+                        value={formData.name}
+                        onChange={(e) => handleInputChange('name', e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          border: formErrors.name ? '2px solid #e53e3e' : '2px solid #e2e8f0',
+                          borderRadius: '8px',
+                          fontSize: '14px',
+                          backgroundColor: '#fff'
+                        }}
+                        placeholder="Họ và tên"
+                      />
+                    ) : (
+                      <div style={{ padding: '10px 12px', background: '#f7fafc', borderRadius: '8px' }}>
+                        {profile?.name || 'Chưa có thông tin'}
+                      </div>
+                    )}
+                    {formErrors.name && (
+                      <p style={{ color: '#e53e3e', fontSize: '12px', margin: '6px 0 0 0' }}>
+                        {formErrors.name}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 {/* Email */}
-                <div style={{ marginBottom: '20px' }}>
-                  <label style={{
-                    display: 'block',
-                    marginBottom: '8px',
-                    color: '#4a5568',
-                    fontSize: '14px',
-                    fontWeight: '600'
-                  }}>
-                    <FaEnvelope style={{ marginRight: '6px', color: '#667eea' }} />
-                    Email *
-                  </label>
-                  {editing ? (
-                    <input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => handleInputChange('email', e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '12px 16px',
-                        border: formErrors.email ? '2px solid #e53e3e' : '2px solid #e2e8f0',
-                        borderRadius: '10px',
-                        fontSize: '16px',
-                        backgroundColor: '#fff'
-                      }}
-                      placeholder="example@email.com"
-                    />
-                  ) : (
-                    <div style={{
-                      padding: '12px 16px',
-                      background: '#f7fafc',
-                      borderRadius: '10px',
-                      fontSize: '16px',
-                      color: '#2d3748',
-                      border: '2px solid transparent'
-                    }}>
-                      {profile?.email || 'Chưa có thông tin'}
-                    </div>
-                  )}
-                  {formErrors.email && (
-                    <p style={{ color: '#e53e3e', fontSize: '12px', margin: '6px 0 0 0' }}>
-                      {formErrors.email}
-                    </p>
-                  )}
+                <div className="field-row">
+                  <div className="field-label"><FaEnvelope style={{ marginRight: '6px', color: '#667eea' }} /> Email *</div>
+                  <div className="field-value">
+                    {editing ? (
+                      <input
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => handleInputChange('email', e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          border: formErrors.email ? '2px solid #e53e3e' : '2px solid #e2e8f0',
+                          borderRadius: '8px',
+                          fontSize: '14px',
+                          backgroundColor: '#fff'
+                        }}
+                        placeholder="email@domain.com"
+                      />
+                    ) : (
+                      <div style={{ padding: '10px 12px', background: '#f7fafc', borderRadius: '8px' }}>
+                        {profile?.email || 'Chưa có thông tin'}
+                      </div>
+                    )}
+                    {formErrors.email && (
+                      <p style={{ color: '#e53e3e', fontSize: '12px', margin: '6px 0 0 0' }}>
+                        {formErrors.email}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 {/* Phone */}
-                <div style={{ marginBottom: '20px' }}>
-                  <label style={{
-                    display: 'block',
-                    marginBottom: '8px',
-                    color: '#4a5568',
-                    fontSize: '14px',
-                    fontWeight: '600'
-                  }}>
-                    <FaPhone style={{ marginRight: '6px', color: '#667eea' }} />
-                    Số điện thoại *
-                  </label>
-                  {editing ? (
-                    <input
-                      type="text"
-                      value={formData.phone}
-                      onChange={(e) => handleInputChange('phone', e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '12px 16px',
-                        border: formErrors.phone ? '2px solid #e53e3e' : '2px solid #e2e8f0',
-                        borderRadius: '10px',
-                        fontSize: '16px',
-                        backgroundColor: '#fff'
-                      }}
-                      placeholder="+84901234567"
-                    />
-                  ) : (
-                    <div style={{
-                      padding: '12px 16px',
-                      background: '#f7fafc',
-                      borderRadius: '10px',
-                      fontSize: '16px',
-                      color: '#2d3748',
-                      border: '2px solid transparent'
-                    }}>
-                      {profile?.phone || 'Chưa có thông tin'}
-                    </div>
-                  )}
-                  {formErrors.phone && (
-                    <p style={{ color: '#e53e3e', fontSize: '12px', margin: '6px 0 0 0' }}>
-                      {formErrors.phone}
-                    </p>
-                  )}
+                <div className="field-row">
+                  <div className="field-label"><FaPhone style={{ marginRight: '6px', color: '#667eea' }} /> SĐT *</div>
+                  <div className="field-value">
+                    {editing ? (
+                      <input
+                        type="text"
+                        value={formData.phone}
+                        onChange={(e) => handleInputChange('phone', e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          border: formErrors.phone ? '2px solid #e53e3e' : '2px solid #e2e8f0',
+                          borderRadius: '8px',
+                          fontSize: '14px',
+                          backgroundColor: '#fff'
+                        }}
+                        placeholder="+8490xxxxxxx"
+                      />
+                    ) : (
+                      <div style={{ padding: '10px 12px', background: '#f7fafc', borderRadius: '8px' }}>
+                        {profile?.phone || 'Chưa có thông tin'}
+                      </div>
+                    )}
+                    {formErrors.phone && (
+                      <p style={{ color: '#e53e3e', fontSize: '12px', margin: '6px 0 0 0' }}>
+                        {formErrors.phone}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
 
               {/* Additional Information */}
               <div>
                 <h3 style={{
-                  margin: '0 0 24px 0',
+                  margin: '0 0 12px 0',
                   color: '#2d3748',
-                  fontSize: '1.3rem',
+                  fontSize: '1.15rem',
                   fontWeight: '600',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px'
                 }}>
                   <FaIdCard style={{ color: '#667eea' }} />
-                  Thông tin hệ thống
+                  Hệ thống
                 </h3>
 
                 {/* Address */}
-                <div style={{ marginBottom: '20px' }}>
-                  <label style={{
-                    display: 'block',
-                    marginBottom: '8px',
-                    color: '#4a5568',
-                    fontSize: '14px',
-                    fontWeight: '600'
-                  }}>
-                    <FaMapMarkerAlt style={{ marginRight: '6px', color: '#667eea' }} />
-                    Địa chỉ *
-                  </label>
-                  {editing ? (
-                    <textarea
-                      value={formData.address}
-                      onChange={(e) => handleInputChange('address', e.target.value)}
-                      rows={3}
-                      style={{
-                        width: '100%',
-                        padding: '12px 16px',
-                        border: formErrors.address ? '2px solid #e53e3e' : '2px solid #e2e8f0',
-                        borderRadius: '10px',
-                        fontSize: '16px',
-                        backgroundColor: '#fff',
-                        resize: 'vertical',
-                        fontFamily: 'inherit'
-                      }}
-                      placeholder="Nhập địa chỉ đầy đủ"
-                    />
-                  ) : (
-                    <div style={{
-                      padding: '12px 16px',
-                      background: '#f7fafc',
-                      borderRadius: '10px',
-                      fontSize: '16px',
-                      color: '#2d3748',
-                      minHeight: '72px',
-                      border: '2px solid transparent'
-                    }}>
-                      {profile?.address || 'Chưa có thông tin'}
-                    </div>
-                  )}
-                  {formErrors.address && (
-                    <p style={{ color: '#e53e3e', fontSize: '12px', margin: '6px 0 0 0' }}>
-                      {formErrors.address}
-                    </p>
-                  )}
+                <div className="field-row">
+                  <div className="field-label"><FaMapMarkerAlt style={{ marginRight: '6px', color: '#667eea' }} /> Địa chỉ</div>
+                  <div className="field-value">
+                    {editing ? (
+                      <textarea
+                        value={formData.address}
+                        onChange={(e) => handleInputChange('address', e.target.value)}
+                        rows={3}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          border: formErrors.address ? '2px solid #e53e3e' : '2px solid #e2e8f0',
+                          borderRadius: '8px',
+                          fontSize: '14px',
+                          backgroundColor: '#fff',
+                          resize: 'vertical',
+                          fontFamily: 'inherit'
+                        }}
+                        placeholder="Địa chỉ"
+                      />
+                    ) : (
+                      <div style={{ padding: '10px 12px', background: '#f7fafc', borderRadius: '8px', minHeight: '48px' }}>
+                        {profile?.address || 'Chưa có thông tin'}
+                      </div>
+                    )}
+                    {formErrors.address && (
+                      <p style={{ color: '#e53e3e', fontSize: '12px', margin: '6px 0 0 0' }}>
+                        {formErrors.address}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 {/* Customer ID */}
-                <div style={{ marginBottom: '20px' }}>
-                  <label style={{
-                    display: 'block',
-                    marginBottom: '8px',
-                    color: '#4a5568',
-                    fontSize: '14px',
-                    fontWeight: '600'
-                  }}>
-                    Customer ID
-                  </label>
-                  <div style={{
-                    padding: '12px 16px',
-                    background: '#f7fafc',
-                    borderRadius: '10px',
-                    fontSize: '13px',
-                    color: '#718096',
-                    fontFamily: 'monospace',
-                    border: '2px solid transparent',
-                    wordBreak: 'break-all'
-                  }}>
-                    {profile?.customerId || 'Chưa có thông tin'}
+                <div className="field-row">
+                  <div className="field-label">Customer ID</div>
+                  <div className="field-value">
+                    <div style={{ padding: '10px 12px', background: '#f7fafc', borderRadius: '8px', fontFamily: 'monospace' }}>
+                      {profile?.customerId || 'Chưa có thông tin'}
+                    </div>
                   </div>
                 </div>
 
                 {/* User ID */}
-                <div style={{ marginBottom: '20px' }}>
-                  <label style={{
-                    display: 'block',
-                    marginBottom: '8px',
-                    color: '#4a5568',
-                    fontSize: '14px',
-                    fontWeight: '600'
-                  }}>
-                    User ID (Query Parameter)
-                  </label>
-                  <div style={{
-                    padding: '12px 16px',
-                    background: '#edf2f7',
-                    borderRadius: '10px',
-                    fontSize: '16px',
-                    color: '#2d3748',
-                    fontFamily: 'monospace',
-                    border: '2px solid #667eea',
-                    fontWeight: '600'
-                  }}>
-                    {profile?.userId || 'Chưa có thông tin'}
+                <div className="field-row">
+                  <div className="field-label">User ID</div>
+                  <div className="field-value">
+                    <div style={{ padding: '10px 12px', background: '#edf2f7', borderRadius: '8px', fontFamily: 'monospace' }}>
+                      {profile?.userId || 'Chưa có thông tin'}
+                    </div>
                   </div>
-                  <p style={{ 
-                    fontSize: '12px', 
-                    color: '#667eea', 
-                    margin: '4px 0 0 0',
-                    fontStyle: 'italic' 
-                  }}>
-                    API endpoint: /api/customers/by-user/{profile?.userId || '{userId}'}
-                  </p>
                 </div>
 
                 {/* Username */}
-                <div style={{ marginBottom: '20px' }}>
-                  <label style={{
-                    display: 'block',
-                    marginBottom: '8px',
-                    color: '#4a5568',
-                    fontSize: '14px',
-                    fontWeight: '600'
-                  }}>
-                    Username
-                  </label>
-                  <div style={{
-                    padding: '12px 16px',
-                    background: '#f7fafc',
-                    borderRadius: '10px',
-                    fontSize: '16px',
-                    color: '#2d3748',
-                    fontFamily: 'monospace',
-                    border: '2px solid transparent'
-                  }}>
-                    {profile?.username || 'Chưa có thông tin'}
+                <div className="field-row">
+                  <div className="field-label">Username</div>
+                  <div className="field-value">
+                    <div style={{ padding: '10px 12px', background: '#f7fafc', borderRadius: '8px', fontFamily: 'monospace' }}>
+                      {profile?.username || 'Chưa có thông tin'}
+                    </div>
                   </div>
                 </div>
 
                 {/* Created Date */}
-                <div style={{ marginBottom: '20px' }}>
-                  <label style={{
-                    display: 'block',
-                    marginBottom: '8px',
-                    color: '#4a5568',
-                    fontSize: '14px',
-                    fontWeight: '600'
-                  }}>
-                    <FaCalendar style={{ marginRight: '6px', color: '#667eea' }} />
-                    Ngày tạo tài khoản
-                  </label>
-                  <div style={{
-                    padding: '12px 16px',
-                    background: '#f7fafc',
-                    borderRadius: '10px',
-                    fontSize: '16px',
-                    color: '#2d3748',
-                    border: '2px solid transparent'
-                  }}>
-                    {profile?.createdAt ? formatDate(profile.createdAt) : 'Chưa có thông tin'}
+                <div className="field-row" style={{ marginBottom: '18px' }}>
+                  <div className="field-label"><FaCalendar style={{ marginRight: '6px', color: '#667eea' }} /> Ngày tạo</div>
+                  <div className="field-value">
+                    <div style={{ padding: '10px 12px', background: '#f7fafc', borderRadius: '8px' }}>
+                      {profile?.createdAt ? formatDate(profile.createdAt) : 'Chưa có thông tin'}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1016,39 +891,7 @@ const CustomerProfile = () => {
           </div>
         </div>
 
-        {/* API Info Card */}
-        <div style={{
-          background: 'rgba(255, 255, 255, 0.15)',
-          backdropFilter: 'blur(20px)',
-          borderRadius: '16px',
-          padding: '20px',
-          marginTop: '24px',
-          border: '1px solid rgba(255, 255, 255, 0.2)'
-        }}>
-          <h4 style={{
-            margin: '0 0 12px 0',
-            color: '#fff',
-            fontSize: '1.1rem',
-            fontWeight: '600'
-          }}>
-            📡 API Integration Details
-          </h4>
-          <div style={{
-            color: 'rgba(255, 255, 255, 0.9)',
-            fontSize: '14px',
-            lineHeight: '1.6'
-          }}>
-            <p style={{ margin: '0 0 8px 0' }}>
-              <strong>Primary API:</strong> GET /api/customers/by-user/{'{userId}'}
-            </p>
-            <p style={{ margin: '0 0 8px 0' }}>
-              <strong>Response Format:</strong> Đúng theo specification với customerId, name, email, phone, address, createdAt, userId, username
-            </p>
-            <p style={{ margin: '0' }}>
-              <strong>Fallback:</strong> GET /api/customers/{'{id}'} nếu by-user API thất bại
-            </p>
-          </div>
-        </div>
+        {/* Removed bottom API Info Card for a cleaner layout */}
       </div>
     </div>
   );

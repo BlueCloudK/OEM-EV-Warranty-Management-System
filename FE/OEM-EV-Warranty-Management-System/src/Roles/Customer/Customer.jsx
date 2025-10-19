@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { FaBars } from 'react-icons/fa';
 
 export default function Customer() {
   const navigate = useNavigate();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [userName, setUserName] = useState("Khách hàng");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Update time every minute
   useEffect(() => {
@@ -14,9 +16,15 @@ export default function Customer() {
     
     // Get user info from localStorage
     try {
-      const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
-      if (userInfo.name) {
-        setUserName(userInfo.name);
+      // Prefer customer profile (created via CustomerProfile) if available
+      const currentCustomer = JSON.parse(localStorage.getItem('currentCustomer') || 'null');
+      if (currentCustomer && (currentCustomer.name || currentCustomer.customerName || currentCustomer.fullName)) {
+        setUserName(currentCustomer.name || currentCustomer.customerName || currentCustomer.fullName);
+      } else {
+        const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
+        if (userInfo.name || userInfo.fullName || userInfo.username) {
+          setUserName(userInfo.name || userInfo.fullName || userInfo.username);
+        }
       }
     } catch (error) {
       console.log('Could not parse user info');
@@ -62,72 +70,128 @@ export default function Customer() {
   return (
     <div style={{ 
       minHeight: "100vh", 
-      background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+      background: "linear-gradient(180deg, #f5f7fb 0%, #eef2ff 100%)",
       position: "relative",
-      overflow: "hidden"
+      overflow: "hidden",
+      display: 'flex'
     }}>
-      {/* Background Pattern */}
-      <div style={{
-        position: "absolute",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        opacity: 0.05,
-        fontSize: "100px",
-        display: "flex",
-        flexWrap: "wrap",
-        alignItems: "center",
-        justifyContent: "space-around",
-        pointerEvents: "none",
-        color: "#fff"
+
+      {/* Left Sidebar / Dashboard (collapsible like SCStaff) */}
+      <aside style={{
+        width: sidebarCollapsed ? 72 : 260,
+        transition: 'width 0.28s ease',
+        background: 'linear-gradient(180deg, #0f172a 0%, #111827 100%)',
+        color: '#fff',
+        padding: sidebarCollapsed ? '16px 10px' : '20px',
+        boxSizing: 'border-box',
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '12px',
+        boxShadow: '2px 0 18px rgba(2,6,23,0.12)'
       }}>
-        {"⚡🚗🔧⚙️🔋🛠️".repeat(20).split('').map((emoji, i) => (
-          <span key={i} style={{ 
-            animation: `float ${3 + (i % 3)}s ease-in-out infinite`,
-            animationDelay: `${i * 0.1}s`
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: sidebarCollapsed ? 'center' : 'flex-start' }}>
+          <div style={{ fontSize: sidebarCollapsed ? '0.95rem' : '1.1rem', fontWeight: 800 }}>{sidebarCollapsed ? 'OE' : 'OEM EV'}</div>
+          <button
+            aria-label="Toggle sidebar"
+            onClick={() => setSidebarCollapsed(s => !s)}
+            style={{
+              marginLeft: 'auto',
+              background: 'transparent',
+              border: '1px solid rgba(255,255,255,0.06)',
+              color: '#cbd5e1',
+              padding: 8,
+              borderRadius: 8,
+              cursor: 'pointer'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+          >
+            <FaBars />
+          </button>
+        </div>
+
+        <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 12, justifyContent: sidebarCollapsed ? 'center' : 'flex-start' }}>
+          <div style={{
+            width: sidebarCollapsed ? 44 : 56,
+            height: sidebarCollapsed ? 44 : 56,
+            borderRadius: '50%',
+            background: '#fff',
+            color: '#0f172a',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontWeight: 700,
+            fontSize: '1.2rem'
           }}>
-            {emoji}
-          </span>
-        ))}
-      </div>
+            {userName ? userName.charAt(0).toUpperCase() : 'K'}
+          </div>
+          {!sidebarCollapsed && (
+            <div>
+              <div style={{ fontSize: '0.95rem', fontWeight: 700 }}>{userName}</div>
+              <div style={{ fontSize: '0.82rem', color: '#cbd5e1' }}>Khách hàng</div>
+            </div>
+          )}
+        </div>
+
+        <nav style={{ marginTop: 18, display: 'flex', flexDirection: 'column', gap: 8, padding: sidebarCollapsed ? '8px 4px' : '0' }}>
+          {features.map((f, i) => (
+            <button key={i} onClick={() => navigate(f.path)} style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              padding: sidebarCollapsed ? '10px 8px' : '10px 12px',
+              borderRadius: 8,
+              background: 'transparent',
+              color: '#e6eef8',
+              border: 'none',
+              textAlign: 'left',
+              cursor: 'pointer',
+              fontWeight: 600,
+              justifyContent: sidebarCollapsed ? 'center' : 'flex-start'
+            }}
+            onMouseEnter={(e) => { if (!sidebarCollapsed) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
+            onMouseLeave={(e) => { if (!sidebarCollapsed) e.currentTarget.style.background = 'transparent'; }}
+            >
+              <span style={{ fontSize: '1.1rem' }}>{f.icon}</span>
+              {!sidebarCollapsed && <span>{f.title}</span>}
+            </button>
+          ))}
+        </nav>
+      </aside>
 
       <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-20px); }
-        }
         @keyframes pulse {
           0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.05); }
+          50% { transform: scale(1.03); }
         }
         @keyframes slideInUp {
           from { opacity: 0; transform: translateY(30px); }
           to { opacity: 1; transform: translateY(0); }
         }
         .card-hover {
-          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .card-hover:hover {
-          transform: translateY(-12px) scale(1.02);
-          box-shadow: 0 25px 50px rgba(0,0,0,0.2);
+          transform: translateY(-8px);
+          box-shadow: 0 12px 30px rgba(16,24,40,0.08);
         }
       `}</style>
 
-      <div style={{ 
-        padding: "40px",
+      <main style={{ 
+        flex: 1,
+        padding: "28px 40px",
         position: "relative",
         zIndex: 1
       }}>
         {/* Header Section */}
         <div style={{
-          background: "rgba(255, 255, 255, 0.15)",
-          backdropFilter: "blur(20px)",
-          borderRadius: "24px",
-          padding: "32px",
-          marginBottom: "40px",
-          border: "1px solid rgba(255, 255, 255, 0.2)",
-          animation: "slideInUp 0.8s ease-out"
+          background: "#ffffff",
+          borderRadius: "12px",
+          padding: "20px",
+          marginBottom: "28px",
+          border: "1px solid rgba(15, 23, 42, 0.04)",
+          animation: "slideInUp 0.6s ease-out"
         }}>
           <div style={{ 
             display: "flex", 
@@ -139,17 +203,17 @@ export default function Customer() {
             <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
               {/* Avatar */}
               <div style={{
-                width: "80px",
-                height: "80px",
+                width: "72px",
+                height: "72px",
                 borderRadius: "50%",
-                background: "linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)",
+                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: "32px",
+                fontSize: "28px",
                 color: "#fff",
-                border: "4px solid rgba(255, 255, 255, 0.3)",
-                animation: "pulse 2s infinite"
+                border: "2px solid rgba(0,0,0,0.06)",
+                animation: "pulse 2.4s infinite"
               }}>
                 👨‍💼
               </div>
@@ -157,66 +221,40 @@ export default function Customer() {
               {/* Welcome Text */}
               <div>
                 <h1 style={{ 
-                  color: "#fff", 
-                  margin: "0 0 8px 0",
-                  fontSize: "2.5rem",
-                  fontWeight: "700",
-                  textShadow: "0 2px 4px rgba(0,0,0,0.1)"
+                  color: "#0f172a", 
+                  margin: "0 0 6px 0",
+                  fontSize: "1.6rem",
+                  fontWeight: "700"
                 }}>
-                  {getGreeting()}, {userName}!
+                  {getGreeting()}, {userName}
                 </h1>
                 <p style={{ 
                   margin: 0, 
-                  color: "rgba(255, 255, 255, 0.9)", 
-                  fontSize: "1.1rem",
-                  fontWeight: "400"
+                  color: "#475569", 
+                  fontSize: "0.98rem",
+                  fontWeight: "500"
                 }}>
-                  🚗 Trung tâm bảo dưỡng & bảo hành xe điện
+                  Trung tâm bảo dưỡng & bảo hành xe điện
                 </p>
                 <p style={{ 
-                  margin: "4px 0 0 0", 
-                  color: "rgba(255, 255, 255, 0.7)", 
-                  fontSize: "0.95rem"
+                  margin: "6px 0 0 0", 
+                  color: "#64748b", 
+                  fontSize: "0.9rem"
                 }}>
-                  📅 {currentTime.toLocaleDateString('vi-VN', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                  })}
+                  {currentTime.toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                 </p>
               </div>
             </div>
 
-            {/* Quick Stats */}
-            <div style={{ 
-              display: "flex", 
-              gap: "20px",
-              flexWrap: "wrap"
-            }}>
-              <div style={{
-                background: "rgba(255, 255, 255, 0.2)",
-                borderRadius: "16px",
-                padding: "16px 20px",
-                textAlign: "center",
-                minWidth: "100px"
-              }}>
-                <div style={{ fontSize: "24px", marginBottom: "4px" }}>⚡</div>
-                <div style={{ color: "#fff", fontSize: "0.85rem", fontWeight: "600" }}>
-                  Xe điện
-                </div>
+            {/* Quick Stats (subtle) */}
+            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+              <div style={{ background: "#f8fafc", borderRadius: "10px", padding: "10px 14px", textAlign: "center", minWidth: "96px" }}>
+                <div style={{ fontSize: "20px", marginBottom: "4px" }}>⚡</div>
+                <div style={{ color: "#0f172a", fontSize: "0.82rem", fontWeight: "600" }}>Xe</div>
               </div>
-              <div style={{
-                background: "rgba(255, 255, 255, 0.2)",
-                borderRadius: "16px",
-                padding: "16px 20px",
-                textAlign: "center",
-                minWidth: "100px"
-              }}>
-                <div style={{ fontSize: "24px", marginBottom: "4px" }}>🛡️</div>
-                <div style={{ color: "#fff", fontSize: "0.85rem", fontWeight: "600" }}>
-                  Bảo hành
-                </div>
+              <div style={{ background: "#f8fafc", borderRadius: "10px", padding: "10px 14px", textAlign: "center", minWidth: "96px" }}>
+                <div style={{ fontSize: "20px", marginBottom: "4px" }}>🛡️</div>
+                <div style={{ color: "#0f172a", fontSize: "0.82rem", fontWeight: "600" }}>Bảo hành</div>
               </div>
             </div>
           </div>
@@ -225,9 +263,9 @@ export default function Customer() {
         {/* Features Section */}
         <div style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-          gap: "30px",
-          maxWidth: "800px",
+          gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+          gap: "22px",
+          maxWidth: "980px",
           margin: "0 auto"
         }}>
           {features.map((item, index) => (
@@ -235,115 +273,53 @@ export default function Customer() {
               key={index}
               className="card-hover"
               style={{
-                background: "rgba(255, 255, 255, 0.95)",
-                borderRadius: "24px",
+                background: "#ffffff",
+                borderRadius: "14px",
                 overflow: "hidden",
                 cursor: "pointer",
                 display: "flex",
                 flexDirection: "column",
                 position: "relative",
-                border: "1px solid rgba(255, 255, 255, 0.3)",
-                backdropFilter: "blur(20px)",
-                animation: `slideInUp 0.8s ease-out ${index * 0.1}s both`
+                border: "1px solid rgba(15,23,42,0.04)",
+                animation: `slideInUp 0.6s ease-out ${index * 0.06}s both`
               }}
               onClick={() => item.path && navigate(item.path)}
             >
               {/* Card Header with Gradient */}
               <div style={{
                 background: item.gradient,
-                padding: "32px 24px",
+                padding: "22px 20px",
                 textAlign: "center",
                 position: "relative",
                 overflow: "hidden"
               }}>
                 {/* Background Pattern */}
-                <div style={{
-                  position: "absolute",
-                  top: "-50%",
-                  left: "-50%",
-                  right: "-50%",
-                  bottom: "-50%",
-                  fontSize: "60px",
-                  opacity: 0.1,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#fff",
-                  transform: "rotate(12deg)"
-                }}>
-                  {item.bgPattern}
-                </div>
-                
                 {/* Icon */}
-                <div style={{
-                  fontSize: "4rem",
-                  marginBottom: "16px",
-                  filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.2))",
-                  position: "relative",
-                  zIndex: 1
-                }}>
-                  {item.icon}
-                </div>
-                
-                <h3 style={{ 
-                  margin: 0, 
-                  color: "#fff",
-                  fontSize: "1.5rem",
-                  fontWeight: "700",
-                  textShadow: "0 2px 4px rgba(0,0,0,0.2)",
-                  position: "relative",
-                  zIndex: 1
-                }}>
-                  {item.title}
-                </h3>
+                <div style={{ fontSize: "2.4rem", marginBottom: "8px", position: "relative", zIndex: 1 }}>{item.icon}</div>
+                <h3 style={{ margin: 0, color: "#fff", fontSize: "1.15rem", fontWeight: "700", position: "relative", zIndex: 1 }}>{item.title}</h3>
               </div>
 
               {/* Card Body */}
               <div style={{ 
-                padding: "28px 24px", 
+                padding: "18px 20px", 
                 flex: 1,
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "space-between"
               }}>
                 <p style={{ 
-                  margin: "0 0 20px 0", 
-                  color: "#4a5568", 
-                  fontSize: "1rem",
-                  lineHeight: "1.6"
+                  margin: "0 0 14px 0", 
+                  color: "#475569", 
+                  fontSize: "0.98rem",
+                  lineHeight: "1.5"
                 }}>
                   {item.description}
                 </p>
                 
                 {/* Call to Action */}
-                <div style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  paddingTop: "16px",
-                  borderTop: "1px solid #e2e8f0"
-                }}>
-                  <span style={{
-                    color: "#667eea",
-                    fontWeight: "600",
-                    fontSize: "0.95rem"
-                  }}>
-                    Xem chi tiết
-                  </span>
-                  <div style={{
-                    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                    borderRadius: "50%",
-                    width: "36px",
-                    height: "36px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "#fff",
-                    fontSize: "1.2rem",
-                    transform: "rotate(-45deg)"
-                  }}>
-                    ↗
-                  </div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: "12px", borderTop: "1px solid rgba(15,23,42,0.04)" }}>
+                  <span style={{ color: "#667eea", fontWeight: "600", fontSize: "0.95rem" }}>Xem chi tiết</span>
+                  <div style={{ background: "#eef2ff", borderRadius: "8px", padding: "8px", display: "flex", alignItems: "center", justifyContent: "center", color: "#334155" }}>↗</div>
                 </div>
               </div>
             </div>
@@ -351,18 +327,10 @@ export default function Customer() {
         </div>
 
         {/* Footer */}
-        <div style={{
-          textAlign: "center",
-          marginTop: "60px",
-          padding: "20px",
-          color: "rgba(255, 255, 255, 0.7)",
-          fontSize: "0.9rem"
-        }}>
-          <p style={{ margin: 0 }}>
-            🌟 Cảm ơn bạn đã tin tưởng sử dụng dịch vụ của chúng tôi
-          </p>
+        <div style={{ textAlign: "center", marginTop: "40px", padding: "12px", color: "#64748b", fontSize: "0.9rem" }}>
+          <p style={{ margin: 0 }}>Cảm ơn bạn đã tin tưởng sử dụng dịch vụ của chúng tôi</p>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

@@ -84,38 +84,7 @@ const normalizeListOrPage = (data) => {
   return data;
 };
 
-export const warrantyClaimsApi = {
-  list: async ({ page, size } = {}) => {
-    const params = new URLSearchParams();
-    if (page !== undefined) params.set("page", page);
-    if (size !== undefined) params.set("size", size);
-    const { data } = await http.get(
-      `${base}${params.toString() ? `?${params}` : ""}`
-    );
-    return normalizeListOrPage(data);
-  },
-  getById: async (id) => {
-    const { data } = await http.get(`${base}/${id}`);
-    return normalizeClaim(data);
-  },
-  create: async (payload) => {
-    const { data } = await http.post(base, payload);
-    return normalizeClaim(data);
-  },
-  update: async (id, payload) => {
-    const { data } = await http.put(`${base}/${id}`, payload);
-    return normalizeClaim(data);
-  },
-  delete: async (id) => {
-    const { data } = await http.delete(`${base}/${id}`);
-    return data;
-  },
-  updateStatus: async (id, status) => {
-    // per Swagger: PATCH /api/warranty-claims/{id}/status with body { status, comments?, updatedBy? }
-    const { data } = await http.patch(`${base}/${id}/status`, { status });
-    return normalizeClaim(data);
-  },
-};
+// ...existing code...
 // ===========================================================================================
 // Warranty Claims API - Quản lý Warranty Claims
 // ===========================================================================================
@@ -151,27 +120,20 @@ const handleResponse = async (response) => {
 };
 
 export const warrantyClaimsApi = {
-  // ===========================================================================================
   // GET ALL WARRANTY CLAIMS - Lấy danh sách tất cả warranty claims
-  // ===========================================================================================
   getAllWarrantyClaims: async (params = {}) => {
     try {
       const queryParams = new URLSearchParams();
-      
-      // Thêm các query parameters
       if (params.page !== undefined) queryParams.append('page', params.page);
       if (params.size !== undefined) queryParams.append('size', params.size);
       if (params.search) queryParams.append('search', params.search);
       if (params.status) queryParams.append('status', params.status);
       if (params.vehicleId) queryParams.append('vehicleId', params.vehicleId);
-      
       const url = `${API_BASE_URL}/api/warranty-claims${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
-      
       const response = await fetch(url, {
         method: 'GET',
         headers: getAuthHeaders()
       });
-      
       return await handleResponse(response);
     } catch (error) {
       console.error('❌ Error getting warranty claims:', error);
@@ -179,16 +141,13 @@ export const warrantyClaimsApi = {
     }
   },
 
-  // ===========================================================================================
   // GET WARRANTY CLAIM BY ID - Lấy thông tin warranty claim theo ID
-  // ===========================================================================================
   getWarrantyClaimById: async (id) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/warranty-claims/${id}`, {
         method: 'GET',
         headers: getAuthHeaders()
       });
-      
       return await handleResponse(response);
     } catch (error) {
       console.error(`❌ Error getting warranty claim ${id}:`, error);
@@ -196,9 +155,7 @@ export const warrantyClaimsApi = {
     }
   },
 
-  // ===========================================================================================
   // CREATE WARRANTY CLAIM - Tạo warranty claim mới
-  // ===========================================================================================
   createWarrantyClaim: async (claimData) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/warranty-claims`, {
@@ -206,7 +163,6 @@ export const warrantyClaimsApi = {
         headers: getAuthHeaders(),
         body: JSON.stringify(claimData)
       });
-      
       return await handleResponse(response);
     } catch (error) {
       console.error('❌ Error creating warranty claim:', error);
@@ -214,9 +170,7 @@ export const warrantyClaimsApi = {
     }
   },
 
-  // ===========================================================================================
   // UPDATE WARRANTY CLAIM - Cập nhật warranty claim
-  // ===========================================================================================
   updateWarrantyClaim: async (id, claimData) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/warranty-claims/${id}`, {
@@ -224,7 +178,6 @@ export const warrantyClaimsApi = {
         headers: getAuthHeaders(),
         body: JSON.stringify(claimData)
       });
-      
       return await handleResponse(response);
     } catch (error) {
       console.error(`❌ Error updating warranty claim ${id}:`, error);
@@ -232,16 +185,13 @@ export const warrantyClaimsApi = {
     }
   },
 
-  // ===========================================================================================
   // DELETE WARRANTY CLAIM - Xóa warranty claim
-  // ===========================================================================================
   deleteWarrantyClaim: async (id) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/warranty-claims/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
-      
       return await handleResponse(response);
     } catch (error) {
       console.error(`❌ Error deleting warranty claim ${id}:`, error);
@@ -249,9 +199,7 @@ export const warrantyClaimsApi = {
     }
   },
 
-  // ===========================================================================================
   // APPROVE WARRANTY CLAIM - Phê duyệt warranty claim
-  // ===========================================================================================
   approveWarrantyClaim: async (id, approvalData) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/warranty-claims/${id}/approve`, {
@@ -259,7 +207,6 @@ export const warrantyClaimsApi = {
         headers: getAuthHeaders(),
         body: JSON.stringify(approvalData)
       });
-      
       return await handleResponse(response);
     } catch (error) {
       console.error(`❌ Error approving warranty claim ${id}:`, error);
@@ -267,9 +214,7 @@ export const warrantyClaimsApi = {
     }
   },
 
-  // ===========================================================================================
   // REJECT WARRANTY CLAIM - Từ chối warranty claim
-  // ===========================================================================================
   rejectWarrantyClaim: async (id, rejectionData) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/warranty-claims/${id}/reject`, {
@@ -277,7 +222,6 @@ export const warrantyClaimsApi = {
         headers: getAuthHeaders(),
         body: JSON.stringify(rejectionData)
       });
-      
       return await handleResponse(response);
     } catch (error) {
       console.error(`❌ Error rejecting warranty claim ${id}:`, error);
@@ -285,23 +229,17 @@ export const warrantyClaimsApi = {
     }
   },
 
-  // ===========================================================================================
   // GET WARRANTY CLAIMS BY VEHICLE - Lấy warranty claims theo xe
-  // ===========================================================================================
   getWarrantyClaimsByVehicle: async (vehicleId, params = {}) => {
     try {
       const queryParams = new URLSearchParams();
-      
       if (params.page !== undefined) queryParams.append('page', params.page);
       if (params.size !== undefined) queryParams.append('size', params.size);
-      
       const url = `${API_BASE_URL}/api/warranty-claims/by-vehicle/${vehicleId}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
-      
       const response = await fetch(url, {
         method: 'GET',
         headers: getAuthHeaders()
       });
-      
       return await handleResponse(response);
     } catch (error) {
       console.error(`❌ Error getting warranty claims for vehicle ${vehicleId}:`, error);
@@ -309,23 +247,17 @@ export const warrantyClaimsApi = {
     }
   },
 
-  // ===========================================================================================
   // GET WARRANTY CLAIMS BY CUSTOMER - Lấy warranty claims theo khách hàng
-  // ===========================================================================================
   getWarrantyClaimsByCustomer: async (customerId, params = {}) => {
     try {
       const queryParams = new URLSearchParams();
-      
       if (params.page !== undefined) queryParams.append('page', params.page);
       if (params.size !== undefined) queryParams.append('size', params.size);
-      
       const url = `${API_BASE_URL}/api/warranty-claims/by-customer/${customerId}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
-      
       const response = await fetch(url, {
         method: 'GET',
         headers: getAuthHeaders()
       });
-      
       return await handleResponse(response);
     } catch (error) {
       console.error(`❌ Error getting warranty claims for customer ${customerId}:`, error);
@@ -333,23 +265,17 @@ export const warrantyClaimsApi = {
     }
   },
 
-  // ===========================================================================================
   // GET MY WARRANTY CLAIMS (Customer Self-Service) - Khách hàng xem claims của mình
-  // ===========================================================================================
   getMyWarrantyClaims: async (params = {}) => {
     try {
       const queryParams = new URLSearchParams();
-      
       if (params.page !== undefined) queryParams.append('page', params.page);
       if (params.size !== undefined) queryParams.append('size', params.size);
-      
       const url = `${API_BASE_URL}/api/warranty-claims/my-claims${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
-      
       const response = await fetch(url, {
         method: 'GET',
         headers: getAuthHeaders()
       });
-      
       return await handleResponse(response);
     } catch (error) {
       console.error('❌ Error getting my warranty claims:', error);
