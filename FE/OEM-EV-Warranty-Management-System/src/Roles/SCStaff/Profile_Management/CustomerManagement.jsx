@@ -3,13 +3,12 @@
 // ===========================================================================================
 
 import React, { useState, useEffect } from 'react'; // React hooks để quản lý state và lifecycle
-import { useNavigate } from 'react-router-dom'; // Hook để điều hướng giữa các trang
+import { useNavigate, useLocation } from 'react-router-dom'; // Hook để điều hướng giữa các trang
 import { 
   FaUsers,        // Icon nhóm người (cho tiêu đề)
   FaPlus,         // Icon dấu cộng (thêm mới)
   FaEdit,         // Icon bút chì (chỉnh sửa)
   FaEye,          // Icon mắt (xem chi tiết)
-  FaTrash,        // Icon thùng rác (xóa)
   FaSearch,       // Icon kính lúp (tìm kiếm)
   FaUserPlus,     // Icon thêm người dùng
   FaArrowLeft,    // Icon mũi tên quay lại
@@ -17,6 +16,7 @@ import {
   FaEnvelope,     // Icon thư (email)
   FaMapMarkerAlt, // Icon vị trí (địa chỉ)
   FaCalendar,     // Icon lịch (ngày tạo)
+  FaCheckCircle,  // Icon dấu tích (thành công)
   FaSpinner       // Icon loading xoay tròn
 } from 'react-icons/fa';
 
@@ -27,6 +27,10 @@ import {
 const CustomerManagement = () => {
   // Hook để điều hướng trang
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Lấy userId và các thông tin từ navigation state (từ trang tạo tài khoản)
+  const { userId, fromAccountCreation, openCreateForm } = location.state || {};
   
   // ===== CÁC STATE QUẢN LÝ DỮ LIỆU KHÁCH HÀNG =====
   const [customers, setCustomers] = useState([]);              // Danh sách khách hàng
@@ -104,6 +108,18 @@ const CustomerManagement = () => {
   useEffect(() => {
     fetchCustomers();
   }, [currentPage, pageSize]); // Dependencies: chạy lại khi currentPage hoặc pageSize thay đổi
+
+  // Xử lý khi có userId từ trang tạo tài khoản
+  useEffect(() => {
+    if (fromAccountCreation && userId && openCreateForm) {
+      console.log('🔗 Received userId from account creation:', userId);
+      setShowCreateForm(true);
+      setFormData(prev => ({
+        ...prev,
+        userId: userId.toString()
+      }));
+    }
+  }, [fromAccountCreation, userId, openCreateForm]);
 
   // ===========================================================================================
   // PHẦN 5: HÀM FETCH CUSTOMERS - LẤY DANH SÁCH KHÁCH HÀNG TỪ API
@@ -207,7 +223,7 @@ const CustomerManagement = () => {
   };
 
   // ===========================================================================================
-  // PHẦN 7: HÀM XỬ LÝ TẠO KHÁCH HÀNG MỚI
+  // PHẦN 7: HÀM XỬ LÝ TẠO/CHỈNH SỬA KHÁCH HÀNG
   // ===========================================================================================
   
   const handleCreateCustomer = async (e) => {
@@ -221,12 +237,19 @@ const CustomerManagement = () => {
     }
 
     try {
-      // ===== BƯỚC 2: CHUẨN BỊ VÀ GỬI REQUEST =====
       const token = localStorage.getItem('token');
       const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-      const response = await fetch(`${API_BASE_URL}/api/customers`, {
-        method: 'POST',
+      // ===== BƯỚC 2: PHÂN BIỆT TẠO MỚI VÀ CHỈNH SỬA =====
+      const isEditing = selectedCustomer !== null;
+      const url = isEditing 
+        ? `${API_BASE_URL}/api/customers/${selectedCustomer.customerId}`
+        : `${API_BASE_URL}/api/customers`;
+      const method = isEditing ? 'PUT' : 'POST';
+
+      // ===== BƯỚC 3: GỬI REQUEST =====
+      const response = await fetch(url, {
+        method: method,
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -235,29 +258,40 @@ const CustomerManagement = () => {
         body: JSON.stringify(formData) // Gửi dữ liệu form dưới dạng JSON
       });
 
-      // ===== BƯỚC 3: XỬ LÝ RESPONSE THÀNH CÔNG =====
+      // ===== BƯỚC 4: XỬ LÝ RESPONSE THÀNH CÔNG =====
       if (response.ok) {
-        const newCustomer = await response.json();
-        console.log('✅ Customer created:', newCustomer);
+        const customerData = await response.json();
+        console.log(`✅ Customer ${isEditing ? 'updated' : 'created'}:`, customerData);
         
-        // Thêm khách hàng mới vào đầu danh sách (hiển thị ngay)
-        setCustomers(prev => [newCustomer, ...prev]);
-        setTotalElements(prev => prev + 1); // Tăng tổng số khách hàng
+        if (isEditing) {
+          // Cập nhật khách hàng trong danh sách
+          setCustomers(prev => prev.map(customer => 
+            customer.customerId === selectedCustomer.customerId 
+              ? { ...customerData, customerId: selectedCustomer.customerId, createdAt: selectedCustomer.createdAt }
+              : customer
+          ));
+          alert('Khách hàng đã được cập nhật thành công!');
+        } else {
+          // Thêm khách hàng mới vào đầu danh sách
+          setCustomers(prev => [customerData, ...prev]);
+          setTotalElements(prev => prev + 1);
+          alert('Khách hàng đã được tạo thành công!');
+        }
         
-        // Reset form sau khi tạo thành công
+        // Reset form sau khi hoàn thành
         setFormData({ name: '', email: '', phone: '', address: '', userId: '' });
-        setShowCreateForm(false); // Đóng form
+        setSelectedCustomer(null);
+        setShowCreateForm(false);
         
-        alert('Khách hàng đã được tạo thành công!');
       } else {
-        // ===== BƯỚC 4: XỬ LÝ LỖI TỪ API =====
+        // ===== BƯỚC 5: XỬ LÝ LỖI TỪ API =====
         const error = await response.json();
-        alert(`Tạo khách hàng thất bại: ${error.message || 'Unknown error'}`);
+        alert(`${isEditing ? 'Cập nhật' : 'Tạo'} khách hàng thất bại: ${error.message || 'Unknown error'}`);
       }
     } catch (error) {
-      // ===== BƯỚC 5: XỬ LÝ LỖI NETWORK =====
-      console.error('Error creating customer:', error);
-      alert('Lỗi khi tạo khách hàng. Vui lòng thử lại.');
+      // ===== BƯỚC 6: XỬ LÝ LỖI NETWORK =====
+      console.error(`Error ${selectedCustomer ? 'updating' : 'creating'} customer:`, error);
+      alert(`Lỗi khi ${selectedCustomer ? 'cập nhật' : 'tạo'} khách hàng. Vui lòng thử lại.`);
     }
   };
 
@@ -313,43 +347,7 @@ const CustomerManagement = () => {
     setShowCreateForm(true);               // Hiển thị form (dùng chung form create/edit)
   };
 
-  // ===========================================================================================
-  // PHẦN 10: HÀM XỬ LÝ XÓA KHÁCH HÀNG
-  // ===========================================================================================
-  
-  const handleDelete = async (customerId) => {
-    // ===== BƯỚC 1: XÁC NHẬN XÓA =====
-    if (!window.confirm('Bạn có chắc chắn muốn xóa khách hàng này?')) {
-      return; // Hủy bỏ nếu user không xác nhận
-    }
 
-    try {
-      // ===== BƯỚC 2: GỬI REQUEST XÓA =====
-      const token = localStorage.getItem('token');
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
-      const response = await fetch(`${API_BASE_URL}/api/customers/${customerId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      // ===== BƯỚC 3: XỬ LÝ RESPONSE =====
-      if (response.ok) {
-        // Xóa khách hàng khỏi danh sách local (cập nhật UI ngay lập tức)
-        setCustomers(prev => prev.filter(c => c.customerId !== customerId));
-        setTotalElements(prev => prev - 1); // Giảm tổng số khách hàng
-        alert('Khách hàng đã được xóa thành công!');
-      } else {
-        alert('Xóa khách hàng thất bại!');
-      }
-    } catch (error) {
-      // ===== BƯỚC 4: XỬ LÝ LỖI =====
-      console.error('Error deleting customer:', error);
-      alert('Lỗi khi xóa khách hàng.');
-    }
-  };
 
   // ===========================================================================================
   // PHẦN 11: HÀM TIỆN ÍCH - FORMAT NGÀY THÁNG
@@ -441,6 +439,27 @@ const CustomerManagement = () => {
               <FaUserPlus /> Tạo khách hàng mới
             </button>
           </div>
+
+          {/* Success notification when coming from account creation */}
+          {fromAccountCreation && userId && (
+            <div style={{
+              background: '#10b981',
+              color: 'white',
+              padding: '12px 16px',
+              borderRadius: '8px',
+              marginTop: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              border: '1px solid #059669'
+            }}>
+              <FaCheckCircle />
+              <span>
+                Tài khoản đã được tạo thành công với User ID: <strong>{userId}</strong>. 
+                Vui lòng điền thông tin khách hàng bên dưới để hoàn tất hồ sơ.
+              </span>
+            </div>
+          )}
 
           {/* ===== SEARCH SECTION - PHẦN TÌM KIẾM ===== */}
           <div style={{
@@ -670,22 +689,6 @@ const CustomerManagement = () => {
                             title="Chỉnh sửa"
                           >
                             <FaEdit />
-                          </button>
-                          {/* Nút xóa */}
-                          <button
-                            onClick={() => handleDelete(customer.customerId)}
-                            style={{
-                              background: '#ef4444',
-                              color: 'white',
-                              border: 'none',
-                              padding: '6px 8px',
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                              fontSize: '12px'
-                            }}
-                            title="Xóa"
-                          >
-                            <FaTrash />
                           </button>
                         </div>
                       </td>

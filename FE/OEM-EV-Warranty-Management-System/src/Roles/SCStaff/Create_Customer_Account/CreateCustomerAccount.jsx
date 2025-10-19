@@ -42,6 +42,9 @@ const CreateCustomerAccount = () => {
   
   // State theo dõi trạng thái submit: 'success'(thành công), 'error'(lỗi), null(chưa submit)
   const [submitStatus, setSubmitStatus] = useState(null);
+  
+  // State lưu trữ userId sau khi tạo tài khoản thành công
+  const [createdUserId, setCreatedUserId] = useState(null);
 
   // ===========================================================================================
   // PHẦN 3: HÀM VALIDATION FORM - KIỂM TRA DỮ LIỆU ĐẦU VÀO
@@ -102,6 +105,7 @@ const CreateCustomerAccount = () => {
     // ===== BƯỚC 2: BẮT ĐẦU QUẢN LÝ LOADING STATE =====
     setLoading(true);        // Bật trạng thái loading
     setSubmitStatus(null);   // Reset trạng thái submit
+    setCreatedUserId(null);  // Reset userId cũ
 
     try {
       // ===== BƯỚC 3: CHUẨN BỊ VÀ GỬI REQUEST =====
@@ -128,8 +132,33 @@ const CreateCustomerAccount = () => {
       if (response.ok) {
         const result = await response.json();
         console.log('✅ Customer account created successfully:', result);
+        console.log('🔍 Checking for userId in response:', {
+          'result.userId': result.userId,
+          'result.id': result.id,
+          'result.user?.id': result.user?.id,
+          'result.data?.id': result.data?.id,
+          'result.data?.userId': result.data?.userId,
+          'full result structure': result
+        });
         
         setSubmitStatus('success'); // Đánh dấu trạng thái thành công
+        
+        // Lưu userId từ response để chuyển hướng
+        let extractedUserId = null;
+        if (result.userId) {
+          extractedUserId = result.userId;
+        } else if (result.id) {
+          extractedUserId = result.id;
+        } else if (result.user && result.user.id) {
+          extractedUserId = result.user.id;
+        } else if (result.data && result.data.id) {
+          extractedUserId = result.data.id;
+        } else if (result.data && result.data.userId) {
+          extractedUserId = result.data.userId;
+        }
+        
+        console.log('🆔 Extracted userId:', extractedUserId);
+        setCreatedUserId(extractedUserId);
         
         // ===== RESET FORM SAU KHI TẠO THÀNH CÔNG =====
         setFormData({
@@ -140,10 +169,22 @@ const CreateCustomerAccount = () => {
         });
         setFormErrors({});
         
-        // ===== TỰ ĐỘNG CHUYỂN HƯỚNG SAU 2 GIÂY =====
+        // ===== TỰ ĐỘNG CHUYỂN HƯỚNG ĐẾN CUSTOMER MANAGEMENT SAU 3 GIÂY =====
         setTimeout(() => {
-          navigate('/scstaff'); // Quay về trang dashboard SCStaff
-        }, 2000);
+          if (extractedUserId) {
+            // Chuyển hướng đến trang CustomerManagement với userId
+            navigate('/scstaff/customers', { 
+              state: { 
+                userId: extractedUserId,
+                fromAccountCreation: true,
+                openCreateForm: true 
+              } 
+            });
+          } else {
+            // Nếu không có userId, quay về dashboard
+            navigate('/scstaff');
+          }
+        }, 3000);
         
       } else {
         // ===== BƯỚC 5: XỬ LÝ LỖI TỪ SERVER =====
@@ -275,7 +316,75 @@ const CreateCustomerAccount = () => {
             marginBottom: '24px',
             color: '#065f46'
           }}>
-            <strong>✅ Thành công!</strong> Tài khoản khách hàng đã được tạo thành công. Đang chuyển hướng...
+            <div style={{ marginBottom: '8px' }}>
+              <strong>✅ Thành công!</strong> Tài khoản đã được tạo thành công.
+            </div>
+            {createdUserId && (
+              <div style={{ 
+                background: '#ecfdf5', 
+                padding: '12px', 
+                borderRadius: '6px', 
+                margin: '8px 0',
+                border: '1px solid #22c55e' 
+              }}>
+                <strong style={{ color: '#16a34a' }}>userId: {createdUserId}</strong>
+                <br />
+                <span style={{ fontSize: '14px', color: '#15803d' }}>
+                  Đây là userId của khách hàng dùng để tạo thông tin khách hàng
+                </span>
+              </div>
+            )}
+            <div style={{ fontSize: '14px', marginTop: '8px' }}>
+              🔄 Đang chuyển hướng đến trang quản lý khách hàng để tạo thông tin chi tiết trong 3 giây...
+            </div>
+            <div style={{ marginTop: '16px', display: 'flex', gap: '12px' }}>
+              <button
+                onClick={() => {
+                  if (createdUserId) {
+                    navigate('/scstaff/customers', { 
+                      state: { 
+                        userId: createdUserId,
+                        fromAccountCreation: true,
+                        openCreateForm: true 
+                      } 
+                    });
+                  } else {
+                    navigate('/scstaff/customers');
+                  }
+                }}
+                style={{
+                  background: '#10b981',
+                  color: 'white',
+                  border: 'none',
+                  padding: '10px 20px',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: '500',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                ➡️ Đến trang quản lý khách hàng ngay
+              </button>
+              <button
+                onClick={() => navigate('/scstaff')}
+                style={{
+                  background: '#6b7280',
+                  color: 'white',
+                  border: 'none',
+                  padding: '10px 20px',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: '500',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                🏠 Về Dashboard
+              </button>
+            </div>
           </div>
         )}
 

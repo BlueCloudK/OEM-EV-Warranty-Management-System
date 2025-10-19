@@ -9,11 +9,15 @@ import Logout from "./pages/Logout";
 //
 import Customer from "./Roles/Customer/Customer";
 import CustomerProfile from "./Roles/Customer/CustomerProfile";
+import VehicleInfo from "./Roles/Customer/VehicleInfo";
+import WarrantyHistory from "./Roles/Customer/WarrantyHistory";
 //
 import SCStaff from "./Roles/SCStaff/SCStaff";
 import CustomerManagement from "./Roles/SCStaff/Profile_Management/CustomerManagement";
 import CreateCustomerAccount from "./Roles/SCStaff/Create_Customer_Account/CreateCustomerAccount";
 import VehicleManagement from "./Roles/SCStaff/Vehicle_Information_Management/VehicleManagement";
+import WarrantyClaimsManagement from "./Roles/SCStaff/Warranty_Claims_Management/WarrantyClaimsManagement";
+import ServiceHistoryManagement from "./Roles/SCStaff/Service_History_Management/ServiceHistoryManagement";
 //
 import Admin from "./Roles/Admin/Admin";
 import AdminUserManagement from "./Roles/Admin/AdminUserManagement";
@@ -44,6 +48,8 @@ export default function App() {
         // Customer
         <Route path="/customer/dashboard" element={<Customer />} />
         <Route path="/customer/profile" element={<CustomerProfile />} />
+        <Route path="/customer/vehicles" element={<VehicleInfo />} />
+        <Route path="/customer/warranty-history" element={<WarrantyHistory />} />
         // SCStaff
         <Route path="/scstaff" element={<SCStaff />} />
         <Route path="/scstaff/dashboard" element={<SCStaff />} />
@@ -51,6 +57,8 @@ export default function App() {
         <Route path="/scstaff/create-customer-account" element={<CreateCustomerAccount />}
         />
         <Route path="/scstaff/vehicles" element={<VehicleManagement />} />
+        <Route path="/scstaff/warranty-claims" element={<WarrantyClaimsManagement />} />
+        <Route path="/scstaff/service-history" element={<ServiceHistoryManagement />} />
         // Admin
         <Route path="/admin" element={<Admin />} />
         <Route path="/admin/dashboard" element={<Admin />} />

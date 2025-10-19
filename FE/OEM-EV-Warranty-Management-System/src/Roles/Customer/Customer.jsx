@@ -41,6 +41,22 @@ export default function Customer() {
       path: "/customer/profile",
       bgPattern: "🔧⚡🚗"
     },
+    {
+      title: "Thông tin xe",
+      description: "Xem và quản lý thông tin các phương tiện của bạn",
+      icon: "🚗",
+      gradient: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+      path: "/customer/vehicles",
+      bgPattern: "⚡🔋🚙"
+    },
+    {
+      title: "Lịch sử bảo hành",
+      description: "Xem lịch sử yêu cầu bảo hành và tình trạng xử lý",
+      icon: "🛡️",
+      gradient: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
+      path: "/customer/warranty-history",
+      bgPattern: "🔧⚙️🛠️"
+    },
   ];
 
   return (

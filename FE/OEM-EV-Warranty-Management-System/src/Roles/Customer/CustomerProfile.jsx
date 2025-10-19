@@ -31,7 +31,21 @@ const CustomerProfile = () => {
 
   useEffect(() => {
     fetchCustomerByUserId();
-  }, []);
+    
+    // Add keyboard shortcut for back navigation
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape' && !editing) {
+        navigate('/customer/dashboard');
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    
+    // Cleanup event listener
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [navigate, editing]);
 
   // Main function to fetch customer by userId using GET /api/customers/by-user/{userId}
   const fetchCustomerByUserId = async () => {
@@ -418,6 +432,32 @@ const CustomerProfile = () => {
         .profile-card {
           animation: slideInUp 0.6s ease-out;
         }
+        .back-button {
+          transition: all 0.3s ease;
+          position: relative;
+          overflow: hidden;
+        }
+        .back-button:hover {
+          background: rgba(255, 255, 255, 0.3) !important;
+          transform: translateY(-2px);
+          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        .back-button:active {
+          transform: translateY(0);
+        }
+        .back-button::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+          transition: left 0.5s;
+        }
+        .back-button:hover::before {
+          left: 100%;
+        }
       `}</style>
 
       <div style={{ maxWidth: '800px', margin: '0 auto' }}>
@@ -432,21 +472,33 @@ const CustomerProfile = () => {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
             <button
-              onClick={() => navigate('/customer')}
+              className="back-button"
+              onClick={() => navigate('/customer/dashboard')}
               style={{
                 background: 'rgba(255, 255, 255, 0.2)',
                 color: '#fff',
-                border: 'none',
-                padding: '10px 16px',
-                borderRadius: '8px',
+                border: '2px solid rgba(255, 255, 255, 0.3)',
+                padding: '12px 20px',
+                borderRadius: '12px',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
-                fontSize: '14px'
+                gap: '10px',
+                fontSize: '15px',
+                fontWeight: '600',
+                backdropFilter: 'blur(10px)',
+                position: 'relative',
+                overflow: 'hidden'
               }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  navigate('/customer/dashboard');
+                }
+              }}
+              title="Quay lại trang Dashboard (ESC)"
             >
-              <FaArrowLeft /> Quay lại
+              <FaArrowLeft style={{ fontSize: '14px' }} /> 
+              <span>Quay lại </span>
             </button>
             
             <div style={{ flex: 1 }}>
