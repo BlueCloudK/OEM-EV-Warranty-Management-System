@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Nationalized;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Entity // map/ánh xạ class này với bảng trong database
@@ -21,37 +22,34 @@ public class User {
     private Long userId;
 
     @Column(name = "username", nullable = false, length = 50, columnDefinition = "nvarchar(50)")
-    @NotBlank(message = "Username is required")
-    @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
-    @Pattern(regexp = "^[a-zA-Z0-9_]+$", message = "Username can only contain letters, numbers and underscore")
     private String username;
 
     // Thêm field email vào User entity
     @Column(name = "email", nullable = false, length = 100, unique = true)
-    @NotBlank(message = "Email is required")
-    @Email(message = "Email should be valid")
     private String email;
 
     @Column(name = "password", nullable = false, length = 255)
-    @NotBlank(message = "Password is required")
-    @Size(min = 6, max = 255, message = "Password must be at least 6 characters")
-    @Nationalized
     private String password;
 
     @Column(name = "address", nullable = false, length = 255, columnDefinition = "nvarchar(255)")
-    @NotBlank(message = "Address is required")
-    @Size(min = 10, max = 255, message = "Address must be between 10 and 255 characters")
     private String address;
 
     @Column(name = "created_at", nullable = false)
-    private Date createdAt; // Removed @NotNull validation - field is set automatically during registration
+    private LocalDateTime createdAt;
+
+    /**
+     * Tự động set createdAt khi tạo mới user
+     * Được gọi trước khi persist vào database
+     */
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "role_id", nullable = false)
-    @NotNull(message = "Role is required")
     private Role role;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Customer> customers = new ArrayList<>();
-
 }

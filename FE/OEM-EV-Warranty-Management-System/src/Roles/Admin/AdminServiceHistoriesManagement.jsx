@@ -28,9 +28,15 @@ const AdminServiceHistoriesManagement = () => {
   const [selectedHistory, setSelectedHistory] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // Lookup sources
+  const [vehicles, setVehicles] = useState([]);
+  const [parts, setParts] = useState([]);
+  const [customers, setCustomers] = useState([]);
+
   // Form Data
   const [formData, setFormData] = useState({
     vehicleVin: "",
+    partId: "",
     customerName: "",
     customerPhone: "",
     serviceType: "MAINTENANCE",
@@ -79,6 +85,66 @@ const AdminServiceHistoriesManagement = () => {
 
   useEffect(() => {
     fetchHistories();
+  }, []);
+
+  // Prefetch lookup data for selection (first 100 items)
+  useEffect(() => {
+    const fetchLookups = async () => {
+      try {
+        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+        const token = localStorage.getItem("token");
+        if (!API_BASE_URL || !token) return;
+        const headers = {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+          "ngrok-skip-browser-warning": "true",
+        };
+        const [vRes, pRes, cRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/api/vehicles?page=0&size=100`, { headers }),
+          fetch(`${API_BASE_URL}/api/parts?page=0&size=100`, { headers }),
+          fetch(`${API_BASE_URL}/api/customers?page=0&size=100`, { headers }),
+        ]);
+        if (
+          vRes.ok &&
+          (vRes.headers.get("Content-Type") || "").includes("application/json")
+        ) {
+          const vData = await vRes.json();
+          const vList = Array.isArray(vData?.content)
+            ? vData.content
+            : Array.isArray(vData)
+            ? vData
+            : [];
+          setVehicles(vList);
+        }
+        if (
+          pRes.ok &&
+          (pRes.headers.get("Content-Type") || "").includes("application/json")
+        ) {
+          const pData = await pRes.json();
+          const pList = Array.isArray(pData?.content)
+            ? pData.content
+            : Array.isArray(pData)
+            ? pData
+            : [];
+          setParts(pList);
+        }
+        if (
+          cRes.ok &&
+          (cRes.headers.get("Content-Type") || "").includes("application/json")
+        ) {
+          const cData = await cRes.json();
+          const cList = Array.isArray(cData?.content)
+            ? cData.content
+            : Array.isArray(cData)
+            ? cData
+            : [];
+          setCustomers(cList);
+        }
+      } catch (e) {
+        // silent; lookups are optional
+      }
+    };
+    fetchLookups();
   }, []);
 
   const fetchHistories = async () => {
@@ -136,6 +202,12 @@ const AdminServiceHistoriesManagement = () => {
       errors.serviceDate = "Ngày bảo dưỡng là bắt buộc";
     }
 
+    if (!formData.partId.trim()) {
+      errors.partId = "partId là bắt buộc";
+    } else if (!/^[A-Z0-9-]+$/.test(formData.partId.trim())) {
+      errors.partId = "partId chỉ gồm A-Z, 0-9, gạch ngang";
+    }
+
     if (!formData.serviceCenter.trim()) {
       errors.serviceCenter = "Trung tâm dịch vụ là bắt buộc";
     }
@@ -163,6 +235,7 @@ const AdminServiceHistoriesManagement = () => {
   const resetForm = () => {
     setFormData({
       vehicleVin: "",
+      partId: "",
       customerName: "",
       customerPhone: "",
       serviceType: "MAINTENANCE",
@@ -190,6 +263,32 @@ const AdminServiceHistoriesManagement = () => {
       [name]: value,
     }));
 
+    // When VIN changes, try to auto-fill customer & phone from lookups
+    if (name === "vehicleVin") {
+      const v = vehicles.find(
+        (x) =>
+          (x.vehicleVin || x.vin || "").toLowerCase() === value.toLowerCase()
+      );
+      if (v) {
+        const customerName =
+          v.customerName || (v.customer && v.customer.name) || "";
+        const customerId =
+          v.customerId || (v.customer && v.customer.customerId);
+        let customerPhone = "";
+        if (customerId) {
+          const c = customers.find(
+            (y) => (y.customerId || y.id) === customerId
+          );
+          if (c) customerPhone = c.phone || c.customerPhone || "";
+        }
+        setFormData((prev) => ({
+          ...prev,
+          customerName: customerName || prev.customerName,
+          customerPhone: customerPhone || prev.customerPhone,
+        }));
+      }
+    }
+
     // Clear error when user starts typing
     if (formErrors[name]) {
       setFormErrors((prev) => ({
@@ -210,9 +309,44 @@ const AdminServiceHistoriesManagement = () => {
 
     setSubmitting(true);
     try {
-      const newHistory = await serviceHistoriesApi.create(formData);
-      setHistories((prev) => [newHistory, ...prev]);
-      setTotalElements((prev) => prev + 1);
+      // resolve vehicleId from VIN
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+      const token = localStorage.getItem("token");
+      let vehicleId = null;
+      if (API_BASE_URL && token && formData.vehicleVin) {
+        const res = await fetch(
+          `${API_BASE_URL}/api/vehicles/by-vin?vin=${encodeURIComponent(
+            formData.vehicleVin.trim()
+          )}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "ngrok-skip-browser-warning": "true",
+            },
+          }
+        );
+        if (
+          res.ok &&
+          (res.headers.get("Content-Type") || "").includes("application/json")
+        ) {
+          const v = await res.json();
+          vehicleId = v?.vehicleId || v?.id || null;
+        }
+      }
+
+      const payload = {
+        serviceDate: formData.serviceDate
+          ? new Date(formData.serviceDate).toISOString()
+          : new Date().toISOString(),
+        serviceType: formData.serviceType,
+        description: formData.description.trim(),
+        partId: formData.partId.trim(),
+        vehicleId,
+      };
+
+      const newHistory = await serviceHistoriesApi.create(payload);
+      // refresh from server to stay in sync with paging/sorting
+      await fetchHistories();
       alert("Tạo lịch sử bảo dưỡng thành công!");
       setShowCreateModal(false);
       resetForm();
@@ -239,9 +373,7 @@ const AdminServiceHistoriesManagement = () => {
         selectedHistory.id,
         formData
       );
-      setHistories((prev) =>
-        prev.map((h) => (h.id === selectedHistory.id ? updatedHistory : h))
-      );
+      await fetchHistories();
       alert("Cập nhật lịch sử bảo dưỡng thành công!");
       setShowEditModal(false);
       setSelectedHistory(null);
@@ -261,8 +393,7 @@ const AdminServiceHistoriesManagement = () => {
     setSubmitting(true);
     try {
       await serviceHistoriesApi.delete(selectedHistory.id);
-      setHistories((prev) => prev.filter((h) => h.id !== selectedHistory.id));
-      setTotalElements((prev) => prev - 1);
+      await fetchHistories();
       alert("Xóa lịch sử bảo dưỡng thành công!");
       setShowDeleteModal(false);
       setSelectedHistory(null);
@@ -279,6 +410,7 @@ const AdminServiceHistoriesManagement = () => {
     setSelectedHistory(history);
     setFormData({
       vehicleVin: history.vehicleVin || "",
+      partId: history.partId || "",
       customerName: history.customerName || "",
       customerPhone: history.customerPhone || "",
       serviceType: history.serviceType || "MAINTENANCE",
@@ -638,6 +770,15 @@ const AdminServiceHistoriesManagement = () => {
                   textAlign: "left",
                 }}
               >
+                Loại
+              </th>
+              <th
+                style={{
+                  background: "#f5f5f5",
+                  padding: "12px 15px",
+                  textAlign: "left",
+                }}
+              >
                 Ngày dịch vụ
               </th>
               <th
@@ -680,6 +821,14 @@ const AdminServiceHistoriesManagement = () => {
                   }}
                 >
                   {h.description}
+                </td>
+                <td
+                  style={{
+                    padding: "12px 15px",
+                    borderBottom: "1px solid #e0e0e0",
+                  }}
+                >
+                  {h.serviceType}
                 </td>
                 <td
                   style={{
@@ -812,7 +961,20 @@ const AdminServiceHistoriesManagement = () => {
                         onChange={handleInputChange}
                         placeholder="VIN-1234567890"
                         className={formErrors.vehicleVin ? "error" : ""}
+                        list="vinList"
                       />
+                      <datalist id="vinList">
+                        {vehicles.map((v) => (
+                          <option
+                            key={v.vehicleId || v.id || v.vehicleVin}
+                            value={v.vehicleVin}
+                          >
+                            {(v.vehicleName || "") +
+                              " / " +
+                              (v.customerName || "")}
+                          </option>
+                        ))}
+                      </datalist>
                       {formErrors.vehicleVin && (
                         <span className="error-text">
                           {formErrors.vehicleVin}
@@ -840,6 +1002,29 @@ const AdminServiceHistoriesManagement = () => {
                 <div className="form-section">
                   <h4>Thông tin dịch vụ</h4>
                   <div className="form-row">
+                    <div className="form-group">
+                      <label>Part ID *</label>
+                      <input
+                        type="text"
+                        name="partId"
+                        value={formData.partId}
+                        onChange={handleInputChange}
+                        placeholder="PART-XXX-001"
+                        className={formErrors.partId ? "error" : ""}
+                        list="partIdList"
+                      />
+                      <datalist id="partIdList">
+                        {parts.map((p) => (
+                          <option key={p.partId} value={p.partId}>
+                            {(p.partName || "") +
+                              (p.partNumber ? ` (${p.partNumber})` : "")}
+                          </option>
+                        ))}
+                      </datalist>
+                      {formErrors.partId && (
+                        <span className="error-text">{formErrors.partId}</span>
+                      )}
+                    </div>
                     <div className="form-group">
                       <label>Loại dịch vụ *</label>
                       <select

@@ -27,17 +27,18 @@ import AdminPartsManagement from "./Roles/Admin/AdminPartsManagement";
 import AdminVehicleManagement from "./Roles/Admin/AdminVehicleManagement";
 import AdminWarrantyClaimsManagement from "./Roles/Admin/AdminWarrantyClaimsManagement";
 import AdminServiceHistoriesManagement from "./Roles/Admin/AdminServiceHistoriesManagement";
+import SCTechnician from "./Roles/SCTechnician";
 
 export default function App() {
   // Hook để lấy thông tin về route hiện tại
   const location = useLocation();
-  
+
   return (
     <>
       {/* ===== CONDITIONAL NAVBAR - HIỂN THỊ NAVBAR ĐIỀU KIỆN ===== */}
       {/* Hiển thị Navbar trên tất cả các trang (có thể điều chỉnh logic nếu cần) */}
       {location.pathname && <Navbar />}
-      
+
       {/* ===== ROUTES CONFIGURATION - CẤU HÌNH CÁC ROUTE ===== */}
       <Routes>
         <Route path="/" element={<Home />} />
@@ -77,10 +78,13 @@ export default function App() {
         // EVM Staff
         <Route path="/evmstaff" element={<EVMStaff />} />
         <Route path="/evmstaff/dashboard" element={<EVMStaff />} />
+        // SC Technician
+        <Route path="/sctechnician" element={<SCTechnician />} />
+        <Route path="/sctechnician/dashboard" element={<SCTechnician />} />
         // Add fallback dashboard route
         <Route path="/dashboard" element={<Customer />} />
       </Routes>
-      
+
       {/* ===== FOOTER - CHÂN TRANG ===== */}
       <footer className="footer">
         <div className="container">

@@ -1,83 +1,175 @@
 package com.swp391.warrantymanagement.controller;
 
-import com.swp391.warrantymanagement.entity.ServiceHistory;
+import com.swp391.warrantymanagement.dto.request.ServiceHistoryRequestDTO;
+import com.swp391.warrantymanagement.dto.response.ServiceHistoryResponseDTO;
+import com.swp391.warrantymanagement.dto.response.PagedResponse;
 import com.swp391.warrantymanagement.service.ServiceHistoryService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.List;
-
+/**
+ * REST controller for Service History APIs.
+ * Handles CRUD operations for service histories using DTOs only.
+ * Business Rules:
+ * - ADMIN/STAFF can manage all service histories
+ * - SERVICE_CENTER_STAFF/TECHNICIAN can create/update service records
+ * - CUSTOMER can only view their own service histories
+ */
 @RestController
-@RequestMapping("api/service-history")
+@RequestMapping("api/service-histories")
 @CrossOrigin
 public class ServiceHistoryController {
-    @Autowired
-    private ServiceHistoryService serviceHistoryService;
+    private static final Logger logger = LoggerFactory.getLogger(ServiceHistoryController.class);
+    @Autowired private ServiceHistoryService serviceHistoryService;
 
-    // Lấy tất cả lịch sử dịch vụ
+    // Get all service histories with pagination (ADMIN/SC_STAFF/SC_TECHNICIAN only)
     @GetMapping
-    public ResponseEntity<List<ServiceHistory>> getAllServiceHistories() {
-        List<ServiceHistory> serviceHistories = serviceHistoryService.getServiceHistories();
-        return ResponseEntity.ok(serviceHistories);
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN') or hasRole('EVM_STAFF')")
+    public ResponseEntity<PagedResponse<ServiceHistoryResponseDTO>> getAllServiceHistories(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String search) {
+        logger.info("Get all service histories request: page={}, size={}, search={}", page, size, search);
+        PagedResponse<ServiceHistoryResponseDTO> historiesPage = serviceHistoryService.getAllServiceHistoriesPage(
+            PageRequest.of(page, size), search);
+        logger.info("Get all service histories success, totalElements={}", historiesPage.getTotalElements());
+        return ResponseEntity.ok(historiesPage);
     }
 
-    // Lấy lịch sử dịch vụ theo ID
+    // Get service history by ID (ADMIN/SC_STAFF/SC_TECHNICIAN can view any, CUSTOMER can view own)
     @GetMapping("/{id}")
-    public ResponseEntity<ServiceHistory> getServiceHistoryById(@PathVariable("id") Long id) {
-        ServiceHistory serviceHistory = serviceHistoryService.getById(id);
-        if (serviceHistory != null) {
-            return ResponseEntity.ok(serviceHistory);
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN') or hasRole('EVM_STAFF') or hasRole('CUSTOMER')")
+    public ResponseEntity<ServiceHistoryResponseDTO> getServiceHistoryById(@PathVariable Long id) {
+        logger.info("Get service history by id: {}", id);
+        ServiceHistoryResponseDTO history = serviceHistoryService.getServiceHistoryById(id);
+        if (history != null) {
+            logger.info("Service history found: {}", id);
+            return ResponseEntity.ok(history);
         }
+        logger.warn("Service history not found: {}", id);
         return ResponseEntity.notFound().build();
     }
 
-    // Tạo lịch sử dịch vụ mới
+    // Create new service history (Only SC_STAFF/SC_TECHNICIAN/ADMIN)
     @PostMapping
-    public ResponseEntity<ServiceHistory> createServiceHistory(@Valid @RequestBody ServiceHistory serviceHistory) {
-        serviceHistory.setServiceHistoryId(null); // Đảm bảo ID null để tạo mới
-        ServiceHistory savedServiceHistory = serviceHistoryService.createServiceHistory(serviceHistory);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedServiceHistory);
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN') or hasRole('EVM_STAFF')")
+    public ResponseEntity<ServiceHistoryResponseDTO> createServiceHistory(@Valid @RequestBody ServiceHistoryRequestDTO requestDTO) {
+        logger.info("Create service history request: {}", requestDTO);
+        try {
+            ServiceHistoryResponseDTO responseDTO = serviceHistoryService.createServiceHistory(requestDTO);
+            logger.info("Service history created: {}", responseDTO.getServiceHistoryId());
+            return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
+        } catch (RuntimeException e) {
+            logger.error("Create service history failed: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
     }
 
-    // Cập nhật lịch sử dịch vụ
+    // Update service history (Only SC_STAFF/SC_TECHNICIAN/ADMIN)
     @PutMapping("/{id}")
-    public ResponseEntity<ServiceHistory> updateServiceHistory(@PathVariable("id") Long id, @Valid @RequestBody ServiceHistory serviceHistory) {
-        ServiceHistory existingServiceHistory = serviceHistoryService.getById(id);
-        if (existingServiceHistory == null) {
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN') or hasRole('EVM_STAFF')")
+    public ResponseEntity<ServiceHistoryResponseDTO> updateServiceHistory(@PathVariable Long id,
+                                                                        @Valid @RequestBody ServiceHistoryRequestDTO requestDTO) {
+        logger.info("Update service history request: id={}, data={}", id, requestDTO);
+        try {
+            ServiceHistoryResponseDTO updatedHistory = serviceHistoryService.updateServiceHistory(id, requestDTO);
+            if (updatedHistory != null) {
+                logger.info("Service history updated: {}", id);
+                return ResponseEntity.ok(updatedHistory);
+            }
+            logger.warn("Service history not found for update: {}", id);
             return ResponseEntity.notFound().build();
+        } catch (RuntimeException e) {
+            logger.error("Update service history failed: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
         }
-
-        serviceHistory.setServiceHistoryId(id);
-        ServiceHistory updatedServiceHistory = serviceHistoryService.updateServiceHistory(serviceHistory);
-        return ResponseEntity.ok(updatedServiceHistory);
     }
 
-    // Xóa lịch sử dịch vụ
+    // Delete service history (Only ADMIN)
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteServiceHistory(@PathVariable("id") Long id) {
-        ServiceHistory existingServiceHistory = serviceHistoryService.getById(id);
-        if (existingServiceHistory == null) {
-            return ResponseEntity.notFound().build();
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteServiceHistory(@PathVariable Long id) {
+        logger.info("Delete service history request: {}", id);
+        boolean deleted = serviceHistoryService.deleteServiceHistory(id);
+        if (deleted) {
+            logger.info("Service history deleted: {}", id);
+            return ResponseEntity.noContent().build();
         }
-
-        serviceHistoryService.deleteServiceHistory(id);
-        return ResponseEntity.noContent().build();
+        logger.warn("Service history not found for delete: {}", id);
+        return ResponseEntity.notFound().build();
     }
 
-    // Lấy lịch sử dịch vụ theo vehicle ID - sử dụng database query hiệu quả
-    @GetMapping("/vehicle/{vehicleId}")
-    public ResponseEntity<List<ServiceHistory>> getServiceHistoryByVehicleId(@PathVariable("vehicleId") Long vehicleId) {
-        List<ServiceHistory> serviceHistories = serviceHistoryService.getServiceHistoriesByVehicleId(vehicleId);
-        return ResponseEntity.ok(serviceHistories);
+    // Get service histories by vehicle ID (ADMIN/SC_STAFF/SC_TECHNICIAN can view any, CUSTOMER can view own vehicle's history)
+    @GetMapping("/by-vehicle/{vehicleId}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN') or hasRole('EVM_STAFF') or hasRole('CUSTOMER')")
+    public ResponseEntity<PagedResponse<ServiceHistoryResponseDTO>> getServiceHistoriesByVehicle(
+            @PathVariable Long vehicleId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        logger.info("Get service histories by vehicleId: {}, page={}, size={}", vehicleId, page, size);
+        PagedResponse<ServiceHistoryResponseDTO> historiesPage = serviceHistoryService.getServiceHistoriesByVehicleId(
+            vehicleId, PageRequest.of(page, size));
+        logger.info("Get service histories by vehicleId success, totalElements={}", historiesPage.getTotalElements());
+        return ResponseEntity.ok(historiesPage);
     }
 
-    // Lấy lịch sử dịch vụ theo loại dịch vụ - sử dụng database query hiệu quả
-    @GetMapping("/type/{serviceType}")
-    public ResponseEntity<List<ServiceHistory>> getServiceHistoryByType(@PathVariable("serviceType") String serviceType) {
-        List<ServiceHistory> serviceHistories = serviceHistoryService.getServiceHistoriesByServiceType(serviceType);
-        return ResponseEntity.ok(serviceHistories);
+    // Get service histories by part ID (ADMIN/SC_STAFF/SC_TECHNICIAN only)
+    @GetMapping("/by-part/{partId}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN') or hasRole('EVM_STAFF')")
+    public ResponseEntity<PagedResponse<ServiceHistoryResponseDTO>> getServiceHistoriesByPart(
+            @PathVariable String partId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        logger.info("Get service histories by partId: {}, page={}, size={}", partId, page, size);
+        PagedResponse<ServiceHistoryResponseDTO> historiesPage = serviceHistoryService.getServiceHistoriesByPartId(
+            partId, PageRequest.of(page, size));
+        logger.info("Get service histories by partId success, totalElements={}", historiesPage.getTotalElements());
+        return ResponseEntity.ok(historiesPage);
+    }
+
+    // Get service histories by customer (Customer can view their own service records)
+    @GetMapping("/my-services")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public ResponseEntity<PagedResponse<ServiceHistoryResponseDTO>> getMyServiceHistories(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestHeader("Authorization") String authorizationHeader) {
+        logger.info("Get my service histories request: page={}, size={}", page, size);
+        try {
+            PagedResponse<ServiceHistoryResponseDTO> historiesPage = serviceHistoryService.getServiceHistoriesByCurrentUser(
+                authorizationHeader, PageRequest.of(page, size));
+            logger.info("Get my service histories success, totalElements={}", historiesPage.getTotalElements());
+            return ResponseEntity.ok(historiesPage);
+        } catch (RuntimeException e) {
+            logger.error("Get my service histories failed: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+    }
+
+    // Search service histories by date range (ADMIN/SC_STAFF/SC_TECHNICIAN only)
+    @GetMapping("/by-date-range")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN') or hasRole('EVM_STAFF')")
+    public ResponseEntity<PagedResponse<ServiceHistoryResponseDTO>> getServiceHistoriesByDateRange(
+            @RequestParam String startDate,
+            @RequestParam String endDate,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        logger.info("Get service histories by date range: startDate={}, endDate={}, page={}, size={}", startDate, endDate, page, size);
+        try {
+            PagedResponse<ServiceHistoryResponseDTO> historiesPage = serviceHistoryService.getServiceHistoriesByDateRange(
+                startDate, endDate, PageRequest.of(page, size));
+            logger.info("Get service histories by date range success, totalElements={}", historiesPage.getTotalElements());
+            return ResponseEntity.ok(historiesPage);
+        } catch (RuntimeException e) {
+            logger.error("Get service histories by date range failed: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
     }
 }

@@ -1,21 +1,58 @@
 package com.swp391.warrantymanagement.service;
 
-import com.swp391.warrantymanagement.entity.WarrantyClaim;
-import com.swp391.warrantymanagement.entity.WarrantyClaimStatus;
+import com.swp391.warrantymanagement.dto.request.WarrantyClaimRequestDTO;
+import com.swp391.warrantymanagement.dto.request.WarrantyClaimStatusUpdateRequestDTO;
+import com.swp391.warrantymanagement.dto.response.WarrantyClaimResponseDTO;
+import com.swp391.warrantymanagement.dto.response.PagedResponse;
+import org.springframework.data.domain.Pageable;
+
 import java.util.List;
-import org.springframework.stereotype.Service;
 
-@Service
+/**
+ * Service interface for warranty claim-related business logic.
+ */
 public interface WarrantyClaimService {
-    // Core CRUD operations
-    WarrantyClaim getById(Long id);
-    WarrantyClaim save(WarrantyClaim warrantyClaim);
-    void deleteById(Long id);
-    List<WarrantyClaim> getAll();
-    boolean existsById(Long id);
+    PagedResponse<WarrantyClaimResponseDTO> getAllClaimsPage(Pageable pageable);
+    WarrantyClaimResponseDTO getClaimById(Long id);
+    WarrantyClaimResponseDTO createClaim(WarrantyClaimRequestDTO requestDTO);
+    WarrantyClaimResponseDTO updateClaim(Long id, WarrantyClaimRequestDTO requestDTO);
+    WarrantyClaimResponseDTO updateClaimStatus(Long id, WarrantyClaimStatusUpdateRequestDTO requestDTO);
+    boolean deleteClaim(Long id);
 
-    // Business logic methods
-    List<WarrantyClaim> getClaimsByStatus(WarrantyClaimStatus status);
-    List<WarrantyClaim> getClaimsByVehicleId(Long vehicleId);
-    WarrantyClaim updateClaimStatus(Long id, WarrantyClaimStatus status);
+    // ========== WORKFLOW METHODS ==========
+
+    /**
+     * SC Staff tạo claim cho khách hàng (status: SUBMITTED)
+     */
+    WarrantyClaimResponseDTO createClaimBySCStaff(WarrantyClaimRequestDTO requestDTO);
+
+    /**
+     * EVM Staff xem xét và chấp nhận claim (SUBMITTED → SC_REVIEW)
+     */
+    WarrantyClaimResponseDTO evmAcceptClaim(Long claimId, String note);
+
+    /**
+     * EVM Staff từ chối claim (SUBMITTED → REJECTED)
+     */
+    WarrantyClaimResponseDTO evmRejectClaim(Long claimId, String reason);
+
+    /**
+     * Technician bắt đầu xử lý claim (SC_REVIEW → PROCESSING)
+     */
+    WarrantyClaimResponseDTO techStartProcessing(Long claimId, String note);
+
+    /**
+     * Technician hoàn tất xử lý claim (PROCESSING → COMPLETED)
+     */
+    WarrantyClaimResponseDTO techCompleteClaim(Long claimId, String completionNote);
+
+    /**
+     * Lấy claims theo status với pagination
+     */
+    PagedResponse<WarrantyClaimResponseDTO> getClaimsByStatus(String status, Pageable pageable);
+
+    /**
+     * Lấy claims cần Technician xử lý (SC_REVIEW hoặc PROCESSING)
+     */
+    PagedResponse<WarrantyClaimResponseDTO> getTechPendingClaims(Pageable pageable);
 }

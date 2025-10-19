@@ -1,44 +1,167 @@
 package com.swp391.warrantymanagement.service.impl;
 
+import com.swp391.warrantymanagement.dto.request.PartRequestDTO;
+import com.swp391.warrantymanagement.dto.response.PartResponseDTO;
+import com.swp391.warrantymanagement.dto.response.PagedResponse;
 import com.swp391.warrantymanagement.entity.Part;
+import com.swp391.warrantymanagement.entity.Vehicle;
+import com.swp391.warrantymanagement.mapper.PartMapper;
 import com.swp391.warrantymanagement.repository.PartRepository;
+import com.swp391.warrantymanagement.repository.VehicleRepository;
 import com.swp391.warrantymanagement.service.PartService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.util.Date;
 import java.util.List;
 
 @Service
 public class PartServiceImpl implements PartService {
     @Autowired
     private PartRepository partRepository;
+    @Autowired
+    private VehicleRepository vehicleRepository;
 
+    // Basic CRUD operations with pagination and search
     @Override
-    public Part getById(String id) {
-        return partRepository.findById(id).orElse(null);
-    }
-
-    @Override
-    public Part createPart(Part part) {
-        return partRepository.save(part);
-    }
-
-    @Override
-    public Part updatePart(Part part) {
-        Part existingPart = partRepository.findById(part.getPartId()).orElse(null);
-        if (existingPart != null) {
-            return partRepository.save(part);
+    public PagedResponse<PartResponseDTO> getAllPartsPage(Pageable pageable, String search) {
+        Page<Part> partPage;
+        if (search != null && !search.trim().isEmpty()) {
+            partPage = partRepository.findByPartNameContainingIgnoreCaseOrManufacturerContainingIgnoreCase(
+                search, search, pageable);
+        } else {
+            partPage = partRepository.findAll(pageable);
         }
-        return null;
+
+        List<PartResponseDTO> responseDTOs = PartMapper.toResponseDTOList(partPage.getContent());
+
+        return new PagedResponse<>(
+            responseDTOs,
+            partPage.getNumber(),
+            partPage.getSize(),
+            partPage.getTotalElements(),
+            partPage.getTotalPages(),
+            partPage.isFirst(),
+            partPage.isLast()
+        );
     }
 
+    // Get part by ID
     @Override
-    public void deletePart(String id) {
+    public PartResponseDTO getPartById(String id) {
+        Part part = partRepository.findById(id).orElse(null);
+        return PartMapper.toResponseDTO(part);
+    }
+
+    // Create new part
+    @Override
+    public PartResponseDTO createPart(PartRequestDTO requestDTO) {
+        // Load Vehicle entity từ vehicleId
+        Vehicle vehicle = vehicleRepository.findById(requestDTO.getVehicleId()).orElse(null);
+        if (vehicle == null) {
+            throw new RuntimeException("Vehicle not found with id: " + requestDTO.getVehicleId());
+        }
+
+        // Convert DTO to Entity
+        Part part = PartMapper.toEntity(requestDTO, vehicle);
+
+        // Save entity
+        Part savedPart = partRepository.save(part);
+
+        // Convert entity back to response DTO
+        return PartMapper.toResponseDTO(savedPart);
+    }
+
+    // Update existing part
+    @Override
+    public PartResponseDTO updatePart(String id, PartRequestDTO requestDTO) {
+        Part existingPart = partRepository.findById(id).orElse(null);
+        if (existingPart == null) {
+            return null;
+        }
+
+        // Load Vehicle entity từ vehicleId
+        Vehicle vehicle = vehicleRepository.findById(requestDTO.getVehicleId()).orElse(null);
+        if (vehicle == null) {
+            throw new RuntimeException("Vehicle not found with id: " + requestDTO.getVehicleId());
+        }
+
+        // Update entity từ DTO
+        PartMapper.updateEntity(existingPart, requestDTO, vehicle);
+
+        // Save updated entity
+        Part updatedPart = partRepository.save(existingPart);
+
+        // Convert entity back to response DTO
+        return PartMapper.toResponseDTO(updatedPart);
+    }
+
+    // Delete part by ID
+    @Override
+    public boolean deletePart(String id) {
+        if (!partRepository.existsById(id)) {
+            return false;
+        }
         partRepository.deleteById(id);
+        return true;
     }
 
+    // Advanced queries
     @Override
-    public List<Part> getParts() {
-        return partRepository.findAll();
+    public PagedResponse<PartResponseDTO> getPartsByVehicleId(Long vehicleId, Pageable pageable) {
+        Page<Part> partPage = partRepository.findByVehicleVehicleId(vehicleId, pageable);
+        List<PartResponseDTO> responseDTOs = PartMapper.toResponseDTOList(partPage.getContent());
+
+        return new PagedResponse<>(
+            responseDTOs,
+            partPage.getNumber(),
+            partPage.getSize(),
+            partPage.getTotalElements(),
+            partPage.getTotalPages(),
+            partPage.isFirst(),
+            partPage.isLast()
+        );
+    }
+
+    // Find parts by manufacturer with pagination
+    @Override
+    public PagedResponse<PartResponseDTO> getPartsByManufacturer(String manufacturer, Pageable pageable) {
+        Page<Part> partPage = partRepository.findByManufacturerContainingIgnoreCase(manufacturer, pageable);
+        List<PartResponseDTO> responseDTOs = PartMapper.toResponseDTOList(partPage.getContent());
+
+        return new PagedResponse<>(
+            responseDTOs,
+            partPage.getNumber(),
+            partPage.getSize(),
+            partPage.getTotalElements(),
+            partPage.getTotalPages(),
+            partPage.isFirst(),
+            partPage.isLast()
+        );
+    }
+
+    // Find parts with warranty expiring within the next 'daysFromNow' days
+    @Override
+    public PagedResponse<PartResponseDTO> getPartsWithExpiringWarranty(int daysFromNow, Pageable pageable) {
+        // Convert LocalDate to Date for compatibility with Part entity
+        LocalDate cutoffLocalDate = LocalDate.now().plusDays(daysFromNow);
+        Date cutoffDate = java.sql.Date.valueOf(cutoffLocalDate);
+
+        // Use correct field name from Part entity
+        Page<Part> partPage = partRepository.findByWarrantyExpirationDateBefore(cutoffDate, pageable);
+        List<PartResponseDTO> responseDTOs = PartMapper.toResponseDTOList(partPage.getContent());
+
+        return new PagedResponse<>(
+            responseDTOs,
+            partPage.getNumber(),
+            partPage.getSize(),
+            partPage.getTotalElements(),
+            partPage.getTotalPages(),
+            partPage.isFirst(),
+            partPage.isLast()
+        );
     }
 }
