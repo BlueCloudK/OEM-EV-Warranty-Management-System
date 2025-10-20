@@ -57,86 +57,6 @@ export default function AdminDashboard() {
     USERS: "/api/users", // Admin only
   };
 
-  const ADMIN_FEATURES = [
-    {
-      title: "Quản lý Khách hàng",
-      description: "Xem, thêm, sửa, xóa khách hàng - FULL CRUD",
-      icon: <FaUsers />,
-      path: "/admin/customers",
-      color: "#3b82f6",
-      endpoints: [
-        "GET /customers",
-        "POST /customers",
-        "PUT /customers/{id}",
-        "DELETE /customers/{id}",
-      ],
-    },
-    {
-      title: "Quản lý Xe điện",
-      description: "Quản lý danh sách xe điện và thông tin VIN",
-      icon: <FaCar />,
-      path: "/admin/vehicles",
-      color: "#10b981",
-      endpoints: [
-        "GET /vehicles",
-        "POST /vehicles",
-        "PUT /vehicles/{id}",
-        "DELETE /vehicles/{id}",
-      ],
-    },
-    {
-      title: "Quản lý Phụ tùng",
-      description: "Quản lý kho phụ tùng và warranty information",
-      icon: <FaCogs />,
-      path: "/admin/parts",
-      color: "#f59e0b",
-      endpoints: [
-        "GET /parts",
-        "POST /parts",
-        "PUT /parts/{id}",
-        "DELETE /parts/{id}",
-      ],
-    },
-    {
-      title: "Warranty Claims",
-      description: "Xem tất cả yêu cầu bảo hành và workflow",
-      icon: <FaClipboardList />,
-      path: "/admin/warranty-claims",
-      color: "#ef4444",
-      endpoints: [
-        "GET /warranty-claims",
-        "PUT /warranty-claims/{id}",
-        "DELETE /warranty-claims/{id}",
-      ],
-    },
-    {
-      title: "Lịch sử Bảo dưỡng",
-      description: "Xem toàn bộ service histories của hệ thống",
-      icon: <FaHistory />,
-      path: "/admin/service-histories",
-      color: "#8b5cf6",
-      endpoints: [
-        "GET /service-histories",
-        "POST /service-histories",
-        "PUT /service-histories/{id}",
-        "DELETE /service-histories/{id}",
-      ],
-    },
-    {
-      title: "Quản lý Users & Roles",
-      description: "Quản lý tài khoản và phân quyền - ADMIN ONLY",
-      icon: <FaUserShield />,
-      path: "/admin/users",
-      color: "#dc2626",
-      endpoints: [
-        "POST /api/auth/register",
-        "GET /api/admin/users",
-        "PUT /api/admin/users/{id}",
-        "DELETE /api/admin/users/{id}",
-      ],
-    },
-  ];
-
   useEffect(() => {
     fetchDashboardStats();
     fetchRecentActivity();
@@ -151,13 +71,126 @@ export default function AdminDashboard() {
         return;
       }
 
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+      const API_BASE_URL =
+        import.meta.env.VITE_API_BASE_URL || "https://backend.bluecloudk.xyz";
 
-      // Giả lập fetch stats từ các endpoints
-      // Trong thực tế sẽ gọi parallel requests
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Gọi parallel requests để lấy dữ liệu thực từ API
+      const [customersRes, vehiclesRes, partsRes, claimsRes] =
+        await Promise.allSettled([
+          fetch(`${API_BASE_URL}/api/customers?size=1000`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch(`${API_BASE_URL}/api/vehicles?size=1000`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch(`${API_BASE_URL}/api/parts?size=1000`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch(`${API_BASE_URL}/api/warranty-claims?size=1000`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
 
-      // Mock stats data
+      // Xử lý kết quả từ API
+      let totalCustomers = 0;
+      let totalVehicles = 0;
+      let totalParts = 0;
+      let totalClaims = 0;
+      let pendingClaims = 0;
+      let completedClaims = 0;
+
+      // Customers
+      if (customersRes.status === "fulfilled" && customersRes.value.ok) {
+        const customersData = await customersRes.value.json();
+        console.log("📊 Customers API response:", customersData);
+        totalCustomers = Array.isArray(customersData)
+          ? customersData.length
+          : customersData.content
+          ? customersData.content.length
+          : customersData.totalElements || 0;
+        console.log("📊 Total customers calculated:", totalCustomers);
+      } else {
+        console.log("❌ Customers API failed:", customersRes);
+      }
+
+      // Vehicles
+      if (vehiclesRes.status === "fulfilled" && vehiclesRes.value.ok) {
+        const vehiclesData = await vehiclesRes.value.json();
+        console.log("📊 Vehicles API response:", vehiclesData);
+        totalVehicles = Array.isArray(vehiclesData)
+          ? vehiclesData.length
+          : vehiclesData.content
+          ? vehiclesData.content.length
+          : vehiclesData.totalElements || 0;
+        console.log("📊 Total vehicles calculated:", totalVehicles);
+      } else {
+        console.log("❌ Vehicles API failed:", vehiclesRes);
+      }
+
+      // Parts
+      if (partsRes.status === "fulfilled" && partsRes.value.ok) {
+        const partsData = await partsRes.value.json();
+        console.log("📊 Parts API response:", partsData);
+        totalParts = Array.isArray(partsData)
+          ? partsData.length
+          : partsData.content
+          ? partsData.content.length
+          : partsData.totalElements || 0;
+        console.log("📊 Total parts calculated:", totalParts);
+      } else {
+        console.log("❌ Parts API failed:", partsRes);
+      }
+
+      // Warranty Claims
+      if (claimsRes.status === "fulfilled" && claimsRes.value.ok) {
+        const claimsData = await claimsRes.value.json();
+        console.log("📊 Claims API response:", claimsData);
+        const claims = Array.isArray(claimsData)
+          ? claimsData
+          : claimsData.content
+          ? claimsData.content
+          : [];
+
+        totalClaims = claims.length;
+        pendingClaims = claims.filter(
+          (claim) =>
+            claim.status === "SUBMITTED" ||
+            claim.status === "PENDING" ||
+            claim.status === "IN_PROGRESS"
+        ).length;
+        completedClaims = claims.filter(
+          (claim) => claim.status === "COMPLETED" || claim.status === "APPROVED"
+        ).length;
+        console.log("📊 Claims stats:", {
+          totalClaims,
+          pendingClaims,
+          completedClaims,
+        });
+      } else {
+        console.log("❌ Claims API failed:", claimsRes);
+      }
+
+      // Cập nhật stats với dữ liệu thực từ API
+      setStats({
+        totalCustomers,
+        totalVehicles,
+        totalParts,
+        totalClaims,
+        pendingClaims,
+        completedClaims,
+      });
+
+      console.log("📊 Dashboard stats loaded from API:", {
+        totalCustomers,
+        totalVehicles,
+        totalParts,
+        totalClaims,
+        pendingClaims,
+        completedClaims,
+      });
+    } catch (err) {
+      console.error("❌ Dashboard stats fetch error:", err);
+      // Fallback to mock data nếu API lỗi
       setStats({
         totalCustomers: 156,
         totalVehicles: 89,
@@ -166,45 +199,158 @@ export default function AdminDashboard() {
         pendingClaims: 12,
         completedClaims: 45,
       });
-    } catch (err) {
-      console.error("Dashboard stats fetch error:", err);
     } finally {
       setLoading(false);
     }
   };
 
   const fetchRecentActivity = async () => {
-    // Mock recent activity
-    setRecentActivity([
-      {
-        id: 1,
-        type: "customer",
-        action: "Khách hàng mới đăng ký: Nguyễn Văn A",
-        time: "2 phút trước",
-        icon: <FaUsers />,
-      },
-      {
-        id: 2,
-        type: "claim",
-        action: "Warranty claim mới: Battery replacement",
-        time: "15 phút trước",
-        icon: <FaClipboardList />,
-      },
-      {
-        id: 3,
-        type: "vehicle",
-        action: "Xe mới được đăng ký: Tesla Model Y",
-        time: "1 giờ trước",
-        icon: <FaCar />,
-      },
-      {
-        id: 4,
-        type: "service",
-        action: "Service hoàn tất: Maintenance xe VIN-123",
-        time: "2 giờ trước",
-        icon: <FaHistory />,
-      },
-    ]);
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const API_BASE_URL =
+        import.meta.env.VITE_API_BASE_URL || "https://backend.bluecloudk.xyz";
+
+      // Lấy recent activity từ API
+      const [customersRes, claimsRes, vehiclesRes] = await Promise.allSettled([
+        fetch(`${API_BASE_URL}/api/customers?sort=createdAt,desc&size=2`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(
+          `${API_BASE_URL}/api/warranty-claims?sort=createdAt,desc&size=2`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        ),
+        fetch(`${API_BASE_URL}/api/vehicles?sort=createdAt,desc&size=2`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+
+      const activities = [];
+
+      // Recent customers
+      if (customersRes.status === "fulfilled" && customersRes.value.ok) {
+        const customersData = await customersRes.value.json();
+        const customers = Array.isArray(customersData)
+          ? customersData
+          : customersData.content
+          ? customersData.content
+          : [];
+
+        customers.forEach((customer, index) => {
+          activities.push({
+            id: `customer-${customer.id}`,
+            type: "customer",
+            action: `Khách hàng mới đăng ký: ${
+              customer.username || customer.name || "Unknown"
+            }`,
+            time: formatTimeAgo(customer.createdAt),
+            icon: <FaUsers />,
+          });
+        });
+      }
+
+      // Recent claims
+      if (claimsRes.status === "fulfilled" && claimsRes.value.ok) {
+        const claimsData = await claimsRes.value.json();
+        const claims = Array.isArray(claimsData)
+          ? claimsData
+          : claimsData.content
+          ? claimsData.content
+          : [];
+
+        claims.forEach((claim, index) => {
+          activities.push({
+            id: `claim-${claim.id}`,
+            type: "claim",
+            action: `Warranty claim mới: ${
+              claim.description || claim.issue || "Unknown issue"
+            }`,
+            time: formatTimeAgo(claim.createdAt),
+            icon: <FaClipboardList />,
+          });
+        });
+      }
+
+      // Recent vehicles
+      if (vehiclesRes.status === "fulfilled" && vehiclesRes.value.ok) {
+        const vehiclesData = await vehiclesRes.value.json();
+        const vehicles = Array.isArray(vehiclesData)
+          ? vehiclesData
+          : vehiclesData.content
+          ? vehiclesData.content
+          : [];
+
+        vehicles.forEach((vehicle, index) => {
+          activities.push({
+            id: `vehicle-${vehicle.id}`,
+            type: "vehicle",
+            action: `Xe điện mới đăng ký: ${vehicle.vin || "Unknown VIN"}`,
+            time: formatTimeAgo(vehicle.createdAt),
+            icon: <FaCar />,
+          });
+        });
+      }
+
+      // Sắp xếp theo thời gian và lấy 4 hoạt động gần nhất
+      activities.sort((a, b) => new Date(b.time) - new Date(a.time));
+      setRecentActivity(activities.slice(0, 4));
+
+      console.log("📈 Recent activity loaded from API:", activities);
+    } catch (err) {
+      console.error("❌ Recent activity fetch error:", err);
+      // Fallback to mock data
+      setRecentActivity([
+        {
+          id: 1,
+          type: "customer",
+          action: "Khách hàng mới đăng ký: Nguyễn Văn A",
+          time: "2 phút trước",
+          icon: <FaUsers />,
+        },
+        {
+          id: 2,
+          type: "claim",
+          action: "Warranty claim mới: Battery replacement",
+          time: "15 phút trước",
+          icon: <FaClipboardList />,
+        },
+        {
+          id: 3,
+          type: "vehicle",
+          action: "Xe mới được đăng ký: Tesla Model Y",
+          time: "1 giờ trước",
+          icon: <FaCar />,
+        },
+        {
+          id: 4,
+          type: "service",
+          action: "Service hoàn tất: Maintenance xe VIN-123",
+          time: "2 giờ trước",
+          icon: <FaHistory />,
+        },
+      ]);
+    }
+  };
+
+  // Helper function để format thời gian
+  const formatTimeAgo = (dateString) => {
+    if (!dateString) return "Unknown time";
+
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+
+    if (diffInMinutes < 1) return "Vừa xong";
+    if (diffInMinutes < 60) return `${diffInMinutes} phút trước`;
+
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours} giờ trước`;
+
+    const diffInDays = Math.floor(diffInHours / 24);
+    return `${diffInDays} ngày trước`;
   };
 
   // Styles
@@ -239,23 +385,6 @@ export default function AdminDashboard() {
     padding: "22px",
     boxShadow: "0 6px 24px rgba(2,44,40,0.08)",
     transition: "all 0.25s ease",
-    border: "1px solid #e5e7eb",
-  };
-
-  const featuresGridStyle = {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(350px, 1fr))",
-    gap: "25px",
-    marginBottom: "30px",
-  };
-
-  const featureCardStyle = {
-    background: "linear-gradient(180deg, #ffffff 0%, #f9fafb 100%)",
-    borderRadius: "16px",
-    padding: "22px",
-    boxShadow: "0 8px 28px rgba(2,44,40,0.08)",
-    transition: "all 0.25s ease",
-    cursor: "pointer",
     border: "1px solid #e5e7eb",
   };
 
@@ -623,72 +752,6 @@ export default function AdminDashboard() {
                     }}
                   >
                     {stat.icon}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Management Features */}
-          <div style={featuresGridStyle}>
-            {ADMIN_FEATURES.map((feature, index) => (
-              <div
-                key={index}
-                style={{
-                  ...featureCardStyle,
-                  borderTop: `4px solid ${feature.color}`,
-                }}
-                onClick={() => feature.path && navigate(feature.path)}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-5px)";
-                  e.currentTarget.style.boxShadow =
-                    "0 10px 30px rgba(0,0,0,0.15)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow =
-                    "0 6px 20px rgba(0,0,0,0.1)";
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: "15px",
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: "40px",
-                      color: feature.color,
-                      minWidth: "40px",
-                    }}
-                  >
-                    {feature.icon}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <h3
-                      style={{
-                        margin: "0 0 8px 0",
-                        color: "#1f2937",
-                        fontSize: "18px",
-                        fontWeight: "600",
-                      }}
-                    >
-                      {feature.title}
-                    </h3>
-                    <p
-                      style={{
-                        margin: "0 0 15px 0",
-                        color: "#6b7280",
-                        fontSize: "14px",
-                        lineHeight: "1.5",
-                      }}
-                    >
-                      {feature.description}
-                    </p>
-
-                    {/* API Endpoints section removed per request */}
                   </div>
                 </div>
               </div>

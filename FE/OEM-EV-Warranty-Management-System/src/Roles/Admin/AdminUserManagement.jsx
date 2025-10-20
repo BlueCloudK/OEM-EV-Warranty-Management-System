@@ -5,8 +5,11 @@ import { adminUsersApi, adminAuthApi } from "../../api/adminUsers";
 const AdminUserManagement = () => {
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showRegisterForm, setShowRegisterForm] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchRole, setSearchRole] = useState("");
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -120,6 +123,31 @@ const AdminUserManagement = () => {
   ];
 
   const didInit = useRef(false);
+
+  // Filter users based on search term and role
+  useEffect(() => {
+    let filtered = users;
+
+    if (searchTerm) {
+      filtered = filtered.filter(
+        (user) =>
+          user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.address.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    if (searchRole) {
+      filtered = filtered.filter(
+        (user) =>
+          user.roleName === searchRole ||
+          getRoleDisplay(normalizeRoleConst(user)) === searchRole
+      );
+    }
+
+    setFilteredUsers(filtered);
+  }, [users, searchTerm, searchRole]);
+
   useEffect(() => {
     if (didInit.current) return; // avoid double fetch in React StrictMode DEV
     didInit.current = true;
@@ -128,7 +156,7 @@ const AdminUserManagement = () => {
       try {
         setLoading(true);
         // Use Admin Users API per guide
-        const data = await adminUsersApi.list({ page: 0, size: 50 });
+        const data = await adminUsersApi.getAllUsers({ page: 0, size: 50 });
 
         const arrayData = Array.isArray(data?.content)
           ? data.content
@@ -170,6 +198,7 @@ const AdminUserManagement = () => {
           (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
         );
         setUsers(sorted);
+        setFilteredUsers(sorted);
         setLoading(false);
       } catch (error) {
         console.error("❌ Error fetching users:", error);
@@ -182,6 +211,7 @@ const AdminUserManagement = () => {
           (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
         );
         setUsers(sorted);
+        setFilteredUsers(sorted);
         setLoading(false);
 
         // Optional: Show user-friendly error message
@@ -273,6 +303,7 @@ const AdminUserManagement = () => {
       const updatedLocals = [createdUser, ...locals];
       savePersistedUsers(updatedLocals);
       setUsers((prev) => [createdUser, ...prev]);
+      setFilteredUsers((prev) => [createdUser, ...prev]);
 
       setFormData({
         username: "",
@@ -320,7 +351,7 @@ const AdminUserManagement = () => {
   const refreshUsers = async () => {
     setLoading(true);
     try {
-      const data = await adminUsersApi.list({ page: 0, size: 50 });
+      const data = await adminUsersApi.getAllUsers({ page: 0, size: 50 });
       const arrayData = Array.isArray(data?.content)
         ? data.content
         : Array.isArray(data)
@@ -337,9 +368,11 @@ const AdminUserManagement = () => {
         isActive: user.active !== undefined ? user.active : true,
       }));
       setUsers(transformedUsers);
+      setFilteredUsers(transformedUsers);
     } catch (error) {
       console.error("Error refreshing users:", error);
       setUsers(mockUsers);
+      setFilteredUsers(mockUsers);
     }
 
     setLoading(false);
@@ -583,36 +616,77 @@ const AdminUserManagement = () => {
         <div className="table-header">
           <h3>
             <i className="fas fa-users"></i>
-            All Users ({users.length})
+            All Users ({filteredUsers.length})
           </h3>
-          {users.length === 0 && !loading && (
+
+          {/* Search and Filter Controls */}
+          <div className="search-controls">
+            <div className="search-input-group">
+              <i className="fas fa-search"></i>
+              <input
+                type="text"
+                placeholder="Search by username, email, or address..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="search-input"
+              />
+            </div>
+            <select
+              value={searchRole}
+              onChange={(e) => setSearchRole(e.target.value)}
+              className="role-filter"
+            >
+              <option value="">All Roles</option>
+              {roles.map((role) => (
+                <option key={role.id} value={role.display}>
+                  {role.display}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={() => {
+                setSearchTerm("");
+                setSearchRole("");
+              }}
+              className="btn btn-clear"
+              title="Clear filters"
+            >
+              <i className="fas fa-times"></i>
+              Clear
+            </button>
+          </div>
+
+          {filteredUsers.length === 0 && !loading && (
             <div className="empty-state">
               <i className="fas fa-users"></i>
-              <p>No users found</p>
+              <p>
+                {searchTerm || searchRole
+                  ? "No users match your search criteria"
+                  : "No users found"}
+              </p>
               <small>Try refreshing or check your connection</small>
             </div>
           )}
         </div>
 
-        {users.length > 0 && (
+        {filteredUsers.length > 0 && (
           <div className="table-responsive">
             <table className="users-table">
               <thead>
                 <tr>
-                  <th>ID</th>
+                  <th>User ID</th>
                   <th>Username</th>
                   <th>Email</th>
                   <th>Role</th>
                   <th>Address</th>
                   <th>Created Date</th>
-                  <th>Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {users.map((user) => (
+                {filteredUsers.map((user) => (
                   <tr key={`${user.id}-${user.username}`}>
-                    <td>{user.roleId}</td>
+                    <td>{user.id}</td>
                     <td className="username">{user.username}</td>
                     <td>{user.email}</td>
                     <td>
@@ -630,15 +704,6 @@ const AdminUserManagement = () => {
                     </td>
                     <td>{formatDate(user.createdAt)}</td>
                     <td>
-                      <span
-                        className={`status-badge ${
-                          user.isActive ? "active" : "inactive"
-                        }`}
-                      >
-                        {user.isActive ? "Active" : "Inactive"}
-                      </span>
-                    </td>
-                    <td>
                       <div className="action-buttons">
                         <button className="btn-action edit" title="Edit User">
                           <i className="fas fa-edit"></i>
@@ -648,20 +713,6 @@ const AdminUserManagement = () => {
                           title="Delete User"
                         >
                           <i className="fas fa-trash"></i>
-                        </button>
-                        <button
-                          className={`btn-action ${
-                            user.isActive ? "deactivate" : "activate"
-                          }`}
-                          title={
-                            user.isActive ? "Deactivate User" : "Activate User"
-                          }
-                        >
-                          <i
-                            className={`fas ${
-                              user.isActive ? "fa-user-slash" : "fa-user-check"
-                            }`}
-                          ></i>
                         </button>
                       </div>
                     </td>
@@ -724,6 +775,100 @@ const AdminUserManagement = () => {
           display: flex;
           align-items: center;
           gap: 10px;
+        }
+
+        .search-controls {
+          display: flex;
+          gap: 30px;
+          align-items: center;
+          margin-bottom: 20px;
+          flex-wrap: wrap;
+          width: 100%;
+        }
+
+        .search-input-group {
+          position: relative;
+          flex: 1;
+          min-width: 300px;
+        }
+
+        .search-input-group i {
+          position: absolute;
+          left: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #666;
+          z-index: 1;
+        }
+
+        .search-input {
+          width: 100%;
+          padding: 10px 12px 10px 10px;
+          border: 1px solid #ddd;
+          border-radius: 6px;
+          font-size: 14px;
+          transition: border-color 0.3s;
+        }
+
+        .search-input:focus {
+          outline: none;
+          border-color: #007bff;
+          box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+        }
+
+        .role-filter {
+          padding: 10px 12px;
+          border: 1px solid #ddd;
+          border-radius: 6px;
+          font-size: 14px;
+          background: white;
+          min-width: 280px;
+          flex-shrink: 0;
+        }
+
+        .btn-clear {
+          padding: 10px 20px;
+          background: #6c757d;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 14px;
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          transition: background-color 0.3s;
+          flex-shrink: 0;
+          white-space: nowrap;
+          min-width: 100px;
+          justify-content: center;
+        }
+
+        .btn-clear:hover {
+          background: #5a6268;
+        }
+
+        @media (max-width: 768px) {
+          .search-controls {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+          }
+          
+          .search-input-group {
+            min-width: 100%;
+            max-width: 100%;
+          }
+          
+          .role-filter {
+            min-width: 100%;
+            max-width: 100%;
+          }
+          
+          .btn-clear {
+            width: 100%;
+            justify-content: center;
+          }
         }
 
         .empty-state {
@@ -985,16 +1130,6 @@ const AdminUserManagement = () => {
         .role-badge.evm-staff { background: #fd7e14; color: white; }
         .role-badge.customer { background: #6c757d; color: white; }
 
-        .status-badge {
-          padding: 4px 8px;
-          border-radius: 12px;
-          font-size: 12px;
-          font-weight: 600;
-          text-transform: uppercase;
-        }
-
-        .status-badge.active { background: #d4edda; color: #155724; }
-        .status-badge.inactive { background: #f8d7da; color: #721c24; }
 
         .action-buttons {
           display: flex;
@@ -1016,11 +1151,6 @@ const AdminUserManagement = () => {
         .btn-action.delete { color: #dc3545; }
         .btn-action.delete:hover { background: #ffebee; }
 
-        .btn-action.deactivate { color: #fd7e14; }
-        .btn-action.deactivate:hover { background: #fff3cd; }
-
-        .btn-action.activate { color: #28a745; }
-        .btn-action.activate:hover { background: #d4edda; }
 
         .loading {
           text-align: center;

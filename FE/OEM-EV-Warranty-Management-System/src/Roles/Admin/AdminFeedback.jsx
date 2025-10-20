@@ -292,3 +292,4 @@ export default function AdminFeedback() {
 const th = { background: "#f5f5f5", padding: "12px 15px", textAlign: "left" };
 const td = { padding: "12px 15px", borderBottom: "1px solid #e0e0e0" };
 const tdMono = { ...td, fontFamily: "monospace" };
+
