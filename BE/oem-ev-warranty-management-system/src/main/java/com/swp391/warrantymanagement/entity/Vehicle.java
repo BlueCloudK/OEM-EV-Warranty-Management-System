@@ -36,12 +36,12 @@ public class Vehicle {
     @JoinColumn(name = "customer_id", nullable = false)
     private Customer customer;
 
-    @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL)
-    private List<Part> parts = new ArrayList<>();
+    @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<InstalledPart> installedParts = new ArrayList<>();
 
-    @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL)
-    private List<ServiceHistory> serviceHistory = new ArrayList<>();
+    @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ServiceHistory> serviceHistorys = new ArrayList<>();
 
-    @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<WarrantyClaim> warrantyClaims = new ArrayList<>();
 }
