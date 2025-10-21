@@ -1,5 +1,6 @@
 package com.swp391.warrantymanagement.entity;
 
+import com.swp391.warrantymanagement.entity.id.ServiceHistoryDetailId;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -32,19 +33,10 @@ public class Part {
     @Column(name = "price", nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
 
-    @Column(name = "installation_date", nullable = false)
-    private Date installationDate;
+    @OneToMany(mappedBy = "part") // xóa part thì không xóa installedPart
+    private List<InstalledPart> installedParts = new ArrayList<>();
 
-    @Column(name = "warranty_expiration_date", nullable = false)
-    private Date warrantyExpirationDate;
+    @OneToMany(mappedBy = "part") // xóa part thì không xóa serviceHistoryDetail
+    private List<ServiceHistoryDetail> serviceHistoryDetails = new ArrayList<>();
 
-    @ManyToOne(fetch = FetchType.LAZY) // fetch là lấy dữ liệu liên quan khi cần thiết, với LAZY thì chỉ lấy khi truy cập
-    @JoinColumn(name = "vehicle_id")
-    private Vehicle vehicle;
-
-    @OneToMany(mappedBy = "part", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<WarrantyClaim> warrantyClaims = new ArrayList<>();
-
-    @OneToMany(mappedBy = "part", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ServiceHistory> serviceHistories = new ArrayList<>();
 }

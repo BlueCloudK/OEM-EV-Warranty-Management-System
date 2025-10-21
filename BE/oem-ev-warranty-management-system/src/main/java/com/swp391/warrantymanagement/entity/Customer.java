@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.annotations.Type;
 import org.hibernate.type.SqlTypes;
 
 import java.util.ArrayList;
@@ -26,19 +25,17 @@ public class Customer {
     @Column(name = "name", nullable = false, length = 100, columnDefinition = "nvarchar(100)")
     private String name;
 
-    @Column(name = "email", nullable = false, length = 100, unique = true)
-    private String email;
-
     @Column(name = "phone", nullable = false, length = 15, unique = true)
     private String phone;
 
-    @Column(name = "address", nullable = false)
-    private String address;
-
-    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "customer",
+            cascade = {
+            CascadeType.PERSIST, // Khi lưu entity cha, tự động lưu entity con nếu chưa tồn tại
+            CascadeType.MERGE    // Khi cập nhật entity cha, tự động cập nhật entity con nếu có thay đổi
+    })
     private List<Vehicle> vehicles = new ArrayList<>();
 
-    @ManyToOne(fetch = FetchType.LAZY) // fetch là lấy dữ liệu liên quan khi cần thiết, với LAZY thì chỉ lấy khi truy cập
-    @JoinColumn(name = "user_id", nullable = false)
+    @OneToOne
+    @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
 }
