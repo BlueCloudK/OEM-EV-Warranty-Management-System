@@ -14,10 +14,10 @@ public class WarrantyClaimStatusValidator {
     private static final Map<String, List<String>> VALID_TRANSITIONS = new HashMap<>();
 
     static {
-        // SUBMITTED can go to SC_REVIEW or REJECTED
-        VALID_TRANSITIONS.put("SUBMITTED", List.of("SC_REVIEW", "REJECTED"));
+        // SUBMITTED can go to MANAGER_REVIEW or REJECTED
+        VALID_TRANSITIONS.put("SUBMITTED", List.of("MANAGER_REVIEW", "REJECTED"));
 
-        // SC_REVIEW can go to PROCESSING or REJECTED
+        // MANAGER_REVIEW can go to PROCESSING or REJECTED
         VALID_TRANSITIONS.put("SC_REVIEW", List.of("PROCESSING", "REJECTED"));
 
         // PROCESSING can go to COMPLETED or REJECTED

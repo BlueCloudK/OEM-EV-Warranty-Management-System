@@ -5,11 +5,9 @@ import com.swp391.warrantymanagement.dto.response.PartResponseDTO;
 import com.swp391.warrantymanagement.dto.response.PagedResponse;
 import org.springframework.data.domain.Pageable;
 
-import java.util.List;
-
 /**
- * Service interface for part-related business logic.
- * Handles CRUD and search operations for parts using DTOs.
+ * PartService - Business logic for Part management
+ * Used by EVM Staff to register and manage standalone parts (NO vehicle associations)
  */
 public interface PartService {
     // ============= CRUD Operations =============
@@ -18,9 +16,7 @@ public interface PartService {
     PartResponseDTO updatePart(String id, PartRequestDTO requestDTO);
     boolean deletePart(String id);
 
-    // ============= Mass Data Operations - With Pagination =============
+    // ============= Search Operations with Pagination =============
     PagedResponse<PartResponseDTO> getAllPartsPage(Pageable pageable, String search);
-    PagedResponse<PartResponseDTO> getPartsByVehicleId(Long vehicleId, Pageable pageable);
     PagedResponse<PartResponseDTO> getPartsByManufacturer(String manufacturer, Pageable pageable);
-    PagedResponse<PartResponseDTO> getPartsWithExpiringWarranty(int daysFromNow, Pageable pageable);
 }

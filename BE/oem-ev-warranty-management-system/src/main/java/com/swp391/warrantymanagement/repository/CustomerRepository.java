@@ -23,10 +23,7 @@ public interface CustomerRepository extends JpaRepository<Customer, UUID> { // J
     // Thêm method hỗ trợ pagination cho search
     Page<Customer> findByNameContainingIgnoreCase(String name, Pageable pageable);
 
-    // Tìm customer theo email hoặc phone (unique)
-    Optional<Customer> findByEmail(String email);
-
-    // Tìm customer theo phone (unique)
+    // Tìm customer theo phone (unique trong Customer entity)
     Optional<Customer> findByPhone(String phone);
 
     // Tìm customers theo userId với pagination
@@ -36,10 +33,10 @@ public interface CustomerRepository extends JpaRepository<Customer, UUID> { // J
     boolean existsByUserUserId(Long userId);
 
     // Custom query để tìm kiếm customer theo nhiều tiêu chí
+    // Email không còn trong Customer entity, giờ email trong User entity
     @Query("SELECT c FROM Customer c WHERE " +
-           "(:name IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', :name, '%'))) AND " +
-           "(:email IS NULL OR LOWER(c.email) = LOWER(:email))")
-    List<Customer> findByNameAndEmail(@Param("name") String name, @Param("email") String email);
+           "(:name IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', :name, '%')))")
+    List<Customer> findByName(@Param("name") String name);
 
     // Find customer by User entity (required for VehicleService)
     Customer findByUser(User user);

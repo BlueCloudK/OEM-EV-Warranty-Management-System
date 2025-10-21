@@ -1,12 +1,10 @@
 package com.swp391.warrantymanagement.repository;
 
 import com.swp391.warrantymanagement.entity.WarrantyClaim;
-import com.swp391.warrantymanagement.entity.WarrantyClaimStatus;
+import com.swp391.warrantymanagement.enums.WarrantyClaimStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -26,4 +24,11 @@ public interface WarrantyClaimRepository extends JpaRepository<WarrantyClaim, Lo
 
     // Sửa từ findByVehicleId thành findByVehicleVehicleId để match với WarrantyClaim.vehicle.vehicleId
     List<WarrantyClaim> findByVehicleVehicleId(Long vehicleId);
+
+    // Find claims assigned to a specific user
+    Page<WarrantyClaim> findByAssignedToUserId(Long userId, Pageable pageable);
+    List<WarrantyClaim> findByAssignedToUserId(Long userId);
+
+    // Find unassigned claims
+    Page<WarrantyClaim> findByAssignedToIsNull(Pageable pageable);
 }

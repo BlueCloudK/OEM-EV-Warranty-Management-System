@@ -11,6 +11,8 @@ import java.util.stream.Collectors;
 
 /**
  * Mapper chuyển đổi Customer Entity ↔ DTO theo thiết kế DAL
+ * Customer entity chỉ chứa: name, phone, user
+ * Email và address được lưu trong User entity
  */
 public final class CustomerMapper {
     private CustomerMapper() {}
@@ -22,9 +24,7 @@ public final class CustomerMapper {
         Customer entity = new Customer();
         entity.setCustomerId(UUID.randomUUID());
         entity.setName(requestDTO.getName());
-        entity.setEmail(requestDTO.getEmail());
         entity.setPhone(requestDTO.getPhone());
-        entity.setAddress(requestDTO.getAddress());
         entity.setUser(user);
 
         return entity;
@@ -35,27 +35,27 @@ public final class CustomerMapper {
         if (entity == null || requestDTO == null) return;
 
         entity.setName(requestDTO.getName());
-        entity.setEmail(requestDTO.getEmail());
         entity.setPhone(requestDTO.getPhone());
-        entity.setAddress(requestDTO.getAddress());
         entity.setUser(user);
-        // createdAt không thay đổi khi update
     }
 
     // Entity -> Response DTO (cho API response)
+    // Lấy email và address từ User entity
     public static CustomerResponseDTO toResponseDTO(Customer entity) {
         if (entity == null) return null;
 
         CustomerResponseDTO responseDTO = new CustomerResponseDTO();
         responseDTO.setCustomerId(entity.getCustomerId());
         responseDTO.setName(entity.getName());
-        responseDTO.setEmail(entity.getEmail());
         responseDTO.setPhone(entity.getPhone());
-        responseDTO.setAddress(entity.getAddress());
 
+        // Lấy email, address, username từ User
         if (entity.getUser() != null) {
             responseDTO.setUserId(entity.getUser().getUserId());
             responseDTO.setUsername(entity.getUser().getUsername());
+            responseDTO.setEmail(entity.getUser().getEmail());
+            responseDTO.setAddress(entity.getUser().getAddress());
+            responseDTO.setCreatedAt(java.sql.Timestamp.valueOf(entity.getUser().getCreatedAt()));
         }
 
         return responseDTO;

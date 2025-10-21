@@ -1,6 +1,5 @@
 package com.swp391.warrantymanagement.entity;
 
-import com.swp391.warrantymanagement.entity.id.ServiceHistoryDetailId;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -8,14 +7,20 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
-@Entity // map/ánh xạ class này với bảng trong database
-@Table(name = "parts") // đặt tên bảng trong database
-@Data // tự động tạo getter, setter, toString, hashCode, equals
-@AllArgsConstructor // tự động tạo constructor với tất cả các tham số
-@NoArgsConstructor // tự động tạo constructor không tham số
+/**
+ * Part Entity - Represents a vehicle part/component registered by EVM Staff
+ * Business Rule:
+ * - Part is standalone component information (NO vehicle relationship)
+ * - EVM Staff registers parts
+ * - Dealer Staff links Part to Vehicle via InstalledPart for warranty tracking
+ */
+@Entity
+@Table(name = "parts")
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class Part {
     @Id
     @Column(name = "part_id", length = 50)
@@ -33,10 +38,9 @@ public class Part {
     @Column(name = "price", nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
 
-    @OneToMany(mappedBy = "part") // xóa part thì không xóa installedPart
+    @OneToMany(mappedBy = "part")
     private List<InstalledPart> installedParts = new ArrayList<>();
 
-    @OneToMany(mappedBy = "part") // xóa part thì không xóa serviceHistoryDetail
+    @OneToMany(mappedBy = "part")
     private List<ServiceHistoryDetail> serviceHistoryDetails = new ArrayList<>();
-
 }
