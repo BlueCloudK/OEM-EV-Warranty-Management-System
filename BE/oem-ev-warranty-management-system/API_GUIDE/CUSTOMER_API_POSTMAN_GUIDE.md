@@ -79,13 +79,13 @@ Authorization: Bearer {jwt_token}
 
 **Permissions:** ADMIN, SC_STAFF, EVM_STAFF only
 
+**Description:** Tạo Customer profile cho User đã tồn tại. Email và Address được lấy từ User entity.
+
 **Request Body:**
 ```json
 {
   "name": "Jane Smith",
-  "email": "jane.smith@email.com",
   "phone": "+84901234568",
-  "address": "456 Oak Street, Hanoi",
   "userId": 6
 }
 ```
@@ -104,6 +104,8 @@ Authorization: Bearer {jwt_token}
 }
 ```
 
+**Note:** Email và Address trong response được lấy từ User entity, không lưu trong Customer entity.
+
 ### 4. Update Customer
 **PUT** `/api/customers/{id}`
 
@@ -112,18 +114,20 @@ Authorization: Bearer {jwt_token}
 **Path Parameters:**
 - `id`: Customer UUID
 
+**Description:** Cập nhật Customer profile. Để cập nhật email/address, cần cập nhật User entity.
+
 **Request Body:**
 ```json
 {
   "name": "John Doe Updated",
-  "email": "john.doe.new@email.com",
   "phone": "+84901234569",
-  "address": "789 New Street, Ho Chi Minh City",
   "userId": 5
 }
 ```
 
 **Response Success (200):** Same as Get Customer
+
+**Note:** Email và Address không thể cập nhật qua endpoint này. Cần cập nhật trực tiếp User entity.
 
 ### 5. Delete Customer
 **DELETE** `/api/customers/{id}`
@@ -254,7 +258,7 @@ Authorization: Bearer {jwt_token}
 
 **Permissions:** Tất cả authenticated users (Customer tự cập nhật profile)
 
-**Description:** Customer tự cập nhật thông tin cá nhân của mình
+**Description:** Customer tự cập nhật thông tin Customer profile của mình. Để cập nhật email/address, cần cập nhật User entity.
 
 **Headers:**
 ```
@@ -266,9 +270,7 @@ Content-Type: application/json
 ```json
 {
   "name": "John Doe Updated",
-  "email": "john.doe.new@email.com",
   "phone": "+84901234569",
-  "address": "789 New Street, Ho Chi Minh City",
   "userId": 5
 }
 ```
@@ -278,14 +280,16 @@ Content-Type: application/json
 {
   "customerId": "123e4567-e89b-12d3-a456-426614174000",
   "name": "John Doe Updated",
-  "email": "john.doe.new@email.com",
+  "email": "john.doe@email.com",
   "phone": "+84901234569",
-  "address": "789 New Street, Ho Chi Minh City",
+  "address": "123 Main St, Ho Chi Minh City",
   "createdAt": "2024-01-15T10:30:00.000+00:00",
   "userId": 5,
   "username": "john_doe"
 }
 ```
+
+**Note:** Email và Address trong response được lấy từ User entity và không thể cập nhật qua endpoint này.
 
 **Response Error (400):**
 ```json
@@ -326,11 +330,10 @@ Headers:
 Body (raw JSON):
 {
   "name": "New Customer",
-  "email": "new@email.com",
   "phone": "+84901234567",
-  "address": "123 Street, City",
   "userId": 10
 }
+Note: Email và Address được lấy từ User entity (userId: 10)
 ```
 
 ### Update Customer
@@ -343,11 +346,10 @@ Headers:
 Body (raw JSON):
 {
   "name": "Updated Name",
-  "email": "updated@email.com",
   "phone": "+84901234569",
-  "address": "Updated Address",
   "userId": 5
 }
+Note: Email và Address không thể cập nhật qua endpoint này
 ```
 
 ### Delete Customer
@@ -400,11 +402,10 @@ Headers:
 Body (raw JSON):
 {
   "name": "Updated Name",
-  "email": "updated@email.com",
   "phone": "+84901234569",
-  "address": "Updated Address",
   "userId": 5
 }
+Note: Chỉ cập nhật được name và phone trong Customer entity
 ```
 
 ## Validation Rules
@@ -414,25 +415,20 @@ Body (raw JSON):
 - **Length:** 5-100 characters
 - **Pattern:** Each word must start with capital letter, supports Vietnamese characters
 - **Example:** "Nguyễn Văn An", "John Doe"
+- **Stored in:** Customer entity
 
-### Email Field
-- **Required:** Yes
-- **Pattern:** Valid email format
-- **Example:** "user@example.com"
-
-### Phone Field  
+### Phone Field
 - **Required:** Yes
 - **Pattern:** Vietnamese format (+84xxxxxxxxx or 0xxxxxxxxx)
 - **Example:** "+84901234567", "0901234567"
-
-### Address Field
-- **Required:** Yes
-- **Length:** Maximum 255 characters
+- **Unique:** Yes
+- **Stored in:** Customer entity
 
 ### User ID Field
 - **Required:** Yes
 - **Type:** Positive number
 - **Description:** Must be existing User ID
+- **Note:** Email và Address được lấy từ User entity, không lưu trong Customer entity
 
 ## Error Responses
 

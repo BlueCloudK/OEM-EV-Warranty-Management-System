@@ -417,7 +417,7 @@ GET /api/warranty-claims/evm-pending
 ```bash
 # Chấp nhận
 PATCH /api/warranty-claims/1/evm-accept
-# Status: SC_REVIEW
+# Status: MANAGER_REVIEW
 
 # Hoặc từ chối
 PATCH /api/warranty-claims/1/evm-reject?reason=...

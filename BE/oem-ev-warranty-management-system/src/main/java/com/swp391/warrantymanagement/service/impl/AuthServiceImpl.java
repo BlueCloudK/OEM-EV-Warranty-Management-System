@@ -3,9 +3,13 @@ package com.swp391.warrantymanagement.service.impl;
 import com.swp391.warrantymanagement.dto.request.auth.*;
 import com.swp391.warrantymanagement.dto.request.AdminUserCreationDTO;
 import com.swp391.warrantymanagement.dto.response.AuthResponseDTO;
+import com.swp391.warrantymanagement.dto.response.CustomerResponseDTO;
+import com.swp391.warrantymanagement.entity.Customer;
 import com.swp391.warrantymanagement.entity.Role;
 import com.swp391.warrantymanagement.entity.Token;
 import com.swp391.warrantymanagement.entity.User;
+import com.swp391.warrantymanagement.mapper.CustomerMapper;
+import com.swp391.warrantymanagement.repository.CustomerRepository;
 import com.swp391.warrantymanagement.repository.RoleRepository;
 import com.swp391.warrantymanagement.repository.TokenRepository;
 import com.swp391.warrantymanagement.repository.UserRepository;
@@ -17,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 /**
  * Implementation của AuthService
@@ -38,6 +43,8 @@ public class AuthServiceImpl implements AuthService {
     private PasswordEncoder passwordEncoder;
     @Autowired
     private TokenRepository tokenRepository;
+    @Autowired
+    private CustomerRepository customerRepository;
 
     // ============= NEW METHODS - Sử dụng DTO pattern =============
 
@@ -201,6 +208,54 @@ public class AuthServiceImpl implements AuthService {
                 savedUser.getUsername(),
                 savedUser.getRole().getRoleName()
         );
+    }
+
+    /**
+     * Đăng ký customer mới bởi Staff - tạo cả User và Customer profile trong 1 transaction
+     * Input: CustomerRegistrationByStaffDTO từ Staff
+     * Output: CustomerResponseDTO với thông tin đầy đủ customer
+     */
+    @Override
+    @Transactional
+    public CustomerResponseDTO registerCustomerByStaff(CustomerRegistrationByStaffDTO registrationRequest) {
+        // 1. Validate username và email chưa tồn tại
+        if (userRepository.existsByUsername(registrationRequest.getUsername())) {
+            throw new RuntimeException("Username already exists: " + registrationRequest.getUsername());
+        }
+        if (userRepository.existsByEmail(registrationRequest.getEmail())) {
+            throw new RuntimeException("Email already exists: " + registrationRequest.getEmail());
+        }
+
+        // 2. Validate phone chưa tồn tại
+        if (customerRepository.findByPhone(registrationRequest.getPhone()).isPresent()) {
+            throw new RuntimeException("Phone number already exists: " + registrationRequest.getPhone());
+        }
+
+        // 3. Tìm role CUSTOMER
+        Role customerRole = roleRepository.findByRoleName("CUSTOMER")
+                .orElseThrow(() -> new RuntimeException("Customer role not found"));
+
+        // 4. Tạo User entity
+        User newUser = new User();
+        newUser.setUsername(registrationRequest.getUsername());
+        newUser.setEmail(registrationRequest.getEmail());
+        newUser.setPassword(passwordEncoder.encode(registrationRequest.getPassword()));
+        newUser.setAddress(registrationRequest.getAddress());
+        newUser.setRole(customerRole);
+
+        User savedUser = userRepository.save(newUser);
+
+        // 5. Tạo Customer entity
+        Customer newCustomer = new Customer();
+        newCustomer.setCustomerId(UUID.randomUUID());
+        newCustomer.setName(registrationRequest.getName());
+        newCustomer.setPhone(registrationRequest.getPhone());
+        newCustomer.setUser(savedUser);
+
+        Customer savedCustomer = customerRepository.save(newCustomer);
+
+        // 6. Convert sang CustomerResponseDTO và return
+        return CustomerMapper.toResponseDTO(savedCustomer);
     }
 
     /**

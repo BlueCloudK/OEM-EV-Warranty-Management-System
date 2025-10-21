@@ -6,13 +6,16 @@ import com.swp391.warrantymanagement.dto.request.auth.UserRegistrationDTO;
 import com.swp391.warrantymanagement.dto.request.auth.ForgotPasswordRequestDTO;
 import com.swp391.warrantymanagement.dto.request.auth.ResetPasswordRequestDTO;
 import com.swp391.warrantymanagement.dto.request.auth.LogoutRequestDTO;
+import com.swp391.warrantymanagement.dto.request.auth.CustomerRegistrationByStaffDTO;
 import com.swp391.warrantymanagement.dto.request.AdminUserCreationDTO;
 import com.swp391.warrantymanagement.dto.response.AuthResponseDTO;
+import com.swp391.warrantymanagement.dto.response.CustomerResponseDTO;
 import com.swp391.warrantymanagement.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import org.slf4j.Logger;
@@ -112,6 +115,33 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (RuntimeException e) {
             logger.error("Admin user creation failed for username: {} - Error: {}", adminCreationRequest.getUsername(), e.getMessage());
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    // ĐĂNG KÝ CUSTOMER BỞI STAFF - Tạo cả User và Customer profile trong 1 request
+    // CHỈ ADMIN, SC_STAFF, EVM_STAFF MỚI TRUY CẬP ĐƯỢC
+    @PostMapping("/staff/register-customer")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('EVM_STAFF')")
+    public ResponseEntity<Map<String, Object>> registerCustomerByStaff(@Valid @RequestBody CustomerRegistrationByStaffDTO registrationRequest) {
+        logger.info("Staff customer registration attempt for username: {}", registrationRequest.getUsername());
+        try {
+            // Service xử lý tạo User + Customer trong 1 transaction
+            CustomerResponseDTO customerResponse = authService.registerCustomerByStaff(registrationRequest);
+            logger.info("Staff customer registration successful for username: {} - Customer ID: {}",
+                registrationRequest.getUsername(), customerResponse.getCustomerId());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Customer account and profile created successfully");
+            response.put("customer", customerResponse);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (RuntimeException e) {
+            logger.error("Staff customer registration failed for username: {} - Error: {}",
+                registrationRequest.getUsername(), e.getMessage());
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", e.getMessage());

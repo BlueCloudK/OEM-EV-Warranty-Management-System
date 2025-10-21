@@ -1,6 +1,6 @@
 package com.swp391.warrantymanagement.dto.response;
 
-import com.swp391.warrantymanagement.entity.WarrantyClaimStatus;
+import com.swp391.warrantymanagement.enums.WarrantyClaimStatus;
 import lombok.Data;
 import java.util.Date;
 
@@ -31,6 +31,11 @@ public class WarrantyClaimResponseDTO {
     private String customerName;
     private String customerEmail;
     private String customerPhone;
+
+    // Assigned staff information - EVM Staff được assign claim
+    private Long assignedToUserId;
+    private String assignedToUsername;
+    private String assignedToEmail;
 
     // Audit information - track thông tin cập nhật
     private String comments; // Comments khi approve/reject

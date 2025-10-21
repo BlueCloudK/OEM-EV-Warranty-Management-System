@@ -5,10 +5,12 @@ import com.swp391.warrantymanagement.dto.request.WarrantyClaimStatusUpdateReques
 import com.swp391.warrantymanagement.dto.response.WarrantyClaimResponseDTO;
 import com.swp391.warrantymanagement.dto.response.PagedResponse;
 import com.swp391.warrantymanagement.entity.Part;
+import com.swp391.warrantymanagement.entity.User;
 import com.swp391.warrantymanagement.entity.Vehicle;
 import com.swp391.warrantymanagement.entity.WarrantyClaim;
-import com.swp391.warrantymanagement.entity.WarrantyClaimStatus;
+import com.swp391.warrantymanagement.enums.WarrantyClaimStatus;
 import com.swp391.warrantymanagement.mapper.WarrantyClaimMapper;
+import com.swp391.warrantymanagement.repository.UserRepository;
 import com.swp391.warrantymanagement.repository.WarrantyClaimRepository;
 import com.swp391.warrantymanagement.repository.PartRepository;
 import com.swp391.warrantymanagement.repository.VehicleRepository;
@@ -29,6 +31,8 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
     private PartRepository partRepository;
     @Autowired
     private VehicleRepository vehicleRepository;
+    @Autowired
+    private UserRepository userRepository;
 
     // Methods implementation
     @Override
@@ -140,8 +144,8 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
     private boolean isValidStatusTransition(WarrantyClaimStatus current, WarrantyClaimStatus target) {
         switch (current) {
             case SUBMITTED:
-                return target == WarrantyClaimStatus.SC_REVIEW || target == WarrantyClaimStatus.REJECTED;
-            case SC_REVIEW:
+                return target == WarrantyClaimStatus.MANAGER_REVIEW || target == WarrantyClaimStatus.REJECTED;
+            case MANAGER_REVIEW:
                 return target == WarrantyClaimStatus.PROCESSING || target == WarrantyClaimStatus.REJECTED;
             case PROCESSING:
                 return target == WarrantyClaimStatus.COMPLETED || target == WarrantyClaimStatus.REJECTED;
@@ -187,8 +191,8 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
             throw new RuntimeException("Claim must be in SUBMITTED status to accept. Current status: " + claim.getStatus());
         }
 
-        // Chuyển status sang SC_REVIEW để Tech có thể xử lý
-        claim.setStatus(WarrantyClaimStatus.SC_REVIEW);
+        // Chuyển status sang MANAGER_REVIEW để Tech có thể xử lý
+        claim.setStatus(WarrantyClaimStatus.MANAGER_REVIEW);
         if (note != null && !note.trim().isEmpty()) {
             claim.setDescription(claim.getDescription() + "\n[EVM Note]: " + note);
         }
@@ -225,9 +229,9 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
             throw new RuntimeException("Warranty claim not found with id: " + claimId);
         }
 
-        // Kiểm tra status hiện tại phải là SC_REVIEW
-        if (claim.getStatus() != WarrantyClaimStatus.SC_REVIEW) {
-            throw new RuntimeException("Claim must be in SC_REVIEW status to start processing. Current status: " + claim.getStatus());
+        // Kiểm tra status hiện tại phải là MANAGER_REVIEW
+        if (claim.getStatus() != WarrantyClaimStatus.MANAGER_REVIEW) {
+            throw new RuntimeException("Claim must be in MANAGER_REVIEW status to start processing. Current status: " + claim.getStatus());
         }
 
         // Chuyển status sang PROCESSING
@@ -284,11 +288,47 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
 
     @Override
     public PagedResponse<WarrantyClaimResponseDTO> getTechPendingClaims(Pageable pageable) {
-        // Lấy claims có status SC_REVIEW hoặc PROCESSING (cần Tech xử lý)
+        // Lấy claims có status MANAGER_REVIEW hoặc PROCESSING (cần Tech xử lý)
         Page<WarrantyClaim> claimPage = warrantyClaimRepository.findByStatusIn(
-            List.of(WarrantyClaimStatus.SC_REVIEW, WarrantyClaimStatus.PROCESSING),
+            List.of(WarrantyClaimStatus.MANAGER_REVIEW, WarrantyClaimStatus.PROCESSING),
             pageable
         );
+        List<WarrantyClaimResponseDTO> responseDTOs = WarrantyClaimMapper.toResponseDTOList(claimPage.getContent());
+
+        return new PagedResponse<>(
+            responseDTOs,
+            claimPage.getNumber(),
+            claimPage.getSize(),
+            claimPage.getTotalElements(),
+            claimPage.getTotalPages(),
+            claimPage.isFirst(),
+            claimPage.isLast()
+        );
+    }
+
+    @Override
+    public WarrantyClaimResponseDTO assignClaimToMe(Long claimId, Long userId) {
+        // Find the claim
+        WarrantyClaim claim = warrantyClaimRepository.findById(claimId)
+            .orElseThrow(() -> new RuntimeException("Warranty claim not found with id: " + claimId));
+
+        // Find the user (EVM Staff)
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+
+        // Assign the claim to the user
+        claim.setAssignedTo(user);
+
+        // Save the updated claim
+        WarrantyClaim updatedClaim = warrantyClaimRepository.save(claim);
+
+        // Return response DTO
+        return WarrantyClaimMapper.toResponseDTO(updatedClaim);
+    }
+
+    @Override
+    public PagedResponse<WarrantyClaimResponseDTO> getMyAssignedClaims(Long userId, Pageable pageable) {
+        Page<WarrantyClaim> claimPage = warrantyClaimRepository.findByAssignedToUserId(userId, pageable);
         List<WarrantyClaimResponseDTO> responseDTOs = WarrantyClaimMapper.toResponseDTOList(claimPage.getContent());
 
         return new PagedResponse<>(

@@ -5,7 +5,7 @@ import com.swp391.warrantymanagement.dto.response.WarrantyClaimResponseDTO;
 import com.swp391.warrantymanagement.entity.Part;
 import com.swp391.warrantymanagement.entity.Vehicle;
 import com.swp391.warrantymanagement.entity.WarrantyClaim;
-import com.swp391.warrantymanagement.entity.WarrantyClaimStatus;
+import com.swp391.warrantymanagement.enums.WarrantyClaimStatus;
 
 import java.util.Date;
 import java.util.List;
@@ -47,6 +47,13 @@ public final class WarrantyClaimMapper {
         }
         if (entity.getVehicle() != null) {
             responseDTO.setVehicleId(entity.getVehicle().getVehicleId());
+        }
+
+        // Assigned staff information
+        if (entity.getAssignedTo() != null) {
+            responseDTO.setAssignedToUserId(entity.getAssignedTo().getUserId());
+            responseDTO.setAssignedToUsername(entity.getAssignedTo().getUsername());
+            responseDTO.setAssignedToEmail(entity.getAssignedTo().getEmail());
         }
 
         return responseDTO;

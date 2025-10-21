@@ -2,9 +2,11 @@ package com.swp391.warrantymanagement.dto.response;
 
 import lombok.Data;
 import java.math.BigDecimal;
-import java.util.Date;
 
-/** Response DTO: Dữ liệu trả về FE cho Part */
+/**
+ * PartResponseDTO - Returns part information to frontend
+ * Contains only part details (NO vehicle information)
+ */
 @Data
 public class PartResponseDTO {
     private String partId;
@@ -12,11 +14,4 @@ public class PartResponseDTO {
     private String partNumber;
     private String manufacturer;
     private BigDecimal price;
-    private Date installationDate;
-    private Date warrantyExpirationDate;
-
-    // Vehicle information
-    private Long vehicleId;
-    private String vehicleName;
-    private String vehicleVin;
 }

@@ -1,6 +1,6 @@
 package com.swp391.warrantymanagement.dto.request;
 
-import com.swp391.warrantymanagement.entity.WarrantyClaimStatus;
+import com.swp391.warrantymanagement.enums.WarrantyClaimStatus;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 

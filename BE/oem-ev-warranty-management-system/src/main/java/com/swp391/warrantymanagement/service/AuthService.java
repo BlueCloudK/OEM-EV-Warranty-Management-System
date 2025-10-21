@@ -3,6 +3,7 @@ package com.swp391.warrantymanagement.service;
 import com.swp391.warrantymanagement.dto.request.auth.*;
 import com.swp391.warrantymanagement.dto.request.AdminUserCreationDTO;
 import com.swp391.warrantymanagement.dto.response.AuthResponseDTO;
+import com.swp391.warrantymanagement.dto.response.CustomerResponseDTO;
 import com.swp391.warrantymanagement.entity.User;
 
 /**
@@ -15,6 +16,7 @@ public interface AuthService {
     AuthResponseDTO refreshUserToken(RefreshTokenRequestDTO refreshRequest);
     AuthResponseDTO registerNewUser(UserRegistrationDTO registrationRequest);
     AuthResponseDTO createUserByAdmin(AdminUserCreationDTO adminCreationRequest);
+    CustomerResponseDTO registerCustomerByStaff(CustomerRegistrationByStaffDTO registrationRequest);
     void logoutUser(LogoutRequestDTO logoutRequest);
     void processForgotPassword(ForgotPasswordRequestDTO forgotRequest);
     void processResetPassword(ResetPasswordRequestDTO resetRequest);

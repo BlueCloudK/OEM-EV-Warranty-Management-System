@@ -49,4 +49,8 @@ public class WarrantyClaim {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "service_center_id", nullable = false)
     private ServiceCenter serviceCenter;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_to_user_id")
+    private User assignedTo;  // EVM Staff được assign claim này
 }

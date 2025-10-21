@@ -110,7 +110,7 @@ Authorization: Bearer {admin_access_token}
 ```json
 {
   "username": "new_staff",
-  "email": "staff@example.com", 
+  "email": "staff@example.com",
   "password": "password123",
   "address": "456 Staff St, Ho Chi Minh City",
   "roleId": 2
@@ -124,13 +124,92 @@ Authorization: Bearer {admin_access_token}
   "message": "User created successfully by Admin",
   "user": {
     "userId": 6,
-    "username": "new_staff", 
+    "username": "new_staff",
     "roleName": "EVM_STAFF"
   }
 }
 ```
 
-### 4. Refresh Token
+### 4. Staff Register Customer - Đăng ký Customer đầy đủ bởi Staff
+**POST** `/api/auth/staff/register-customer`
+
+**Description:** ADMIN, SC_STAFF hoặc EVM_STAFF đăng ký customer mới với đầy đủ thông tin User + Customer trong 1 request
+
+**Permissions:** ADMIN, SC_STAFF, EVM_STAFF only
+
+**Headers:**
+```
+Authorization: Bearer {staff_access_token}
+Content-Type: application/json
+```
+
+**Request:**
+```json
+{
+  "username": "nguyenvana",
+  "email": "nguyenvana@example.com",
+  "password": "password123",
+  "address": "123 Nguyen Hue, Quan 1, TP.HCM",
+  "name": "Nguyễn Văn A",
+  "phone": "+84901234567"
+}
+```
+
+**Response Success (201):**
+```json
+{
+  "success": true,
+  "message": "Customer account and profile created successfully",
+  "customer": {
+    "customerId": "123e4567-e89b-12d3-a456-426614174000",
+    "name": "Nguyễn Văn A",
+    "email": "nguyenvana@example.com",
+    "phone": "+84901234567",
+    "address": "123 Nguyen Hue, Quan 1, TP.HCM",
+    "createdAt": "2024-10-21T10:30:00.000+00:00",
+    "userId": 10,
+    "username": "nguyenvana"
+  }
+}
+```
+
+**Response Error (400):**
+```json
+{
+  "success": false,
+  "message": "Username already exists: nguyenvana"
+}
+```
+
+**Postman Setup:**
+```
+Method: POST
+URL: http://localhost:8080/api/auth/staff/register-customer
+Headers:
+  Authorization: Bearer {{accessToken}}
+  Content-Type: application/json
+Body (raw JSON):
+{
+  "username": "nguyenvana",
+  "email": "nguyenvana@example.com",
+  "password": "password123",
+  "address": "123 Nguyen Hue, Quan 1, TP.HCM",
+  "name": "Nguyễn Văn A",
+  "phone": "+84901234567"
+}
+```
+
+**Validation Rules:**
+- **Username:** 3-50 ký tự, chỉ chữ cái, số và underscore
+- **Email:** Format email hợp lệ, unique trong hệ thống
+- **Password:** Tối thiểu 6 ký tự
+- **Address:** 10-255 ký tự
+- **Name:** 5-100 ký tự, mỗi từ viết hoa chữ cái đầu, hỗ trợ tiếng Việt
+- **Phone:** Format Việt Nam (+84xxxxxxxxx hoặc 0xxxxxxxxx), unique trong hệ thống
+
+**Note:** Endpoint này tạo đồng thời cả User account (với role CUSTOMER) và Customer profile, khác với `/api/auth/register` chỉ tạo User account.
+
+### 5. Refresh Token
 **POST** `/api/auth/refresh`
 
 **Description:** Làm mới access token bằng refresh token

@@ -86,11 +86,7 @@ public class CustomerServiceImpl implements CustomerService {
             throw new RuntimeException("Only ADMIN or STAFF can create customer records. Customers should update their own profile instead.");
         }
 
-        // Validate email và phone không trùng lặp
-        if (customerRepository.findByEmail(requestDTO.getEmail()).isPresent()) {
-            throw new RuntimeException("Email already exists: " + requestDTO.getEmail());
-        }
-
+        // Validate phone không trùng lặp (phone là unique trong Customer entity)
         if (customerRepository.findByPhone(requestDTO.getPhone()).isPresent()) {
             throw new RuntimeException("Phone number already exists: " + requestDTO.getPhone());
         }
@@ -185,7 +181,14 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     public CustomerResponseDTO getCustomerByEmail(String email) {
-        Customer customer = customerRepository.findByEmail(email).orElse(null);
+        // Email không còn trong Customer entity, giờ email trong User entity
+        // Cần tìm User theo email, sau đó tìm Customer theo User
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) {
+            return null;
+        }
+
+        Customer customer = customerRepository.findByUser(user);
         return customer != null ? CustomerMapper.toResponseDTO(customer) : null;
     }
 
@@ -241,12 +244,7 @@ public class CustomerServiceImpl implements CustomerService {
             throw new RuntimeException("Customer profile not found. Please contact administrator to create your profile.");
         }
 
-        // Validate email và phone không trùng với customer khác (trừ chính mình)
-        Customer emailOwner = customerRepository.findByEmail(requestDTO.getEmail()).orElse(null);
-        if (emailOwner != null && !emailOwner.getCustomerId().equals(existingCustomer.getCustomerId())) {
-            throw new RuntimeException("Email already exists: " + requestDTO.getEmail());
-        }
-
+        // Validate phone không trùng với customer khác (trừ chính mình)
         Customer phoneOwner = customerRepository.findByPhone(requestDTO.getPhone()).orElse(null);
         if (phoneOwner != null && !phoneOwner.getCustomerId().equals(existingCustomer.getCustomerId())) {
             throw new RuntimeException("Phone number already exists: " + requestDTO.getPhone());

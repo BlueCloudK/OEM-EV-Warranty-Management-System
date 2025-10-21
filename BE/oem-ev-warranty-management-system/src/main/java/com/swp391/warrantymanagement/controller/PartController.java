@@ -15,12 +15,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * REST controller for Part APIs.
- * Handles CRUD operations for parts using DTOs only.
+ * PartController - REST API for Part management
  * Business Rules:
- * - ADMIN/EVM_STAFF can manage all parts
- * - SERVICE_CENTER_STAFF can view parts for service operations
- * - CUSTOMER can view basic part information for their vehicles
+ * - Part is standalone component information (NO vehicle association)
+ * - EVM_STAFF registers parts (create/update/delete)
+ * - Dealer Staff (SC_STAFF) views parts and links to vehicles via InstalledPart
  */
 @RestController
 @RequestMapping("api/parts")
@@ -29,7 +28,7 @@ public class PartController {
     private static final Logger logger = LoggerFactory.getLogger(PartController.class);
     @Autowired private PartService partService;
 
-    // Get all parts with pagination (ADMIN/EVM_STAFF/SC_STAFF only)
+    // Get all parts with pagination and search (EVM_STAFF registers, SC_STAFF views to select)
     @GetMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF')")
     public ResponseEntity<PagedResponse<PartResponseDTO>> getAllParts(
@@ -43,9 +42,9 @@ public class PartController {
         return ResponseEntity.ok(partsPage);
     }
 
-    // Get part by ID (All authenticated users can view basic part info)
+    // Get part by ID
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN') or hasRole('CUSTOMER')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN')")
     public ResponseEntity<PartResponseDTO> getPartById(@PathVariable String id) {
         logger.info("Get part by id: {}", id);
         PartResponseDTO part = partService.getPartById(id);
@@ -57,7 +56,7 @@ public class PartController {
         return ResponseEntity.notFound().build();
     }
 
-    // Create new part (Only ADMIN/EVM_STAFF)
+    // Create new part (Only EVM_STAFF can register parts)
     @PostMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF')")
     public ResponseEntity<PartResponseDTO> createPart(@Valid @RequestBody PartRequestDTO requestDTO) {
@@ -72,7 +71,7 @@ public class PartController {
         }
     }
 
-    // Update part (Only ADMIN/EVM_STAFF)
+    // Update part (Only EVM_STAFF can update parts)
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF')")
     public ResponseEntity<PartResponseDTO> updatePart(@PathVariable String id,
@@ -92,7 +91,7 @@ public class PartController {
         }
     }
 
-    // Delete part (Only ADMIN)
+    // Delete part (Only ADMIN can delete parts)
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deletePart(@PathVariable String id) {
@@ -106,21 +105,7 @@ public class PartController {
         return ResponseEntity.notFound().build();
     }
 
-    // Search parts by vehicle ID (All authenticated users can view parts for specific vehicle)
-    @GetMapping("/by-vehicle/{vehicleId}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('EVM_STAFF') or hasRole('SC_TECHNICIAN') or hasRole('CUSTOMER')")
-    public ResponseEntity<PagedResponse<PartResponseDTO>> getPartsByVehicle(
-            @PathVariable Long vehicleId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        logger.info("Get parts by vehicleId: {}, page={}, size={}", vehicleId, page, size);
-        PagedResponse<PartResponseDTO> partsPage = partService.getPartsByVehicleId(
-            vehicleId, PageRequest.of(page, size));
-        logger.info("Get parts by vehicleId success, totalElements={}", partsPage.getTotalElements());
-        return ResponseEntity.ok(partsPage);
-    }
-
-    // Search parts by manufacturer (ADMIN/STAFF/EVM_STAFF/SERVICE_CENTER only)
+    // Search parts by manufacturer
     @GetMapping("/by-manufacturer")
     @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('EVM_STAFF') or hasRole('SC_TECHNICIAN')")
     public ResponseEntity<PagedResponse<PartResponseDTO>> getPartsByManufacturer(
@@ -131,20 +116,6 @@ public class PartController {
         PagedResponse<PartResponseDTO> partsPage = partService.getPartsByManufacturer(
             manufacturer, PageRequest.of(page, size));
         logger.info("Get parts by manufacturer success, totalElements={}", partsPage.getTotalElements());
-        return ResponseEntity.ok(partsPage);
-    }
-
-    // Get parts with warranty expiring soon (ADMIN/STAFF/EVM_STAFF only - business intelligence)
-    @GetMapping("/warranty-expiring")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('EVM_STAFF')")
-    public ResponseEntity<PagedResponse<PartResponseDTO>> getPartsWithExpiringWarranty(
-            @RequestParam(defaultValue = "30") int daysFromNow,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        logger.info("Get parts with expiring warranty: days={}, page={}, size={}", daysFromNow, page, size);
-        PagedResponse<PartResponseDTO> partsPage = partService.getPartsWithExpiringWarranty(
-            daysFromNow, PageRequest.of(page, size));
-        logger.info("Get parts with expiring warranty success, totalElements={}", partsPage.getTotalElements());
         return ResponseEntity.ok(partsPage);
     }
 }

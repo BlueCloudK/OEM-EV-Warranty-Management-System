@@ -3,9 +3,11 @@ package com.swp391.warrantymanagement.dto.request;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 import java.math.BigDecimal;
-import java.util.Date;
 
-/** Request DTO: Dữ liệu đầu vào từ FE cho Part operations */
+/**
+ * PartRequestDTO - Used by EVM Staff to register new parts
+ * Business Rule: Part is standalone component (NO vehicle association)
+ */
 @Data
 public class PartRequestDTO {
     @NotBlank(message = "Part ID is required")
@@ -30,16 +32,4 @@ public class PartRequestDTO {
     @DecimalMin(value = "0.01", message = "Price must be greater than 0")
     @DecimalMax(value = "99999999.99", message = "Price cannot exceed 99,999,999.99")
     private BigDecimal price;
-
-    @NotNull(message = "Installation date is required")
-    @PastOrPresent(message = "Installation date cannot be in the future")
-    private Date installationDate;
-
-    @NotNull(message = "Warranty expiration date is required")
-    @Future(message = "Warranty expiration date must be in the future")
-    private Date warrantyExpirationDate;
-
-    @NotNull(message = "Vehicle ID is required")
-    @Positive(message = "Vehicle ID must be a positive number")
-    private Long vehicleId;
 }
