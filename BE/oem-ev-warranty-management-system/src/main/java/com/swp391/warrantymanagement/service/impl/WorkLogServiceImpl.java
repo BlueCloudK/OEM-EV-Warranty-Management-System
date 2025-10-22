@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -57,6 +58,7 @@ public class WorkLogServiceImpl implements WorkLogService {
     }
 
     @Override
+    @Transactional
     public WorkLogResponseDTO createWorkLog(WorkLogRequestDTO requestDTO, Long userId) {
         // Validate User exists
         User user = userRepository.findById(userId)
@@ -82,6 +84,7 @@ public class WorkLogServiceImpl implements WorkLogService {
     }
 
     @Override
+    @Transactional
     public WorkLogResponseDTO updateWorkLog(Long id, WorkLogRequestDTO requestDTO, Long userId) {
         WorkLog existingWorkLog = workLogRepository.findById(id).orElse(null);
         if (existingWorkLog == null) {
@@ -112,6 +115,7 @@ public class WorkLogServiceImpl implements WorkLogService {
     }
 
     @Override
+    @Transactional
     public boolean deleteWorkLog(Long id) {
         if (!workLogRepository.existsById(id)) {
             return false;

@@ -6,6 +6,7 @@ import com.swp391.warrantymanagement.dto.response.PagedResponse;
 import com.swp391.warrantymanagement.entity.InstalledPart;
 import com.swp391.warrantymanagement.entity.Part;
 import com.swp391.warrantymanagement.entity.Vehicle;
+import com.swp391.warrantymanagement.exception.ResourceNotFoundException;
 import com.swp391.warrantymanagement.mapper.InstalledPartMapper;
 import com.swp391.warrantymanagement.repository.InstalledPartRepository;
 import com.swp391.warrantymanagement.repository.PartRepository;
@@ -15,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -53,19 +55,21 @@ public class InstalledPartServiceImpl implements InstalledPartService {
 
     @Override
     public InstalledPartResponseDTO getInstalledPartById(String id) {
-        InstalledPart installedPart = installedPartRepository.findById(id).orElse(null);
+        InstalledPart installedPart = installedPartRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("InstalledPart", "id", id));
         return InstalledPartMapper.toResponseDTO(installedPart);
     }
 
     @Override
+    @Transactional
     public InstalledPartResponseDTO createInstalledPart(InstalledPartRequestDTO requestDTO) {
         // Validate Part exists
         Part part = partRepository.findById(requestDTO.getPartId())
-            .orElseThrow(() -> new RuntimeException("Part not found with id: " + requestDTO.getPartId()));
+            .orElseThrow(() -> new ResourceNotFoundException("Part", "id", requestDTO.getPartId()));
 
         // Validate Vehicle exists
         Vehicle vehicle = vehicleRepository.findById(requestDTO.getVehicleId())
-            .orElseThrow(() -> new RuntimeException("Vehicle not found with id: " + requestDTO.getVehicleId()));
+            .orElseThrow(() -> new ResourceNotFoundException("Vehicle", "id", requestDTO.getVehicleId()));
 
         // Validate warranty expiration date is after installation date
         if (requestDTO.getWarrantyExpirationDate().isBefore(requestDTO.getInstallationDate())) {
@@ -83,19 +87,18 @@ public class InstalledPartServiceImpl implements InstalledPartService {
     }
 
     @Override
+    @Transactional
     public InstalledPartResponseDTO updateInstalledPart(String id, InstalledPartRequestDTO requestDTO) {
-        InstalledPart existingInstalledPart = installedPartRepository.findById(id).orElse(null);
-        if (existingInstalledPart == null) {
-            return null;
-        }
+        InstalledPart existingInstalledPart = installedPartRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("InstalledPart", "id", id));
 
         // Validate Part exists
         Part part = partRepository.findById(requestDTO.getPartId())
-            .orElseThrow(() -> new RuntimeException("Part not found with id: " + requestDTO.getPartId()));
+            .orElseThrow(() -> new ResourceNotFoundException("Part", "id", requestDTO.getPartId()));
 
         // Validate Vehicle exists
         Vehicle vehicle = vehicleRepository.findById(requestDTO.getVehicleId())
-            .orElseThrow(() -> new RuntimeException("Vehicle not found with id: " + requestDTO.getVehicleId()));
+            .orElseThrow(() -> new ResourceNotFoundException("Vehicle", "id", requestDTO.getVehicleId()));
 
         // Validate warranty expiration date is after installation date
         if (requestDTO.getWarrantyExpirationDate().isBefore(requestDTO.getInstallationDate())) {
@@ -113,6 +116,7 @@ public class InstalledPartServiceImpl implements InstalledPartService {
     }
 
     @Override
+    @Transactional
     public boolean deleteInstalledPart(String id) {
         if (!installedPartRepository.existsById(id)) {
             return false;

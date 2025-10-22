@@ -1,6 +1,7 @@
 package com.swp391.warrantymanagement.service;
 
 import com.swp391.warrantymanagement.dto.request.CustomerRequestDTO;
+import com.swp391.warrantymanagement.dto.response.CustomerProfileResponseDTO;
 import com.swp391.warrantymanagement.dto.response.CustomerResponseDTO;
 import com.swp391.warrantymanagement.dto.response.PagedResponse;
 import org.springframework.data.domain.Pageable;
@@ -22,4 +23,11 @@ public interface CustomerService {
     CustomerResponseDTO getCustomerByPhone(String phone);
     PagedResponse<CustomerResponseDTO> getCustomersByUserId(Long userId, Pageable pageable);
     CustomerResponseDTO updateCustomerProfile(CustomerRequestDTO requestDTO, String authorizationHeader);
+
+    /**
+     * Get full customer profile with claim history, vehicles, and feedbacks
+     * @param customerId Customer ID
+     * @return Full customer profile
+     */
+    CustomerProfileResponseDTO getCustomerFullProfile(UUID customerId);
 }

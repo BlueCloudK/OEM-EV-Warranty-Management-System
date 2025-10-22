@@ -1,11 +1,14 @@
 package com.swp391.warrantymanagement.service.impl;
 
 import com.swp391.warrantymanagement.dto.request.CustomerRequestDTO;
-import com.swp391.warrantymanagement.dto.response.CustomerResponseDTO;
-import com.swp391.warrantymanagement.dto.response.PagedResponse;
+import com.swp391.warrantymanagement.dto.response.*;
 import com.swp391.warrantymanagement.entity.Customer;
 import com.swp391.warrantymanagement.entity.User;
+import com.swp391.warrantymanagement.enums.WarrantyClaimStatus;
 import com.swp391.warrantymanagement.mapper.CustomerMapper;
+import com.swp391.warrantymanagement.mapper.FeedbackMapper;
+import com.swp391.warrantymanagement.mapper.VehicleMapper;
+import com.swp391.warrantymanagement.mapper.WarrantyClaimMapper;
 import com.swp391.warrantymanagement.repository.CustomerRepository;
 import com.swp391.warrantymanagement.repository.UserRepository;
 import com.swp391.warrantymanagement.service.CustomerService;
@@ -18,6 +21,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class CustomerServiceImpl implements CustomerService {
@@ -132,6 +136,7 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     @Override
+    @Transactional
     public CustomerResponseDTO updateCustomer(UUID id, CustomerRequestDTO requestDTO) {
         Customer existingCustomer = customerRepository.findById(id).orElse(null);
         if (existingCustomer == null) {
@@ -155,6 +160,7 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     @Override
+    @Transactional
     public boolean deleteCustomer(UUID id) {
         if (!customerRepository.existsById(id)) {
             return false;
@@ -255,5 +261,63 @@ public class CustomerServiceImpl implements CustomerService {
         Customer updatedCustomer = customerRepository.save(existingCustomer);
 
         return CustomerMapper.toResponseDTO(updatedCustomer);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CustomerProfileResponseDTO getCustomerFullProfile(UUID customerId) {
+        // Find customer
+        Customer customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new RuntimeException("Customer not found with ID: " + customerId));
+
+        // Build profile DTO
+        CustomerProfileResponseDTO profile = new CustomerProfileResponseDTO();
+
+        // Basic customer info
+        profile.setCustomerId(customer.getCustomerId());
+        profile.setCustomerName(customer.getName());
+        profile.setCustomerEmail(customer.getUser().getEmail());
+        profile.setCustomerPhone(customer.getPhone());
+        profile.setAddress(customer.getUser().getAddress());
+
+        // User account info
+        profile.setUserId(customer.getUser().getUserId());
+        profile.setUsername(customer.getUser().getUsername());
+        profile.setAccountCreatedAt(customer.getUser().getCreatedAt());
+
+        // Vehicles
+        List<VehicleResponseDTO> vehicles = customer.getVehicles().stream()
+                .map(VehicleMapper::toResponseDTO)
+                .collect(Collectors.toList());
+        profile.setVehicles(vehicles);
+        profile.setTotalVehicles(vehicles.size());
+
+        // Warranty claims
+        List<WarrantyClaimResponseDTO> claims = customer.getVehicles().stream()
+                .flatMap(vehicle -> vehicle.getWarrantyClaims().stream())
+                .map(WarrantyClaimMapper::toResponseDTO)
+                .collect(Collectors.toList());
+        profile.setWarrantyClaims(claims);
+        profile.setTotalClaims(claims.size());
+
+        // Count completed and pending claims
+        long completedCount = claims.stream()
+                .filter(claim -> claim.getStatus() == WarrantyClaimStatus.COMPLETED)
+                .count();
+        long pendingCount = claims.stream()
+                .filter(claim -> claim.getStatus() != WarrantyClaimStatus.COMPLETED
+                        && claim.getStatus() != WarrantyClaimStatus.REJECTED)
+                .count();
+        profile.setCompletedClaims((int) completedCount);
+        profile.setPendingClaims((int) pendingCount);
+
+        // Feedbacks
+        List<FeedbackResponseDTO> feedbacks = customer.getFeedbacks().stream()
+                .map(FeedbackMapper::toResponseDTO)
+                .collect(Collectors.toList());
+        profile.setFeedbacks(feedbacks);
+        profile.setTotalFeedbacks(feedbacks.size());
+
+        return profile;
     }
 }

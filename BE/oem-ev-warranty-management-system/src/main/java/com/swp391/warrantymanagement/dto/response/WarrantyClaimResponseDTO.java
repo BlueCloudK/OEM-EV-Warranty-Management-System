@@ -2,18 +2,19 @@ package com.swp391.warrantymanagement.dto.response;
 
 import com.swp391.warrantymanagement.enums.WarrantyClaimStatus;
 import lombok.Data;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 /** Response DTO: Dữ liệu trả về FE cho WarrantyClaim - đầy đủ thông tin */
 @Data
 public class WarrantyClaimResponseDTO {
     private Long warrantyClaimId;
-    private Date claimDate;
+    private LocalDateTime claimDate;
     private WarrantyClaimStatus status;
     private String description;
-    private Date resolutionDate;
+    private LocalDateTime resolutionDate;
 
-    // Part information - đầy đủ thông tin part
+    // InstalledPart information - đầy đủ thông tin installed part
+    private String installedPartId;
     private String partId;
     private String partName;
     private String partNumber;
@@ -40,5 +41,5 @@ public class WarrantyClaimResponseDTO {
     // Audit information - track thông tin cập nhật
     private String comments; // Comments khi approve/reject
     private String updatedBy; // Staff đã cập nhật status
-    private Date lastUpdated; // Thời gian update cuối
+    private LocalDateTime lastUpdated; // Thời gian update cuối
 }

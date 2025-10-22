@@ -24,7 +24,7 @@ public interface ServiceHistoryRepository extends JpaRepository<ServiceHistory, 
 
     // Tìm kiếm theo xe, phụ tùng, khách hàng
     Page<ServiceHistory> findByVehicleVehicleId(Long vehicleId, Pageable pageable);
-    Page<ServiceHistory> findByPartPartId(String partId, Pageable pageable);
+    Page<ServiceHistory> findByServiceHistoryDetailsPartPartId(String partId, Pageable pageable);
     Page<ServiceHistory> findByVehicleCustomerCustomerId(UUID customerId, Pageable pageable);
 
     // Tìm kiếm theo khoảng thời gian

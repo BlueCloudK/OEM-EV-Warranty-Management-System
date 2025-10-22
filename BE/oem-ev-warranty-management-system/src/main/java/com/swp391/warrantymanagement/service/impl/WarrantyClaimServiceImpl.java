@@ -4,35 +4,49 @@ import com.swp391.warrantymanagement.dto.request.WarrantyClaimRequestDTO;
 import com.swp391.warrantymanagement.dto.request.WarrantyClaimStatusUpdateRequestDTO;
 import com.swp391.warrantymanagement.dto.response.WarrantyClaimResponseDTO;
 import com.swp391.warrantymanagement.dto.response.PagedResponse;
+import com.swp391.warrantymanagement.entity.InstalledPart;
 import com.swp391.warrantymanagement.entity.Part;
+import com.swp391.warrantymanagement.entity.ServiceHistory;
+import com.swp391.warrantymanagement.entity.ServiceHistoryDetail;
 import com.swp391.warrantymanagement.entity.User;
 import com.swp391.warrantymanagement.entity.Vehicle;
 import com.swp391.warrantymanagement.entity.WarrantyClaim;
+import com.swp391.warrantymanagement.entity.id.ServiceHistoryDetailId;
 import com.swp391.warrantymanagement.enums.WarrantyClaimStatus;
+import com.swp391.warrantymanagement.exception.ResourceNotFoundException;
 import com.swp391.warrantymanagement.mapper.WarrantyClaimMapper;
 import com.swp391.warrantymanagement.repository.UserRepository;
 import com.swp391.warrantymanagement.repository.WarrantyClaimRepository;
+import com.swp391.warrantymanagement.repository.InstalledPartRepository;
 import com.swp391.warrantymanagement.repository.PartRepository;
+import com.swp391.warrantymanagement.repository.ServiceHistoryRepository;
 import com.swp391.warrantymanagement.repository.VehicleRepository;
 import com.swp391.warrantymanagement.service.WarrantyClaimService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Date;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class WarrantyClaimServiceImpl implements WarrantyClaimService {
     @Autowired
     private WarrantyClaimRepository warrantyClaimRepository;
     @Autowired
+    private InstalledPartRepository installedPartRepository;
+    @Autowired
     private PartRepository partRepository;
     @Autowired
     private VehicleRepository vehicleRepository;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private ServiceHistoryRepository serviceHistoryRepository;
 
     // Methods implementation
     @Override
@@ -54,56 +68,84 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
     // Get claim by ID
     @Override
     public WarrantyClaimResponseDTO getClaimById(Long id) {
-        WarrantyClaim claim = warrantyClaimRepository.findById(id).orElse(null);
+        WarrantyClaim claim = warrantyClaimRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("WarrantyClaim", "id", id));
         return WarrantyClaimMapper.toResponseDTO(claim);
     }
 
     // Create new claim
     @Override
+    @Transactional
     public WarrantyClaimResponseDTO createClaim(WarrantyClaimRequestDTO requestDTO) {
-        // Load Part entity từ partId
-        Part part = partRepository.findById(requestDTO.getPartId()).orElse(null);
-        if (part == null) {
-            throw new RuntimeException("Part not found with id: " + requestDTO.getPartId());
+        // 1. Load Vehicle entity từ vehicleId
+        Vehicle vehicle = vehicleRepository.findById(requestDTO.getVehicleId())
+            .orElseThrow(() -> new ResourceNotFoundException("Vehicle", "id", requestDTO.getVehicleId()));
+
+        // 2. Tìm InstalledPart đã có (part đã được lắp vào xe trước đó)
+        List<InstalledPart> installedParts = installedPartRepository.findByVehicleAndPart(
+            requestDTO.getVehicleId(),
+            requestDTO.getPartId()
+        );
+
+        if (installedParts.isEmpty()) {
+            throw new RuntimeException("Part " + requestDTO.getPartId() + " is not installed on vehicle " + requestDTO.getVehicleId());
         }
 
-        // Load Vehicle entity từ vehicleId
-        Vehicle vehicle = vehicleRepository.findById(requestDTO.getVehicleId()).orElse(null);
-        if (vehicle == null) {
-            throw new RuntimeException("Vehicle not found with id: " + requestDTO.getVehicleId());
+        // Lấy InstalledPart đầu tiên (hoặc có thể lấy cái mới nhất)
+        InstalledPart installedPart = installedParts.get(0);
+
+        // 3. Kiểm tra xem part có còn trong thời hạn bảo hành không
+        if (installedPart.getWarrantyExpirationDate().isBefore(LocalDate.now())) {
+            throw new RuntimeException("Warranty for this part has expired on " + installedPart.getWarrantyExpirationDate());
         }
 
-        // Convert DTO to Entity
-        WarrantyClaim claim = WarrantyClaimMapper.toEntity(requestDTO, part, vehicle);
+        // 4. Convert DTO to Entity
+        WarrantyClaim claim = WarrantyClaimMapper.toEntity(requestDTO, installedPart, vehicle);
 
-        // Save entity
+        // 5. Save WarrantyClaim
         WarrantyClaim savedClaim = warrantyClaimRepository.save(claim);
 
         // Convert entity back to response DTO
         return WarrantyClaimMapper.toResponseDTO(savedClaim);
     }
 
+    // Helper method để tạo InstalledPart ID unique
+    private String generateInstalledPartId() {
+        return "IP-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+    }
+
     // Update existing claim (except status)
     @Override
+    @Transactional
     public WarrantyClaimResponseDTO updateClaim(Long id, WarrantyClaimRequestDTO requestDTO) {
-        WarrantyClaim claim = warrantyClaimRepository.findById(id).orElse(null);
-        if (claim == null) {
-            return null;
-        }
-        // Update các trường từ DTO (bỏ claimDate vì không có trong DTO)
+        WarrantyClaim claim = warrantyClaimRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("WarrantyClaim", "id", id));
+
+        // Update description
         claim.setDescription(requestDTO.getDescription());
-        // Update part
-        Part part = partRepository.findById(requestDTO.getPartId()).orElse(null);
-        if (part == null) {
-            throw new RuntimeException("Part not found with id: " + requestDTO.getPartId());
+
+        // Update part nếu thay đổi (tìm InstalledPart đã có)
+        if (!claim.getInstalledPart().getPart().getPartId().equals(requestDTO.getPartId())) {
+            // Tìm InstalledPart đã có
+            List<InstalledPart> installedParts = installedPartRepository.findByVehicleAndPart(
+                requestDTO.getVehicleId(),
+                requestDTO.getPartId()
+            );
+
+            if (installedParts.isEmpty()) {
+                throw new RuntimeException("Part " + requestDTO.getPartId() + " is not installed on vehicle " + requestDTO.getVehicleId());
+            }
+
+            InstalledPart installedPart = installedParts.get(0);
+
+            // Kiểm tra bảo hành
+            if (installedPart.getWarrantyExpirationDate().isBefore(LocalDate.now())) {
+                throw new RuntimeException("Warranty for this part has expired on " + installedPart.getWarrantyExpirationDate());
+            }
+
+            claim.setInstalledPart(installedPart);
         }
-        claim.setPart(part);
-        // Update vehicle
-        Vehicle vehicle = vehicleRepository.findById(requestDTO.getVehicleId()).orElse(null);
-        if (vehicle == null) {
-            throw new RuntimeException("Vehicle not found with id: " + requestDTO.getVehicleId());
-        }
-        claim.setVehicle(vehicle);
+
         // Save updated entity
         WarrantyClaim savedClaim = warrantyClaimRepository.save(claim);
         return WarrantyClaimMapper.toResponseDTO(savedClaim);
@@ -111,19 +153,19 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
 
     // Update claim status with business logic validation
     @Override
+    @Transactional
     public WarrantyClaimResponseDTO updateClaimStatus(Long id, WarrantyClaimStatusUpdateRequestDTO requestDTO) {
-        WarrantyClaim claim = warrantyClaimRepository.findById(id).orElse(null);
-        if (claim == null) {
-            return null;
-        }
+        WarrantyClaim claim = warrantyClaimRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("WarrantyClaim", "id", id));
+
         // Validate status transition
         if (!isValidStatusTransition(claim.getStatus(), requestDTO.getStatus())) {
-            return null;
+            throw new IllegalStateException("Invalid status transition from " + claim.getStatus() + " to " + requestDTO.getStatus());
         }
         // Update status
         claim.setStatus(requestDTO.getStatus());
         if (requestDTO.getStatus() == WarrantyClaimStatus.COMPLETED) {
-            claim.setResolutionDate(new Date());
+            claim.setResolutionDate(LocalDateTime.now());
         }
         // Save updated entity
         WarrantyClaim savedClaim = warrantyClaimRepository.save(claim);
@@ -132,6 +174,7 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
 
     // Delete claim by ID
     @Override
+    @Transactional
     public boolean deleteClaim(Long id) {
         if (!warrantyClaimRepository.existsById(id)) {
             return false;
@@ -157,34 +200,43 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
     // ========== WORKFLOW METHODS IMPLEMENTATION ==========
 
     @Override
+    @Transactional
     public WarrantyClaimResponseDTO createClaimBySCStaff(WarrantyClaimRequestDTO requestDTO) {
-        // Load Part entity từ partId
-        Part part = partRepository.findById(requestDTO.getPartId()).orElse(null);
-        if (part == null) {
-            throw new RuntimeException("Part not found with id: " + requestDTO.getPartId());
+        // 1. Load Vehicle entity từ vehicleId
+        Vehicle vehicle = vehicleRepository.findById(requestDTO.getVehicleId())
+            .orElseThrow(() -> new ResourceNotFoundException("Vehicle", "id", requestDTO.getVehicleId()));
+
+        // 2. Tìm InstalledPart đã có (part đã được lắp vào xe trước đó)
+        List<InstalledPart> installedParts = installedPartRepository.findByVehicleAndPart(
+            requestDTO.getVehicleId(),
+            requestDTO.getPartId()
+        );
+
+        if (installedParts.isEmpty()) {
+            throw new RuntimeException("Part " + requestDTO.getPartId() + " is not installed on vehicle " + requestDTO.getVehicleId());
         }
 
-        // Load Vehicle entity từ vehicleId
-        Vehicle vehicle = vehicleRepository.findById(requestDTO.getVehicleId()).orElse(null);
-        if (vehicle == null) {
-            throw new RuntimeException("Vehicle not found with id: " + requestDTO.getVehicleId());
+        InstalledPart installedPart = installedParts.get(0);
+
+        // 3. Kiểm tra xem part có còn trong thời hạn bảo hành không
+        if (installedPart.getWarrantyExpirationDate().isBefore(LocalDate.now())) {
+            throw new RuntimeException("Warranty for this part has expired on " + installedPart.getWarrantyExpirationDate());
         }
 
-        // Convert DTO to Entity với status SUBMITTED
-        WarrantyClaim claim = WarrantyClaimMapper.toEntity(requestDTO, part, vehicle);
+        // 4. Convert DTO to Entity với status SUBMITTED
+        WarrantyClaim claim = WarrantyClaimMapper.toEntity(requestDTO, installedPart, vehicle);
         claim.setStatus(WarrantyClaimStatus.SUBMITTED); // SC Staff tạo với status SUBMITTED
 
-        // Save entity
+        // 5. Save WarrantyClaim
         WarrantyClaim savedClaim = warrantyClaimRepository.save(claim);
         return WarrantyClaimMapper.toResponseDTO(savedClaim);
     }
 
     @Override
-    public WarrantyClaimResponseDTO evmAcceptClaim(Long claimId, String note) {
-        WarrantyClaim claim = warrantyClaimRepository.findById(claimId).orElse(null);
-        if (claim == null) {
-            throw new RuntimeException("Warranty claim not found with id: " + claimId);
-        }
+    @Transactional
+    public WarrantyClaimResponseDTO adminAcceptClaim(Long claimId, String note) {
+        WarrantyClaim claim = warrantyClaimRepository.findById(claimId)
+            .orElseThrow(() -> new ResourceNotFoundException("WarrantyClaim", "id", claimId));
 
         // Kiểm tra status hiện tại phải là SUBMITTED
         if (claim.getStatus() != WarrantyClaimStatus.SUBMITTED) {
@@ -194,7 +246,7 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
         // Chuyển status sang MANAGER_REVIEW để Tech có thể xử lý
         claim.setStatus(WarrantyClaimStatus.MANAGER_REVIEW);
         if (note != null && !note.trim().isEmpty()) {
-            claim.setDescription(claim.getDescription() + "\n[EVM Note]: " + note);
+            claim.setDescription(claim.getDescription() + "\n[Admin Note]: " + note);
         }
 
         WarrantyClaim savedClaim = warrantyClaimRepository.save(claim);
@@ -202,11 +254,10 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
     }
 
     @Override
-    public WarrantyClaimResponseDTO evmRejectClaim(Long claimId, String reason) {
-        WarrantyClaim claim = warrantyClaimRepository.findById(claimId).orElse(null);
-        if (claim == null) {
-            throw new RuntimeException("Warranty claim not found with id: " + claimId);
-        }
+    @Transactional
+    public WarrantyClaimResponseDTO adminRejectClaim(Long claimId, String reason) {
+        WarrantyClaim claim = warrantyClaimRepository.findById(claimId)
+            .orElseThrow(() -> new ResourceNotFoundException("WarrantyClaim", "id", claimId));
 
         // Kiểm tra status hiện tại phải là SUBMITTED
         if (claim.getStatus() != WarrantyClaimStatus.SUBMITTED) {
@@ -215,19 +266,18 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
 
         // Chuyển status sang REJECTED
         claim.setStatus(WarrantyClaimStatus.REJECTED);
-        claim.setDescription(claim.getDescription() + "\n[EVM Rejection]: " + reason);
-        claim.setResolutionDate(new Date());
+        claim.setDescription(claim.getDescription() + "\n[Admin Rejection]: " + reason);
+        claim.setResolutionDate(LocalDateTime.now());
 
         WarrantyClaim savedClaim = warrantyClaimRepository.save(claim);
         return WarrantyClaimMapper.toResponseDTO(savedClaim);
     }
 
     @Override
+    @Transactional
     public WarrantyClaimResponseDTO techStartProcessing(Long claimId, String note) {
-        WarrantyClaim claim = warrantyClaimRepository.findById(claimId).orElse(null);
-        if (claim == null) {
-            throw new RuntimeException("Warranty claim not found with id: " + claimId);
-        }
+        WarrantyClaim claim = warrantyClaimRepository.findById(claimId)
+            .orElseThrow(() -> new ResourceNotFoundException("WarrantyClaim", "id", claimId));
 
         // Kiểm tra status hiện tại phải là MANAGER_REVIEW
         if (claim.getStatus() != WarrantyClaimStatus.MANAGER_REVIEW) {
@@ -245,11 +295,10 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
     }
 
     @Override
+    @Transactional
     public WarrantyClaimResponseDTO techCompleteClaim(Long claimId, String completionNote) {
-        WarrantyClaim claim = warrantyClaimRepository.findById(claimId).orElse(null);
-        if (claim == null) {
-            throw new RuntimeException("Warranty claim not found with id: " + claimId);
-        }
+        WarrantyClaim claim = warrantyClaimRepository.findById(claimId)
+            .orElseThrow(() -> new ResourceNotFoundException("WarrantyClaim", "id", claimId));
 
         // Kiểm tra status hiện tại phải là PROCESSING
         if (claim.getStatus() != WarrantyClaimStatus.PROCESSING) {
@@ -259,10 +308,46 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
         // Chuyển status sang COMPLETED
         claim.setStatus(WarrantyClaimStatus.COMPLETED);
         claim.setDescription(claim.getDescription() + "\n[Tech Completion]: " + completionNote);
-        claim.setResolutionDate(new Date());
+        claim.setResolutionDate(LocalDateTime.now());
 
         WarrantyClaim savedClaim = warrantyClaimRepository.save(claim);
+
+        // Tự động tạo ServiceHistory khi claim hoàn tất
+        createWarrantyServiceHistory(savedClaim);
+
         return WarrantyClaimMapper.toResponseDTO(savedClaim);
+    }
+
+    // Helper method để tạo ServiceHistory khi claim hoàn tất
+    private void createWarrantyServiceHistory(WarrantyClaim claim) {
+        // Tạo ServiceHistory record
+        ServiceHistory serviceHistory = new ServiceHistory();
+        serviceHistory.setServiceDate(LocalDate.now());
+        serviceHistory.setServiceType("Warranty Claim");
+        serviceHistory.setDescription("Warranty service for claim #" + claim.getWarrantyClaimId() + ": " + claim.getDescription());
+        serviceHistory.setVehicle(claim.getVehicle());
+
+        // Save ServiceHistory
+        ServiceHistory savedServiceHistory = serviceHistoryRepository.save(serviceHistory);
+
+        // Tạo ServiceHistoryDetail để ghi nhận part được bảo hành
+        ServiceHistoryDetail detail = new ServiceHistoryDetail();
+
+        // Tạo composite key
+        ServiceHistoryDetailId detailId = new ServiceHistoryDetailId();
+        detailId.setServiceHistoryId(savedServiceHistory.getServiceHistoryId());
+        detailId.setPartId(claim.getInstalledPart().getPart().getPartId());
+
+        detail.setId(detailId);
+        detail.setServiceHistory(savedServiceHistory);
+        detail.setPart(claim.getInstalledPart().getPart());
+        detail.setQuantity(1); // Bảo hành 1 part
+
+        // Add detail to serviceHistory
+        savedServiceHistory.getServiceHistoryDetails().add(detail);
+
+        // Save again to persist the detail
+        serviceHistoryRepository.save(savedServiceHistory);
     }
 
     @Override
@@ -307,6 +392,7 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
     }
 
     @Override
+    @Transactional
     public WarrantyClaimResponseDTO assignClaimToMe(Long claimId, Long userId) {
         // Find the claim
         WarrantyClaim claim = warrantyClaimRepository.findById(claimId)

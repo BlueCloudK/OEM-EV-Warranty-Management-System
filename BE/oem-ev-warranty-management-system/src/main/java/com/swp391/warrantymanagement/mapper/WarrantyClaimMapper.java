@@ -2,12 +2,12 @@ package com.swp391.warrantymanagement.mapper;
 
 import com.swp391.warrantymanagement.dto.request.WarrantyClaimRequestDTO;
 import com.swp391.warrantymanagement.dto.response.WarrantyClaimResponseDTO;
-import com.swp391.warrantymanagement.entity.Part;
+import com.swp391.warrantymanagement.entity.InstalledPart;
 import com.swp391.warrantymanagement.entity.Vehicle;
 import com.swp391.warrantymanagement.entity.WarrantyClaim;
 import com.swp391.warrantymanagement.enums.WarrantyClaimStatus;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -18,15 +18,15 @@ public final class WarrantyClaimMapper {
     private WarrantyClaimMapper() {}
 
     // Request DTO -> Entity (cho create operation)
-    public static WarrantyClaim toEntity(WarrantyClaimRequestDTO requestDTO, Part part, Vehicle vehicle) {
+    public static WarrantyClaim toEntity(WarrantyClaimRequestDTO requestDTO, InstalledPart installedPart, Vehicle vehicle) {
         if (requestDTO == null) return null;
 
         WarrantyClaim entity = new WarrantyClaim();
         entity.setDescription(requestDTO.getDescription());
-        entity.setPart(part);
+        entity.setInstalledPart(installedPart);
         entity.setVehicle(vehicle);
         entity.setStatus(WarrantyClaimStatus.SUBMITTED); // Business rule: luôn bắt đầu với SUBMITTED
-        entity.setClaimDate(new Date());
+        entity.setClaimDate(LocalDateTime.now());
 
         return entity;
     }
@@ -42,11 +42,34 @@ public final class WarrantyClaimMapper {
         responseDTO.setDescription(entity.getDescription());
         responseDTO.setResolutionDate(entity.getResolutionDate());
 
-        if (entity.getPart() != null) {
-            responseDTO.setPartId(entity.getPart().getPartId());
+        // InstalledPart information
+        if (entity.getInstalledPart() != null) {
+            responseDTO.setInstalledPartId(entity.getInstalledPart().getInstalledPartId());
+            if (entity.getInstalledPart().getPart() != null) {
+                responseDTO.setPartId(entity.getInstalledPart().getPart().getPartId());
+                responseDTO.setPartName(entity.getInstalledPart().getPart().getPartName());
+                responseDTO.setPartNumber(entity.getInstalledPart().getPart().getPartNumber());
+                responseDTO.setManufacturer(entity.getInstalledPart().getPart().getManufacturer());
+            }
         }
+
+        // Vehicle information
         if (entity.getVehicle() != null) {
             responseDTO.setVehicleId(entity.getVehicle().getVehicleId());
+            responseDTO.setVehicleName(entity.getVehicle().getVehicleName());
+            responseDTO.setVehicleModel(entity.getVehicle().getVehicleModel());
+            responseDTO.setVehicleYear(entity.getVehicle().getVehicleYear());
+            responseDTO.setVehicleVin(entity.getVehicle().getVehicleVin());
+
+            // Customer information (through vehicle)
+            if (entity.getVehicle().getCustomer() != null) {
+                responseDTO.setCustomerId(entity.getVehicle().getCustomer().getCustomerId().toString());
+                responseDTO.setCustomerName(entity.getVehicle().getCustomer().getName());
+                responseDTO.setCustomerPhone(entity.getVehicle().getCustomer().getPhone());
+                if (entity.getVehicle().getCustomer().getUser() != null) {
+                    responseDTO.setCustomerEmail(entity.getVehicle().getCustomer().getUser().getEmail());
+                }
+            }
         }
 
         // Assigned staff information

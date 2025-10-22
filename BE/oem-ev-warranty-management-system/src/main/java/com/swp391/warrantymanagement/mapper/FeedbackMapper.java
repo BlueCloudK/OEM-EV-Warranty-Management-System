@@ -54,9 +54,11 @@ public final class FeedbackMapper {
 
         // Customer information
         if (entity.getCustomer() != null) {
-            responseDTO.setCustomerId(entity.getCustomer().getCustomerId());
-            responseDTO.setCustomerName(entity.getCustomer().getCustomerName());
-            responseDTO.setCustomerEmail(entity.getCustomer().getCustomerEmail());
+            responseDTO.setCustomerId(entity.getCustomer().getCustomerId().toString()); // UUID to String
+            responseDTO.setCustomerName(entity.getCustomer().getName()); // Customer.name
+            if (entity.getCustomer().getUser() != null) {
+                responseDTO.setCustomerEmail(entity.getCustomer().getUser().getEmail()); // Through User
+            }
         }
 
         return responseDTO;

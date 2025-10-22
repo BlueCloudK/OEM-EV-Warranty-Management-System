@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * FeedbackRepository - Data access layer for Feedback entity
@@ -20,8 +21,8 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
     Optional<Feedback> findByWarrantyClaimWarrantyClaimId(Long warrantyClaimId);
 
     // Find all feedbacks by customer
-    List<Feedback> findByCustomerCustomerId(String customerId);
-    Page<Feedback> findByCustomerCustomerId(String customerId, Pageable pageable);
+    List<Feedback> findByCustomerCustomerId(UUID customerId);
+    Page<Feedback> findByCustomerCustomerId(UUID customerId, Pageable pageable);
 
     // Find feedbacks by rating
     Page<Feedback> findByRating(Integer rating, Pageable pageable);

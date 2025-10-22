@@ -35,6 +35,13 @@ public class Customer {
     })
     private List<Vehicle> vehicles = new ArrayList<>();
 
+    @OneToMany(mappedBy = "customer",
+            cascade = {
+            CascadeType.PERSIST,
+            CascadeType.MERGE
+    })
+    private List<Feedback> feedbacks = new ArrayList<>();
+
     @OneToOne
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
