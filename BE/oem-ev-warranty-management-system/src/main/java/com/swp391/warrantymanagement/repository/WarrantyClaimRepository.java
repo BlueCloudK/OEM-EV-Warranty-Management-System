@@ -31,4 +31,10 @@ public interface WarrantyClaimRepository extends JpaRepository<WarrantyClaim, Lo
 
     // Find unassigned claims
     Page<WarrantyClaim> findByAssignedToIsNull(Pageable pageable);
+
+    // Find claims by customer ID (through Vehicle -> Customer relationship)
+    Page<WarrantyClaim> findByVehicleCustomerCustomerId(java.util.UUID customerId, Pageable pageable);
+
+    // Find specific claim by ID and customer ID (for security check)
+    java.util.Optional<WarrantyClaim> findByWarrantyClaimIdAndVehicleCustomerCustomerId(Long claimId, java.util.UUID customerId);
 }

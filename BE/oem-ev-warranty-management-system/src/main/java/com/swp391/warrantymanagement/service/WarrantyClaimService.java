@@ -65,4 +65,14 @@ public interface WarrantyClaimService {
      * Lấy claims đã được assign cho Admin cụ thể
      */
     PagedResponse<WarrantyClaimResponseDTO> getMyAssignedClaims(Long userId, Pageable pageable);
+
+    /**
+     * Customer xem tất cả warranty claims của mình (qua vehicles)
+     */
+    PagedResponse<WarrantyClaimResponseDTO> getMyWarrantyClaims(Pageable pageable);
+
+    /**
+     * Customer xem chi tiết 1 warranty claim của mình
+     */
+    WarrantyClaimResponseDTO getMyWarrantyClaimById(Long claimId);
 }
