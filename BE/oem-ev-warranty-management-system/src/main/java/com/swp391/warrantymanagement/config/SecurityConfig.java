@@ -75,6 +75,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/installed-parts/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF", "SC_TECHNICIAN", "CUSTOMER")
 
                 // SC_STAFF - Nhân viên trung tâm bảo hành: quản lý warranty claims, service histories
+                // CUSTOMER có thể xem warranty claims của mình qua endpoint /my-claims
+                .requestMatchers("/api/warranty-claims/my-claims/**").hasRole("CUSTOMER")
                 .requestMatchers("/api/warranty-claims/**").hasAnyRole("ADMIN", "SC_STAFF", "SC_TECHNICIAN", "EVM_STAFF")
                 .requestMatchers("/api/service-histories/**").hasAnyRole("ADMIN", "SC_STAFF", "SC_TECHNICIAN", "EVM_STAFF", "CUSTOMER")
 
