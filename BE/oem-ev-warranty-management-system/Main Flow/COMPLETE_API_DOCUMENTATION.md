@@ -1,825 +1,867 @@
-# OEM EV Warranty Management System - Complete API Documentation
+# Complete API Documentation - OEM EV Warranty Management System
 
-## 📋 System Overview
-
-**Project:** OEM Electric Vehicle Warranty Management System  
-**Version:** 1.1 (Updated with Security Fixes)  
-**Date:** October 14, 2025  
+**Last Updated:** October 23, 2025
 **Base URL:** `http://localhost:8080`
-
-This system manages warranty claims for electric vehicles with role-based access control and workflow management.
-
-## 🔐 Authentication & Security
-
-### JWT Token Based Authentication
-All API endpoints (except login/register) require JWT token in Authorization header:
-```
-Authorization: Bearer {jwt_token}
-```
-
-### User Roles & Permissions
-
-| Role | Description | Key Permissions |
-|------|-------------|-----------------|
-| **ADMIN** | System Administrator | Full access to all resources, only role that can DELETE most entities |
-| **EVM_STAFF** | EV Manufacturer Staff | Manage vehicles/parts, accept/reject warranty claims, **NOW HAS SERVICE HISTORY ACCESS** |
-| **SC_STAFF** | Service Center Staff | Create warranty claims, manage customers/vehicles |
-| **SC_TECHNICIAN** | Service Center Technician | Process warranty claims, manage service histories |
-| **CUSTOMER** | End Customer | View own data, create warranty claims |
+**Authentication:** JWT Bearer Token (except public endpoints)
 
 ---
 
-# 🔑 AUTHENTICATION API
+## 📋 Table of Contents
+1. [Authentication APIs](#1-authentication-apis) - `/api/auth`
+2. [User Management APIs](#2-user-management-apis) - `/api/admin/users`
+3. [Customer APIs](#3-customer-apis) - `/api/customers`
+4. [Vehicle APIs](#4-vehicle-apis) - `/api/vehicles`
+5. [Part APIs](#5-part-apis) - `/api/parts`
+6. [Installed Part APIs](#6-installed-part-apis) - `/api/installed-parts`
+7. [Warranty Claim APIs](#7-warranty-claim-apis) - `/api/warranty-claims`
+8. [Service History APIs](#8-service-history-apis) - `/api/service-histories`
+9. [Service Center APIs](#9-service-center-apis) - `/api/service-centers`
+10. [Feedback APIs](#10-feedback-apis) - `/api/feedbacks`
+11. [Work Log APIs](#11-work-log-apis) - `/api/work-logs`
+12. [User Info APIs](#12-user-info-apis) - `/api/me`
 
-## Base URL: `/api/auth`
+---
 
-### 1. Login
-**POST** `/api/auth/login`
-Request:
+## 🔐 Quick Security Reference
+
+| Role | Access Level |
+|------|-------------|
+| **ADMIN** | Full access to everything |
+| **EVM_STAFF** | Vehicles, Parts, Warranty Claims, Service Histories, Work Logs |
+| **SC_STAFF** | Customers, Vehicles (read Parts), Warranty Claims, Service Histories, Service Centers, Feedbacks, Work Logs |
+| **SC_TECHNICIAN** | Vehicles (read), Warranty Claims (process), Service Histories, Installed Parts (read), Service Centers (read) |
+| **CUSTOMER** | Own vehicles/histories, **🆕 Own warranty claims (view only)**, Feedbacks, Service Centers (read) |
+
+**Authentication:** `Authorization: Bearer <token>`
+
+---
+
+## 1. Authentication APIs
+
+**Base Path:** `/api/auth`
+**Role Requirements:** Public (except where noted)
+
+### 1.1 Login 🔓
+```http
+POST /api/auth/login
+
+{
+  "username": "string",
+  "password": "string"
+}
+```
+**Response:**
 ```json
 {
-  "username": "admin",
-  "password": "password123"
+  "accessToken": "eyJ...",
+  "refreshToken": "eyJ...",
+  "tokenType": "Bearer"
 }
 ```
 
-Response (200):
-```json
+### 1.2 Register 🔓
+```http
+POST /api/auth/register
+
 {
-  "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
-  "refreshToken": "eyJhbGciOiJIUzI1NiJ9...",
-  "message": "Login successful",
-  "userId": 1,
-  "username": "admin",
-  "roleName": "ADMIN"
+  "username": "string",
+  "password": "string",
+  "email": "user@example.com",
+  "fullName": "string",
+  "phoneNumber": "string"
 }
 ```
 
-### 2. Register Customer (SC Staff Only)
-**POST** `/api/auth/register`
-**Permissions:** SC_STAFF only
-Request:
-```json
+### 1.3 Refresh Token 🔓
+```http
+POST /api/auth/refresh
+
 {
-  "username": "newcustomer",
-  "email": "customer@example.com",
-  "password": "password123",
-  "address": "123 Main St, Ho Chi Minh City"
+  "refreshToken": "string"
 }
 ```
 
-Response (201):
-```json
+### 1.4 Create User (Admin) 👤 ADMIN
+```http
+POST /api/auth/admin/create-user
+
 {
-  "success": true,
-  "message": "Customer account created successfully",
-  "user": {
-    "userId": 5,
-    "username": "newcustomer",
-    "roleName": "CUSTOMER"
-  }
+  "username": "string",
+  "password": "string",
+  "email": "user@example.com",
+  "fullName": "string",
+  "phoneNumber": "string",
+  "role": "ADMIN|EVM_STAFF|SC_STAFF|SC_TECHNICIAN"
 }
 ```
 
-### 3. Admin Create User
-**POST** `/api/auth/admin/create-user`
-**Permissions:** ADMIN only
-Request:
-```json
+### 1.5 Register Customer (Staff) 👥 ADMIN, SC_STAFF, EVM_STAFF
+```http
+POST /api/auth/staff/register-customer
+
 {
-  "username": "new_staff",
-  "email": "staff@example.com",
-  "password": "password123",
-  "address": "456 Staff St, Ho Chi Minh City",
-  "roleId": 2
+  "username": "string",
+  "password": "string",
+  "email": "user@example.com",
+  "fullName": "string",
+  "phoneNumber": "string",
+  "address": "string"
 }
 ```
 
-Response (201):
-```json
+### 1.6 Forgot Password 🔓
+```http
+POST /api/auth/forgot-password
+
 {
-  "success": true,
-  "message": "User created successfully by Admin",
-  "user": {
-    "userId": 6,
-    "username": "new_staff",
-    "roleName": "EVM_STAFF"
-  }
+  "email": "user@example.com"
 }
 ```
 
-### 4. Refresh Token
-**POST** `/api/auth/refresh`
-Request:
-```json
+### 1.7 Reset Password 🔓
+```http
+POST /api/auth/reset-password
+
 {
-  "refreshToken": "eyJhbGciOiJIUzI1NiJ9..."
+  "token": "string",
+  "newPassword": "string"
 }
 ```
 
-Response (200):
-```json
-{
-  "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
-  "refreshToken": "eyJhbGciOiJIUzI1NiJ9...",
-  "message": "Token refreshed successfully",
-  "userId": 1,
-  "username": "admin",
-  "roleName": "ADMIN"
-}
+### 1.8 Logout 🔒 Authenticated
+```http
+POST /api/auth/logout
 ```
 
-### 5. Logout
-**POST** `/api/auth/logout`
-Request:
-```json
-{
-  "accessToken": "eyJhbGciOiJIUzI1NiJ9..."
-}
-```
-
-Response (200):
-```json
-{
-  "success": true,
-  "message": "Logged out successfully"
-}
-```
-
-### 6. Validate Token
-**GET** `/api/auth/validate`
-**Headers:** `Authorization: Bearer {access_token}`
-Response (200):
-```json
-{
-  "accessToken": null,
-  "refreshToken": null,
-  "message": "Token is valid",
-  "userId": 1,
-  "username": "admin",
-  "roleName": "ADMIN"
-}
+### 1.9 Validate Token 🔒 Authenticated
+```http
+GET /api/auth/validate
 ```
 
 ---
 
-# 👥 CUSTOMER API
+## 2. User Management APIs
 
-## Base URL: `/api/customers`
+**Base Path:** `/api/admin/users`
+**Role Requirements:** 👤 ADMIN only
 
-### 1. Get All Customers
-**GET** `/api/customers`
-**Permissions:** ADMIN, SC_STAFF, EVM_STAFF
-**Query Parameters:**
-- `page` (optional): Page number (default: 0)
-- `size` (optional): Page size (default: 10)
-- `search` (optional): Search by name, email, or phone
+### 2.1 Get All Users
+```http
+GET /api/admin/users?page=0&size=10&search=keyword
+```
 
-Response (200):
+### 2.2 Get User By ID
+```http
+GET /api/admin/users/{userId}
+```
+
+### 2.3 Update User
+```http
+PUT /api/admin/users/{userId}
+
+{
+  "email": "string",
+  "fullName": "string",
+  "phoneNumber": "string",
+  "role": "string",
+  "enabled": true
+}
+```
+
+### 2.4 Delete User
+```http
+DELETE /api/admin/users/{userId}
+```
+
+---
+
+## 3. Customer APIs
+
+**Base Path:** `/api/customers`
+
+### 3.1 Get All Customers 👥 ADMIN, SC_STAFF, EVM_STAFF
+```http
+GET /api/customers?page=0&size=10&search=keyword
+```
+
+### 3.2 Get Customer By ID 👥 ADMIN, SC_STAFF, EVM_STAFF
+```http
+GET /api/customers/{customerId}
+```
+
+### 3.3 Create Customer 👥 ADMIN, SC_STAFF, EVM_STAFF
+```http
+POST /api/customers
+
+{
+  "fullName": "string",
+  "email": "user@example.com",
+  "phoneNumber": "string",
+  "address": "string"
+}
+```
+
+### 3.4 Update Customer 👥 ADMIN, SC_STAFF, EVM_STAFF
+```http
+PUT /api/customers/{customerId}
+
+{
+  "fullName": "string",
+  "email": "user@example.com",
+  "phoneNumber": "string",
+  "address": "string"
+}
+```
+
+### 3.5 Delete Customer 👤 ADMIN
+```http
+DELETE /api/customers/{customerId}
+```
+
+### 3.6 Get My Profile 🔒 CUSTOMER, SC_STAFF, SC_TECHNICIAN, ADMIN
+```http
+GET /api/customers/me
+```
+
+---
+
+## 4. Vehicle APIs
+
+**Base Path:** `/api/vehicles`
+
+### 4.1 Get All Vehicles 🔒 All roles
+```http
+GET /api/vehicles?page=0&size=10&search=keyword
+```
+
+### 4.2 Get Vehicle By ID 🔒 All roles
+```http
+GET /api/vehicles/{vehicleId}
+```
+
+### 4.3 Create Vehicle 👥 ADMIN, EVM_STAFF, SC_STAFF
+```http
+POST /api/vehicles
+
+{
+  "vehicleName": "Tesla Model 3",
+  "vehicleVin": "5YJ3E1EA5KF123456",
+  "modelYear": 2024,
+  "customerId": "uuid"
+}
+```
+
+### 4.4 Update Vehicle 👥 ADMIN, EVM_STAFF, SC_STAFF
+```http
+PUT /api/vehicles/{vehicleId}
+
+{
+  "vehicleName": "string",
+  "modelYear": 2024
+}
+```
+
+### 4.5 Delete Vehicle 👤 ADMIN
+```http
+DELETE /api/vehicles/{vehicleId}
+```
+
+### 4.6 Get Vehicles By Customer 🔒 All roles
+```http
+GET /api/vehicles/by-customer/{customerId}?page=0&size=10
+```
+
+---
+
+## 5. Part APIs
+
+**Base Path:** `/api/parts`
+**Role Requirements:** 👥 ADMIN, EVM_STAFF, SC_STAFF
+
+### 5.1 Get All Parts
+```http
+GET /api/parts?page=0&size=10&search=keyword
+```
+
+### 5.2 Get Part By ID
+```http
+GET /api/parts/{partId}
+```
+
+### 5.3 Create Part 👥 ADMIN, EVM_STAFF
+```http
+POST /api/parts
+
+{
+  "partId": "PART-001",
+  "partName": "Battery Pack",
+  "partNumber": "BP-12345",
+  "manufacturer": "LG Chem",
+  "price": 5000.00
+}
+```
+
+### 5.4 Update Part 👥 ADMIN, EVM_STAFF
+```http
+PUT /api/parts/{partId}
+
+{
+  "partName": "string",
+  "manufacturer": "string",
+  "price": 5500.00
+}
+```
+
+### 5.5 Delete Part 👤 ADMIN
+```http
+DELETE /api/parts/{partId}
+```
+
+---
+
+## 6. Installed Part APIs
+
+**Base Path:** `/api/installed-parts`
+
+### 6.1 Get All Installed Parts 👥 ADMIN, EVM_STAFF, SC_STAFF
+```http
+GET /api/installed-parts?page=0&size=10
+```
+
+### 6.2 Get Installed Part By ID 🔒 ADMIN, EVM_STAFF, SC_STAFF, SC_TECHNICIAN, CUSTOMER
+```http
+GET /api/installed-parts/{installedPartId}
+```
+
+### 6.3 Create Installed Part 👥 ADMIN, SC_STAFF
+```http
+POST /api/installed-parts
+
+{
+  "installedPartId": "INST-001",
+  "partId": "PART-001",
+  "vehicleId": 1,
+  "installationDate": "2024-10-22",
+  "warrantyExpirationDate": "2026-10-22"
+}
+```
+
+### 6.4 Update Installed Part 👥 ADMIN, SC_STAFF
+```http
+PUT /api/installed-parts/{installedPartId}
+
+{
+  "warrantyExpirationDate": "2027-10-22"
+}
+```
+
+### 6.5 Delete Installed Part 👤 ADMIN
+```http
+DELETE /api/installed-parts/{installedPartId}
+```
+
+### 6.6 Get By Vehicle 🔒 ADMIN, SC_STAFF, EVM_STAFF, SC_TECHNICIAN, CUSTOMER
+```http
+GET /api/installed-parts/by-vehicle/{vehicleId}?page=0&size=10
+```
+
+### 6.7 Get By Part 👥 ADMIN, SC_STAFF, EVM_STAFF
+```http
+GET /api/installed-parts/by-part/{partId}?page=0&size=10
+```
+
+---
+
+## 7. Warranty Claim APIs
+
+**Base Path:** `/api/warranty-claims`
+
+### 7.1 Get All Claims 👥 ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF
+```http
+GET /api/warranty-claims?page=0&size=10&search=keyword
+```
+
+### 7.2 Get Claim By ID 👥 ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF
+```http
+GET /api/warranty-claims/{claimId}
+```
+
+### 7.3 Create Claim 👥 ADMIN, SC_STAFF
+```http
+POST /api/warranty-claims
+
+{
+  "installedPartId": "INST-001",
+  "issueDescription": "Battery not charging properly",
+  "failureDate": "2024-10-22"
+}
+```
+**Note:** Customers **CANNOT** create claims online. They must visit service center where SC_STAFF creates claims for them.
+
+### 7.4 Create Claim (SC Staff Alternative) 👥 SC_STAFF
+```http
+POST /api/warranty-claims/sc-create
+
+{
+  "installedPartId": "INST-001",
+  "issueDescription": "string",
+  "failureDate": "2024-10-22"
+}
+```
+
+### 7.5 Update Claim 👥 ADMIN, SC_STAFF
+```http
+PUT /api/warranty-claims/{claimId}
+
+{
+  "issueDescription": "string",
+  "status": "string"
+}
+```
+
+### 7.6 Delete Claim 👤 ADMIN
+```http
+DELETE /api/warranty-claims/{claimId}
+```
+
+### 7.7 EVM Accept Claim 👥 EVM_STAFF
+```http
+PUT /api/warranty-claims/{claimId}/evm-accept
+```
+
+### 7.8 EVM Reject Claim 👥 EVM_STAFF
+```http
+PUT /api/warranty-claims/{claimId}/evm-reject
+
+{
+  "rejectionReason": "Part not covered under warranty"
+}
+```
+
+### 7.9 Tech Start Processing 👥 SC_TECHNICIAN
+```http
+PUT /api/warranty-claims/{claimId}/tech-start
+```
+
+### 7.10 Tech Complete Claim 👥 SC_TECHNICIAN
+```http
+PUT /api/warranty-claims/{claimId}/tech-complete
+
+{
+  "resolutionNotes": "Battery replaced successfully"
+}
+```
+
+### 7.11 Get Claims By Status 👥 ADMIN, SC_STAFF, SC_TECHNICIAN
+```http
+GET /api/warranty-claims/by-status/{status}?page=0&size=10
+```
+**Status values:** `SUBMITTED`, `MANAGER_REVIEW`, `PROCESSING`, `COMPLETED`, `REJECTED`
+
+### 7.12 Get Admin Pending Claims 👤 ADMIN
+```http
+GET /api/warranty-claims/admin-pending?page=0&size=10
+```
+
+### 7.13 Get Tech Pending Claims 👥 SC_TECHNICIAN
+```http
+GET /api/warranty-claims/tech-pending?page=0&size=10
+```
+
+### 7.14 Get My Claims 🆕 👤 CUSTOMER
+```http
+GET /api/warranty-claims/my-claims?page=0&size=10
+```
+**Response:**
 ```json
 {
   "content": [
     {
-      "customerId": "123e4567-e89b-12d3-a456-426614174000",
-      "name": "John Doe",
-      "email": "john.doe@email.com",
-      "phone": "+84901234567",
-      "address": "123 Main St, Ho Chi Minh City",
-      "createdAt": "2024-01-15T10:30:00.000+00:00",
-      "userId": 5,
-      "username": "john_doe"
+      "warrantyClaimId": 1,
+      "claimDate": "2024-10-20T10:00:00",
+      "status": "PROCESSING",
+      "description": "Battery not charging properly",
+      "vehicleId": 5,
+      "serviceCenterId": 1
     }
   ],
   "pageNumber": 0,
   "pageSize": 10,
-  "totalElements": 50,
-  "totalPages": 5,
-  "first": true,
-  "last": false
+  "totalElements": 3,
+  "totalPages": 1
 }
 ```
+**Note:** Customer chỉ xem được claims của **xe mình sở hữu**. Không thể xem claims của người khác.
 
-### 2. Get Customer by ID
-**GET** `/api/customers/{id}`
-**Permissions:** ADMIN, SC_STAFF, EVM_STAFF
-
-### 3. Create Customer
-**POST** `/api/customers`
-**Permissions:** ADMIN, SC_STAFF, EVM_STAFF
-Request:
+### 7.15 Get My Claim Detail 🆕 👤 CUSTOMER
+```http
+GET /api/warranty-claims/my-claims/{claimId}
+```
+**Response:**
 ```json
 {
-  "name": "Jane Smith",
-  "email": "jane.smith@email.com",
-  "phone": "+84901234568",
-  "address": "456 Oak Street, Hanoi",
-  "userId": 6
+  "warrantyClaimId": 1,
+  "claimDate": "2024-10-20T10:00:00",
+  "status": "COMPLETED",
+  "resolutionDate": "2024-10-22T15:30:00",
+  "description": "Battery not charging\n[Admin Accepted]\n[Tech Start]: Starting diagnostic\n[Tech Complete]: Battery replaced successfully",
+  "installedPartId": "INST-001",
+  "vehicleId": 5,
+  "serviceCenterId": 1
 }
 ```
-
-### 4. Update Customer
-**PUT** `/api/customers/{id}`
-**Permissions:** ADMIN, SC_STAFF, EVM_STAFF
-
-### 5. Delete Customer
-**DELETE** `/api/customers/{id}`
-**Permissions:** ADMIN only
-
-### 6. Update Customer Profile (Self-service)
-**PUT** `/api/customers/profile`
-**Permissions:** All authenticated users (Customer can update own profile)
-
-### Public Search Endpoints (All authenticated users):
-- **GET** `/api/customers/search?name={name}` - Search by name
-- **GET** `/api/customers/by-email?email={email}` - Find by email
-- **GET** `/api/customers/by-phone?phone={phone}` - Find by phone
-- **GET** `/api/customers/by-user/{userId}` - Find by user ID
+**Security:** Endpoint kiểm tra claim có thuộc về customer không. Nếu không thuộc về → 403 Forbidden.
 
 ---
 
-# 🚗 VEHICLE API
+## 8. Service History APIs
 
-## Base URL: `/api/vehicles`
+**Base Path:** `/api/service-histories`
 
-### 1. Get All Vehicles
-**GET** `/api/vehicles`
-**Permissions:** ADMIN, EVM_STAFF, SC_STAFF
-**Query Parameters:**
-- `page`, `size`, `search` (similar to customers)
+### 8.1 Get All 👥 ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF
+```http
+GET /api/service-histories?page=0&size=10&search=keyword
+```
 
-Response (200):
-```json
+### 8.2 Get By ID 🔒 ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF, CUSTOMER
+```http
+GET /api/service-histories/{id}
+```
+
+### 8.3 Create 👥 ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF
+```http
+POST /api/service-histories
+
 {
-  "content": [
-    {
-      "vehicleId": 1,
-      "vehicleName": "Tesla Model 3",
-      "vehicleModel": "Model 3 Standard Range",
-      "vehicleVin": "1HGBH41JXMN109186",
-      "vehicleYear": 2023,
-      "vehicleColor": "White",
-      "vehicleEngine": "Electric Motor",
-      "customerId": "123e4567-e89b-12d3-a456-426614174000",
-      "customerName": "John Doe"
-    }
-  ],
-  "pageNumber": 0,
-  "pageSize": 10,
-  "totalElements": 25,
-  "totalPages": 3,
-  "first": true,
-  "last": false
-}
-```
-
-### 2. Get Vehicle by ID
-**GET** `/api/vehicles/{id}`
-**Permissions:** ADMIN, EVM_STAFF, SC_STAFF, CUSTOMER
-**Note:** Customers can only view their own vehicles (business logic filtering)
-
-### 3. Create Vehicle
-**POST** `/api/vehicles`
-**Permissions:** ADMIN, EVM_STAFF only
-Request:
-```json
-{
-  "vehicleName": "Tesla Model Y",
-  "vehicleModel": "Model Y Long Range",
-  "vehicleVin": "5YJ3E1EA4KF123456",
-  "vehicleYear": 2024,
-  "vehicleColor": "Blue",
-  "vehicleEngine": "Dual Motor AWD",
-  "customerId": "456e7890-e89b-12d3-a456-426614174001"
-}
-```
-
-### 4. Update Vehicle
-**PUT** `/api/vehicles/{id}`
-**Permissions:** ADMIN, EVM_STAFF, SC_STAFF
-
-### 5. Delete Vehicle
-**DELETE** `/api/vehicles/{id}`
-**Permissions:** ADMIN, EVM_STAFF only
-
-### Special Endpoints:
-- **GET** `/api/vehicles/my-vehicles` - Customer views own vehicles
-- **GET** `/api/vehicles/by-customer/{customerId}` - Get vehicles by customer (Staff only)
-- **GET** `/api/vehicles/by-vin?vin={vin}` - Search by VIN (Staff only)
-- **GET** `/api/vehicles/search` - Search by model/brand (All authenticated users)
-- **GET** `/api/vehicles/warranty-expiring` - Get vehicles with expiring warranty (Staff only)
-
----
-
-# 🔧 PARTS API
-
-## Base URL: `/api/parts`
-
-### 1. Get All Parts
-**GET** `/api/parts`
-**Permissions:** ADMIN, EVM_STAFF, SC_STAFF
-Response (200):
-```json
-{
-  "content": [
-    {
-      "partId": "PART-BAT-001",
-      "partName": "Tesla Model 3 Battery Pack",
-      "partNumber": "1234567890",
-      "partDescription": "Lithium-ion battery pack for Tesla Model 3",
-      "partCategory": "BATTERY",
-      "partPrice": 15000.00,
-      "partQuantity": 25,
-      "partSupplier": "Tesla Inc.",
-      "partWarrantyPeriod": 96,
-      "isActive": true,
-      "createdDate": "2024-01-15",
-      "lastUpdated": "2024-10-01"
-    }
-  ],
-  "pageNumber": 0,
-  "pageSize": 10,
-  "totalElements": 150,
-  "totalPages": 15,
-  "first": true,
-  "last": false
-}
-```
-
-### 2. Get Part by ID
-**GET** `/api/parts/{id}`
-**Permissions:** All authenticated users
-
-### 3. Create Part
-**POST** `/api/parts`
-**Permissions:** ADMIN, EVM_STAFF only
-
-### 4. Update Part
-**PUT** `/api/parts/{id}`
-**Permissions:** ADMIN, EVM_STAFF only
-
-### 5. Delete Part
-**DELETE** `/api/parts/{id}`
-**Permissions:** ADMIN only
-
-### Special Endpoints:
-- **GET** `/api/parts/by-vehicle/{vehicleId}` - All authenticated users
-- **GET** `/api/parts/by-manufacturer` - ADMIN, EVM_STAFF, SC_STAFF, SC_TECHNICIAN
-- **GET** `/api/parts/warranty-expiring` - ADMIN, EVM_STAFF, SC_STAFF
-
----
-
-# ⚠️ WARRANTY CLAIMS API
-
-## Base URL: `/api/warranty-claims`
-
-### Warranty Claim Status Flow:
-```
-SUBMITTED → SC_REVIEW → PROCESSING → COMPLETED
-     ↓         ↓            ↓
-  REJECTED  REJECTED    REJECTED
-```
-
-### 1. Get All Warranty Claims
-**GET** `/api/warranty-claims`
-**Permissions:** ADMIN, SC_STAFF, EVM_STAFF
-
-### 2. Get Warranty Claim by ID
-**GET** `/api/warranty-claims/{id}`
-**Permissions:** ADMIN, SC_STAFF, EVM_STAFF, SC_TECHNICIAN
-
-### 3. Create Warranty Claim
-**POST** `/api/warranty-claims`
-**Permissions:** CUSTOMER, ADMIN, SC_STAFF, EVM_STAFF
-Request:
-```json
-{
-  "description": "Battery replacement under warranty",
-  "partId": 1,
+  "serviceDate": "2024-10-22T10:00:00",
+  "serviceType": "Maintenance",
+  "description": "Regular maintenance service",
+  "partId": "PART-001",
   "vehicleId": 1
 }
 ```
 
-Response (201):
-```json
+### 8.4 Update 👥 ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF
+```http
+PUT /api/service-histories/{id}
+
+{
+  "serviceDate": "2024-10-22T10:00:00",
+  "serviceType": "Repair",
+  "description": "Battery repair",
+  "partId": "PART-001",
+  "vehicleId": 1
+}
+```
+
+### 8.5 Delete 👤 ADMIN
+```http
+DELETE /api/service-histories/{id}
+```
+
+### 8.6 Get By Vehicle 🔒 ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF, CUSTOMER
+```http
+GET /api/service-histories/by-vehicle/{vehicleId}?page=0&size=10
+```
+
+### 8.7 Get By Part 👥 ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF
+```http
+GET /api/service-histories/by-part/{partId}?page=0&size=10
+```
+
+### 8.8 Get My Services 🔐 CUSTOMER
+```http
+GET /api/service-histories/my-services?page=0&size=10
+```
+
+### 8.9 Get By Date Range 👥 ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF
+```http
+GET /api/service-histories/by-date-range?startDate=2024-01-01&endDate=2024-12-31&page=0&size=10
+```
+
+---
+
+## 9. Service Center APIs
+
+**Base Path:** `/api/service-centers`
+**Read Access:** 🔒 All authenticated users
+**Write Access:** 👤 ADMIN only
+
+### 9.1 Get All
+```http
+GET /api/service-centers?page=0&size=10
+```
+
+### 9.2 Get By ID
+```http
+GET /api/service-centers/{id}
+```
+
+### 9.3 Create 👤 ADMIN
+```http
+POST /api/service-centers
+
+{
+  "centerName": "Tesla Service Center Downtown",
+  "address": "123 Main St, City",
+  "phoneNumber": "+1234567890",
+  "email": "service@example.com"
+}
+```
+
+### 9.4 Update 👤 ADMIN
+```http
+PUT /api/service-centers/{id}
+
+{
+  "centerName": "string",
+  "address": "string",
+  "phoneNumber": "string",
+  "email": "string"
+}
+```
+
+### 9.5 Delete 👤 ADMIN
+```http
+DELETE /api/service-centers/{id}
+```
+
+### 9.6 Search By Location 🔒 All roles
+```http
+GET /api/service-centers/by-location?location=City&page=0&size=10
+```
+
+---
+
+## 10. Feedback APIs
+
+**Base Path:** `/api/feedbacks`
+
+### 10.1 Get All 👥 ADMIN, EVM_STAFF, SC_STAFF
+```http
+GET /api/feedbacks?page=0&size=10
+```
+
+### 10.2 Get By ID 🔒 ADMIN, EVM_STAFF, SC_STAFF, CUSTOMER
+```http
+GET /api/feedbacks/{id}
+```
+
+### 10.3 Create 🔐 CUSTOMER
+```http
+POST /api/feedbacks
+
 {
   "warrantyClaimId": 1,
-  "description": "Battery replacement under warranty",
-  "claimDate": "2024-10-09T10:30:00.000+00:00",
-  "resolutionDate": null,
-  "status": "SUBMITTED",
-  "partId": 1,
-  "partName": "Battery Pack",
-  "vehicleId": 1,
-  "vehicleVin": "1HGBH41JXMN109186",
-  "vehicleBrand": "Tesla",
-  "vehicleModel": "Model 3"
+  "rating": 5,
+  "comment": "Excellent service, very satisfied"
 }
 ```
 
-### 4. Update Warranty Claim
-**PUT** `/api/warranty-claims/{id}`
-**Permissions:** ADMIN, SC_STAFF, EVM_STAFF
+### 10.4 Update 🔐 CUSTOMER (own), ADMIN
+```http
+PUT /api/feedbacks/{id}
 
-### 5. Delete Warranty Claim
-**DELETE** `/api/warranty-claims/{id}`
-**Permissions:** ADMIN only
-
-## 🔄 WORKFLOW ENDPOINTS
-
-### 6. SC Staff Create Claim
-**POST** `/api/warranty-claims/sc-create`
-**Permissions:** SC_STAFF only
-**Description:** SC Staff creates claim for customer with SUBMITTED status
-
-### 7. EVM Accept Claim
-**PATCH** `/api/warranty-claims/{id}/evm-accept`
-**Permissions:** EVM_STAFF only
-**Description:** EVM accepts claim (SUBMITTED → SC_REVIEW)
-
-### 8. EVM Reject Claim
-**PATCH** `/api/warranty-claims/{id}/evm-reject?reason={reason}`
-**Permissions:** EVM_STAFF only
-**Description:** EVM rejects claim (SUBMITTED → REJECTED)
-
-### 9. Tech Start Processing
-**PATCH** `/api/warranty-claims/{id}/tech-start`
-**Permissions:** SC_TECHNICIAN only
-**Description:** Technician starts processing (SC_REVIEW → PROCESSING)
-
-### 10. Tech Complete Claim
-**PATCH** `/api/warranty-claims/{id}/tech-complete?completionNote={note}`
-**Permissions:** SC_TECHNICIAN only
-**Description:** Technician completes claim (PROCESSING → COMPLETED)
-
-### Query Endpoints:
-- **GET** `/api/warranty-claims/by-status/{status}` - All authenticated users
-- **GET** `/api/warranty-claims/evm-pending` - EVM_STAFF only (SUBMITTED claims)
-- **GET** `/api/warranty-claims/tech-pending` - SC_TECHNICIAN only (SC_REVIEW + PROCESSING claims)
-
----
-
-# 🔧 SERVICE HISTORY API
-
-## Base URL: `/api/service-histories`
-
-### 1. Get All Service Histories
-**GET** `/api/service-histories`
-**Permissions:** ADMIN, SC_STAFF, SC_TECHNICIAN, **EVM_STAFF** ✅ UPDATED
-
-### 2. Get Service History by ID
-**GET** `/api/service-histories/{id}`
-**Permissions:** ADMIN, SC_STAFF, SC_TECHNICIAN, **EVM_STAFF**, CUSTOMER (own vehicles only) ✅ UPDATED
-
-### 3. Create Service History
-**POST** `/api/service-histories`
-**Permissions:** ADMIN only
-
-### 4. Update Service History
-**PUT** `/api/service-histories/{id}`
-**Permissions:** ADMIN only
-
-### 5. Delete Service History
-**DELETE** `/api/service-histories/{id}`
-**Permissions:** ADMIN only
-
-### Special Endpoints:
-- **GET** `/api/service-histories/by-vehicle/{vehicleId}` - ADMIN, SC_STAFF, SC_TECHNICIAN, **EVM_STAFF**, CUSTOMER (own vehicles) ✅ UPDATED
-- **GET** `/api/service-histories/by-part/{partId}` - ADMIN, SC_STAFF, SC_TECHNICIAN, **EVM_STAFF** ✅ UPDATED
-- **GET** `/api/service-histories/my-services` - CUSTOMER only (own service histories)
-
----
-
-# 👤 USER INFO API
-
-## Base URL: `/api`
-
-### Get Current User Info
-**GET** `/api/me`
-**Permissions:** All authenticated users
-Response (200):
-```json
 {
-  "username": "admin",
-  "roles": ["ADMIN"],
-  "isAuthenticated": true,
-  "hasAdminRole": true,
-  "hasStaffRole": false,
-  "hasCustomerRole": false
+  "rating": 4,
+  "comment": "Good service"
 }
+```
+
+### 10.5 Delete 👤 ADMIN
+```http
+DELETE /api/feedbacks/{id}
+```
+
+### 10.6 Get My Feedbacks 🔐 CUSTOMER
+```http
+GET /api/feedbacks/my-feedbacks?page=0&size=10
+```
+
+### 10.7 Get By Claim 👥 ADMIN, EVM_STAFF, SC_STAFF
+```http
+GET /api/feedbacks/by-claim/{claimId}
+```
+
+### 10.8 Get By Rating 👥 ADMIN, EVM_STAFF, SC_STAFF
+```http
+GET /api/feedbacks/by-rating/{rating}?page=0&size=10
 ```
 
 ---
 
-# 👤 USER MANAGEMENT API (ADMIN ONLY)
+## 11. Work Log APIs
 
-## Base URL: `/api/admin/users`
+**Base Path:** `/api/work-logs`
+**Role Requirements:** 👥 ADMIN, EVM_STAFF, SC_STAFF (read only)
 
-**⚠️ IMPORTANT:** All User Management endpoints require ADMIN role only. No other roles can access these endpoints.
+### 11.1 Get All 👥 ADMIN, EVM_STAFF
+```http
+GET /api/work-logs?page=0&size=10
+```
 
-### Get All Users
-**GET** `/api/admin/users`
-**Permissions:** ADMIN only
-**Query Parameters:**
-- `page` (optional): Page number (default: 0)
-- `size` (optional): Page size (default: 10)  
-- `search` (optional): Search by username or email
-- `role` (optional): Filter by role name
+### 11.2 Get By ID 👥 ADMIN, EVM_STAFF
+```http
+GET /api/work-logs/{id}
+```
 
-Response (200):
+### 11.3 Create 👥 ADMIN, EVM_STAFF
+```http
+POST /api/work-logs
+
+{
+  "warrantyClaimId": 1,
+  "technicianId": "uuid",
+  "workDescription": "Replaced battery pack",
+  "hoursSpent": 2.5,
+  "workDate": "2024-10-22"
+}
+```
+
+### 11.4 Update 👥 ADMIN, EVM_STAFF
+```http
+PUT /api/work-logs/{id}
+
+{
+  "workDescription": "string",
+  "hoursSpent": 3.0
+}
+```
+
+### 11.5 Delete 👤 ADMIN
+```http
+DELETE /api/work-logs/{id}
+```
+
+### 11.6 Get By Claim 👥 ADMIN, EVM_STAFF, SC_STAFF
+```http
+GET /api/work-logs/by-claim/{claimId}?page=0&size=10
+```
+
+### 11.7 Get By Technician 👥 ADMIN, EVM_STAFF
+```http
+GET /api/work-logs/by-technician/{technicianId}?page=0&size=10
+```
+
+---
+
+## 12. User Info APIs
+
+**Base Path:** `/api`
+
+### 12.1 Get My Info 🔒 All authenticated users
+```http
+GET /api/me
+```
+**Response:**
 ```json
 {
-  "content": [
-    {
-      "userId": 1,
-      "username": "admin",
-      "email": "admin@company.com",
-      "address": "Admin Office, District 1, Ho Chi Minh City",
-      "roleName": "ADMIN",
-      "roleId": 1,
-      "createdAt": "2024-01-01T10:00:00.000+00:00"
-    },
-    {
-      "userId": 5,
-      "username": "john_customer",
-      "email": "john@email.com",
-      "address": "123 Main St, Ho Chi Minh City", 
-      "roleName": "CUSTOMER",
-      "roleId": 5,
-      "createdAt": "2024-01-15T10:30:00.000+00:00"
-    }
-  ],
+  "userId": "uuid",
+  "username": "string",
+  "email": "user@example.com",
+  "fullName": "string",
+  "phoneNumber": "string",
+  "role": "ADMIN|EVM_STAFF|SC_STAFF|SC_TECHNICIAN|CUSTOMER",
+  "enabled": true
+}
+```
+
+---
+
+## 📊 Common Response Formats
+
+### Success Response (Paginated)
+```json
+{
+  "content": [...],
   "pageNumber": 0,
   "pageSize": 10,
-  "totalElements": 25,
-  "totalPages": 3,
+  "totalElements": 100,
+  "totalPages": 10,
   "first": true,
   "last": false
 }
 ```
 
-### Get User by ID
-**GET** `/api/admin/users/{userId}`
-**Permissions:** ADMIN only
-Response (200):
+### Success Response (Single Object)
 ```json
 {
-  "userId": 5,
-  "username": "john_customer",
-  "email": "john@email.com",
-  "address": "123 Main St, Ho Chi Minh City",
-  "roleName": "CUSTOMER", 
-  "roleId": 5,
-  "createdAt": "2024-01-15T10:30:00.000+00:00"
+  "id": 1,
+  "field1": "value1",
+  "field2": "value2",
+  ...
 }
 ```
 
-Error Response (404):
+### Error Response
 ```json
 {
-  "success": false,
-  "message": "User not found with id: 999"
+  "timestamp": "2024-10-22T10:00:00",
+  "status": 400,
+  "error": "Bad Request",
+  "message": "Validation failed",
+  "path": "/api/..."
 }
 ```
 
-### Search Users
-**GET** `/api/admin/users/search?username={username}`
-**Permissions:** ADMIN only
-**Query Parameters:**
-- `username` (required): Username to search for (partial match)
-- `page`, `size`: Standard pagination
+---
 
-Response (200):
-```json
-{
-  "content": [
-    {
-      "userId": 5,
-      "username": "john_customer",
-      "email": "john@email.com",
-      "address": "123 Main St",
-      "roleName": "CUSTOMER",
-      "roleId": 5,
-      "createdAt": "2024-01-15T10:30:00.000+00:00"
-    }
-  ],
-  "pageNumber": 0,
-  "pageSize": 10,
-  "totalElements": 1,
-  "totalPages": 1,
-  "first": true,
-  "last": true
-}
+## 🔄 Warranty Claim Workflow
+
+```
+1. CUSTOMER visits service center → SC_STAFF creates claim → Status: SUBMITTED
+2. ADMIN reviews:
+   - Accept → Status: MANAGER_REVIEW
+   - Reject → Status: REJECTED (END)
+3. SC_TECHNICIAN starts work → Status: PROCESSING
+4. SC_TECHNICIAN completes → Status: COMPLETED
+5. CUSTOMER provides feedback (optional)
 ```
 
-### Get Users by Role  
-**GET** `/api/admin/users/by-role/{roleName}`
-**Permissions:** ADMIN only
-**Path Parameters:**
-- `roleName`: ADMIN, EVM_STAFF, SC_STAFF, SC_TECHNICIAN, CUSTOMER
+**Important:** Customers **CANNOT** create claims through API. They must physically visit a service center where SC_STAFF will create the claim for them.
 
-Response (200):
-```json
-{
-  "content": [
-    {
-      "userId": 8,
-      "username": "jane_staff",
-      "email": "jane@company.com",
-      "address": "456 Office St, Hanoi",
-      "roleName": "SC_STAFF",
-      "roleId": 3,
-      "createdAt": "2024-02-20T14:15:00.000+00:00"
-    }
-  ],
-  "pageNumber": 0,
-  "pageSize": 10,
-  "totalElements": 15,
-  "totalPages": 2,
-  "first": true,
-  "last": false
-}
-```
+---
 
-### Update User Information
-**PUT** `/api/admin/users/{userId}`
-**Permissions:** ADMIN only
-Request:
-```json
-{
-  "username": "updated_username",
-  "email": "newemail@company.com",
-  "address": "New Address 123, District 1, Ho Chi Minh City"
-}
-```
+## 🔒 Authentication Flow
 
-Response (200):
-```json
-{
-  "success": true,
-  "message": "User updated successfully",
-  "userId": 5,
-  "updatedFields": ["email", "address"],
-  "user": {
-    "userId": 5,
-    "username": "john_customer",
-    "email": "newemail@company.com",
-    "address": "New Address 123, District 1, Ho Chi Minh City",
-    "roleName": "CUSTOMER",
-    "roleId": 5,
-    "createdAt": "2024-01-15T10:30:00.000+00:00"
-  }
-}
-```
+1. **Login** → Receive `accessToken` and `refreshToken`
+2. **Use Token** → Include in `Authorization: Bearer <token>` header
+3. **Token Expires** → Use `refreshToken` to get new tokens
+4. **Logout** → Clear tokens from client
 
-Error Response (400):
-```json
-{
-  "success": false,
-  "message": "Email already exists: duplicate@email.com"
-}
-```
+---
 
-### Update User Role
-**PATCH** `/api/admin/users/{userId}/role?newRoleId={roleId}`
-**Permissions:** ADMIN only
-**⚠️ Use with extreme caution - affects user permissions immediately**
-Response (200):
-```json
-{
-  "success": true,
-  "message": "User role updated successfully",
-  "userId": 5,
-  "newRoleId": 3,
-  "newRoleName": "SC_STAFF",
-  "user": {
-    "userId": 5,
-    "username": "john_customer",
-    "email": "john@email.com",
-    "address": "123 Main St",
-    "roleName": "SC_STAFF",
-    "roleId": 3,
-    "createdAt": "2024-01-15T10:30:00.000+00:00"
-  }
-}
-```
+## 📖 Additional Documentation
 
-Error Response (400):
-```json
-{
-  "success": false,
-  "message": "Role not found with id: 999"
-}
-```
+- **Role Permissions:** See `ROLE_BASED_ACCESS_CONTROL.md`
+- **JWT Details:** See `JWT_AUTHENTICATION_FLOW.md`
+- **Auth API:** See `AUTH_API_POSTMAN_GUIDE.md`
 
-### Reset User Password
-**POST** `/api/admin/users/{userId}/reset-password`
-**Permissions:** ADMIN only
-**Query Parameters:**
-- `newPassword` (optional): If not provided, generates random secure password
+---
 
-Auto-generated password response:
-Response (200):
-```json
-{
-  "success": true,
-  "message": "User password reset successfully", 
-  "userId": 5,
-  "newPassword": "A8k9L2mN5pQ7",
-  "note": "Please share this password securely with the user"
-}
-```
+## 🧪 Testing với Postman
 
-Custom password response:
-Response (200):
-```json
-{
-  "success": true,
-  "message": "User password reset successfully",
-  "userId": 5
-}
-```
+**Postman Collection đã sẵn sàng để test!**
 
-### Delete User
-**DELETE** `/api/admin/users/{userId}`
-**Permissions:** ADMIN only
-**⚠️ EXTREME CAUTION: Implements soft delete to preserve data integrity**
-Response (200):
-```json
-{
-  "success": true,
-  "message": "User deleted successfully",
-  "userId": 5
-}
-```
+### **Files:**
+- 📦 `postman/OEM_EV_Warranty_System.postman_collection.json`
+- 🌍 `postman/Local_Environment.postman_environment.json`
+- 📖 `postman/README.md`
 
-Error Response (400):
-```json
-{
-  "success": false,
-  "message": "Cannot delete user: User has active warranty claims"
-}
-```
+### **Cách sử dụng:**
+1. Import collection và environment vào Postman
+2. Chọn **Local Development** environment
+3. Login để lấy token (tự động save vào environment)
+4. Test các endpoints
 
-### Get User Statistics
-**GET** `/api/admin/users/statistics`
-**Permissions:** ADMIN only
-Response (200):
-```json
-{
-  "totalUsers": 125,
-  "activeUsers": 125,
-  "inactiveUsers": 0,
-  "usersByRole": {
-    "ADMIN": 2,
-    "EVM_STAFF": 8,
-    "SC_STAFF": 15,
-    "SC_TECHNICIAN": 25,
-    "CUSTOMER": 75
-  },
-  "recentRegistrations": [
-    {
-      "userId": 125,
-      "username": "newest_user",
-      "email": "newest@email.com",
-      "roleName": "CUSTOMER",
-      "createdAt": "2024-10-14T08:30:00.000+00:00"
-    },
-    {
-      "userId": 124,
-      "username": "recent_staff",
-      "email": "staff@company.com", 
-      "roleName": "SC_STAFF",
-      "createdAt": "2024-10-13T16:45:00.000+00:00"
-    }
-  ]
-}
-```
+### **NEW - Customer Warranty Claims:**
+- 🆕 `GET /api/warranty-claims/my-claims` - Xem tất cả claims
+- 🆕 `GET /api/warranty-claims/my-claims/{id}` - Xem chi tiết claim
 
-## 🚨 SECURITY MATRIX
+**Xem chi tiết:** `postman/README.md`
 
-| Endpoint Category     | ADMIN      | EVM_STAFF         | SC_STAFF         | SC_TECHNICIAN     | CUSTOMER        |
-|----------------------|------------|-------------------|------------------|-------------------|----------------|
-| **Auth**             | ✅ All      | ✅ All             | ✅ Register       | ✅ All            | ✅ Basic        |
-| **Customers**        | ✅ CRUD     | ✅ CRU             | ✅ CRUD           | ❌                | ✅ Profile      |
-| **Vehicles**         | ✅ CRUD     | ✅ CRUD            | ✅ CRUD           | ❌                | ✅ Own only     |
-| **Parts**            | ✅ CRUD     | ✅ CRU             | ✅ Read           | ✅ Read           | ✅ Read         |
-| **Warranty Claims**  | ✅ CRUD     | ✅ Accept/Reject   | ✅ CRUD + Create  | ✅ Process        | ✅ Own only     |
-| **Service Histories**| ✅ CRUD     | ✅ CRUD            | ✅ CRUD           | ✅ CRUD           | ✅ Own only     |
-| **User Info**        | ✅ All      | ❌                | ✅ Some           | ❌                | ❌             |
-| **User Management**  | ✅ Full CRUD| ❌                | ❌                | ❌                | ❌             |
+---
 
-**Legend:** C=Create, R=Read, U=Update, D=Delete
+**System Status:** ✅ PRODUCTION READY
 
-## 🔐 User Management API Security Details
-
-### ADMIN-ONLY Endpoints:
-- **GET** `/api/admin/users` - List all users with filtering
-- **GET** `/api/admin/users/{id}` - Get user details
-- **GET** `/api/admin/users/search` - Search users by username
-- **GET** `/api/admin/users/by-role/{role}` - Filter users by role
-- **PUT** `/api/admin/users/{id}` - Update user information
-- **PATCH** `/api/admin/users/{id}/role` - Change user role
-- **DELETE** `/api/admin/users/{id}` - Delete user (soft delete)
-- **POST** `/api/admin/users/{id}/reset-password` - Reset user password
-- **GET** `/api/admin/users/statistics` - Get user statistics
-
+**Last Updated:** October 23, 2025 - Thêm Customer warranty claims viewing + Postman Collection
