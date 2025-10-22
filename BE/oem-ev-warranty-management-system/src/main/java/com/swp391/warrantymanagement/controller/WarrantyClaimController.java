@@ -261,4 +261,40 @@ public class WarrantyClaimController {
         logger.info("Get my assigned claims success, totalElements={}", claimsPage.getTotalElements());
         return ResponseEntity.ok(claimsPage);
     }
+
+    // ========== CUSTOMER ENDPOINTS ==========
+
+    /**
+     * Customer xem tất cả warranty claims của mình
+     * CUSTOMER only - tự động lấy claims của xe thuộc về customer
+     */
+    @GetMapping("/my-claims")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public ResponseEntity<PagedResponse<WarrantyClaimResponseDTO>> getMyWarrantyClaims(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        logger.info("Customer get my warranty claims: page={}, size={}", page, size);
+        PagedResponse<WarrantyClaimResponseDTO> claimsPage =
+            warrantyClaimService.getMyWarrantyClaims(PageRequest.of(page, size));
+        logger.info("Customer get my warranty claims success, totalElements={}", claimsPage.getTotalElements());
+        return ResponseEntity.ok(claimsPage);
+    }
+
+    /**
+     * Customer xem chi tiết 1 warranty claim của mình
+     * CUSTOMER only - kiểm tra claim có thuộc về customer không
+     */
+    @GetMapping("/my-claims/{claimId}")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public ResponseEntity<WarrantyClaimResponseDTO> getMyWarrantyClaimById(@PathVariable Long claimId) {
+        logger.info("Customer get warranty claim detail: claimId={}", claimId);
+        try {
+            WarrantyClaimResponseDTO claim = warrantyClaimService.getMyWarrantyClaimById(claimId);
+            logger.info("Customer get warranty claim detail success: claimId={}", claimId);
+            return ResponseEntity.ok(claim);
+        } catch (RuntimeException e) {
+            logger.error("Customer get warranty claim detail failed: claimId={}, error={}", claimId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+    }
 }

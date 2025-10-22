@@ -4,6 +4,7 @@ import com.swp391.warrantymanagement.dto.request.WarrantyClaimRequestDTO;
 import com.swp391.warrantymanagement.dto.request.WarrantyClaimStatusUpdateRequestDTO;
 import com.swp391.warrantymanagement.dto.response.WarrantyClaimResponseDTO;
 import com.swp391.warrantymanagement.dto.response.PagedResponse;
+import com.swp391.warrantymanagement.entity.Customer;
 import com.swp391.warrantymanagement.entity.InstalledPart;
 import com.swp391.warrantymanagement.entity.Part;
 import com.swp391.warrantymanagement.entity.ServiceHistory;
@@ -426,5 +427,78 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
             claimPage.isFirst(),
             claimPage.isLast()
         );
+    }
+
+    /**
+     * Customer xem tất cả warranty claims của mình
+     * Lấy thông tin customer từ Security Context, sau đó query claims theo customerId
+     */
+    @Override
+    public PagedResponse<WarrantyClaimResponseDTO> getMyWarrantyClaims(Pageable pageable) {
+        // 1. Lấy username từ Security Context
+        String username = com.swp391.warrantymanagement.util.SecurityUtil.getCurrentUsername();
+        if (username == null) {
+            throw new RuntimeException("User not authenticated");
+        }
+
+        // 2. Tìm User từ username
+        User user = userRepository.findByUsername(username)
+            .orElseThrow(() -> new RuntimeException("User not found: " + username));
+
+        // 3. Tìm Customer từ User
+        Customer customer = user.getCustomer();
+        if (customer == null) {
+            throw new RuntimeException("Customer profile not found for user: " + username);
+        }
+
+        // 4. Query warranty claims theo customerId (qua Vehicle -> Customer)
+        Page<WarrantyClaim> claimPage = warrantyClaimRepository
+            .findByVehicleCustomerCustomerId(customer.getCustomerId(), pageable);
+
+        // 5. Convert sang DTO
+        List<WarrantyClaimResponseDTO> responseDTOs = WarrantyClaimMapper.toResponseDTOList(claimPage.getContent());
+
+        return new PagedResponse<>(
+            responseDTOs,
+            claimPage.getNumber(),
+            claimPage.getSize(),
+            claimPage.getTotalElements(),
+            claimPage.getTotalPages(),
+            claimPage.isFirst(),
+            claimPage.isLast()
+        );
+    }
+
+    /**
+     * Customer xem chi tiết 1 warranty claim của mình
+     * Kiểm tra claim có thuộc về customer không trước khi trả về
+     */
+    @Override
+    public WarrantyClaimResponseDTO getMyWarrantyClaimById(Long claimId) {
+        // 1. Lấy username từ Security Context
+        String username = com.swp391.warrantymanagement.util.SecurityUtil.getCurrentUsername();
+        if (username == null) {
+            throw new RuntimeException("User not authenticated");
+        }
+
+        // 2. Tìm User từ username
+        User user = userRepository.findByUsername(username)
+            .orElseThrow(() -> new RuntimeException("User not found: " + username));
+
+        // 3. Tìm Customer từ User
+        Customer customer = user.getCustomer();
+        if (customer == null) {
+            throw new RuntimeException("Customer profile not found for user: " + username);
+        }
+
+        // 4. Query warranty claim theo claimId VÀ customerId (security check)
+        WarrantyClaim claim = warrantyClaimRepository
+            .findByWarrantyClaimIdAndVehicleCustomerCustomerId(claimId, customer.getCustomerId())
+            .orElseThrow(() -> new RuntimeException(
+                "Warranty claim not found or you don't have permission to view it. Claim ID: " + claimId
+            ));
+
+        // 5. Convert sang DTO và trả về
+        return WarrantyClaimMapper.toResponseDTO(claim);
     }
 }
