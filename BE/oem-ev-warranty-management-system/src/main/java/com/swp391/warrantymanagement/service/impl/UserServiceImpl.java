@@ -1,10 +1,14 @@
 package com.swp391.warrantymanagement.service.impl;
 
+import com.swp391.warrantymanagement.dto.response.UserProfileResponseDTO;
+import com.swp391.warrantymanagement.dto.response.WarrantyClaimResponseDTO;
 import com.swp391.warrantymanagement.entity.Role;
 import com.swp391.warrantymanagement.entity.User;
+import com.swp391.warrantymanagement.mapper.WarrantyClaimMapper;
 import com.swp391.warrantymanagement.repository.RoleRepository;
 import com.swp391.warrantymanagement.repository.TokenRepository;
 import com.swp391.warrantymanagement.repository.UserRepository;
+import com.swp391.warrantymanagement.repository.WarrantyClaimRepository;
 import com.swp391.warrantymanagement.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -21,6 +25,7 @@ import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Implementation of UserService
@@ -37,6 +42,7 @@ public class UserServiceImpl implements UserService {
     private final RoleRepository roleRepository;
     private final TokenRepository tokenRepository;
     private final PasswordEncoder passwordEncoder;
+    private final WarrantyClaimRepository warrantyClaimRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -270,6 +276,51 @@ public class UserServiceImpl implements UserService {
         statistics.put("recentRegistrations", recentRegistrations);
 
         return statistics;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserProfileResponseDTO getUserFullProfile(Long userId) {
+        // Find user
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+
+        // Build profile DTO
+        UserProfileResponseDTO profile = new UserProfileResponseDTO();
+
+        // Basic user info
+        profile.setUserId(user.getUserId());
+        profile.setUsername(user.getUsername());
+        profile.setEmail(user.getEmail());
+        profile.setAddress(user.getAddress());
+        profile.setCreatedAt(user.getCreatedAt());
+
+        // Role info
+        if (user.getRole() != null) {
+            profile.setRoleName(user.getRole().getRoleName());
+            profile.setRoleId(user.getRole().getRoleId());
+        }
+
+        // Service center info (for staff only)
+        if (user.getServiceCenter() != null) {
+            profile.setServiceCenterId(user.getServiceCenter().getServiceCenterId());
+            profile.setServiceCenterName(user.getServiceCenter().getName());
+            profile.setServiceCenterAddress(user.getServiceCenter().getAddress());
+        }
+
+        // Assigned claims (for EVM_STAFF)
+        List<WarrantyClaimResponseDTO> assignedClaims = warrantyClaimRepository
+                .findByAssignedToUserId(userId, Pageable.unpaged())
+                .getContent().stream()
+                .map(WarrantyClaimMapper::toResponseDTO)
+                .collect(Collectors.toList());
+        profile.setAssignedClaims(assignedClaims);
+        profile.setTotalAssignedClaims(assignedClaims.size());
+
+        // Work logs count
+        profile.setTotalWorkLogs(user.getWorkLogs() != null ? user.getWorkLogs().size() : 0);
+
+        return profile;
     }
 
     /**

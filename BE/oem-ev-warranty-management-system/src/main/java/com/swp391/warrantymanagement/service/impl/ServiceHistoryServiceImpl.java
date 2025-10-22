@@ -3,23 +3,26 @@ package com.swp391.warrantymanagement.service.impl;
 import com.swp391.warrantymanagement.dto.request.ServiceHistoryRequestDTO;
 import com.swp391.warrantymanagement.dto.response.ServiceHistoryResponseDTO;
 import com.swp391.warrantymanagement.dto.response.PagedResponse;
-import com.swp391.warrantymanagement.entity.ServiceHistory;
-import com.swp391.warrantymanagement.entity.Part;
-import com.swp391.warrantymanagement.entity.Vehicle;
 import com.swp391.warrantymanagement.entity.Customer;
+import com.swp391.warrantymanagement.entity.Part;
+import com.swp391.warrantymanagement.entity.ServiceHistory;
+import com.swp391.warrantymanagement.entity.ServiceHistoryDetail;
 import com.swp391.warrantymanagement.entity.User;
+import com.swp391.warrantymanagement.entity.Vehicle;
+import com.swp391.warrantymanagement.entity.id.ServiceHistoryDetailId;
 import com.swp391.warrantymanagement.mapper.ServiceHistoryMapper;
-import com.swp391.warrantymanagement.repository.ServiceHistoryRepository;
-import com.swp391.warrantymanagement.repository.PartRepository;
-import com.swp391.warrantymanagement.repository.VehicleRepository;
 import com.swp391.warrantymanagement.repository.CustomerRepository;
+import com.swp391.warrantymanagement.repository.PartRepository;
+import com.swp391.warrantymanagement.repository.ServiceHistoryRepository;
 import com.swp391.warrantymanagement.repository.UserRepository;
-import com.swp391.warrantymanagement.service.ServiceHistoryService;
+import com.swp391.warrantymanagement.repository.VehicleRepository;
 import com.swp391.warrantymanagement.service.JwtService;
+import com.swp391.warrantymanagement.service.ServiceHistoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -70,30 +73,47 @@ public class ServiceHistoryServiceImpl implements ServiceHistoryService {
     }
 
     @Override
+    @Transactional
     public ServiceHistoryResponseDTO createServiceHistory(ServiceHistoryRequestDTO requestDTO) {
         // Load Part entity từ partId
-        Part part = partRepository.findById(requestDTO.getPartId()).orElse(null);
-        if (part == null) {
-            throw new RuntimeException("Part not found with id: " + requestDTO.getPartId());
-        }
+        Part part = partRepository.findById(requestDTO.getPartId())
+            .orElseThrow(() -> new RuntimeException("Part not found with id: " + requestDTO.getPartId()));
 
         // Load Vehicle entity từ vehicleId
-        Vehicle vehicle = vehicleRepository.findById(requestDTO.getVehicleId()).orElse(null);
-        if (vehicle == null) {
-            throw new RuntimeException("Vehicle not found with id: " + requestDTO.getVehicleId());
-        }
+        Vehicle vehicle = vehicleRepository.findById(requestDTO.getVehicleId())
+            .orElseThrow(() -> new RuntimeException("Vehicle not found with id: " + requestDTO.getVehicleId()));
 
-        // Convert DTO to Entity
-        ServiceHistory serviceHistory = ServiceHistoryMapper.toEntity(requestDTO, part, vehicle);
+        // Convert DTO to Entity (không có part nữa)
+        ServiceHistory serviceHistory = ServiceHistoryMapper.toEntity(requestDTO, vehicle);
 
-        // Save entity
+        // Save ServiceHistory entity
         ServiceHistory savedServiceHistory = serviceHistoryRepository.save(serviceHistory);
+
+        // Tạo ServiceHistoryDetail để link part với service history
+        ServiceHistoryDetail detail = new ServiceHistoryDetail();
+
+        // Tạo composite key
+        ServiceHistoryDetailId detailId = new ServiceHistoryDetailId();
+        detailId.setServiceHistoryId(savedServiceHistory.getServiceHistoryId());
+        detailId.setPartId(part.getPartId());
+
+        detail.setId(detailId);
+        detail.setServiceHistory(savedServiceHistory);
+        detail.setPart(part);
+        detail.setQuantity(1); // Default quantity
+
+        // Add detail to serviceHistory
+        savedServiceHistory.getServiceHistoryDetails().add(detail);
+
+        // Save again to persist the detail
+        savedServiceHistory = serviceHistoryRepository.save(savedServiceHistory);
 
         // Convert entity back to response DTO
         return ServiceHistoryMapper.toResponseDTO(savedServiceHistory);
     }
 
     @Override
+    @Transactional
     public ServiceHistoryResponseDTO updateServiceHistory(Long id, ServiceHistoryRequestDTO requestDTO) {
         ServiceHistory existingServiceHistory = serviceHistoryRepository.findById(id).orElse(null);
         if (existingServiceHistory == null) {
@@ -111,6 +131,7 @@ public class ServiceHistoryServiceImpl implements ServiceHistoryService {
     }
 
     @Override
+    @Transactional
     public boolean deleteServiceHistory(Long id) {
         if (!serviceHistoryRepository.existsById(id)) {
             return false;
@@ -137,7 +158,7 @@ public class ServiceHistoryServiceImpl implements ServiceHistoryService {
 
     @Override
     public PagedResponse<ServiceHistoryResponseDTO> getServiceHistoriesByPartId(String partId, Pageable pageable) {
-        Page<ServiceHistory> serviceHistoryPage = serviceHistoryRepository.findByPartPartId(partId, pageable);
+        Page<ServiceHistory> serviceHistoryPage = serviceHistoryRepository.findByServiceHistoryDetailsPartPartId(partId, pageable);
         List<ServiceHistoryResponseDTO> responseDTOs = ServiceHistoryMapper.toResponseDTOList(serviceHistoryPage.getContent());
 
         return new PagedResponse<>(

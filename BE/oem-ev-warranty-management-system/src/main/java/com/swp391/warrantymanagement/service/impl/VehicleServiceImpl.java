@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -65,6 +66,7 @@ public class VehicleServiceImpl implements VehicleService {
 
     // Create new vehicle
     @Override
+    @Transactional
     public VehicleResponseDTO createVehicle(VehicleRequestDTO requestDTO) {
         // Load Customer entity từ customerId
         Customer customer = customerRepository.findById(UUID.fromString(requestDTO.getCustomerId())).orElse(null);
@@ -89,6 +91,7 @@ public class VehicleServiceImpl implements VehicleService {
 
     // Update existing vehicle
     @Override
+    @Transactional
     public VehicleResponseDTO updateVehicle(Long id, VehicleRequestDTO requestDTO) {
         Vehicle existingVehicle = vehicleRepository.findById(id).orElse(null);
         if (existingVehicle == null) {
@@ -119,6 +122,7 @@ public class VehicleServiceImpl implements VehicleService {
 
     // Delete vehicle by ID
     @Override
+    @Transactional
     public boolean deleteVehicle(Long id) {
         if (!vehicleRepository.existsById(id)) {
             return false;

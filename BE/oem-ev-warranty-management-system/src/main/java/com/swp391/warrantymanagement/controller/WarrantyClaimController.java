@@ -30,9 +30,9 @@ public class WarrantyClaimController {
     @Autowired
     private WarrantyClaimService warrantyClaimService;
 
-    // Get all warranty claims with pagination (ADMIN/SC_STAFF/EVM_STAFF only)
+    // Get all warranty claims with pagination (ADMIN/SC_STAFF only)
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('EVM_STAFF')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF')")
     public ResponseEntity<PagedResponse<WarrantyClaimResponseDTO>> getAllClaims(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
@@ -42,9 +42,9 @@ public class WarrantyClaimController {
         return ResponseEntity.ok(claimsPage);
     }
 
-    // Get warranty claim by ID (ADMIN/SC_STAFF/EVM_STAFF/SC_TECHNICIAN only)
+    // Get warranty claim by ID (ADMIN/SC_STAFF/SC_TECHNICIAN only)
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('EVM_STAFF') or hasRole('SC_TECHNICIAN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN')")
     public ResponseEntity<WarrantyClaimResponseDTO> getClaimById(@PathVariable Long id) {
         logger.info("Get warranty claim by id: {}", id);
         WarrantyClaimResponseDTO claim = warrantyClaimService.getClaimById(id);
@@ -66,9 +66,9 @@ public class WarrantyClaimController {
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
     }
 
-    // Update warranty claim details (ADMIN/SC_STAFF/EVM_STAFF only)
+    // Update warranty claim details (ADMIN/SC_STAFF only)
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('EVM_STAFF')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF')")
     public ResponseEntity<WarrantyClaimResponseDTO> updateClaim(@PathVariable Long id,
                                                               @Valid @RequestBody WarrantyClaimRequestDTO requestDTO) {
         logger.info("Update warranty claim request: id={}, data={}", id, requestDTO);
@@ -81,9 +81,9 @@ public class WarrantyClaimController {
         return ResponseEntity.notFound().build();
     }
 
-    // Update claim status (ADMIN/SC_STAFF/EVM_STAFF only)
+    // Update claim status (ADMIN only)
     @PatchMapping("/{id}/status")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('EVM_STAFF')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<WarrantyClaimResponseDTO> updateClaimStatus(@PathVariable Long id,
         @Valid @RequestBody WarrantyClaimStatusUpdateRequestDTO requestDTO) {
         logger.info("Update warranty claim status request: id={}, data={}", id, requestDTO);
@@ -127,32 +127,32 @@ public class WarrantyClaimController {
     }
 
     /**
-     * EVM Staff xem xét và chấp nhận claim (SUBMITTED → MANAGER_REVIEW)
-     * EVM_STAFF only
+     * Admin xem xét và chấp nhận claim (SUBMITTED → MANAGER_REVIEW)
+     * ADMIN only
      */
-    @PatchMapping("/{id}/evm-accept")
-    @PreAuthorize("hasRole('EVM_STAFF')")
-    public ResponseEntity<WarrantyClaimResponseDTO> evmAcceptClaim(
+    @PatchMapping("/{id}/admin-accept")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<WarrantyClaimResponseDTO> adminAcceptClaim(
             @PathVariable Long id,
             @RequestBody(required = false) String note) {
-        logger.info("EVM accept warranty claim: id={}, note={}", id, note);
-        WarrantyClaimResponseDTO updatedClaim = warrantyClaimService.evmAcceptClaim(id, note);
-        logger.info("Warranty claim accepted by EVM: {}", id);
+        logger.info("Admin accept warranty claim: id={}, note={}", id, note);
+        WarrantyClaimResponseDTO updatedClaim = warrantyClaimService.adminAcceptClaim(id, note);
+        logger.info("Warranty claim accepted by Admin: {}", id);
         return ResponseEntity.ok(updatedClaim);
     }
 
     /**
-     * EVM Staff từ chối claim (SUBMITTED → REJECTED)
-     * EVM_STAFF only
+     * Admin từ chối claim (SUBMITTED → REJECTED)
+     * ADMIN only
      */
-    @PatchMapping("/{id}/evm-reject")
-    @PreAuthorize("hasRole('EVM_STAFF')")
-    public ResponseEntity<WarrantyClaimResponseDTO> evmRejectClaim(
+    @PatchMapping("/{id}/admin-reject")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<WarrantyClaimResponseDTO> adminRejectClaim(
             @PathVariable Long id,
             @RequestParam String reason) {
-        logger.info("EVM reject warranty claim: id={}, reason={}", id, reason);
-        WarrantyClaimResponseDTO updatedClaim = warrantyClaimService.evmRejectClaim(id, reason);
-        logger.info("Warranty claim rejected by EVM: {}", id);
+        logger.info("Admin reject warranty claim: id={}, reason={}", id, reason);
+        WarrantyClaimResponseDTO updatedClaim = warrantyClaimService.adminRejectClaim(id, reason);
+        logger.info("Warranty claim rejected by Admin: {}", id);
         return ResponseEntity.ok(updatedClaim);
     }
 
@@ -190,7 +190,7 @@ public class WarrantyClaimController {
      * Lấy danh sách claims theo role và status (để phân quyền xem)
      */
     @GetMapping("/by-status/{status}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('EVM_STAFF') or hasRole('SC_TECHNICIAN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN')")
     public ResponseEntity<PagedResponse<WarrantyClaimResponseDTO>> getClaimsByStatus(
             @PathVariable String status,
             @RequestParam(defaultValue = "0") int page,
@@ -202,17 +202,17 @@ public class WarrantyClaimController {
     }
 
     /**
-     * Lấy claims cần EVM xử lý (status = SUBMITTED)
-     * EVM_STAFF only
+     * Lấy claims cần Admin xử lý (status = SUBMITTED)
+     * ADMIN only
      */
-    @GetMapping("/evm-pending")
-    @PreAuthorize("hasRole('EVM_STAFF')")
-    public ResponseEntity<PagedResponse<WarrantyClaimResponseDTO>> getEVMPendingClaims(
+    @GetMapping("/admin-pending")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<PagedResponse<WarrantyClaimResponseDTO>> getAdminPendingClaims(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        logger.info("Get EVM pending claims: page={}, size={}", page, size);
+        logger.info("Get Admin pending claims: page={}, size={}", page, size);
         PagedResponse<WarrantyClaimResponseDTO> claimsPage = warrantyClaimService.getClaimsByStatus("SUBMITTED", PageRequest.of(page, size));
-        logger.info("Get EVM pending claims success, totalElements={}", claimsPage.getTotalElements());
+        logger.info("Get Admin pending claims success, totalElements={}", claimsPage.getTotalElements());
         return ResponseEntity.ok(claimsPage);
     }
 
@@ -231,9 +231,9 @@ public class WarrantyClaimController {
         return ResponseEntity.ok(claimsPage);
     }
 
-    // EVM Staff nhận claim để xử lý (assign to themselves)
+    // Admin nhận claim để xử lý (assign to themselves)
     @PostMapping("/{claimId}/assign-to-me")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<WarrantyClaimResponseDTO> assignClaimToMe(
             @PathVariable Long claimId,
             @RequestParam Long userId) {
@@ -248,9 +248,9 @@ public class WarrantyClaimController {
         }
     }
 
-    // Lấy danh sách claims đã được assign cho EVM Staff
+    // Lấy danh sách claims đã được assign cho Admin
     @GetMapping("/my-assigned-claims")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PagedResponse<WarrantyClaimResponseDTO>> getMyAssignedClaims(
             @RequestParam Long userId,
             @RequestParam(defaultValue = "0") int page,

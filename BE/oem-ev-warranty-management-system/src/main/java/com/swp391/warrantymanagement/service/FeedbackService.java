@@ -6,6 +6,7 @@ import com.swp391.warrantymanagement.dto.response.PagedResponse;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * FeedbackService - Business logic for customer feedback on completed warranty claims
@@ -14,10 +15,10 @@ public interface FeedbackService {
     /**
      * Customer creates feedback for a completed warranty claim
      * @param requestDTO Feedback data (rating, comment, warrantyClaimId)
-     * @param customerId Customer ID from authentication
+     * @param customerId Customer UUID from authentication
      * @return Created feedback response
      */
-    FeedbackResponseDTO createFeedback(FeedbackRequestDTO requestDTO, String customerId);
+    FeedbackResponseDTO createFeedback(FeedbackRequestDTO requestDTO, UUID customerId);
 
     /**
      * Get feedback by ID
@@ -35,11 +36,11 @@ public interface FeedbackService {
 
     /**
      * Get all feedbacks by a specific customer (paginated)
-     * @param customerId Customer ID
+     * @param customerId Customer UUID
      * @param pageable Pagination parameters
      * @return Paged list of customer's feedbacks
      */
-    PagedResponse<FeedbackResponseDTO> getFeedbacksByCustomer(String customerId, Pageable pageable);
+    PagedResponse<FeedbackResponseDTO> getFeedbacksByCustomer(UUID customerId, Pageable pageable);
 
     /**
      * Get all feedbacks (paginated) - For admin/staff review
@@ -68,17 +69,17 @@ public interface FeedbackService {
      * Update existing feedback (customer can edit their feedback)
      * @param feedbackId Feedback ID
      * @param requestDTO Updated feedback data
-     * @param customerId Customer ID from authentication
+     * @param customerId Customer UUID from authentication
      * @return Updated feedback
      */
-    FeedbackResponseDTO updateFeedback(Long feedbackId, FeedbackRequestDTO requestDTO, String customerId);
+    FeedbackResponseDTO updateFeedback(Long feedbackId, FeedbackRequestDTO requestDTO, UUID customerId);
 
     /**
      * Delete feedback
      * @param feedbackId Feedback ID
-     * @param customerId Customer ID from authentication (for authorization)
+     * @param customerId Customer UUID from authentication (for authorization)
      */
-    void deleteFeedback(Long feedbackId, String customerId);
+    void deleteFeedback(Long feedbackId, UUID customerId);
 
     /**
      * Get overall average rating across all feedbacks

@@ -59,21 +59,36 @@ public class SecurityConfig {
 
                 // ADMIN - Quyền cao nhất, có thể làm tất cả
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                // User Management - chỉ ADMIN
+                .requestMatchers("/api/admin/users/**").hasRole("ADMIN")
+
+                // Customers
                 .requestMatchers("/api/customers/**").hasAnyRole("ADMIN", "SC_STAFF", "EVM_STAFF")
+                .requestMatchers("/api/customers/me/**").hasAnyRole("CUSTOMER", "SC_STAFF", "SC_TECHNICIAN", "ADMIN")
 
                 // EVM_STAFF - Nhân viên nhà sản xuất: quản lý vehicles, parts, warranty policies
                 .requestMatchers("/api/vehicles/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF", "SC_TECHNICIAN", "CUSTOMER")
                 .requestMatchers("/api/parts/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF")
 
+                // Installed Parts
+                .requestMatchers("/api/installed-parts/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF", "SC_TECHNICIAN", "CUSTOMER")
+
                 // SC_STAFF - Nhân viên trung tâm bảo hành: quản lý warranty claims, service histories
                 .requestMatchers("/api/warranty-claims/**").hasAnyRole("ADMIN", "SC_STAFF", "SC_TECHNICIAN", "EVM_STAFF", "CUSTOMER")
-                .requestMatchers("/api/service-histories/**").hasAnyRole("ADMIN", "SC_STAFF", "SC_TECHNICIAN", "EVM_STAFF")
+                .requestMatchers("/api/service-histories/**").hasAnyRole("ADMIN", "SC_STAFF", "SC_TECHNICIAN", "EVM_STAFF", "CUSTOMER")
+
+                // Service Centers
+                .requestMatchers("/api/service-centers/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF", "SC_TECHNICIAN", "CUSTOMER")
+
+                // Feedbacks
+                .requestMatchers("/api/feedbacks/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF", "CUSTOMER")
+
+                // Work Logs
+                .requestMatchers("/api/work-logs/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF")
 
                 // SC_TECHNICIAN - Kỹ thuật viên: xem và cập nhật service histories, warranty claims
                 // (Quyền đã được định nghĩa ở trên cùng với SC_STAFF)
-
-                // CUSTOMER - Khách hàng: chỉ xem thông tin của mình và tạo warranty claim
-                .requestMatchers("/api/customers/me/**").hasAnyRole("CUSTOMER", "SC_STAFF", "SC_TECHNICIAN", "ADMIN")
 
                 // User Info endpoint - all authenticated users
                 .requestMatchers("/api/me").authenticated()

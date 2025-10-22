@@ -27,14 +27,14 @@ public interface WarrantyClaimService {
     WarrantyClaimResponseDTO createClaimBySCStaff(WarrantyClaimRequestDTO requestDTO);
 
     /**
-     * EVM Staff xem xét và chấp nhận claim (SUBMITTED → MANAGER_REVIEW)
+     * Admin xem xét và chấp nhận claim (SUBMITTED → MANAGER_REVIEW)
      */
-    WarrantyClaimResponseDTO evmAcceptClaim(Long claimId, String note);
+    WarrantyClaimResponseDTO adminAcceptClaim(Long claimId, String note);
 
     /**
-     * EVM Staff từ chối claim (SUBMITTED → REJECTED)
+     * Admin từ chối claim (SUBMITTED → REJECTED)
      */
-    WarrantyClaimResponseDTO evmRejectClaim(Long claimId, String reason);
+    WarrantyClaimResponseDTO adminRejectClaim(Long claimId, String reason);
 
     /**
      * Technician bắt đầu xử lý claim (MANAGER_REVIEW → PROCESSING)
@@ -57,12 +57,12 @@ public interface WarrantyClaimService {
     PagedResponse<WarrantyClaimResponseDTO> getTechPendingClaims(Pageable pageable);
 
     /**
-     * EVM Staff nhận claim để xử lý (assign to themselves)
+     * Admin nhận claim để xử lý (assign to themselves)
      */
     WarrantyClaimResponseDTO assignClaimToMe(Long claimId, Long userId);
 
     /**
-     * Lấy claims đã được assign cho EVM Staff cụ thể
+     * Lấy claims đã được assign cho Admin cụ thể
      */
     PagedResponse<WarrantyClaimResponseDTO> getMyAssignedClaims(Long userId, Pageable pageable);
 }

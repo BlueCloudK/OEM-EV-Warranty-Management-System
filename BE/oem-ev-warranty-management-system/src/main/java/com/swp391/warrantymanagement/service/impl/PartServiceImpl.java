@@ -4,6 +4,7 @@ import com.swp391.warrantymanagement.dto.request.PartRequestDTO;
 import com.swp391.warrantymanagement.dto.response.PartResponseDTO;
 import com.swp391.warrantymanagement.dto.response.PagedResponse;
 import com.swp391.warrantymanagement.entity.Part;
+import com.swp391.warrantymanagement.exception.ResourceNotFoundException;
 import com.swp391.warrantymanagement.mapper.PartMapper;
 import com.swp391.warrantymanagement.repository.PartRepository;
 import com.swp391.warrantymanagement.service.PartService;
@@ -11,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -48,11 +50,13 @@ public class PartServiceImpl implements PartService {
 
     @Override
     public PartResponseDTO getPartById(String id) {
-        Part part = partRepository.findById(id).orElse(null);
+        Part part = partRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Part", "id", id));
         return PartMapper.toResponseDTO(part);
     }
 
     @Override
+    @Transactional
     public PartResponseDTO createPart(PartRequestDTO requestDTO) {
         // Check if part number already exists
         Part existingPart = partRepository.findByPartNumber(requestDTO.getPartNumber());
@@ -71,11 +75,10 @@ public class PartServiceImpl implements PartService {
     }
 
     @Override
+    @Transactional
     public PartResponseDTO updatePart(String id, PartRequestDTO requestDTO) {
-        Part existingPart = partRepository.findById(id).orElse(null);
-        if (existingPart == null) {
-            return null;
-        }
+        Part existingPart = partRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Part", "id", id));
 
         // Check if part number is being changed and if it already exists
         if (!existingPart.getPartNumber().equals(requestDTO.getPartNumber())) {
@@ -96,6 +99,7 @@ public class PartServiceImpl implements PartService {
     }
 
     @Override
+    @Transactional
     public boolean deletePart(String id) {
         if (!partRepository.existsById(id)) {
             return false;

@@ -1,5 +1,6 @@
 package com.swp391.warrantymanagement.service;
 
+import com.swp391.warrantymanagement.dto.response.UserProfileResponseDTO;
 import com.swp391.warrantymanagement.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -56,4 +57,11 @@ public interface UserService {
      * Get user statistics
      */
     Map<String, Object> getUserStatistics();
+
+    /**
+     * Get full user profile (for staff/admin roles)
+     * @param userId User ID
+     * @return Full user profile with work statistics
+     */
+    UserProfileResponseDTO getUserFullProfile(Long userId);
 }

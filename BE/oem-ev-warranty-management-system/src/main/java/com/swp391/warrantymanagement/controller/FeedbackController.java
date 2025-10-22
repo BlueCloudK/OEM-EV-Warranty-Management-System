@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * FeedbackController - REST API endpoints for customer feedback management
@@ -35,7 +36,7 @@ public class FeedbackController {
     @PreAuthorize("hasRole('CUSTOMER')")
     public ResponseEntity<FeedbackResponseDTO> createFeedback(
             @Valid @RequestBody FeedbackRequestDTO requestDTO,
-            @RequestParam String customerId) {
+            @RequestParam UUID customerId) {
         FeedbackResponseDTO response = feedbackService.createFeedback(requestDTO, customerId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -69,7 +70,7 @@ public class FeedbackController {
     @GetMapping("/by-customer/{customerId}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('CUSTOMER')")
     public ResponseEntity<PagedResponse<FeedbackResponseDTO>> getFeedbacksByCustomer(
-            @PathVariable String customerId,
+            @PathVariable UUID customerId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
@@ -150,7 +151,7 @@ public class FeedbackController {
     public ResponseEntity<FeedbackResponseDTO> updateFeedback(
             @PathVariable Long id,
             @Valid @RequestBody FeedbackRequestDTO requestDTO,
-            @RequestParam String customerId) {
+            @RequestParam UUID customerId) {
         FeedbackResponseDTO response = feedbackService.updateFeedback(id, requestDTO, customerId);
         return ResponseEntity.ok(response);
     }
@@ -163,7 +164,7 @@ public class FeedbackController {
     @PreAuthorize("hasRole('CUSTOMER') or hasRole('ADMIN')")
     public ResponseEntity<Map<String, String>> deleteFeedback(
             @PathVariable Long id,
-            @RequestParam String customerId) {
+            @RequestParam UUID customerId) {
         feedbackService.deleteFeedback(id, customerId);
         Map<String, String> response = new HashMap<>();
         response.put("message", "Feedback deleted successfully");

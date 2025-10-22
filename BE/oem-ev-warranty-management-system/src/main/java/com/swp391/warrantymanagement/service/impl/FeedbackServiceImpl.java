@@ -8,8 +8,6 @@ import com.swp391.warrantymanagement.entity.Feedback;
 import com.swp391.warrantymanagement.entity.WarrantyClaim;
 import com.swp391.warrantymanagement.enums.WarrantyClaimStatus;
 import com.swp391.warrantymanagement.exception.ResourceNotFoundException;
-import com.swp391.warrantymanagement.exception.UnauthorizedException;
-import com.swp391.warrantymanagement.exception.ValidationException;
 import com.swp391.warrantymanagement.mapper.FeedbackMapper;
 import com.swp391.warrantymanagement.repository.CustomerRepository;
 import com.swp391.warrantymanagement.repository.FeedbackRepository;
@@ -20,6 +18,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
 
 /**
  * FeedbackServiceImpl - Implementation of feedback business logic
@@ -34,7 +34,7 @@ public class FeedbackServiceImpl implements FeedbackService {
 
     @Override
     @Transactional
-    public FeedbackResponseDTO createFeedback(FeedbackRequestDTO requestDTO, String customerId) {
+    public FeedbackResponseDTO createFeedback(FeedbackRequestDTO requestDTO, UUID customerId) {
         // Validate warranty claim exists
         WarrantyClaim warrantyClaim = warrantyClaimRepository.findById(requestDTO.getWarrantyClaimId())
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -42,7 +42,7 @@ public class FeedbackServiceImpl implements FeedbackService {
 
         // Validate claim is COMPLETED
         if (warrantyClaim.getStatus() != WarrantyClaimStatus.COMPLETED) {
-            throw new ValidationException(
+            throw new IllegalStateException(
                     "Cannot create feedback for claim that is not COMPLETED. Current status: " + warrantyClaim.getStatus());
         }
 
@@ -51,15 +51,15 @@ public class FeedbackServiceImpl implements FeedbackService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Customer not found with ID: " + customerId));
 
-        // Validate customer owns the claim
-        if (!warrantyClaim.getCustomer().getCustomerId().equals(customerId)) {
-            throw new UnauthorizedException(
+        // Validate customer owns the claim (through vehicle)
+        if (!warrantyClaim.getVehicle().getCustomer().getCustomerId().equals(customerId)) {
+            throw new IllegalArgumentException(
                     "You are not authorized to provide feedback for this claim");
         }
 
         // Validate no existing feedback for this claim
         if (feedbackRepository.findByWarrantyClaimWarrantyClaimId(requestDTO.getWarrantyClaimId()).isPresent()) {
-            throw new ValidationException(
+            throw new IllegalStateException(
                     "Feedback already exists for this warranty claim");
         }
 
@@ -90,7 +90,7 @@ public class FeedbackServiceImpl implements FeedbackService {
 
     @Override
     @Transactional(readOnly = true)
-    public PagedResponse<FeedbackResponseDTO> getFeedbacksByCustomer(String customerId, Pageable pageable) {
+    public PagedResponse<FeedbackResponseDTO> getFeedbacksByCustomer(UUID customerId, Pageable pageable) {
         // Validate customer exists
         if (!customerRepository.existsById(customerId)) {
             throw new ResourceNotFoundException("Customer not found with ID: " + customerId);
@@ -105,6 +105,7 @@ public class FeedbackServiceImpl implements FeedbackService {
                 feedbackPage.getSize(),
                 feedbackPage.getTotalElements(),
                 feedbackPage.getTotalPages(),
+                feedbackPage.isFirst(),
                 feedbackPage.isLast()
         );
     }
@@ -121,6 +122,7 @@ public class FeedbackServiceImpl implements FeedbackService {
                 feedbackPage.getSize(),
                 feedbackPage.getTotalElements(),
                 feedbackPage.getTotalPages(),
+                feedbackPage.isFirst(),
                 feedbackPage.isLast()
         );
     }
@@ -130,7 +132,7 @@ public class FeedbackServiceImpl implements FeedbackService {
     public PagedResponse<FeedbackResponseDTO> getFeedbacksByRating(Integer rating, Pageable pageable) {
         // Validate rating range
         if (rating < 1 || rating > 5) {
-            throw new ValidationException("Rating must be between 1 and 5");
+            throw new IllegalStateException("Rating must be between 1 and 5");
         }
 
         Page<Feedback> feedbackPage = feedbackRepository.findByRating(rating, pageable);
@@ -142,6 +144,7 @@ public class FeedbackServiceImpl implements FeedbackService {
                 feedbackPage.getSize(),
                 feedbackPage.getTotalElements(),
                 feedbackPage.getTotalPages(),
+                feedbackPage.isFirst(),
                 feedbackPage.isLast()
         );
     }
@@ -151,7 +154,7 @@ public class FeedbackServiceImpl implements FeedbackService {
     public PagedResponse<FeedbackResponseDTO> getFeedbacksByMinRating(Integer rating, Pageable pageable) {
         // Validate rating range
         if (rating < 1 || rating > 5) {
-            throw new ValidationException("Rating must be between 1 and 5");
+            throw new IllegalStateException("Rating must be between 1 and 5");
         }
 
         Page<Feedback> feedbackPage = feedbackRepository.findByRatingGreaterThanEqual(rating, pageable);
@@ -163,13 +166,14 @@ public class FeedbackServiceImpl implements FeedbackService {
                 feedbackPage.getSize(),
                 feedbackPage.getTotalElements(),
                 feedbackPage.getTotalPages(),
+                feedbackPage.isFirst(),
                 feedbackPage.isLast()
         );
     }
 
     @Override
     @Transactional
-    public FeedbackResponseDTO updateFeedback(Long feedbackId, FeedbackRequestDTO requestDTO, String customerId) {
+    public FeedbackResponseDTO updateFeedback(Long feedbackId, FeedbackRequestDTO requestDTO, UUID customerId) {
         // Find existing feedback
         Feedback feedback = feedbackRepository.findById(feedbackId)
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -177,7 +181,7 @@ public class FeedbackServiceImpl implements FeedbackService {
 
         // Validate customer owns the feedback
         if (!feedback.getCustomer().getCustomerId().equals(customerId)) {
-            throw new UnauthorizedException(
+            throw new IllegalArgumentException(
                     "You are not authorized to update this feedback");
         }
 
@@ -190,7 +194,7 @@ public class FeedbackServiceImpl implements FeedbackService {
 
     @Override
     @Transactional
-    public void deleteFeedback(Long feedbackId, String customerId) {
+    public void deleteFeedback(Long feedbackId, UUID customerId) {
         // Find existing feedback
         Feedback feedback = feedbackRepository.findById(feedbackId)
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -198,7 +202,7 @@ public class FeedbackServiceImpl implements FeedbackService {
 
         // Validate customer owns the feedback
         if (!feedback.getCustomer().getCustomerId().equals(customerId)) {
-            throw new UnauthorizedException(
+            throw new IllegalArgumentException(
                     "You are not authorized to delete this feedback");
         }
 
@@ -222,7 +226,7 @@ public class FeedbackServiceImpl implements FeedbackService {
     public Long countByRating(Integer rating) {
         // Validate rating range
         if (rating < 1 || rating > 5) {
-            throw new ValidationException("Rating must be between 1 and 5");
+            throw new IllegalStateException("Rating must be between 1 and 5");
         }
         return feedbackRepository.countByRating(rating);
     }
