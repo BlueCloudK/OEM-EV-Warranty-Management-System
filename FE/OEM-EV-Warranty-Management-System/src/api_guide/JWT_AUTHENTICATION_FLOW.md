@@ -4,6 +4,182 @@
 
 Hệ thống OEM EV Warranty Management sử dụng JWT (JSON Web Token) để xác thực và phân quyền người dùng.
 
+**Last Updated:** October 23, 2025 - Thêm tính năng Customer xem warranty claims
+
+---
+
+## 🔐 JWT Flow - TÓM TẮT NGẮN GỌN
+
+### **Bước 1: Login (Đăng nhập)**
+```
+POST /api/auth/login
+{ "username": "customer1", "password": "123456" }
+
+→ Server verify credentials
+→ Generate 2 tokens:
+   • accessToken (expire ~15-30 phút)
+   • refreshToken (expire ~7 ngày)
+
+Response:
+{
+  "accessToken": "eyJhbGci...",
+  "refreshToken": "eyJhbGci...",
+  "tokenType": "Bearer",
+  "userId": 123,
+  "username": "customer1",
+  "roleName": "CUSTOMER"
+}
+```
+
+### **Bước 2: Sử dụng API với JWT**
+```
+GET /api/warranty-claims/my-claims
+Header: Authorization: Bearer <accessToken>
+
+→ JwtAuthenticationFilter verify token
+→ Extract username & roles
+→ Set SecurityContext
+→ @PreAuthorize check role
+→ Return data (nếu có quyền)
+```
+
+### **Bước 3: Access Token hết hạn → Refresh**
+```
+GET /api/warranty-claims/my-claims
+Header: Authorization: Bearer <expired_token>
+
+→ Response: 401 Unauthorized
+
+Client detect 401 → Call refresh:
+POST /api/auth/refresh
+{ "refreshToken": "eyJhbGci..." }
+
+→ Response: New accessToken
+→ Retry API với token mới
+```
+
+### **Bước 4: Refresh Token cũng hết hạn → Re-login**
+```
+POST /api/auth/refresh
+{ "refreshToken": "expired_refresh_token" }
+
+→ Response: 401 Unauthorized
+→ Redirect user về Login page
+```
+
+### **Bước 5: Logout**
+```
+POST /api/auth/logout
+{ "refreshToken": "..." }
+
+→ Server revoke token
+→ Client xóa tokens
+```
+
+---
+
+## 📊 JWT Flow Diagram
+
+```
+┌──────────────┐
+│    Client    │
+│  (Browser)   │
+└──────┬───────┘
+       │
+       │ 1. POST /login (username + password)
+       ▼
+┌─────────────────────────────────┐
+│       AuthController            │
+│   → AuthService                 │
+│   - Verify credentials          │
+│   - Generate accessToken        │
+│   - Generate refreshToken       │
+└──────────┬──────────────────────┘
+           │
+           │ 2. Return tokens
+           ▼
+┌─────────────────────────────────┐
+│   Client saves tokens           │
+│   - accessToken → memory        │
+│   - refreshToken → localStorage │
+└──────────┬──────────────────────┘
+           │
+           │ 3. API Request + accessToken
+           ▼
+┌─────────────────────────────────┐
+│  JwtAuthenticationFilter        │
+│  - Extract JWT from header      │
+│  - Validate JWT                 │
+│  - Extract username + roles     │
+│  - Set SecurityContext          │
+└──────────┬──────────────────────┘
+           │
+           │ 4. Check role permission
+           ▼
+┌─────────────────────────────────┐
+│  @PreAuthorize("hasRole(...)")  │
+│  - Allow or Deny                │
+└──────────┬──────────────────────┘
+           │
+           │ 5. Execute business logic
+           ▼
+┌─────────────────────────────────┐
+│  Controller → Service → DB      │
+│  Return response                │
+└─────────────────────────────────┘
+```
+
+---
+
+## 🔑 JWT Token Structure
+
+```
+JWT = Header.Payload.Signature
+
+Header:
+{
+  "alg": "HS256",
+  "typ": "JWT"
+}
+
+Payload:
+{
+  "sub": "customer1",       ← Username
+  "role": "CUSTOMER",       ← Role
+  "iat": 1698123456,        ← Issued At
+  "exp": 1698125256         ← Expiration
+}
+
+Signature:
+HMACSHA256(
+  base64UrlEncode(header) + "." + base64UrlEncode(payload),
+  SECRET_KEY
+)
+```
+
+---
+
+## ⚙️ Security Config
+
+```java
+// STATELESS - Không lưu session
+.sessionManagement(session ->
+    session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+// JWT Filter trước UsernamePasswordAuthenticationFilter
+.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+
+// Public endpoints
+.requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/refresh")
+    .permitAll()
+
+// Protected endpoints
+.requestMatchers("/api/warranty-claims/my-claims/**").hasRole("CUSTOMER")
+.requestMatchers("/api/warranty-claims/**").hasAnyRole("ADMIN", "SC_STAFF", "SC_TECHNICIAN", "EVM_STAFF")
+```
+
+---
+
 ## 🔐 Các Role trong hệ thống
 
 1. **ADMIN** - Quản trị viên hệ thống
@@ -34,8 +210,9 @@ Hệ thống OEM EV Warranty Management sử dụng JWT (JSON Web Token) để x
 5. **CUSTOMER** - Khách hàng
    - READ vehicles của mình (qua `/my-vehicles`)
    - READ parts information
-   - CR warranty claims của mình (không thể UPDATE/DELETE)
-   - READ service histories của vehicles mình sở hữu
+   - **🆕 READ warranty claims của mình** (qua `/my-claims` - NEW Oct 23, 2025)
+   - **❌ KHÔNG THỂ tạo warranty claims** - phải đến service center
+   - READ service histories của vehicles mình sở hữu (qua `/my-services`)
    - Self-service: Update profile qua `/profile`
 
 ## 🚀 Flow Authentication (Đăng nhập)
@@ -245,10 +422,13 @@ JwtService.isTokenValid()
 | **WARRANTY CLAIMS** ✅ (ĐÃ CÓ @PreAuthorize - SECURITY FIXED) |
 | `GET /api/warranty-claims` | ✅ | ✅ | ✅ | ❌ | ❌ |
 | `GET /api/warranty-claims/{id}` | ✅ | ✅ | ✅ | ✅ | ❌ |
-| `POST /api/warranty-claims` | ✅ | ✅ | ✅ | ❌ | ✅ |
+| `POST /api/warranty-claims` | ✅ | ✅ | ✅ | ❌ | ❌ |
 | `PUT /api/warranty-claims/{id}` | ✅ | ✅ | ✅ | ❌ | ❌ |
 | `DELETE /api/warranty-claims/{id}` | ✅ | ❌ | ❌ | ❌ | ❌ |
 | `PATCH /api/warranty-claims/{id}/status` | ✅ | ✅ | ✅ | ❌ | ❌ |
+| **CUSTOMER WARRANTY CLAIMS** 🆕 (NEW - Oct 23, 2025) |
+| `GET /api/warranty-claims/my-claims` | ❌ | ❌ | ❌ | ❌ | ✅ |
+| `GET /api/warranty-claims/my-claims/{id}` | ❌ | ❌ | ❌ | ❌ | ✅ |
 | **WORKFLOW ENDPOINTS** ✅ (ĐÃ CÓ @PreAuthorize - SECURITY FIXED) |
 | `POST /api/warranty-claims/sc-create` | ❌ | ❌ | ✅ | ❌ | ❌ |
 | `PATCH /api/warranty-claims/{id}/evm-accept` | ❌ | ✅ | ❌ | ❌ | ❌ |
@@ -348,3 +528,88 @@ GET    /api/admin/users/statistics         - Thống kê users
 - Tất cả endpoints đều có `@PreAuthorize("hasRole('ADMIN')")`
 - Chỉ Admin mới có quyền truy cập
 - Class-level security annotation đảm bảo không có endpoint nào bị bỏ sót
+
+---
+
+## 🆕 **TÍNH NĂNG MỚI: Customer Xem Warranty Claims** (Oct 23, 2025)
+
+### **Vấn đề trước đây:**
+- ❌ Customer **KHÔNG THỂ** xem trạng thái warranty claims của mình
+- ❌ Phải gọi điện hoặc đến trung tâm để hỏi
+- ❌ Không có tính minh bạch trong quy trình
+
+### **Giải pháp:**
+✅ Thêm 2 endpoints mới cho CUSTOMER:
+
+#### **1. Xem tất cả claims của mình**
+```
+GET /api/warranty-claims/my-claims?page=0&size=10
+Authorization: Bearer <customer_token>
+
+Response:
+{
+  "content": [
+    {
+      "warrantyClaimId": 1,
+      "claimDate": "2024-10-20T10:00:00",
+      "status": "PROCESSING",
+      "description": "Battery not charging",
+      "vehicleId": 5,
+      "serviceCenterId": 1
+    }
+  ],
+  "pageNumber": 0,
+  "totalElements": 3
+}
+```
+
+#### **2. Xem chi tiết 1 claim**
+```
+GET /api/warranty-claims/my-claims/1
+Authorization: Bearer <customer_token>
+
+Response:
+{
+  "warrantyClaimId": 1,
+  "status": "COMPLETED",
+  "description": "Battery replaced successfully",
+  "resolutionDate": "2024-10-22T15:30:00"
+}
+```
+
+### **Bảo mật:**
+- ✅ Customer **CHỈ** xem được claims của xe mình sở hữu
+- ✅ Kiểm tra ownership ở cả DB query và service layer
+- ✅ Không thể xem claims của người khác
+- ✅ `@PreAuthorize("hasRole('CUSTOMER')")` trên cả 2 endpoints
+
+### **Implementation:**
+```java
+// Repository: Query qua Vehicle -> Customer relationship
+findByVehicleCustomerCustomerId(customerId, pageable)
+
+// Service: Lấy customer từ Security Context
+String username = SecurityUtil.getCurrentUsername();
+User user = userRepository.findByUsername(username);
+Customer customer = user.getCustomer();
+
+// Controller: @PreAuthorize bảo vệ endpoint
+@GetMapping("/my-claims")
+@PreAuthorize("hasRole('CUSTOMER')")
+public ResponseEntity<...> getMyWarrantyClaims(...)
+```
+
+### **Lợi ích:**
+- ✅ Customer tự theo dõi trạng thái claim
+- ✅ Giảm tải công việc cho SC_STAFF
+- ✅ Tăng trải nghiệm khách hàng
+- ✅ Tính minh bạch cao hơn
+
+### **Business Rule giữ nguyên:**
+- ❌ Customer vẫn **KHÔNG THỂ** tạo claim online
+- ❌ Phải đến trung tâm để SC_STAFF tạo claim
+- ✅ Chỉ **XEM** được trạng thái, không sửa/xóa
+
+---
+
+**System Status:** ✅ PRODUCTION READY - All security issues fixed + New customer features added

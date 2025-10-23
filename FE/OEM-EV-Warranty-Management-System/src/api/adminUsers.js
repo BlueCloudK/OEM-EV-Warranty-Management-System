@@ -126,20 +126,50 @@ export const adminUsersApi = {
       throw error;
     }
   }
+  ,
+
+  // GET STATISTICS - Thống kê users (Admin)
+  getStatistics: async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/users/statistics`, {
+        method: 'GET',
+        headers: getAuthHeaders()
+      });
+      return await handleResponse(response);
+    } catch (error) {
+      console.error('❌ Error getting users statistics:', error);
+      throw error;
+    }
+  }
 };
 
 export const adminAuthApi = {
-  // REGISTER USER - Đăng ký user mới
-  register: async (userData) => {
+  // STAFF: REGISTER CUSTOMER - Đăng ký Customer đầy đủ bởi Staff (ADMIN, SC_STAFF, EVM_STAFF)
+  staffRegisterCustomer: async (userData) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/staff/register-customer`, {
+        method: 'POST',
+        headers: getAuthHeaders(), // requires staff authorization
+        body: JSON.stringify(userData)
+      });
+      return await handleResponse(response);
+    } catch (error) {
+      console.error('❌ Error registering customer by staff:', error);
+      throw error;
+    }
+  },
+
+  // ADMIN: Create user with any role (requires ADMIN token)
+  adminCreateUser: async (userData) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/admin/create-user`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify(userData)
       });
       return await handleResponse(response);
     } catch (error) {
-      console.error('❌ Error registering user:', error);
+      console.error('❌ Error creating user by admin:', error);
       throw error;
     }
   },
@@ -161,14 +191,21 @@ export const adminAuthApi = {
     }
   },
 
-  // GET CURRENT USER - Lấy thông tin user hiện tại
+  // GET CURRENT USER - try /api/me then fallback to /api/auth/validate
   getCurrentUser: async () => {
+    const headers = getAuthHeaders();
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
-        method: 'GET',
-        headers: getAuthHeaders()
-      });
-      return await handleResponse(response);
+      // First try legacy /api/me which some parts of app use
+      let response = await fetch(`${API_BASE_URL}/api/me`, { method: 'GET', headers });
+      if (response.ok) return await handleResponse(response);
+
+      // Fallback to /api/auth/validate
+      response = await fetch(`${API_BASE_URL}/api/auth/validate`, { method: 'GET', headers });
+      if (response.ok) return await handleResponse(response);
+
+      // If neither worked, throw with last response text
+      const txt = await response.text();
+      throw new Error(txt || `HTTP ${response.status}`);
     } catch (error) {
       console.error('❌ Error getting current user:', error);
       throw error;
