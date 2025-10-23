@@ -21,7 +21,7 @@ import {
   FaWrench
 } from 'react-icons/fa';
 
-const WarrantyHistory = () => {
+const WarrantyClaims = () => {
   const navigate = useNavigate();
   const [warrantyRequests, setWarrantyRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,7 +35,7 @@ const WarrantyHistory = () => {
   });
 
   useEffect(() => {
-    fetchWarrantyHistory();
+    fetchWarrantyClaims();
     
     // Add keyboard shortcut for back navigation
     const handleKeyDown = (event) => {
@@ -51,21 +51,21 @@ const WarrantyHistory = () => {
     };
   }, [navigate]);
 
-  // Main function to fetch warranty history
-  const fetchWarrantyHistory = async (page = 0, size = 10) => {
+  // Main function to fetch warranty claims
+  const fetchWarrantyClaims = async (page = 0, size = 10) => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
       const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
       
-      console.group('🛡️ Fetching Warranty History');
+  console.group('🛡️ Fetching Warranty Claims');
       console.log('Token present:', !!token);
       console.log('API Base URL:', API_BASE_URL);
       console.log('Query params:', { page, size });
       
       if (!token || !API_BASE_URL) {
         console.warn('Missing token or API_BASE_URL, using mock data');
-        setMockWarrantyHistory();
+        setMockWarrantyClaims();
         console.groupEnd();
         return;
       }
@@ -124,17 +124,17 @@ const WarrantyHistory = () => {
       
       console.groupEnd();
     } catch (error) {
-      console.error('❌ Error fetching warranty history:', error);
+      console.error('❌ Error fetching warranty claims:', error);
       console.warn('🔄 Falling back to mock data');
-      setMockWarrantyHistory();
+      setMockWarrantyClaims();
       console.groupEnd();
     } finally {
       setLoading(false);
     }
   };
 
-  // Set mock warranty history data
-  const setMockWarrantyHistory = () => {
+  // Set mock warranty claims data
+  const setMockWarrantyClaims = () => {
     const mockData = {
       content: [
         {
@@ -233,7 +233,7 @@ const WarrantyHistory = () => {
       last: mockData.last
     });
     
-    console.log('🔧 Mock warranty history set:', mockData);
+  console.log('🔧 Mock warranty claims set:', mockData);
   };
 
   const formatDate = (dateString) => {
@@ -296,7 +296,7 @@ const WarrantyHistory = () => {
 
   const handlePageChange = (newPage) => {
     if (newPage >= 0 && newPage < pagination.totalPages) {
-      fetchWarrantyHistory(newPage, pagination.pageSize);
+      fetchWarrantyClaims(newPage, pagination.pageSize);
     }
   };
 
@@ -922,12 +922,7 @@ const WarrantyHistory = () => {
           </div>
         )}
 
-        {/* Create New Claim Button */}
-        <div style={{
-          textAlign: 'center',
-          marginTop: '32px'
-        }}>
-        </div>
+        
 
 
       </div>
@@ -935,4 +930,4 @@ const WarrantyHistory = () => {
   );
 };
 
-export default WarrantyHistory;
+export default WarrantyClaims;

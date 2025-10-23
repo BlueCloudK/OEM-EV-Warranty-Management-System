@@ -1,898 +1,266 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  FaUser, 
-  FaEdit, 
-  FaSave, 
-  FaTimes,
-  FaPhone,
-  FaEnvelope,
-  FaMapMarkerAlt,
-  FaCalendar,
-  FaSpinner,
-  FaArrowLeft,
-  FaUserCircle,
-  FaIdCard
-} from 'react-icons/fa';
+import { FaUserCircle, FaSpinner, FaArrowLeft } from 'react-icons/fa';
 
 const CustomerProfile = () => {
   const navigate = useNavigate();
-  const [profile, setProfile] = useState(null);
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    address: ''
-  });
-  const [formErrors, setFormErrors] = useState({});
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
   useEffect(() => {
-    fetchCustomerByUserId();
-    
-    // Add keyboard shortcut for back navigation
-    const handleKeyDown = (event) => {
-      if (event.key === 'Escape' && !editing) {
-        navigate('/customer/dashboard');
-      }
-    };
+    let mounted = true;
 
-    document.addEventListener('keydown', handleKeyDown);
-    
-    // Cleanup event listener
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [navigate, editing]);
+    const fetchAndNormalizeMe = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem('token');
 
-  // Main function to fetch customer by userId using GET /api/customers/by-user/{userId}
-  const fetchCustomerByUserId = async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('token');
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-      
-      console.group('🔍 Fetching Customer by User ID');
-      console.log('Token present:', !!token);
-      console.log('API Base URL:', API_BASE_URL);
-      
-      if (!token || !API_BASE_URL) {
-        console.warn('Missing token or API_BASE_URL, using mock data');
-        setMockData();
-        console.groupEnd();
-        return;
-      }
-
-      // Step 1: Get current user info to extract userId
-      const userId = await getUserId(token, API_BASE_URL);
-      
-      if (!userId) {
-        console.warn('❌ No userId found, using mock data');
-        setMockData();
-        console.groupEnd();
-        return;
-      }
-
-      // Step 2: Call GET /api/customers/by-user/{userId} to get customer details
-      console.log(`📡 Calling GET /api/customers/by-user/${userId}`);
-      
-      const response = await fetch(`${API_BASE_URL}/api/customers/by-user/${userId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+        if (!token || !API_BASE_URL) {
+          // fallback mock
+          const mock = {
+            userId: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+            username: 'demo_user',
+            email: 'demo@oem-ev.com',
+            fullName: 'Nguyen Van A',
+            phoneNumber: '+84901234567',
+            role: 'CUSTOMER',
+            enabled: true
+          };
+          localStorage.setItem('user', JSON.stringify(mock));
+          if (mounted) setUser(mock);
+          return;
         }
-      });
 
-      console.log('Response status:', response.status);
-
-      if (response.ok) {
-        const customerData = await response.json();
-        console.log('✅ Customer data received:', customerData);
-        
-        // Validate response format matches expected structure
-        if (customerData && customerData.customerId) {
-          setProfile(customerData);
-          setFormData({
-            name: customerData.name || '',
-            email: customerData.email || '',
-            phone: customerData.phone || '',
-            address: customerData.address || ''
-          });
-          
-          // Store for future use
-          localStorage.setItem('currentCustomer', JSON.stringify(customerData));
-          console.log('✅ Customer profile loaded successfully via userId');
-        } else {
-          console.error('❌ Invalid customer data format:', customerData);
-          throw new Error('Invalid customer data format');
-        }
-      } else {
-        const errorText = await response.text();
-        console.error('❌ API Error:', response.status, errorText);
-        
-        // If customer not found by userId, try fallback methods
-        if (response.status === 404) {
-          console.log('🔄 Customer not found by userId, trying fallback methods...');
-          await tryFallbackMethods(token, API_BASE_URL);
-        } else {
-          throw new Error(`API Error: ${response.status} - ${errorText}`);
-        }
-      }
-      
-      console.groupEnd();
-    } catch (error) {
-      console.error('❌ Error in fetchCustomerByUserId:', error);
-      console.warn('🔄 Falling back to mock data');
-      setMockData();
-      console.groupEnd();
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Helper function to get userId from current user
-  const getUserId = async (token, API_BASE_URL) => {
-    try {
-      // Method 1: Try from localStorage first
-      const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
-      if (userInfo.userId) {
-        console.log('✅ Found userId in localStorage:', userInfo.userId);
-        return userInfo.userId;
-      }
-
-      // Method 2: Get from /api/me endpoint
-      console.log('📡 Getting current user info from /api/me...');
-      const userResponse = await fetch(`${API_BASE_URL}/api/me`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (userResponse.ok) {
-        const userData = await userResponse.json();
-        console.log('✅ Current user data:', userData);
-        
-        if (userData.userId) {
-          // Store for future use
-          localStorage.setItem('user', JSON.stringify(userData));
-          console.log('✅ Found userId from API:', userData.userId);
-          return userData.userId;
-        }
-      }
-
-      // Method 3: Use mock userId for testing
-      const mockUserId = 5;
-      console.log('🔧 Using mock userId for testing:', mockUserId);
-      return mockUserId;
-    } catch (error) {
-      console.error('❌ Error getting userId:', error);
-      return null;
-    }
-  };
-
-  // Fallback methods if primary API fails
-  const tryFallbackMethods = async (token, API_BASE_URL) => {
-    try {
-      // Try to get customer by direct ID if available
-      const storedCustomer = localStorage.getItem('currentCustomer');
-      if (storedCustomer) {
-        const customerData = JSON.parse(storedCustomer);
-        if (customerData.customerId) {
-          console.log('📡 Trying GET /api/customers/{id} with stored customerId...');
-          
-          const response = await fetch(`${API_BASE_URL}/api/customers/${customerData.customerId}`, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          });
-
-          if (response.ok) {
-            const customerByIdData = await response.json();
-            console.log('✅ Customer data from fallback method:', customerByIdData);
-            
-            setProfile(customerByIdData);
-            setFormData({
-              name: customerByIdData.name || '',
-              email: customerByIdData.email || '',
-              phone: customerByIdData.phone || '',
-              address: customerByIdData.address || ''
-            });
-            return;
+        const res = await fetch(`${API_BASE_URL}/api/me`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
           }
+        });
+
+        if (!res.ok) {
+          // try fallback validate endpoint if available
+          try {
+            const res2 = await fetch(`${API_BASE_URL}/api/auth/validate`, {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            });
+            if (res2.ok) {
+              const raw = await res2.json();
+              console.log('✅ Validate API Response:', raw);
+              const normalized = normalizeUser(raw);
+              console.log('✅ Normalized User:', normalized);
+              localStorage.setItem('user', JSON.stringify(normalized));
+              if (mounted) setUser(normalized);
+              return;
+            }
+          } catch (e) {
+            console.error('Validate endpoint error:', e);
+          }
+
+          // final fallback: mock
+          console.warn('API failed, using mock data');
+          const mock = {
+            userId: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+            username: 'demo_user',
+            email: 'demo@oem-ev.com',
+            fullName: 'Nguyen Van A',
+            phoneNumber: '+84901234567',
+            role: 'CUSTOMER',
+            enabled: true
+          };
+          localStorage.setItem('user', JSON.stringify(mock));
+          if (mounted) setUser(mock);
+          return;
         }
+
+        const raw = await res.json();
+        console.log('✅ /api/me Response:', raw);
+        
+        const normalized = normalizeUser(raw);
+        console.log('✅ Normalized User:', normalized);
+        
+        localStorage.setItem('user', JSON.stringify(normalized));
+        if (mounted) setUser(normalized);
+        
+      } catch (error) {
+        console.error('❌ Error fetching /api/me:', error);
+        // fallback mock
+        const mock = {
+          userId: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+          username: 'demo_user',
+          email: 'demo@oem-ev.com',
+          fullName: 'Nguyen Van A',
+          phoneNumber: '+84901234567',
+          role: 'CUSTOMER',
+          enabled: true
+        };
+        localStorage.setItem('user', JSON.stringify(mock));
+        if (mounted) setUser(mock);
+      } finally {
+        if (mounted) setLoading(false);
       }
+    };
 
-      // If all methods fail, use mock data
-      console.warn('❌ All fallback methods failed, using mock data');
-      setMockData();
-    } catch (error) {
-      console.error('❌ Error in fallback methods:', error);
-      setMockData();
-    }
-  };
+    fetchAndNormalizeMe();
 
-  // Set mock data for fallback - matching the exact API response format
-  const setMockData = () => {
-    const mockProfile = {
-      customerId: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-      name: "Nguyễn Văn An",
-      email: "nguyen.van.an@email.com",
-      phone: "+84901234567",
-      address: "123 Đường Nguyễn Huệ, Quận 1, TP.HCM",
-      createdAt: "2025-10-17T12:52:09.121Z",
-      userId: 5,
-      username: "nguyen_van_an"
+    return () => { mounted = false; };
+  }, [API_BASE_URL]);
+
+  const normalizeUser = (raw) => {
+    const normalized = {
+      userId: raw.userId ?? raw.id ?? raw.uuid ?? null,
+      username: raw.username ?? (raw.email ? raw.email.split('@')[0] : ''),
+      email: raw.email ?? raw.emailAddress ?? '',
+      fullName: raw.fullName ?? raw.name ?? raw.displayName ?? '',
+      phoneNumber: raw.phoneNumber ?? raw.phone ?? raw.mobile ?? '',
+      role: raw.role ?? raw.roleName ?? raw.roleType ?? '',
+      enabled: raw.enabled ?? raw.active ?? true
     };
     
-    setProfile(mockProfile);
-    setFormData({
-      name: mockProfile.name,
-      email: mockProfile.email,
-      phone: mockProfile.phone,
-      address: mockProfile.address
-    });
-    
-    console.log('🔧 Mock data set:', mockProfile);
-  };
-
-  const handleEdit = () => {
-    setEditing(true);
-  };
-
-  const handleCancel = () => {
-    setEditing(false);
-    setFormErrors({});
-    // Reset form data to original profile data
-    if (profile) {
-      setFormData({
-        name: profile.name,
-        email: profile.email,
-        phone: profile.phone,
-        address: profile.address
-      });
-    }
-  };
-
-  const validateForm = () => {
-    const errors = {};
-    
-    if (!formData.name.trim()) {
-      errors.name = 'Tên là bắt buộc';
-    } else if (formData.name.length < 5 || formData.name.length > 100) {
-      errors.name = 'Tên phải từ 5 đến 100 ký tự';
-    }
-    
-    if (!formData.email.trim()) {
-      errors.email = 'Email là bắt buộc';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.email = 'Email không hợp lệ';
-    }
-    
-    if (!formData.phone.trim()) {
-      errors.phone = 'Số điện thoại là bắt buộc';
-    } else if (!/^(\+84|84|0)(3|5|7|8|9)[0-9]{8}$/.test(formData.phone.replace(/\s/g, ''))) {
-      errors.phone = 'Số điện thoại không đúng định dạng Việt Nam';
-    }
-    
-    if (!formData.address.trim()) {
-      errors.address = 'Địa chỉ là bắt buộc';
-    } else if (formData.address.length > 255) {
-      errors.address = 'Địa chỉ không được quá 255 ký tự';
-    }
-    
-    return errors;
-  };
-
-  const handleSave = async () => {
-    const errors = validateForm();
-    setFormErrors(errors);
-
-    if (Object.keys(errors).length > 0) {
-      return;
-    }
-
-    try {
-      setSaving(true);
-      const token = localStorage.getItem('token');
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
-      if (!token || !API_BASE_URL || !profile?.customerId) {
-        alert('Không thể cập nhật profile. Thiếu thông tin xác thực.');
-        return;
-      }
-
-      const updatePayload = {
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        address: formData.address,
-        userId: profile.userId
-      };
-
-      console.log('🔄 Updating customer profile:', updatePayload);
-
-      // Use PUT /api/customers/{id} to update
-      const response = await fetch(`${API_BASE_URL}/api/customers/${profile.customerId}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(updatePayload)
-      });
-
-      if (response.ok) {
-        const updatedProfile = await response.json();
-        console.log('✅ Profile updated successfully:', updatedProfile);
-        
-        setProfile(updatedProfile);
-        setEditing(false);
-        alert('Cập nhật thông tin thành công!');
-        
-        // Update localStorage
-        localStorage.setItem('currentCustomer', JSON.stringify(updatedProfile));
-      } else {
-        const errorText = await response.text();
-        console.error('❌ Update failed:', response.status, errorText);
-        alert(`Cập nhật thất bại: ${response.status} - ${errorText}`);
-      }
-    } catch (error) {
-      console.error('❌ Error updating profile:', error);
-      alert('Lỗi khi cập nhật thông tin. Vui lòng thử lại.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-    
-    // Clear error when user starts typing
-    if (formErrors[field]) {
-      setFormErrors(prev => ({
-        ...prev,
-        [field]: ''
-      }));
-    }
-  };
-
-  const formatDate = (dateString) => {
-    try {
-      return new Date(dateString).toLocaleDateString('vi-VN', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch (error) {
-      return 'Không xác định';
-    }
+    console.log('📋 Normalization:', { raw, normalized });
+    return normalized;
   };
 
   if (loading) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}>
-        <div style={{
-          background: 'rgba(255, 255, 255, 0.9)',
-          borderRadius: '16px',
-          padding: '40px',
-          textAlign: 'center',
-          backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(255, 255, 255, 0.3)'
-        }}>
-          <FaSpinner style={{ 
-            fontSize: '3rem', 
-            color: '#667eea', 
-            animation: 'spin 1s linear infinite',
-            marginBottom: '20px'
-          }} />
-          <p style={{ margin: 0, color: '#4a5568', fontSize: '1.2rem' }}>
-            Đang tải thông tin khách hàng...
-          </p>
-          <p style={{ margin: '8px 0 0 0', color: '#718096', fontSize: '0.9rem' }}>
-            Gọi API GET /api/customers/by-user/{'{userId}'}
-          </p>
+      <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center' }}>
+          <FaSpinner style={{ fontSize: '3rem', animation: 'spin 1s linear infinite', color: '#667eea' }} />
+          <p>Đang tải thông tin người dùng...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center', color: '#ef4444' }}>
+          <p>⚠️ Không thể tải thông tin người dùng</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            style={{ marginTop: 12, padding: '8px 16px', cursor: 'pointer' }}
+          >
+            Thử lại
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      padding: '20px'
-    }}>
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-        @keyframes slideInUp {
-          from { opacity: 0; transform: translateY(30px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .profile-card {
-          animation: slideInUp 0.6s ease-out;
-        }
-        .back-button {
-          transition: all 0.3s ease;
-          position: relative;
-          overflow: hidden;
-        }
-        .back-button:hover {
-          background: rgba(255, 255, 255, 0.3) !important;
-          transform: translateY(-2px);
-          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-        }
-        .back-button:active {
-          transform: translateY(0);
-        }
-        .back-button::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: -100%;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-          transition: left 0.5s;
-        }
-        .back-button:hover::before {
-          left: 100%;
-        }
-        .field-row {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          margin-bottom: 12px;
-        }
-        .field-label {
-          width: 150px;
-          color: #4a5568;
-          font-size: 14px;
-          font-weight: 600;
-        }
-        .field-value {
-          flex: 1;
-        }
-      `}</style>
+    <div style={{ padding: 20, maxWidth: 900, margin: '0 auto' }}>
+      <button 
+        onClick={() => navigate('/customer/dashboard')} 
+        style={{ 
+          marginBottom: 12, 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 8,
+          padding: '8px 16px',
+          background: '#f3f4f6',
+          border: '1px solid #d1d5db',
+          borderRadius: 6,
+          cursor: 'pointer'
+        }}
+      >
+        <FaArrowLeft /> Quay lại
+      </button>
 
-      <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-        {/* Header */}
-        <div style={{
-          background: 'rgba(255, 255, 255, 0.15)',
-          backdropFilter: 'blur(20px)',
-          borderRadius: '16px',
-          padding: '24px',
-          marginBottom: '24px',
-          border: '1px solid rgba(255, 255, 255, 0.2)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-            <button
-              className="back-button"
-              onClick={() => navigate('/customer/dashboard')}
-              style={{
-                background: 'rgba(255, 255, 255, 0.2)',
-                color: '#fff',
-                border: '2px solid rgba(255, 255, 255, 0.3)',
-                padding: '12px 20px',
-                borderRadius: '12px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                fontSize: '15px',
-                fontWeight: '600',
-                backdropFilter: 'blur(10px)',
-                position: 'relative',
-                overflow: 'hidden'
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  navigate('/customer/dashboard');
-                }
-              }}
-              title="Quay lại trang Dashboard (ESC)"
-            >
-              <FaArrowLeft style={{ fontSize: '14px' }} /> 
-              <span>Quay lại </span>
-            </button>
-            
-            <div style={{ flex: 1 }}>
-                <h1 style={{ 
-                  margin: 0, 
-                  color: '#fff', 
-                  fontSize: '1.8rem',
-                  fontWeight: '700'
-                }}>
-                  👤 Thông tin cá nhân
-                </h1>
-            </div>
-
-            {/* API badge removed per request */}
-          </div>
-        </div>
-
-        {/* Profile Card */}
-        <div className="profile-card" style={{
-          background: 'rgba(255, 255, 255, 0.95)',
-          borderRadius: '20px',
-          overflow: 'hidden',
-          border: '1px solid rgba(255, 255, 255, 0.3)',
-          backdropFilter: 'blur(20px)',
-          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
-        }}>
-          {/* Profile Header */}
-          <div style={{
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            padding: '32px',
-            textAlign: 'center',
-            position: 'relative'
+      <div style={{ display: 'flex', gap: 20, background: '#fff', padding: 20, borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+        <div style={{ width: 140, textAlign: 'center' }}>
+          <div style={{ 
+            width: 100, 
+            height: 100, 
+            borderRadius: '50%', 
+            background: '#f1f5f9', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            margin: '0 auto',
+            border: '3px solid #667eea'
           }}>
-            <div style={{
-              width: '100px',
-              height: '100px',
-              borderRadius: '50%',
-              background: 'rgba(255, 255, 255, 0.2)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 16px auto',
-              border: '4px solid rgba(255, 255, 255, 0.3)',
-              fontSize: '3rem',
-              color: '#fff'
-            }}>
-              <FaUserCircle />
-            </div>
-            
-            <h2 style={{
-              margin: '0 0 8px 0',
-              color: '#fff',
-              fontSize: '2rem',
-              fontWeight: '700'
-            }}>
-              {profile?.name || 'Khách hàng'}
-            </h2>
-            
-            <p style={{
-              margin: '0 0 16px 0',
-              color: 'rgba(255, 255, 255, 0.9)',
-              fontSize: '1.1rem'
-            }}>
-              @{profile?.username || 'username'}
-            </p>
-
-            <div style={{
-              background: 'rgba(255, 255, 255, 0.2)',
-              borderRadius: '20px',
-              padding: '8px 16px',
-              display: 'inline-block',
-              fontSize: '14px',
-              color: '#fff',
-              fontFamily: 'monospace'
-            }}>
-              User ID: {profile?.userId || 'N/A'}
-            </div>
-            
-            {/* Edit Button */}
-            {!editing && (
-              <div style={{ marginTop: '16px' }}>
-                <button
-                  onClick={handleEdit}
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.2)',
-                    color: '#fff',
-                    border: '1px solid rgba(255, 255, 255, 0.3)',
-                    padding: '12px 24px',
-                    borderRadius: '25px',
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    fontSize: '14px',
-                    fontWeight: '500'
-                  }}
-                >
-                  <FaEdit /> Chỉnh sửa thông tin
-                </button>
-              </div>
-            )}
+            <FaUserCircle style={{ fontSize: 48, color: '#667eea' }} />
           </div>
-
-          {/* Profile Body (compact) */}
-          <div style={{ padding: '20px' }}>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-              gap: '18px'
-            }}>
-              {/* Personal Information */}
-              <div>
-                <h3 style={{
-                  margin: '0 0 12px 0',
-                  color: '#2d3748',
-                  fontSize: '1.15rem',
-                  fontWeight: '600',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}>
-                  <FaUser style={{ color: '#667eea' }} />
-                  Thông tin
-                </h3>
-                
-                {/* Name */}
-                <div className="field-row">
-                  <div className="field-label">Họ và tên *</div>
-                  <div className="field-value">
-                    {editing ? (
-                      <input
-                        type="text"
-                        value={formData.name}
-                        onChange={(e) => handleInputChange('name', e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '10px 12px',
-                          border: formErrors.name ? '2px solid #e53e3e' : '2px solid #e2e8f0',
-                          borderRadius: '8px',
-                          fontSize: '14px',
-                          backgroundColor: '#fff'
-                        }}
-                        placeholder="Họ và tên"
-                      />
-                    ) : (
-                      <div style={{ padding: '10px 12px', background: '#f7fafc', borderRadius: '8px' }}>
-                        {profile?.name || 'Chưa có thông tin'}
-                      </div>
-                    )}
-                    {formErrors.name && (
-                      <p style={{ color: '#e53e3e', fontSize: '12px', margin: '6px 0 0 0' }}>
-                        {formErrors.name}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Email */}
-                <div className="field-row">
-                  <div className="field-label"><FaEnvelope style={{ marginRight: '6px', color: '#667eea' }} /> Email *</div>
-                  <div className="field-value">
-                    {editing ? (
-                      <input
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => handleInputChange('email', e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '10px 12px',
-                          border: formErrors.email ? '2px solid #e53e3e' : '2px solid #e2e8f0',
-                          borderRadius: '8px',
-                          fontSize: '14px',
-                          backgroundColor: '#fff'
-                        }}
-                        placeholder="email@domain.com"
-                      />
-                    ) : (
-                      <div style={{ padding: '10px 12px', background: '#f7fafc', borderRadius: '8px' }}>
-                        {profile?.email || 'Chưa có thông tin'}
-                      </div>
-                    )}
-                    {formErrors.email && (
-                      <p style={{ color: '#e53e3e', fontSize: '12px', margin: '6px 0 0 0' }}>
-                        {formErrors.email}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Phone */}
-                <div className="field-row">
-                  <div className="field-label"><FaPhone style={{ marginRight: '6px', color: '#667eea' }} /> SĐT *</div>
-                  <div className="field-value">
-                    {editing ? (
-                      <input
-                        type="text"
-                        value={formData.phone}
-                        onChange={(e) => handleInputChange('phone', e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '10px 12px',
-                          border: formErrors.phone ? '2px solid #e53e3e' : '2px solid #e2e8f0',
-                          borderRadius: '8px',
-                          fontSize: '14px',
-                          backgroundColor: '#fff'
-                        }}
-                        placeholder="+8490xxxxxxx"
-                      />
-                    ) : (
-                      <div style={{ padding: '10px 12px', background: '#f7fafc', borderRadius: '8px' }}>
-                        {profile?.phone || 'Chưa có thông tin'}
-                      </div>
-                    )}
-                    {formErrors.phone && (
-                      <p style={{ color: '#e53e3e', fontSize: '12px', margin: '6px 0 0 0' }}>
-                        {formErrors.phone}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Additional Information */}
-              <div>
-                <h3 style={{
-                  margin: '0 0 12px 0',
-                  color: '#2d3748',
-                  fontSize: '1.15rem',
-                  fontWeight: '600',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}>
-                  <FaIdCard style={{ color: '#667eea' }} />
-                  Hệ thống
-                </h3>
-
-                {/* Address */}
-                <div className="field-row">
-                  <div className="field-label"><FaMapMarkerAlt style={{ marginRight: '6px', color: '#667eea' }} /> Địa chỉ</div>
-                  <div className="field-value">
-                    {editing ? (
-                      <textarea
-                        value={formData.address}
-                        onChange={(e) => handleInputChange('address', e.target.value)}
-                        rows={3}
-                        style={{
-                          width: '100%',
-                          padding: '10px 12px',
-                          border: formErrors.address ? '2px solid #e53e3e' : '2px solid #e2e8f0',
-                          borderRadius: '8px',
-                          fontSize: '14px',
-                          backgroundColor: '#fff',
-                          resize: 'vertical',
-                          fontFamily: 'inherit'
-                        }}
-                        placeholder="Địa chỉ"
-                      />
-                    ) : (
-                      <div style={{ padding: '10px 12px', background: '#f7fafc', borderRadius: '8px', minHeight: '48px' }}>
-                        {profile?.address || 'Chưa có thông tin'}
-                      </div>
-                    )}
-                    {formErrors.address && (
-                      <p style={{ color: '#e53e3e', fontSize: '12px', margin: '6px 0 0 0' }}>
-                        {formErrors.address}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Customer ID */}
-                <div className="field-row">
-                  <div className="field-label">Customer ID</div>
-                  <div className="field-value">
-                    <div style={{ padding: '10px 12px', background: '#f7fafc', borderRadius: '8px', fontFamily: 'monospace' }}>
-                      {profile?.customerId || 'Chưa có thông tin'}
-                    </div>
-                  </div>
-                </div>
-
-                {/* User ID */}
-                <div className="field-row">
-                  <div className="field-label">User ID</div>
-                  <div className="field-value">
-                    <div style={{ padding: '10px 12px', background: '#edf2f7', borderRadius: '8px', fontFamily: 'monospace' }}>
-                      {profile?.userId || 'Chưa có thông tin'}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Username */}
-                <div className="field-row">
-                  <div className="field-label">Username</div>
-                  <div className="field-value">
-                    <div style={{ padding: '10px 12px', background: '#f7fafc', borderRadius: '8px', fontFamily: 'monospace' }}>
-                      {profile?.username || 'Chưa có thông tin'}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Created Date */}
-                <div className="field-row" style={{ marginBottom: '18px' }}>
-                  <div className="field-label"><FaCalendar style={{ marginRight: '6px', color: '#667eea' }} /> Ngày tạo</div>
-                  <div className="field-value">
-                    <div style={{ padding: '10px 12px', background: '#f7fafc', borderRadius: '8px' }}>
-                      {profile?.createdAt ? formatDate(profile.createdAt) : 'Chưa có thông tin'}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            {editing && (
-              <div style={{
-                display: 'flex',
-                gap: '12px',
-                justifyContent: 'flex-end',
-                marginTop: '32px',
-                paddingTop: '24px',
-                borderTop: '1px solid #e2e8f0',
-                flexWrap: 'wrap'
-              }}>
-                <button
-                  onClick={handleCancel}
-                  disabled={saving}
-                  style={{
-                    background: '#f7fafc',
-                    color: '#4a5568',
-                    border: '2px solid #e2e8f0',
-                    padding: '12px 24px',
-                    borderRadius: '10px',
-                    cursor: saving ? 'not-allowed' : 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    fontSize: '14px',
-                    fontWeight: '600'
-                  }}
-                >
-                  <FaTimes /> Hủy
-                </button>
-                
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  style={{
-                    background: saving ? '#a0aec0' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    color: '#fff',
-                    border: 'none',
-                    padding: '12px 24px',
-                    borderRadius: '10px',
-                    cursor: saving ? 'not-allowed' : 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    fontSize: '14px',
-                    fontWeight: '600'
-                  }}
-                >
-                  {saving ? (
-                    <>
-                      <FaSpinner style={{ animation: 'spin 1s linear infinite' }} />
-                      Đang lưu...
-                    </>
-                  ) : (
-                    <>
-                      <FaSave /> Lưu thay đổi
-                    </>
-                  )}
-                </button>
-              </div>
-            )}
+          <div style={{ marginTop: 12, fontWeight: 700, fontSize: 16 }}>
+            {user?.fullName || user?.username || 'N/A'}
+          </div>
+          <div style={{ 
+            color: '#fff', 
+            fontSize: 12, 
+            background: '#667eea', 
+            padding: '4px 12px', 
+            borderRadius: 12, 
+            marginTop: 8,
+            display: 'inline-block'
+          }}>
+            {user?.role || 'N/A'}
           </div>
         </div>
 
-        {/* Removed bottom API Info Card for a cleaner layout */}
+        <div style={{ flex: 1 }}>
+          <h2 style={{ marginTop: 0, marginBottom: 20, color: '#1f2937' }}>Thông tin tài khoản</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div style={{ padding: 12, background: '#f9fafb', borderRadius: 8 }}>
+              <strong style={{ color: '#6b7280', fontSize: 13 }}>User ID</strong>
+              <div style={{ fontFamily: 'monospace', marginTop: 6, fontSize: 14, wordBreak: 'break-all' }}>
+                {user?.userId || 'N/A'}
+              </div>
+            </div>
+            
+            <div style={{ padding: 12, background: '#f9fafb', borderRadius: 8 }}>
+              <strong style={{ color: '#6b7280', fontSize: 13 }}>Username</strong>
+              <div style={{ marginTop: 6, fontSize: 14 }}>
+                {user?.username || 'N/A'}
+              </div>
+            </div>
+            
+            <div style={{ padding: 12, background: '#f9fafb', borderRadius: 8 }}>
+              <strong style={{ color: '#6b7280', fontSize: 13 }}>Email</strong>
+              <div style={{ marginTop: 6, fontSize: 14 }}>
+                {user?.email || 'N/A'}
+              </div>
+            </div>
+            
+            <div style={{ padding: 12, background: '#f9fafb', borderRadius: 8 }}>
+              <strong style={{ color: '#6b7280', fontSize: 13 }}>Phone</strong>
+              <div style={{ marginTop: 6, fontSize: 14 }}>
+                {user?.phoneNumber || 'N/A'}
+              </div>
+            </div>
+            
+            <div style={{ gridColumn: '1 / -1', padding: 12, background: '#f9fafb', borderRadius: 8 }}>
+              <strong style={{ color: '#6b7280', fontSize: 13 }}>Full Name</strong>
+              <div style={{ marginTop: 6, fontSize: 14 }}>
+                {user?.fullName || 'N/A'}
+              </div>
+            </div>
+            
+            <div style={{ padding: 12, background: '#f9fafb', borderRadius: 8 }}>
+              <strong style={{ color: '#6b7280', fontSize: 13 }}>Status</strong>
+              <div style={{ marginTop: 6, fontSize: 14 }}>
+                <span style={{ 
+                  background: user?.enabled ? '#10b981' : '#ef4444', 
+                  color: '#fff', 
+                  padding: '2px 8px', 
+                  borderRadius: 4,
+                  fontSize: 12
+                }}>
+                  {user?.enabled ? 'Active' : 'Inactive'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
+
+      <style>{`@keyframes spin {0%{transform:rotate(0)}100%{transform:rotate(360deg)}}`}</style>
     </div>
   );
 };

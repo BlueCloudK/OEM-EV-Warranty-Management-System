@@ -58,13 +58,38 @@ export default function Customer() {
       bgPattern: "⚡🔋🚙"
     },
     {
-      title: "Lịch sử bảo hành",
+      title: "Xem yêu cầu bảo hành",
       description: "Xem lịch sử yêu cầu bảo hành và tình trạng xử lý",
       icon: "🛡️",
       gradient: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
-      path: "/customer/warranty-history",
+      path: "/customer/warranty-claims",
       bgPattern: "🔧⚙️🛠️"
     },
+    {
+      title: "Xem Lịch sử dịch vụ",
+      description: "Xem lịch sử dịch vụ đã thực hiện cho phương tiện của bạn",
+      icon: "🧾",
+      gradient: "linear-gradient(135deg, #fbbf24 0%, #f97316 100%)",
+      path: "/customer/service-history",
+      bgPattern: "🔧🧾🔩"
+    },
+    {
+      title: "Tạo và quản lý feedbacks",
+      description: "Gửi phản hồi và quản lý feedback đã gửi",
+      icon: "💬",
+      gradient: "linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)",
+      path: "/customer/feedbacks",
+      bgPattern: "✉️⭐🔁"
+    },
+    {
+      title: "Xem Các bộ phận được lắp đặt",
+      description: "Xem danh sách các bộ phận đã được lắp đặt trên xe của bạn",
+      icon: "🧩",
+      gradient: "linear-gradient(135deg, #10b981 0%, #06b6d4 100%)",
+      path: "/customer/installed-parts",
+      bgPattern: "🔩🛠️📦"
+    },
+    
   ];
 
   return (

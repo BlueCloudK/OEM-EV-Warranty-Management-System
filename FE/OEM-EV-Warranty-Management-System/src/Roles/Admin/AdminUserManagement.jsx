@@ -282,7 +282,8 @@ const AdminUserManagement = () => {
     setRegistering(true);
 
     try {
-      const apiUser = await adminAuthApi.createUser(formData);
+      // adminAuthApi.createUser was renamed during refactor -> use adminCreateUser
+      const apiUser = await adminAuthApi.adminCreateUser(formData);
 
       const createdUser = {
         id: apiUser?.id || apiUser?.userId,

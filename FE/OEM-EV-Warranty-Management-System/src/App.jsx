@@ -10,7 +10,10 @@ import Logout from "./pages/Logout";
 import Customer from "./Roles/Customer/Customer";
 import CustomerProfile from "./Roles/Customer/CustomerProfile";
 import VehicleInfo from "./Roles/Customer/VehicleInfo";
-import WarrantyHistory from "./Roles/Customer/WarrantyHistory";
+import WarrantyClaims from "./Roles/Customer/WarrantyClaims";
+import ServiceHistories from "./Roles/Customer/ServiceHistories";
+import CreateFeedback from "./Roles/Customer/CreateFeedback";
+import InstalledParts from "./Roles/Customer/InstalledParts";
 //
 import SCStaff from "./Roles/SCStaff/SCStaff";
 import CustomerManagement from "./Roles/SCStaff/Profile_Management/CustomerManagement";
@@ -53,7 +56,10 @@ export default function App() {
         <Route path="/customer/dashboard" element={<Customer />} />
         <Route path="/customer/profile" element={<CustomerProfile />} />
         <Route path="/customer/vehicles" element={<VehicleInfo />} />
-        <Route path="/customer/warranty-history" element={<WarrantyHistory />} />
+        <Route path="/customer/warranty-claims" element={<WarrantyClaims />} />
+        <Route path="/customer/service-history" element={<ServiceHistories />} />
+        <Route path="/customer/feedbacks" element={<CreateFeedback />} />
+        <Route path="/customer/installed-parts" element={<InstalledParts />} />
         // SCStaff
         <Route path="/scstaff" element={<SCStaff />} />
         <Route path="/scstaff/dashboard" element={<SCStaff />} />
