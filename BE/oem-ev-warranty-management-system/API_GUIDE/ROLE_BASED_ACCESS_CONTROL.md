@@ -171,7 +171,6 @@ Hệ thống OEM EV Warranty Management sử dụng JWT-based authentication v�
 /api/admin/**                        → ADMIN
 /api/admin/users/**                  → ADMIN
 /api/customers/**                    → ADMIN, SC_STAFF, EVM_STAFF
-/api/customers/me/**                 → CUSTOMER, SC_STAFF, SC_TECHNICIAN, ADMIN
 /api/vehicles/**                     → ADMIN, EVM_STAFF, SC_STAFF, SC_TECHNICIAN, CUSTOMER
 /api/parts/**                        → ADMIN, EVM_STAFF, SC_STAFF
 /api/installed-parts/**              → ADMIN, EVM_STAFF, SC_STAFF, SC_TECHNICIAN, CUSTOMER
