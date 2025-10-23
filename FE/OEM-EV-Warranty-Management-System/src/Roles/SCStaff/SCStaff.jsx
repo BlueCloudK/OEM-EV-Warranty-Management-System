@@ -19,6 +19,73 @@ export default function SCStaff() {
   const navigate = useNavigate();
   const [hoveredCard, setHoveredCard] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [stats, setStats] = useState({
+    customers: 156,
+    vehicles: 89,
+    submittedClaims: 23,
+    completedServices: 342,
+    newAccounts: 47,
+    loading: true
+  });
+
+  // Load live stats from API when possible
+  React.useEffect(() => {
+    const loadStats = async () => {
+      const token = localStorage.getItem('token');
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+      if (!token || !API_BASE_URL) {
+        setStats(prev => ({ ...prev, loading: false }));
+        return;
+      }
+
+      try {
+        // We'll call a few endpoints in parallel
+        const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+
+        const customersP = fetch(`${API_BASE_URL}/api/customers?size=1`, { headers });
+        const vehiclesP = fetch(`${API_BASE_URL}/api/vehicles?size=1`, { headers });
+        const submittedClaimsP = fetch(`${API_BASE_URL}/api/warranty-claims/by-status/SUBMITTED?page=0&size=1`, { headers });
+        const completedServicesP = fetch(`${API_BASE_URL}/api/service-histories?status=COMPLETED&page=0&size=1`, { headers }).catch(() => null);
+        const newAccountsP = fetch(`${API_BASE_URL}/api/admin/users/statistics`, { headers }).catch(() => null);
+
+        const [customersR, vehiclesR, submittedR, servicesR, accountsR] = await Promise.all([customersP, vehiclesP, submittedClaimsP, completedServicesP, newAccountsP]);
+
+        const safeCount = async (res) => {
+          if (!res || !res.ok) return null;
+          try {
+            const j = await res.json();
+            // Try common shapes: { totalElements, total } or { content: [], totalElements }
+            return j.totalElements || j.total || (Array.isArray(j) ? j.length : null) || null;
+          } catch (e) {
+            return null;
+          }
+        };
+
+        const [customersCount, vehiclesCount, submittedCount, servicesCount, accountsStats] = await Promise.all([
+          safeCount(customersR),
+          safeCount(vehiclesR),
+          safeCount(submittedR),
+          safeCount(servicesR),
+          accountsR && accountsR.ok ? accountsR.json() : null
+        ]);
+
+        setStats(prev => ({
+          customers: customersCount ?? prev.customers,
+          vehicles: vehiclesCount ?? prev.vehicles,
+          submittedClaims: submittedCount ?? prev.submittedClaims,
+          completedServices: servicesCount ?? prev.completedServices,
+          newAccounts: (accountsStats && (accountsStats.newUsers || accountsStats.totalNew || accountsStats.count)) ?? prev.newAccounts,
+          loading: false
+        }));
+      } catch (err) {
+        console.error('Failed to load dashboard stats', err);
+        setStats(prev => ({ ...prev, loading: false }));
+      }
+    };
+
+    loadStats();
+  }, []);
 
   const managementCards = [
     {
@@ -360,32 +427,32 @@ export default function SCStaff() {
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 20 }}>
             {[
-              {value:156, label:'Khách hàng', icon: <FaUsers size={18} />, color: '#3b82f6', bgGradient: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)'},
-              {value:89, label:'Xe đăng ký', icon: <FaCar size={18} />, color: '#10b981', bgGradient: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)'},
-              {value:23, label:'Yêu cầu chờ', icon: <FaClipboardList size={18} />, color: '#f59e0b', bgGradient: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)'},
-              {value:342, label:'Dịch vụ hoàn thành', icon: <FaHistory size={18} />, color: '#8b5cf6', bgGradient: 'linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%)'},
-              {value:47, label:'Tài khoản mới', icon: <FaUserPlus size={18} />, color: '#ef4444', bgGradient: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)'}
-            ].map((s,idx)=> (
-              <div key={idx} style={{ 
-                background: s.bgGradient, 
-                padding: 20, 
-                borderRadius: 12, 
+              { value: stats.customers, label: 'Khách hàng', icon: <FaUsers size={18} />, color: '#3b82f6', bgGradient: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)' },
+              { value: stats.vehicles, label: 'Xe đăng ký', icon: <FaCar size={18} />, color: '#10b981', bgGradient: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)' },
+              { value: stats.submittedClaims, label: 'Yêu cầu chờ', icon: <FaClipboardList size={18} />, color: '#f59e0b', bgGradient: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)' },
+              { value: stats.completedServices, label: 'Dịch vụ hoàn thành', icon: <FaHistory size={18} />, color: '#8b5cf6', bgGradient: 'linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%)' },
+              { value: stats.newAccounts, label: 'Tài khoản mới', icon: <FaUserPlus size={18} />, color: '#ef4444', bgGradient: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)' }
+            ].map((s, idx) => (
+              <div key={idx} style={{
+                background: s.bgGradient,
+                padding: 20,
+                borderRadius: 12,
                 border: `2px solid ${s.color}20`,
                 transition: "all 0.3s ease",
                 cursor: "pointer",
                 position: "relative",
                 overflow: "hidden"
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-4px) scale(1.02)";
-                e.currentTarget.style.boxShadow = `0 12px 24px ${s.color}25`;
-                e.currentTarget.style.border = `2px solid ${s.color}40`;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0) scale(1)";
-                e.currentTarget.style.boxShadow = "none";
-                e.currentTarget.style.border = `2px solid ${s.color}20`;
-              }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-4px) scale(1.02)";
+                  e.currentTarget.style.boxShadow = `0 12px 24px ${s.color}25`;
+                  e.currentTarget.style.border = `2px solid ${s.color}40`;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0) scale(1)";
+                  e.currentTarget.style.boxShadow = "none";
+                  e.currentTarget.style.border = `2px solid ${s.color}20`;
+                }}
               >
                 {/* Background decoration */}
                 <div style={{
@@ -398,9 +465,9 @@ export default function SCStaff() {
                   borderRadius: "50%",
                   zIndex: 0
                 }}></div>
-                
+
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12, position: "relative", zIndex: 1 }}>
-                  <div style={{ 
+                  <div style={{
                     width: 36,
                     height: 36,
                     borderRadius: 8,

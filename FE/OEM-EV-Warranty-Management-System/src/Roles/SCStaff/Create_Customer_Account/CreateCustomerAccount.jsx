@@ -144,19 +144,35 @@ const CreateCustomerAccount = () => {
         setSubmitStatus('success'); // Đánh dấu trạng thái thành công
         
         // Lưu userId từ response để chuyển hướng
-        let extractedUserId = null;
-        if (result.userId) {
-          extractedUserId = result.userId;
-        } else if (result.id) {
-          extractedUserId = result.id;
-        } else if (result.user && result.user.id) {
-          extractedUserId = result.user.id;
-        } else if (result.data && result.data.id) {
-          extractedUserId = result.data.id;
-        } else if (result.data && result.data.userId) {
-          extractedUserId = result.data.userId;
+        const extractUserId = (res) => {
+          if (!res) return null;
+          // Common shapes
+          if (res.userId) return res.userId;
+          if (res.id) return res.id;
+          if (res.user && (res.user.id || res.user.userId)) return res.user.id || res.user.userId;
+          if (res.data) {
+            if (Array.isArray(res.data) && res.data.length > 0) {
+              const first = res.data[0];
+              if (first.id) return first.id;
+              if (first.userId) return first.userId;
+              if (first.user && (first.user.id || first.user.userId)) return first.user.id || first.user.userId;
+            }
+            if (res.data.id) return res.data.id;
+            if (res.data.userId) return res.data.userId;
+            if (res.data.user && (res.data.user.id || res.data.user.userId)) return res.data.user.id || res.data.user.userId;
+          }
+          if (res.payload && (res.payload.id || res.payload.userId)) return res.payload.id || res.payload.userId;
+          return null;
+        };
+
+        let extractedUserId = extractUserId(result);
+        // Normalize to string if present
+        if (extractedUserId !== null && extractedUserId !== undefined) {
+          extractedUserId = String(extractedUserId);
+        } else {
+          extractedUserId = null;
         }
-        
+
         console.log('🆔 Extracted userId:', extractedUserId);
         setCreatedUserId(extractedUserId);
         
@@ -172,7 +188,7 @@ const CreateCustomerAccount = () => {
         // ===== TỰ ĐỘNG CHUYỂN HƯỚNG ĐẾN CUSTOMER MANAGEMENT SAU 3 GIÂY =====
         setTimeout(() => {
           if (extractedUserId) {
-            // Chuyển hướng đến trang CustomerManagement với userId
+            // Chuyển hướng đến trang CustomerManagement với userId (string)
             navigate('/scstaff/customers', { 
               state: { 
                 userId: extractedUserId,

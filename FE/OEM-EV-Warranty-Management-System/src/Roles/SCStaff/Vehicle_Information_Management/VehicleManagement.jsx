@@ -461,10 +461,12 @@ const VehicleManagement = () => {
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr style={{ background: '#f9fafb' }}>
+                        <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Vehicle ID</th>
                         <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Tên xe</th>
                         <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Model</th>
                         <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>VIN</th>
                         <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Năm</th>
+                        <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Customer ID</th>
                         <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Khách hàng</th>
                         <th style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid #e5e7eb' }}>Thao tác</th>
                       </tr>
@@ -472,10 +474,12 @@ const VehicleManagement = () => {
                     <tbody>
                       {vehicles.map((vehicle) => (
                         <tr key={vehicle.vehicleId} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                          <td style={{ padding: '12px', fontFamily: 'monospace' }}>{vehicle.vehicleId}</td>
                           <td style={{ padding: '12px' }}>{vehicle.vehicleName}</td>
                           <td style={{ padding: '12px' }}>{vehicle.vehicleModel}</td>
                           <td style={{ padding: '12px', fontFamily: 'monospace' }}>{vehicle.vehicleVin}</td>
                           <td style={{ padding: '12px' }}>{vehicle.vehicleYear}</td>
+                          <td style={{ padding: '12px', fontFamily: 'monospace' }}>{vehicle.customerId}</td>
                           <td style={{ padding: '12px' }}>{vehicle.customerName || vehicle.customerId}</td>
                           <td style={{ padding: '12px', textAlign: 'center' }}>
                             <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', alignItems: 'center' }}>
@@ -820,6 +824,9 @@ const VehicleManagement = () => {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
               <div>
                 <h3 style={{ marginBottom: '16px', color: '#1f2937' }}>Thông tin cơ bản</h3>
+                <div style={{ marginBottom: '12px' }}>
+                  <strong>Vehicle ID:</strong> <code>{selectedVehicle.vehicleId}</code>
+                </div>
                 <div style={{ marginBottom: '12px' }}>
                   <strong>Tên xe:</strong> {selectedVehicle.vehicleName}
                 </div>
