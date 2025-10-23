@@ -1,216 +1,109 @@
-// ...existing code...
-// ===========================================================================================
-// Admin Users API - Quản lý Users cho Admin
-// ===========================================================================================
+import apiClient from './apiClient';
 
+// URL cơ sở vẫn cần cho hàm login, vì nó không đi qua apiClient
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-
-// Helper function để lấy token từ localStorage
-const getAuthToken = () => {
-  return localStorage.getItem('token');
-};
-
-// Helper function để tạo headers với authentication
-const getAuthHeaders = () => {
-  const token = getAuthToken();
-  return {
-    'Content-Type': 'application/json',
-    ...(token && { 'Authorization': `Bearer ${token}` })
-  };
-};
-
-// Helper function để xử lý response
-const handleResponse = async (response) => {
-  if (!response.ok) {
-    const errorData = await response.text();
-    throw new Error(errorData || `HTTP ${response.status}: ${response.statusText}`);
-  }
-  
-  const contentType = response.headers.get('content-type');
-  if (contentType && contentType.includes('application/json')) {
-    return await response.json();
-  }
-  return null; // For DELETE requests
-};
 
 export const adminUsersApi = {
   // GET ALL USERS - Lấy danh sách tất cả users
-  getAllUsers: async (params = {}) => {
-    try {
-      const queryParams = new URLSearchParams();
-      if (params.page !== undefined) queryParams.append('page', params.page);
-      if (params.size !== undefined) queryParams.append('size', params.size);
-      if (params.search) queryParams.append('search', params.search);
-      if (params.role) queryParams.append('role', params.role);
-      const url = `${API_BASE_URL}/api/admin/users${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: getAuthHeaders()
-      });
-      return await handleResponse(response);
-    } catch (error) {
-      console.error('❌ Error getting users:', error);
-      throw error;
-    }
+  getAllUsers: (params = {}) => {
+    const queryParams = new URLSearchParams(params).toString();
+    return apiClient(`/api/admin/users?${queryParams}`);
   },
 
   // GET USER BY ID - Lấy thông tin user theo ID
-  getUserById: async (id) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/users/${id}`, {
-        method: 'GET',
-        headers: getAuthHeaders()
-      });
-      return await handleResponse(response);
-    } catch (error) {
-      console.error(`❌ Error getting user ${id}:`, error);
-      throw error;
-    }
-  },
-
-  // CREATE USER - Tạo user mới
-  createUser: async (userData) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(userData)
-      });
-      return await handleResponse(response);
-    } catch (error) {
-      console.error('❌ Error creating user:', error);
-      throw error;
-    }
+  getUserById: (id) => {
+    return apiClient(`/api/admin/users/${id}`);
   },
 
   // UPDATE USER - Cập nhật user
-  updateUser: async (id, userData) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/users/${id}`, {
-        method: 'PUT',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(userData)
-      });
-      return await handleResponse(response);
-    } catch (error) {
-      console.error(`❌ Error updating user ${id}:`, error);
-      throw error;
-    }
+  updateUser: (id, userData) => {
+    return apiClient(`/api/admin/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(userData),
+    });
   },
 
   // DELETE USER - Xóa user
-  deleteUser: async (id) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/users/${id}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders()
-      });
-      return await handleResponse(response);
-    } catch (error) {
-      console.error(`❌ Error deleting user ${id}:`, error);
-      throw error;
-    }
+  deleteUser: (id) => {
+    return apiClient(`/api/admin/users/${id}`, { method: 'DELETE' });
   },
 
   // ACTIVATE/DEACTIVATE USER - Kích hoạt/vô hiệu hóa user
-  toggleUserStatus: async (id, isActive) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/users/${id}/status`, {
-        method: 'PATCH',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ isActive })
-      });
-      return await handleResponse(response);
-    } catch (error) {
-      console.error(`❌ Error toggling user status ${id}:`, error);
-      throw error;
-    }
-  }
-  ,
+  toggleUserStatus: (id, isActive) => {
+    return apiClient(`/api/admin/users/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ isActive }),
+    });
+  },
 
   // GET STATISTICS - Thống kê users (Admin)
-  getStatistics: async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/users/statistics`, {
-        method: 'GET',
-        headers: getAuthHeaders()
-      });
-      return await handleResponse(response);
-    } catch (error) {
-      console.error('❌ Error getting users statistics:', error);
-      throw error;
-    }
-  }
+  getStatistics: () => {
+    return apiClient('/api/admin/users/statistics');
+  },
 };
 
 export const adminAuthApi = {
-  // STAFF: REGISTER CUSTOMER - Đăng ký Customer đầy đủ bởi Staff (ADMIN, SC_STAFF, EVM_STAFF)
-  staffRegisterCustomer: async (userData) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/staff/register-customer`, {
-        method: 'POST',
-        headers: getAuthHeaders(), // requires staff authorization
-        body: JSON.stringify(userData)
-      });
-      return await handleResponse(response);
-    } catch (error) {
-      console.error('❌ Error registering customer by staff:', error);
-      throw error;
-    }
+  // STAFF: REGISTER CUSTOMER - Đăng ký Customer đầy đủ bởi Staff
+  staffRegisterCustomer: (userData) => {
+    return apiClient('/api/auth/staff/register-customer', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
   },
 
-  // ADMIN: Create user with any role (requires ADMIN token)
-  adminCreateUser: async (userData) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/admin/create-user`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(userData)
-      });
-      return await handleResponse(response);
-    } catch (error) {
-      console.error('❌ Error creating user by admin:', error);
-      throw error;
-    }
+  // ADMIN: Create user with any role
+  adminCreateUser: (userData) => {
+    return apiClient('/api/auth/admin/create-user', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
   },
 
-  // LOGIN - Đăng nhập
+  // LOGIN - Đăng nhập (Không dùng apiClient vì đây là nơi lấy token)
   login: async (credentials) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(credentials)
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(credentials),
       });
-      return await handleResponse(response);
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(errorData || `HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data.accessToken && data.refreshToken) {
+        localStorage.setItem('accessToken', data.accessToken);
+        localStorage.setItem('refreshToken', data.refreshToken);
+      }
+      return data;
     } catch (error) {
       console.error('❌ Error logging in:', error);
       throw error;
     }
   },
 
-  // GET CURRENT USER - try /api/me then fallback to /api/auth/validate
+  // GET CURRENT USER - Lấy thông tin người dùng hiện tại
   getCurrentUser: async () => {
-    const headers = getAuthHeaders();
     try {
-      // First try legacy /api/me which some parts of app use
-      let response = await fetch(`${API_BASE_URL}/api/me`, { method: 'GET', headers });
-      if (response.ok) return await handleResponse(response);
-
-      // Fallback to /api/auth/validate
-      response = await fetch(`${API_BASE_URL}/api/auth/validate`, { method: 'GET', headers });
-      if (response.ok) return await handleResponse(response);
-
-      // If neither worked, throw with last response text
-      const txt = await response.text();
-      throw new Error(txt || `HTTP ${response.status}`);
+      // Thử endpoint mới hơn trước
+      return await apiClient('/api/me');
     } catch (error) {
-      console.error('❌ Error getting current user:', error);
-      throw error;
+      console.warn('Could not fetch from /api/me, falling back to /api/auth/validate', error);
+      // Nếu thất bại, thử endpoint cũ hơn
+      return apiClient('/api/auth/validate');
     }
-  }
+  },
+
+  // LOGOUT - Đăng xuất
+  logout: () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    // Có thể thêm logic chuyển hướng trang ở đây nếu cần
+    // window.location.href = '/login';
+  },
 };
 
 export default { adminUsersApi, adminAuthApi };

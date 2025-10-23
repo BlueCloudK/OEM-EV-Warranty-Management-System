@@ -1,83 +1,24 @@
-import React, { useState, useEffect } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
-import { FaSignOutAlt, FaUser, FaHome, FaTachometerAlt } from "react-icons/fa";
+import React from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext"; // Import the useAuth hook
+import { FaSignOutAlt, FaUser } from "react-icons/fa";
+
+/**
+ * ===========================================================================================
+ *  Navbar (Context Refactored)
+ * ===========================================================================================
+ * - Now consumes AuthContext to get the real-time authentication state.
+ * - Automatically updates when the user logs in or out from anywhere in the app.
+ * - No longer uses its own state or reads from localStorage.
+ */
 
 export default function Navbar() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userInfo, setUserInfo] = useState(null);
-
-  useEffect(() => {
-    checkLoginStatus();
-  }, [location.pathname]);
-
-  const checkLoginStatus = () => {
-    // Check both possible token keys
-    const accessToken =
-      localStorage.getItem("accessToken") || localStorage.getItem("token");
-
-    // Check username from different possible sources
-    let username = localStorage.getItem("username");
-    const userString = localStorage.getItem("user");
-    if (!username && userString) {
-      try {
-        const userObj = JSON.parse(userString);
-        username = userObj.username;
-      } catch (e) {
-        console.error("Error parsing user data:", e);
-      }
-    }
-
-    const role = localStorage.getItem("role");
-
-    if (accessToken && username) {
-      setIsLoggedIn(true);
-      setUserInfo({
-        username: username,
-        role: role || "User",
-      });
-    } else {
-      setIsLoggedIn(false);
-      setUserInfo(null);
-    }
-  };
+  const { isAuthenticated, user, logout } = useAuth(); // Consume the global auth state
 
   const handleLogout = () => {
-    navigate("/logout");
-  };
-
-  const getDashboardPath = () => {
-    const role = localStorage.getItem("role");
-    const roleMap = {
-      1: "/admin/dashboard",
-      2: "/scstaff/dashboard",
-      3: "/sctechnician/dashboard",
-      4: "/evmstaff/dashboard",
-      5: "/customer/dashboard",
-      ADMIN: "/admin/dashboard",
-      SC_STAFF: "/scstaff/dashboard",
-      SC_TECHNICIAN: "/sctechnician/dashboard",
-      EVM_STAFF: "/evmstaff/dashboard",
-      CUSTOMER: "/customer/dashboard",
-    };
-    return roleMap[role] || "/customer/dashboard";
-  };
-
-  const getRoleName = (role) => {
-    const roleMap = {
-      1: "Admin",
-      2: "SC Staff",
-      3: "SC Tech",
-      4: "EVM Staff",
-      5: "Customer",
-      ADMIN: "Admin",
-      SC_STAFF: "SC Staff",
-      SC_TECHNICIAN: "SC Tech",
-      EVM_STAFF: "EVM Staff",
-      CUSTOMER: "Customer",
-    };
-    return roleMap[role] || "User";
+    logout(); // Call the logout function from the context
+    navigate("/login"); // Redirect to login page after logout
   };
 
   return (
@@ -92,8 +33,8 @@ export default function Navbar() {
           </Link>
         </div>
         <nav style={{ display: "flex", alignItems: "center", gap: "15px" }}>
-          {isLoggedIn ? (
-            // Logged in navigation
+          {isAuthenticated && user ? (
+            // --- LOGGED IN VIEW ---
             <>
               <div
                 style={{
@@ -109,7 +50,7 @@ export default function Navbar() {
                 }}
               >
                 <FaUser style={{ fontSize: "12px" }} />
-                <span style={{ fontWeight: "500" }}>{userInfo?.username}</span>
+                <span style={{ fontWeight: "500" }}>{user.fullName || user.username}</span>
                 <span
                   style={{
                     fontSize: "11px",
@@ -119,7 +60,7 @@ export default function Navbar() {
                     borderRadius: "10px",
                   }}
                 >
-                  {getRoleName(userInfo?.role)}
+                  {user.roleName}
                 </span>
               </div>
 
@@ -137,20 +78,6 @@ export default function Navbar() {
                   cursor: "pointer",
                   fontSize: "14px",
                   fontWeight: "600",
-                  transition: "all 0.3s ease",
-                  boxShadow: "0 2px 4px rgba(220, 53, 69, 0.3)",
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.backgroundColor = "#c82333";
-                  e.currentTarget.style.transform = "translateY(-1px)";
-                  e.currentTarget.style.boxShadow =
-                    "0 4px 8px rgba(220, 53, 69, 0.4)";
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.backgroundColor = "#dc3545";
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow =
-                    "0 2px 4px rgba(220, 53, 69, 0.3)";
                 }}
               >
                 <FaSignOutAlt />
@@ -158,7 +85,7 @@ export default function Navbar() {
               </button>
             </>
           ) : (
-            // Not logged in navigation
+            // --- LOGGED OUT VIEW ---
             <>
               <Link to="/" className="nav-link">
                 Trang chủ

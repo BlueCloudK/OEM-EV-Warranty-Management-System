@@ -6,95 +6,65 @@ import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Logout from "./pages/Logout";
-//
-import Customer from "./Roles/Customer/Customer";
-import CustomerProfile from "./Roles/Customer/CustomerProfile";
-import VehicleInfo from "./Roles/Customer/VehicleInfo";
-import WarrantyHistory from "./Roles/Customer/WarrantyHistory";
-//
-import SCStaff from "./Roles/SCStaff/SCStaff";
-import CustomerManagement from "./Roles/SCStaff/Profile_Management/CustomerManagement";
-import CreateCustomerAccount from "./Roles/SCStaff/Create_Customer_Account/CreateCustomerAccount";
-import VehicleManagement from "./Roles/SCStaff/Vehicle_Information_Management/VehicleManagement";
-import WarrantyClaimsManagement from "./Roles/SCStaff/Warranty_Claims_Management/WarrantyClaimsManagement";
-import ServiceHistoryManagement from "./Roles/SCStaff/Service_History_Management/ServiceHistoryManagement";
-//
-import Admin from "./Roles/Admin/Admin";
-import AdminUserManagement from "./Roles/Admin/AdminUserManagement";
-import AdminCustomerManagement from "./Roles/Admin/AdminCustomerManagement";
-import EVMStaff from "./Roles/EVMStaff";
-import AdminPartsManagement from "./Roles/Admin/AdminPartsManagement";
-import AdminVehicleManagement from "./Roles/Admin/AdminVehicleManagement";
-import AdminWarrantyClaimsManagement from "./Roles/Admin/AdminWarrantyClaimsManagement";
-import AdminServiceHistoriesManagement from "./Roles/Admin/AdminServiceHistoriesManagement";
-import AdminServiceCenters from "./Roles/Admin/AdminServiceCenters";
-import SCTechnician from "./Roles/SCTechnician";
-import AdminFeedback from "./Roles/Admin/AdminFeedback";
-import AdminPartRequests from "./Roles/Admin/AdminPartRequests";
+
+// --- Refactored Pages ---
+// Admin
+import AdminDashboard from "./pages/Admin/AdminDashboard";
+import AdminUserManagement from "./pages/Admin/AdminUserManagement";
+import AdminCustomerManagement from "./pages/Admin/AdminCustomerManagement";
+import AdminVehicleManagement from "./pages/Admin/AdminVehicleManagement";
+import AdminPartsManagement from "./pages/Admin/AdminPartsManagement";
+import AdminWarrantyClaimsManagement from "./pages/Admin/AdminWarrantyClaimsManagement";
+import AdminServiceHistoriesManagement from "./pages/Admin/AdminServiceHistoriesManagement"; // New import
+
+// SCStaff
+import SCStaffDashboard from "./pages/SCStaff/SCStaffDashboard";
+import CustomerManagement from "./pages/SCStaff/CustomerManagement";
+import CreateCustomerAccount from "./pages/SCStaff/CreateCustomerAccount";
+import VehicleManagement from "./pages/SCStaff/VehicleManagement";
+import WarrantyClaimsManagement from "./pages/SCStaff/WarrantyClaimsManagement";
+import ServiceHistoryManagement from "./pages/SCStaff/ServiceHistoryManagement";
 
 export default function App() {
-  // Hook để lấy thông tin về route hiện tại
   const location = useLocation();
 
   return (
     <>
-      {/* ===== CONDITIONAL NAVBAR - HIỂN THỊ NAVBAR ĐIỀU KIỆN ===== */}
-      {/* Hiển thị Navbar trên tất cả các trang (có thể điều chỉnh logic nếu cần) */}
       {location.pathname && <Navbar />}
 
-      {/* ===== ROUTES CONFIGURATION - CẤU HÌNH CÁC ROUTE ===== */}
       <Routes>
+        {/* Core Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/logout" element={<Logout />} />
-        // Customer
-        <Route path="/customer/dashboard" element={<Customer />} />
-        <Route path="/customer/profile" element={<CustomerProfile />} />
-        <Route path="/customer/vehicles" element={<VehicleInfo />} />
-        <Route path="/customer/warranty-history" element={<WarrantyHistory />} />
-        // SCStaff
-        <Route path="/scstaff" element={<SCStaff />} />
-        <Route path="/scstaff/dashboard" element={<SCStaff />} />
+
+        {/* === SCSTAFF ROUTES (Fully Refactored) === */}
+        <Route path="/scstaff" element={<SCStaffDashboard />} />
+        <Route path="/scstaff/dashboard" element={<SCStaffDashboard />} />
         <Route path="/scstaff/customers" element={<CustomerManagement />} />
-        <Route path="/scstaff/create-customer-account" element={<CreateCustomerAccount />}
-        />
+        <Route path="/scstaff/create-customer-account" element={<CreateCustomerAccount />} />
         <Route path="/scstaff/vehicles" element={<VehicleManagement />} />
         <Route path="/scstaff/warranty-claims" element={<WarrantyClaimsManagement />} />
         <Route path="/scstaff/service-history" element={<ServiceHistoryManagement />} />
-        // Admin
-        <Route path="/admin" element={<Admin />} />
-        <Route path="/admin/dashboard" element={<Admin />} />
+
+        {/* === ADMIN ROUTES (Rebuilding...) === */}
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        <Route path="/admin/users" element={<AdminUserManagement />} />
         <Route path="/admin/customers" element={<AdminCustomerManagement />} />
         <Route path="/admin/vehicles" element={<AdminVehicleManagement />} />
         <Route path="/admin/parts" element={<AdminPartsManagement />} />
-        <Route
-          path="/admin/warranty-claims"
-          element={<AdminWarrantyClaimsManagement />}
-        />
-        <Route
-          path="/admin/service-histories"
-          element={<AdminServiceHistoriesManagement />}
-        />
-        <Route
-          path="/admin/service-centers"
-          element={<AdminServiceCenters />}
-        />
-        <Route path="/admin/part-requests" element={<AdminPartRequests />} />
-        <Route path="/admin/feedback" element={<AdminFeedback />} />
-        <Route path="/admin/users" element={<AdminUserManagement />} />
-        // EVM Staff
-        <Route path="/evmstaff" element={<EVMStaff />} />
-        <Route path="/evmstaff/dashboard" element={<EVMStaff />} />
-        // SC Technician
-        <Route path="/sctechnician" element={<SCTechnician />} />
-        <Route path="/sctechnician/dashboard" element={<SCTechnician />} />
-        // Add fallback dashboard route
-        <Route path="/dashboard" element={<Customer />} />
+        <Route path="/admin/warranty-claims" element={<AdminWarrantyClaimsManagement />} />
+        <Route path="/admin/service-histories" element={<AdminServiceHistoriesManagement />} />
+
+        {/* 
+          TODO: Rebuild the remaining Admin pages and all pages for other roles.
+        */}
+
       </Routes>
 
-      {/* ===== FOOTER - CHÂN TRANG ===== */}
       <footer className="footer">
         <div className="container">
           <p style={{ color: "#0a0404ff" }}>
