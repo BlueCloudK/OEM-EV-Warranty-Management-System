@@ -218,11 +218,6 @@ PUT /api/customers/{customerId}
 DELETE /api/customers/{customerId}
 ```
 
-### 3.6 Get My Profile 🔒 CUSTOMER, SC_STAFF, SC_TECHNICIAN, ADMIN
-```http
-GET /api/customers/me
-```
-
 ---
 
 ## 4. Vehicle APIs
