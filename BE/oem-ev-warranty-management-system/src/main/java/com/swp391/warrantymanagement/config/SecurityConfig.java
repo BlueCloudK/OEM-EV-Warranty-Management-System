@@ -65,7 +65,6 @@ public class SecurityConfig {
 
                 // Customers
                 .requestMatchers("/api/customers/**").hasAnyRole("ADMIN", "SC_STAFF", "EVM_STAFF")
-                .requestMatchers("/api/customers/me/**").hasAnyRole("CUSTOMER", "SC_STAFF", "SC_TECHNICIAN", "ADMIN")
 
                 // EVM_STAFF - Nhân viên nhà sản xuất: quản lý vehicles, parts, warranty policies
                 .requestMatchers("/api/vehicles/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF", "SC_TECHNICIAN", "CUSTOMER")
