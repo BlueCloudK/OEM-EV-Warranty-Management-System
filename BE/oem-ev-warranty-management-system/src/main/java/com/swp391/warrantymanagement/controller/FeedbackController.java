@@ -46,7 +46,7 @@ public class FeedbackController {
      * GET /api/feedbacks/{id}
      */
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('CUSTOMER')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN') or hasRole('CUSTOMER')")
     public ResponseEntity<FeedbackResponseDTO> getFeedbackById(@PathVariable Long id) {
         FeedbackResponseDTO response = feedbackService.getFeedbackById(id);
         return ResponseEntity.ok(response);
@@ -57,7 +57,7 @@ public class FeedbackController {
      * GET /api/feedbacks/by-claim/{claimId}
      */
     @GetMapping("/by-claim/{claimId}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('CUSTOMER')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN') or hasRole('CUSTOMER')")
     public ResponseEntity<FeedbackResponseDTO> getFeedbackByClaimId(@PathVariable Long claimId) {
         FeedbackResponseDTO response = feedbackService.getFeedbackByClaimId(claimId);
         return ResponseEntity.ok(response);
@@ -68,7 +68,7 @@ public class FeedbackController {
      * GET /api/feedbacks/by-customer/{customerId}?page=0&size=10
      */
     @GetMapping("/by-customer/{customerId}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('CUSTOMER')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN') or hasRole('CUSTOMER')")
     public ResponseEntity<PagedResponse<FeedbackResponseDTO>> getFeedbacksByCustomer(
             @PathVariable UUID customerId,
             @RequestParam(defaultValue = "0") int page,
@@ -88,7 +88,7 @@ public class FeedbackController {
      * GET /api/feedbacks?page=0&size=10
      */
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN')")
     public ResponseEntity<PagedResponse<FeedbackResponseDTO>> getAllFeedbacks(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -107,7 +107,7 @@ public class FeedbackController {
      * GET /api/feedbacks/by-rating/{rating}?page=0&size=10
      */
     @GetMapping("/by-rating/{rating}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN')")
     public ResponseEntity<PagedResponse<FeedbackResponseDTO>> getFeedbacksByRating(
             @PathVariable Integer rating,
             @RequestParam(defaultValue = "0") int page,
@@ -127,7 +127,7 @@ public class FeedbackController {
      * GET /api/feedbacks/min-rating/{rating}?page=0&size=10
      */
     @GetMapping("/min-rating/{rating}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN')")
     public ResponseEntity<PagedResponse<FeedbackResponseDTO>> getFeedbacksByMinRating(
             @PathVariable Integer rating,
             @RequestParam(defaultValue = "0") int page,
@@ -176,7 +176,7 @@ public class FeedbackController {
      * GET /api/feedbacks/statistics/average-rating
      */
     @GetMapping("/statistics/average-rating")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN')")
     public ResponseEntity<Map<String, Object>> getAverageRating() {
         Double averageRating = feedbackService.getAverageRating();
         Map<String, Object> response = new HashMap<>();
@@ -189,7 +189,7 @@ public class FeedbackController {
      * GET /api/feedbacks/statistics/service-center/{serviceCenterId}/average-rating
      */
     @GetMapping("/statistics/service-center/{serviceCenterId}/average-rating")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN')")
     public ResponseEntity<Map<String, Object>> getAverageRatingByServiceCenter(@PathVariable Long serviceCenterId) {
         Double averageRating = feedbackService.getAverageRatingByServiceCenter(serviceCenterId);
         Map<String, Object> response = new HashMap<>();
@@ -203,7 +203,7 @@ public class FeedbackController {
      * GET /api/feedbacks/statistics/count-by-rating/{rating}
      */
     @GetMapping("/statistics/count-by-rating/{rating}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN')")
     public ResponseEntity<Map<String, Object>> countByRating(@PathVariable Integer rating) {
         Long count = feedbackService.countByRating(rating);
         Map<String, Object> response = new HashMap<>();
@@ -217,7 +217,7 @@ public class FeedbackController {
      * GET /api/feedbacks/statistics/summary
      */
     @GetMapping("/statistics/summary")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN')")
     public ResponseEntity<Map<String, Object>> getFeedbackStatistics() {
         Map<String, Object> response = new HashMap<>();
 

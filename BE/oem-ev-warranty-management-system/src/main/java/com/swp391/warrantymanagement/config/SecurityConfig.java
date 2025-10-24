@@ -83,7 +83,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/service-centers/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF", "SC_TECHNICIAN", "CUSTOMER")
 
                 // Feedbacks
-                .requestMatchers("/api/feedbacks/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF", "CUSTOMER")
+                .requestMatchers("/api/feedbacks/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF", "SC_TECHNICIAN", "CUSTOMER")
 
                 // Work Logs
                 .requestMatchers("/api/work-logs/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF")
