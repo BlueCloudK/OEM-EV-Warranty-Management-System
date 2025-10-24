@@ -10,7 +10,7 @@ Hệ thống OEM EV Warranty Management sử dụng JWT-based authentication v�
 ### 1. ADMIN
 - **Mô tả**: Quản trị viên hệ thống - có quyền cao nhất
 - **Permissions**: Truy cập tất cả endpoints và thực hiện mọi thao tác
-- **Đặc quyền**: Chỉ ADMIN mới có thể xóa (DELETE) hầu hết các resources
+- **Đặc quyền**: Chỉ ADMIN mới có th��� xóa (DELETE) hầu hết các resources
 
 ### 2. EVM_STAFF (Electric Vehicle Manufacturer Staff)
 - **Mô tả**: Nhân viên nhà sản xuất xe điện
@@ -46,6 +46,7 @@ Hệ thống OEM EV Warranty Management sử dụng JWT-based authentication v�
   - Quản lý service histories (CRUD)
   - Xem installed parts (READ)
   - Xem service centers (READ)
+  - Xem feedbacks (READ)
 
 ### 5. CUSTOMER
 - **Mô tả**: Khách hàng sử dụng dịch vụ
@@ -146,6 +147,7 @@ Hệ thống OEM EV Warranty Management sử dụng JWT-based authentication v�
 | ADMIN | Full access |
 | EVM_STAFF | READ only |
 | SC_STAFF | READ only |
+| SC_TECHNICIAN | READ only |
 | CUSTOMER | CREATE, READ, UPDATE own feedbacks |
 
 ### Work Logs APIs (`/api/work-logs/**`)
@@ -178,7 +180,7 @@ Hệ thống OEM EV Warranty Management sử dụng JWT-based authentication v�
 /api/warranty-claims/**              → ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF
 /api/service-histories/**            → ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF, CUSTOMER
 /api/service-centers/**              → ADMIN, EVM_STAFF, SC_STAFF, SC_TECHNICIAN, CUSTOMER
-/api/feedbacks/**                    → ADMIN, EVM_STAFF, SC_STAFF, CUSTOMER
+/api/feedbacks/**                    → ADMIN, EVM_STAFF, SC_STAFF, SC_TECHNICIAN, CUSTOMER
 /api/work-logs/**                    → ADMIN, EVM_STAFF, SC_STAFF
 /api/me                              → Authenticated
 ```
@@ -196,7 +198,7 @@ Hệ thống OEM EV Warranty Management sử dụng JWT-based authentication v�
 | **Warranty Claims** | ✅ | Read | Create | Process | 🆕 Read (own) |
 | **Service Histories** | ✅ | ✅ | ✅ | ✅ | Own only |
 | **Service Centers** | ✅ | Read | Read | Read | Read |
-| **Feedbacks** | ✅ | Read | Read | ❌ | ✅ |
+| **Feedbacks** | ✅ | Read | Read | Read | ✅ |
 | **Work Logs** | ✅ | ✅ | Read | ❌ | ❌ |
 
 ## Two-Layer Security

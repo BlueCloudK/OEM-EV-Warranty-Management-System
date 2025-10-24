@@ -749,52 +749,52 @@ DELETE /api/service-centers/{id}
 
 **Base Path:** `/api/feedbacks`
 
-### 10.1 Get All Feedbacks 👥 ADMIN, EVM_STAFF, SC_STAFF
+### 10.1 Get All Feedbacks 👥 ADMIN, EVM_STAFF, SC_STAFF, SC_TECHNICIAN
 ```http
 GET /api/feedbacks?page=0&size=10&sortBy=createdAt&sortDir=DESC
 ```
 
-### 10.2 Get Feedback By ID 🔒 ADMIN, EVM_STAFF, SC_STAFF, CUSTOMER
+### 10.2 Get Feedback By ID 🔒 ADMIN, EVM_STAFF, SC_STAFF, SC_TECHNICIAN, CUSTOMER
 ```http
 GET /api/feedbacks/{id}
 ```
 
-### 10.3 Get Feedback By Claim ID 🔒 ADMIN, EVM_STAFF, SC_STAFF, CUSTOMER
+### 10.3 Get Feedback By Claim ID 🔒 ADMIN, EVM_STAFF, SC_STAFF, SC_TECHNICIAN, CUSTOMER
 ```http
 GET /api/feedbacks/by-claim/{claimId}
 ```
 
-### 10.4 Get Feedbacks By Customer 🔒 ADMIN, EVM_STAFF, SC_STAFF, CUSTOMER
+### 10.4 Get Feedbacks By Customer 🔒 ADMIN, EVM_STAFF, SC_STAFF, SC_TECHNICIAN, CUSTOMER
 ```http
 GET /api/feedbacks/by-customer/{customerId}?page=0&size=10&sortBy=createdAt&sortDir=DESC
 ```
 
-### 10.5 Get Feedbacks By Rating 👥 ADMIN, EVM_STAFF, SC_STAFF
+### 10.5 Get Feedbacks By Rating 👥 ADMIN, EVM_STAFF, SC_STAFF, SC_TECHNICIAN
 ```http
 GET /api/feedbacks/by-rating/{rating}?page=0&size=10
 ```
 
-### 10.6 Get Feedbacks By Minimum Rating 👥 ADMIN, EVM_STAFF, SC_STAFF
+### 10.6 Get Feedbacks By Minimum Rating 👥 ADMIN, EVM_STAFF, SC_STAFF, SC_TECHNICIAN
 ```http
 GET /api/feedbacks/min-rating/{rating}?page=0&size=10
 ```
 
-### 10.7 Get Average Rating 👥 ADMIN, EVM_STAFF, SC_STAFF
+### 10.7 Get Average Rating 👥 ADMIN, EVM_STAFF, SC_STAFF, SC_TECHNICIAN
 ```http
 GET /api/feedbacks/statistics/average-rating
 ```
 
-### 10.8 Get Average Rating By Service Center 👥 ADMIN, EVM_STAFF, SC_STAFF
+### 10.8 Get Average Rating By Service Center 👥 ADMIN, EVM_STAFF, SC_STAFF, SC_TECHNICIAN
 ```http
 GET /api/feedbacks/statistics/service-center/{serviceCenterId}/average-rating
 ```
 
-### 10.9 Get Count By Rating 👥 ADMIN, EVM_STAFF, SC_STAFF
+### 10.9 Get Count By Rating 👥 ADMIN, EVM_STAFF, SC_STAFF, SC_TECHNICIAN
 ```http
 GET /api/feedbacks/statistics/count-by-rating/{rating}
 ```
 
-### 10.10 Get Feedback Statistics Summary 👥 ADMIN, EVM_STAFF, SC_STAFF
+### 10.10 Get Feedback Statistics Summary 👥 ADMIN, EVM_STAFF, SC_STAFF, SC_TECHNICIAN
 ```http
 GET /api/feedbacks/statistics/summary
 ```
