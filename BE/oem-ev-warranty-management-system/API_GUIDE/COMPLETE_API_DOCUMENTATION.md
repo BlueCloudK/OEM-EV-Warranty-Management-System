@@ -18,7 +18,7 @@
 9. [Service Center APIs](#9-service-center-apis) - `/api/service-centers`
 10. [Feedback APIs](#10-feedback-apis) - `/api/feedbacks`
 11. [Work Log APIs](#11-work-log-apis) - `/api/work-logs`
-12. [User Info APIs](#12-user-info-apis) - `/api/me`
+12. [User Info APIs](#12-user-info-apis) - `/api`
 
 ---
 
@@ -28,9 +28,9 @@
 |------|-------------|
 | **ADMIN** | Full access to everything |
 | **EVM_STAFF** | Vehicles, Parts, Warranty Claims, Service Histories, Work Logs |
-| **SC_STAFF** | Customers, Vehicles (read Parts), Warranty Claims, Service Histories, Service Centers, Feedbacks, Work Logs |
+| **SC_STAFF** | Customers, Vehicles (read Parts), Warranty Claims, Service Histories, Service Centers, Feedbacks, Work Logs (read) |
 | **SC_TECHNICIAN** | Vehicles (read), Warranty Claims (process), Service Histories, Installed Parts (read), Service Centers (read) |
-| **CUSTOMER** | Own vehicles/histories, **🆕 Own warranty claims (view only)**, Feedbacks, Service Centers (read) |
+| **CUSTOMER** | Own vehicles/histories, Own warranty claims (view only), Feedbacks, Service Centers (read) |
 
 **Authentication:** `Authorization: Bearer <token>`
 
@@ -55,7 +55,10 @@ POST /api/auth/login
 {
   "accessToken": "eyJ...",
   "refreshToken": "eyJ...",
-  "tokenType": "Bearer"
+  "tokenType": "Bearer",
+  "username": "string",
+  "roleName": "string",
+  "userId": 1
 }
 ```
 
@@ -71,6 +74,7 @@ POST /api/auth/register
   "phoneNumber": "string"
 }
 ```
+**Note:** Tạo tài khoản CUSTOMER
 
 ### 1.3 Refresh Token 🔓
 ```http
@@ -131,11 +135,16 @@ POST /api/auth/reset-password
 ### 1.8 Logout 🔒 Authenticated
 ```http
 POST /api/auth/logout
+
+{
+  "refreshToken": "string"
+}
 ```
 
 ### 1.9 Validate Token 🔒 Authenticated
 ```http
 GET /api/auth/validate
+Authorization: Bearer <token>
 ```
 
 ---
@@ -147,7 +156,7 @@ GET /api/auth/validate
 
 ### 2.1 Get All Users
 ```http
-GET /api/admin/users?page=0&size=10&search=keyword
+GET /api/admin/users?page=0&size=10&search=keyword&role=ADMIN
 ```
 
 ### 2.2 Get User By ID
@@ -155,7 +164,17 @@ GET /api/admin/users?page=0&size=10&search=keyword
 GET /api/admin/users/{userId}
 ```
 
-### 2.3 Update User
+### 2.3 Search Users By Username
+```http
+GET /api/admin/users/search?username=john&page=0&size=10
+```
+
+### 2.4 Get Users By Role
+```http
+GET /api/admin/users/by-role/{roleName}?page=0&size=10
+```
+
+### 2.5 Update User
 ```http
 PUT /api/admin/users/{userId}
 
@@ -163,14 +182,45 @@ PUT /api/admin/users/{userId}
   "email": "string",
   "fullName": "string",
   "phoneNumber": "string",
-  "role": "string",
-  "enabled": true
+  "role": "string"
 }
 ```
+**Note:** Có thể update email, fullName, phoneNumber, hoặc role
 
-### 2.4 Delete User
+### 2.6 Update User Role
+```http
+PATCH /api/admin/users/{userId}/role?newRoleId=2
+```
+
+### 2.7 Delete User
 ```http
 DELETE /api/admin/users/{userId}
+```
+
+### 2.8 Reset User Password
+```http
+POST /api/admin/users/{userId}/reset-password?newPassword=optional
+```
+**Note:** Nếu không truyền `newPassword`, hệ thống sẽ tự động generate password mới
+
+### 2.9 Get User Statistics
+```http
+GET /api/admin/users/statistics
+```
+**Response:**
+```json
+{
+  "totalUsers": 100,
+  "usersByRole": {
+    "ADMIN": 5,
+    "EVM_STAFF": 20,
+    "SC_STAFF": 30,
+    "SC_TECHNICIAN": 15,
+    "CUSTOMER": 30
+  },
+  "enabledUsers": 95,
+  "disabledUsers": 5
+}
 ```
 
 ---
@@ -189,7 +239,27 @@ GET /api/customers?page=0&size=10&search=keyword
 GET /api/customers/{customerId}
 ```
 
-### 3.3 Create Customer 👥 ADMIN, SC_STAFF, EVM_STAFF
+### 3.3 Search Customers By Name 👥 ADMIN, SC_STAFF, EVM_STAFF
+```http
+GET /api/customers/search?name=john&page=0&size=10
+```
+
+### 3.4 Get Customer By Email 👥 ADMIN, SC_STAFF, EVM_STAFF
+```http
+GET /api/customers/by-email?email=customer@example.com
+```
+
+### 3.5 Get Customer By Phone 👥 ADMIN, SC_STAFF, EVM_STAFF
+```http
+GET /api/customers/by-phone?phone=0123456789
+```
+
+### 3.6 Get Customers By User ID 👥 ADMIN, SC_STAFF, EVM_STAFF
+```http
+GET /api/customers/by-user/{userId}?page=0&size=10
+```
+
+### 3.7 Create Customer 👥 ADMIN, SC_STAFF, EVM_STAFF
 ```http
 POST /api/customers
 
@@ -201,7 +271,7 @@ POST /api/customers
 }
 ```
 
-### 3.4 Update Customer 👥 ADMIN, SC_STAFF, EVM_STAFF
+### 3.8 Update Customer 👥 ADMIN, SC_STAFF, EVM_STAFF
 ```http
 PUT /api/customers/{customerId}
 
@@ -213,7 +283,20 @@ PUT /api/customers/{customerId}
 }
 ```
 
-### 3.5 Delete Customer 👤 ADMIN
+### 3.9 Update Customer Profile (Self) 👤 CUSTOMER
+```http
+PUT /api/customers/profile
+Authorization: Bearer <token>
+
+{
+  "fullName": "string",
+  "email": "user@example.com",
+  "phoneNumber": "string",
+  "address": "string"
+}
+```
+
+### 3.10 Delete Customer 👤 ADMIN
 ```http
 DELETE /api/customers/{customerId}
 ```
@@ -224,17 +307,43 @@ DELETE /api/customers/{customerId}
 
 **Base Path:** `/api/vehicles`
 
-### 4.1 Get All Vehicles 🔒 All roles
+### 4.1 Get All Vehicles 👥 ADMIN, EVM_STAFF, SC_STAFF
 ```http
 GET /api/vehicles?page=0&size=10&search=keyword
 ```
 
-### 4.2 Get Vehicle By ID 🔒 All roles
+### 4.2 Get Vehicle By ID 🔒 ADMIN, EVM_STAFF, SC_STAFF, CUSTOMER
 ```http
 GET /api/vehicles/{vehicleId}
 ```
 
-### 4.3 Create Vehicle 👥 ADMIN, EVM_STAFF, SC_STAFF
+### 4.3 Get Vehicle By VIN 👥 ADMIN, EVM_STAFF, SC_STAFF
+```http
+GET /api/vehicles/by-vin?vin=5YJ3E1EA5KF123456
+```
+
+### 4.4 Search Vehicles 🔒 All authenticated users
+```http
+GET /api/vehicles/search?model=Tesla&brand=Model3&page=0&size=10
+```
+
+### 4.5 Get Vehicles By Customer 👥 ADMIN, EVM_STAFF, SC_STAFF
+```http
+GET /api/vehicles/by-customer/{customerId}?page=0&size=10
+```
+
+### 4.6 Get My Vehicles 👤 CUSTOMER
+```http
+GET /api/vehicles/my-vehicles?page=0&size=10
+Authorization: Bearer <token>
+```
+
+### 4.7 Get Vehicles With Expiring Warranty 👥 ADMIN, EVM_STAFF, SC_STAFF
+```http
+GET /api/vehicles/warranty-expiring?daysFromNow=30&page=0&size=10
+```
+
+### 4.8 Create Vehicle 👥 ADMIN, EVM_STAFF
 ```http
 POST /api/vehicles
 
@@ -246,7 +355,7 @@ POST /api/vehicles
 }
 ```
 
-### 4.4 Update Vehicle 👥 ADMIN, EVM_STAFF, SC_STAFF
+### 4.9 Update Vehicle 👥 ADMIN, EVM_STAFF, SC_STAFF
 ```http
 PUT /api/vehicles/{vehicleId}
 
@@ -256,14 +365,9 @@ PUT /api/vehicles/{vehicleId}
 }
 ```
 
-### 4.5 Delete Vehicle 👤 ADMIN
+### 4.10 Delete Vehicle 👥 ADMIN, EVM_STAFF
 ```http
 DELETE /api/vehicles/{vehicleId}
-```
-
-### 4.6 Get Vehicles By Customer 🔒 All roles
-```http
-GET /api/vehicles/by-customer/{customerId}?page=0&size=10
 ```
 
 ---
@@ -271,7 +375,7 @@ GET /api/vehicles/by-customer/{customerId}?page=0&size=10
 ## 5. Part APIs
 
 **Base Path:** `/api/parts`
-**Role Requirements:** 👥 ADMIN, EVM_STAFF, SC_STAFF
+**Role Requirements:** 👥 ADMIN, EVM_STAFF, SC_STAFF (read), SC_TECHNICIAN (read)
 
 ### 5.1 Get All Parts
 ```http
@@ -283,7 +387,12 @@ GET /api/parts?page=0&size=10&search=keyword
 GET /api/parts/{partId}
 ```
 
-### 5.3 Create Part 👥 ADMIN, EVM_STAFF
+### 5.3 Get Parts By Manufacturer
+```http
+GET /api/parts/by-manufacturer?manufacturer=LG Chem&page=0&size=10
+```
+
+### 5.4 Create Part 👥 ADMIN, EVM_STAFF
 ```http
 POST /api/parts
 
@@ -296,7 +405,7 @@ POST /api/parts
 }
 ```
 
-### 5.4 Update Part 👥 ADMIN, EVM_STAFF
+### 5.5 Update Part 👥 ADMIN, EVM_STAFF
 ```http
 PUT /api/parts/{partId}
 
@@ -307,7 +416,7 @@ PUT /api/parts/{partId}
 }
 ```
 
-### 5.5 Delete Part 👤 ADMIN
+### 5.6 Delete Part 👤 ADMIN
 ```http
 DELETE /api/parts/{partId}
 ```
@@ -328,7 +437,22 @@ GET /api/installed-parts?page=0&size=10
 GET /api/installed-parts/{installedPartId}
 ```
 
-### 6.3 Create Installed Part 👥 ADMIN, SC_STAFF
+### 6.3 Get By Vehicle 🔒 ADMIN, SC_STAFF, EVM_STAFF, SC_TECHNICIAN, CUSTOMER
+```http
+GET /api/installed-parts/by-vehicle/{vehicleId}?page=0&size=10
+```
+
+### 6.4 Get By Part 👥 ADMIN, SC_STAFF, EVM_STAFF
+```http
+GET /api/installed-parts/by-part/{partId}?page=0&size=10
+```
+
+### 6.5 Get Installed Parts With Expiring Warranty 👥 ADMIN, SC_STAFF, EVM_STAFF
+```http
+GET /api/installed-parts/warranty-expiring?daysFromNow=30&page=0&size=10
+```
+
+### 6.6 Create Installed Part 👥 ADMIN, SC_STAFF
 ```http
 POST /api/installed-parts
 
@@ -341,7 +465,7 @@ POST /api/installed-parts
 }
 ```
 
-### 6.4 Update Installed Part 👥 ADMIN, SC_STAFF
+### 6.7 Update Installed Part 👥 ADMIN, SC_STAFF
 ```http
 PUT /api/installed-parts/{installedPartId}
 
@@ -350,19 +474,9 @@ PUT /api/installed-parts/{installedPartId}
 }
 ```
 
-### 6.5 Delete Installed Part 👤 ADMIN
+### 6.8 Delete Installed Part 👤 ADMIN
 ```http
 DELETE /api/installed-parts/{installedPartId}
-```
-
-### 6.6 Get By Vehicle 🔒 ADMIN, SC_STAFF, EVM_STAFF, SC_TECHNICIAN, CUSTOMER
-```http
-GET /api/installed-parts/by-vehicle/{vehicleId}?page=0&size=10
-```
-
-### 6.7 Get By Part 👥 ADMIN, SC_STAFF, EVM_STAFF
-```http
-GET /api/installed-parts/by-part/{partId}?page=0&size=10
 ```
 
 ---
@@ -371,17 +485,38 @@ GET /api/installed-parts/by-part/{partId}?page=0&size=10
 
 **Base Path:** `/api/warranty-claims`
 
-### 7.1 Get All Claims 👥 ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF
+### 7.1 Get All Claims 👥 ADMIN, SC_STAFF
 ```http
-GET /api/warranty-claims?page=0&size=10&search=keyword
+GET /api/warranty-claims?page=0&size=10
 ```
 
-### 7.2 Get Claim By ID 👥 ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF
+### 7.2 Get Claim By ID 👥 ADMIN, SC_STAFF, SC_TECHNICIAN
 ```http
 GET /api/warranty-claims/{claimId}
 ```
 
-### 7.3 Create Claim 👥 ADMIN, SC_STAFF
+### 7.3 Get Claims By Status 👥 ADMIN, SC_STAFF, SC_TECHNICIAN
+```http
+GET /api/warranty-claims/by-status/{status}?page=0&size=10
+```
+**Status values:** `SUBMITTED`, `MANAGER_REVIEW`, `PROCESSING`, `COMPLETED`, `REJECTED`
+
+### 7.4 Get Admin Pending Claims 👤 ADMIN
+```http
+GET /api/warranty-claims/admin-pending?page=0&size=10
+```
+
+### 7.5 Get Tech Pending Claims 👥 SC_TECHNICIAN
+```http
+GET /api/warranty-claims/tech-pending?page=0&size=10
+```
+
+### 7.6 Get My Assigned Claims 👤 ADMIN
+```http
+GET /api/warranty-claims/my-assigned-claims?userId={userId}&page=0&size=10
+```
+
+### 7.7 Create Claim 👥 ADMIN, SC_STAFF
 ```http
 POST /api/warranty-claims
 
@@ -391,9 +526,8 @@ POST /api/warranty-claims
   "failureDate": "2024-10-22"
 }
 ```
-**Note:** Customers **CANNOT** create claims online. They must visit service center where SC_STAFF creates claims for them.
 
-### 7.4 Create Claim (SC Staff Alternative) 👥 SC_STAFF
+### 7.8 Create Claim (SC Staff Alternative) 👥 SC_STAFF
 ```http
 POST /api/warranty-claims/sc-create
 
@@ -404,7 +538,7 @@ POST /api/warranty-claims/sc-create
 }
 ```
 
-### 7.5 Update Claim 👥 ADMIN, SC_STAFF
+### 7.9 Update Claim 👥 ADMIN, SC_STAFF
 ```http
 PUT /api/warranty-claims/{claimId}
 
@@ -414,98 +548,59 @@ PUT /api/warranty-claims/{claimId}
 }
 ```
 
-### 7.6 Delete Claim 👤 ADMIN
+### 7.10 Update Claim Status 👤 ADMIN
+```http
+PATCH /api/warranty-claims/{claimId}/status
+
+{
+  "status": "string",
+  "note": "string"
+}
+```
+
+### 7.11 Admin Accept Claim 👤 ADMIN
+```http
+PATCH /api/warranty-claims/{claimId}/admin-accept
+
+"Admin approved the claim"
+```
+
+### 7.12 Admin Reject Claim 👤 ADMIN
+```http
+PATCH /api/warranty-claims/{claimId}/admin-reject?reason=Part not covered
+```
+
+### 7.13 Tech Start Processing 👥 SC_TECHNICIAN
+```http
+PATCH /api/warranty-claims/{claimId}/tech-start
+
+"Starting diagnostic"
+```
+
+### 7.14 Tech Complete Claim 👥 SC_TECHNICIAN
+```http
+PATCH /api/warranty-claims/{claimId}/tech-complete?completionNote=Battery replaced successfully
+```
+
+### 7.15 Assign Claim To Me 👤 ADMIN
+```http
+POST /api/warranty-claims/{claimId}/assign-to-me?userId={userId}
+```
+
+### 7.16 Delete Claim 👤 ADMIN
 ```http
 DELETE /api/warranty-claims/{claimId}
 ```
 
-### 7.7 EVM Accept Claim 👥 EVM_STAFF
-```http
-PUT /api/warranty-claims/{claimId}/evm-accept
-```
-
-### 7.8 EVM Reject Claim 👥 EVM_STAFF
-```http
-PUT /api/warranty-claims/{claimId}/evm-reject
-
-{
-  "rejectionReason": "Part not covered under warranty"
-}
-```
-
-### 7.9 Tech Start Processing 👥 SC_TECHNICIAN
-```http
-PUT /api/warranty-claims/{claimId}/tech-start
-```
-
-### 7.10 Tech Complete Claim 👥 SC_TECHNICIAN
-```http
-PUT /api/warranty-claims/{claimId}/tech-complete
-
-{
-  "resolutionNotes": "Battery replaced successfully"
-}
-```
-
-### 7.11 Get Claims By Status 👥 ADMIN, SC_STAFF, SC_TECHNICIAN
-```http
-GET /api/warranty-claims/by-status/{status}?page=0&size=10
-```
-**Status values:** `SUBMITTED`, `MANAGER_REVIEW`, `PROCESSING`, `COMPLETED`, `REJECTED`
-
-### 7.12 Get Admin Pending Claims 👤 ADMIN
-```http
-GET /api/warranty-claims/admin-pending?page=0&size=10
-```
-
-### 7.13 Get Tech Pending Claims 👥 SC_TECHNICIAN
-```http
-GET /api/warranty-claims/tech-pending?page=0&size=10
-```
-
-### 7.14 Get My Claims 🆕 👤 CUSTOMER
+### 7.17 Get My Claims 👤 CUSTOMER
 ```http
 GET /api/warranty-claims/my-claims?page=0&size=10
 ```
-**Response:**
-```json
-{
-  "content": [
-    {
-      "warrantyClaimId": 1,
-      "claimDate": "2024-10-20T10:00:00",
-      "status": "PROCESSING",
-      "description": "Battery not charging properly",
-      "vehicleId": 5,
-      "serviceCenterId": 1
-    }
-  ],
-  "pageNumber": 0,
-  "pageSize": 10,
-  "totalElements": 3,
-  "totalPages": 1
-}
-```
-**Note:** Customer chỉ xem được claims của **xe mình sở hữu**. Không thể xem claims của người khác.
 
-### 7.15 Get My Claim Detail 🆕 👤 CUSTOMER
+### 7.18 Get My Claim Detail 👤 CUSTOMER
 ```http
 GET /api/warranty-claims/my-claims/{claimId}
 ```
-**Response:**
-```json
-{
-  "warrantyClaimId": 1,
-  "claimDate": "2024-10-20T10:00:00",
-  "status": "COMPLETED",
-  "resolutionDate": "2024-10-22T15:30:00",
-  "description": "Battery not charging\n[Admin Accepted]\n[Tech Start]: Starting diagnostic\n[Tech Complete]: Battery replaced successfully",
-  "installedPartId": "INST-001",
-  "vehicleId": 5,
-  "serviceCenterId": 1
-}
-```
-**Security:** Endpoint kiểm tra claim có thuộc về customer không. Nếu không thuộc về → 403 Forbidden.
 
 ---
 
@@ -523,7 +618,28 @@ GET /api/service-histories?page=0&size=10&search=keyword
 GET /api/service-histories/{id}
 ```
 
-### 8.3 Create 👥 ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF
+### 8.3 Get By Vehicle 🔒 ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF, CUSTOMER
+```http
+GET /api/service-histories/by-vehicle/{vehicleId}?page=0&size=10
+```
+
+### 8.4 Get By Part 👥 ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF
+```http
+GET /api/service-histories/by-part/{partId}?page=0&size=10
+```
+
+### 8.5 Get My Services 🔐 CUSTOMER
+```http
+GET /api/service-histories/my-services?page=0&size=10
+Authorization: Bearer <token>
+```
+
+### 8.6 Get By Date Range 👥 ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF
+```http
+GET /api/service-histories/by-date-range?startDate=2024-01-01&endDate=2024-12-31&page=0&size=10
+```
+
+### 8.7 Create 👥 ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF
 ```http
 POST /api/service-histories
 
@@ -536,7 +652,7 @@ POST /api/service-histories
 }
 ```
 
-### 8.4 Update 👥 ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF
+### 8.8 Update 👥 ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF
 ```http
 PUT /api/service-histories/{id}
 
@@ -549,29 +665,9 @@ PUT /api/service-histories/{id}
 }
 ```
 
-### 8.5 Delete 👤 ADMIN
+### 8.9 Delete 👤 ADMIN
 ```http
 DELETE /api/service-histories/{id}
-```
-
-### 8.6 Get By Vehicle 🔒 ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF, CUSTOMER
-```http
-GET /api/service-histories/by-vehicle/{vehicleId}?page=0&size=10
-```
-
-### 8.7 Get By Part 👥 ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF
-```http
-GET /api/service-histories/by-part/{partId}?page=0&size=10
-```
-
-### 8.8 Get My Services 🔐 CUSTOMER
-```http
-GET /api/service-histories/my-services?page=0&size=10
-```
-
-### 8.9 Get By Date Range 👥 ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF
-```http
-GET /api/service-histories/by-date-range?startDate=2024-01-01&endDate=2024-12-31&page=0&size=10
 ```
 
 ---
@@ -582,17 +678,36 @@ GET /api/service-histories/by-date-range?startDate=2024-01-01&endDate=2024-12-31
 **Read Access:** 🔒 All authenticated users
 **Write Access:** 👤 ADMIN only
 
-### 9.1 Get All
+### 9.1 Get All Service Centers
 ```http
-GET /api/service-centers?page=0&size=10
+GET /api/service-centers?page=0&size=10&sortBy=serviceCenterName&sortDir=ASC
 ```
 
-### 9.2 Get By ID
+### 9.2 Get Service Center By ID
 ```http
 GET /api/service-centers/{id}
 ```
 
-### 9.3 Create 👤 ADMIN
+### 9.3 Search Service Centers
+```http
+GET /api/service-centers/search?keyword=hanoi&page=0&size=10&sortBy=serviceCenterId&sortDir=ASC
+```
+
+### 9.4 Find Service Centers Nearby
+```http
+GET /api/service-centers/nearby?latitude=10.762622&longitude=106.660172&radius=10
+```
+**Parameters:**
+- `latitude`: -90.0 to 90.0
+- `longitude`: -180.0 to 180.0
+- `radius`: Distance in kilometers (default: 10)
+
+### 9.5 Get All Ordered By Distance
+```http
+GET /api/service-centers/ordered-by-distance?latitude=10.762622&longitude=106.660172
+```
+
+### 9.6 Create Service Center 👤 ADMIN
 ```http
 POST /api/service-centers
 
@@ -600,11 +715,13 @@ POST /api/service-centers
   "centerName": "Tesla Service Center Downtown",
   "address": "123 Main St, City",
   "phoneNumber": "+1234567890",
-  "email": "service@example.com"
+  "email": "service@example.com",
+  "latitude": 10.762622,
+  "longitude": 106.660172
 }
 ```
 
-### 9.4 Update 👤 ADMIN
+### 9.7 Update Service Center 👤 ADMIN
 ```http
 PUT /api/service-centers/{id}
 
@@ -616,14 +733,14 @@ PUT /api/service-centers/{id}
 }
 ```
 
-### 9.5 Delete 👤 ADMIN
+### 9.8 Update Service Center Location 👤 ADMIN
 ```http
-DELETE /api/service-centers/{id}
+PATCH /api/service-centers/{id}/location?latitude=10.762622&longitude=106.660172
 ```
 
-### 9.6 Search By Location 🔒 All roles
+### 9.9 Delete Service Center 👤 ADMIN
 ```http
-GET /api/service-centers/by-location?location=City&page=0&size=10
+DELETE /api/service-centers/{id}
 ```
 
 ---
@@ -632,19 +749,72 @@ GET /api/service-centers/by-location?location=City&page=0&size=10
 
 **Base Path:** `/api/feedbacks`
 
-### 10.1 Get All 👥 ADMIN, EVM_STAFF, SC_STAFF
+### 10.1 Get All Feedbacks 👥 ADMIN, EVM_STAFF, SC_STAFF
 ```http
-GET /api/feedbacks?page=0&size=10
+GET /api/feedbacks?page=0&size=10&sortBy=createdAt&sortDir=DESC
 ```
 
-### 10.2 Get By ID 🔒 ADMIN, EVM_STAFF, SC_STAFF, CUSTOMER
+### 10.2 Get Feedback By ID 🔒 ADMIN, EVM_STAFF, SC_STAFF, CUSTOMER
 ```http
 GET /api/feedbacks/{id}
 ```
 
-### 10.3 Create 🔐 CUSTOMER
+### 10.3 Get Feedback By Claim ID 🔒 ADMIN, EVM_STAFF, SC_STAFF, CUSTOMER
 ```http
-POST /api/feedbacks
+GET /api/feedbacks/by-claim/{claimId}
+```
+
+### 10.4 Get Feedbacks By Customer 🔒 ADMIN, EVM_STAFF, SC_STAFF, CUSTOMER
+```http
+GET /api/feedbacks/by-customer/{customerId}?page=0&size=10&sortBy=createdAt&sortDir=DESC
+```
+
+### 10.5 Get Feedbacks By Rating 👥 ADMIN, EVM_STAFF, SC_STAFF
+```http
+GET /api/feedbacks/by-rating/{rating}?page=0&size=10
+```
+
+### 10.6 Get Feedbacks By Minimum Rating 👥 ADMIN, EVM_STAFF, SC_STAFF
+```http
+GET /api/feedbacks/min-rating/{rating}?page=0&size=10
+```
+
+### 10.7 Get Average Rating 👥 ADMIN, EVM_STAFF, SC_STAFF
+```http
+GET /api/feedbacks/statistics/average-rating
+```
+
+### 10.8 Get Average Rating By Service Center 👥 ADMIN, EVM_STAFF, SC_STAFF
+```http
+GET /api/feedbacks/statistics/service-center/{serviceCenterId}/average-rating
+```
+
+### 10.9 Get Count By Rating 👥 ADMIN, EVM_STAFF, SC_STAFF
+```http
+GET /api/feedbacks/statistics/count-by-rating/{rating}
+```
+
+### 10.10 Get Feedback Statistics Summary 👥 ADMIN, EVM_STAFF, SC_STAFF
+```http
+GET /api/feedbacks/statistics/summary
+```
+**Response:**
+```json
+{
+  "averageRating": 4.5,
+  "ratingCounts": {
+    "1": 5,
+    "2": 10,
+    "3": 20,
+    "4": 30,
+    "5": 35
+  }
+}
+```
+
+### 10.11 Create Feedback 🔐 CUSTOMER
+```http
+POST /api/feedbacks?customerId={customerId}
 
 {
   "warrantyClaimId": 1,
@@ -653,9 +823,9 @@ POST /api/feedbacks
 }
 ```
 
-### 10.4 Update 🔐 CUSTOMER (own), ADMIN
+### 10.12 Update Feedback 🔐 CUSTOMER
 ```http
-PUT /api/feedbacks/{id}
+PUT /api/feedbacks/{id}?customerId={customerId}
 
 {
   "rating": 4,
@@ -663,24 +833,9 @@ PUT /api/feedbacks/{id}
 }
 ```
 
-### 10.5 Delete 👤 ADMIN
+### 10.13 Delete Feedback 🔐 CUSTOMER or ADMIN
 ```http
-DELETE /api/feedbacks/{id}
-```
-
-### 10.6 Get My Feedbacks 🔐 CUSTOMER
-```http
-GET /api/feedbacks/my-feedbacks?page=0&size=10
-```
-
-### 10.7 Get By Claim 👥 ADMIN, EVM_STAFF, SC_STAFF
-```http
-GET /api/feedbacks/by-claim/{claimId}
-```
-
-### 10.8 Get By Rating 👥 ADMIN, EVM_STAFF, SC_STAFF
-```http
-GET /api/feedbacks/by-rating/{rating}?page=0&size=10
+DELETE /api/feedbacks/{id}?customerId={customerId}
 ```
 
 ---
@@ -688,32 +843,42 @@ GET /api/feedbacks/by-rating/{rating}?page=0&size=10
 ## 11. Work Log APIs
 
 **Base Path:** `/api/work-logs`
-**Role Requirements:** 👥 ADMIN, EVM_STAFF, SC_STAFF (read only)
+**Role Requirements:** 👥 ADMIN, EVM_STAFF
 
-### 11.1 Get All 👥 ADMIN, EVM_STAFF
+### 11.1 Get All Work Logs 👥 ADMIN, EVM_STAFF
 ```http
 GET /api/work-logs?page=0&size=10
 ```
 
-### 11.2 Get By ID 👥 ADMIN, EVM_STAFF
+### 11.2 Get Work Log By ID 👥 ADMIN, EVM_STAFF
 ```http
 GET /api/work-logs/{id}
 ```
 
-### 11.3 Create 👥 ADMIN, EVM_STAFF
+### 11.3 Get Work Logs By Claim 👥 ADMIN, EVM_STAFF, SC_STAFF
+```http
+GET /api/work-logs/by-claim/{claimId}?page=0&size=10
+```
+
+### 11.4 Get Work Logs By User 👥 ADMIN, EVM_STAFF
+```http
+GET /api/work-logs/by-user/{userId}?page=0&size=10
+```
+
+### 11.5 Create Work Log 👥 ADMIN, EVM_STAFF
 ```http
 POST /api/work-logs
 
 {
   "warrantyClaimId": 1,
-  "technicianId": "uuid",
   "workDescription": "Replaced battery pack",
   "hoursSpent": 2.5,
   "workDate": "2024-10-22"
 }
 ```
+**Note:** `technicianId` sẽ được lấy tự động từ authentication
 
-### 11.4 Update 👥 ADMIN, EVM_STAFF
+### 11.6 Update Work Log 👥 ADMIN, EVM_STAFF
 ```http
 PUT /api/work-logs/{id}
 
@@ -723,19 +888,9 @@ PUT /api/work-logs/{id}
 }
 ```
 
-### 11.5 Delete 👤 ADMIN
+### 11.7 Delete Work Log 👤 ADMIN
 ```http
 DELETE /api/work-logs/{id}
-```
-
-### 11.6 Get By Claim 👥 ADMIN, EVM_STAFF, SC_STAFF
-```http
-GET /api/work-logs/by-claim/{claimId}?page=0&size=10
-```
-
-### 11.7 Get By Technician 👥 ADMIN, EVM_STAFF
-```http
-GET /api/work-logs/by-technician/{technicianId}?page=0&size=10
 ```
 
 ---
@@ -744,20 +899,68 @@ GET /api/work-logs/by-technician/{technicianId}?page=0&size=10
 
 **Base Path:** `/api`
 
-### 12.1 Get My Info 🔒 All authenticated users
+### 12.1 Get Current User Info 🔒 All authenticated users
 ```http
 GET /api/me
 ```
 **Response:**
 ```json
 {
-  "userId": "uuid",
+  "username": "string",
+  "roles": ["ROLE_ADMIN"],
+  "isAuthenticated": true,
+  "hasAdminRole": true,
+  "hasStaffRole": false,
+  "hasCustomerRole": false
+}
+```
+
+### 12.2 Get My Basic Info 🔒 All authenticated users
+```http
+GET /api/me/basic
+```
+**Response:**
+```json
+{
+  "userId": 1,
   "username": "string",
   "email": "user@example.com",
-  "fullName": "string",
-  "phoneNumber": "string",
-  "role": "ADMIN|EVM_STAFF|SC_STAFF|SC_TECHNICIAN|CUSTOMER",
-  "enabled": true
+  "roleName": "ADMIN",
+  "roleId": 1,
+  "serviceCenterId": 1,
+  "serviceCenterName": "Downtown Service Center",
+  "customerId": "uuid",
+  "customerName": "John Doe",
+  "phone": "0123456789"
+}
+```
+
+### 12.3 Get My Full Profile 🔒 All authenticated users
+```http
+GET /api/profile
+```
+**Response for CUSTOMER:**
+```json
+{
+  "customerId": "uuid",
+  "name": "John Doe",
+  "email": "customer@example.com",
+  "phone": "0123456789",
+  "address": "123 Main St",
+  "vehicles": [...],
+  "warrantyClaims": [...],
+  "feedbacks": [...]
+}
+```
+**Response for STAFF/ADMIN:**
+```json
+{
+  "userId": 1,
+  "username": "admin",
+  "email": "admin@example.com",
+  "roleName": "ADMIN",
+  "assignedClaims": [...],
+  "workLogs": [...]
 }
 ```
 
@@ -849,14 +1052,10 @@ GET /api/me
 3. Login để lấy token (tự động save vào environment)
 4. Test các endpoints
 
-### **NEW - Customer Warranty Claims:**
-- 🆕 `GET /api/warranty-claims/my-claims` - Xem tất cả claims
-- 🆕 `GET /api/warranty-claims/my-claims/{id}` - Xem chi tiết claim
-
 **Xem chi tiết:** `postman/README.md`
 
 ---
 
 **System Status:** ✅ PRODUCTION READY
 
-**Last Updated:** October 23, 2025 - Thêm Customer warranty claims viewing + Postman Collection
+**Last Updated:** October 23, 2025 - Complete API documentation synced with actual implementation

@@ -59,9 +59,9 @@ public class VehicleController {
         return ResponseEntity.notFound().build();
     }
 
-    // Create new vehicle (ADMIN/EVM_STAFF only)
+    // Create new vehicle (ADMIN/EVM_STAFF/SC_STAFF)
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF')")
     public ResponseEntity<VehicleResponseDTO> createVehicle(@Valid @RequestBody VehicleRequestDTO requestDTO) {
         logger.info("Create vehicle request: {}", requestDTO);
         try {
@@ -91,9 +91,9 @@ public class VehicleController {
         return ResponseEntity.notFound().build();
     }
 
-    // Delete vehicle (ADMIN/EVM_STAFF only)
+    // Delete vehicle (ADMIN/EVM_STAFF/SC_STAFF)
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF')")
     public ResponseEntity<Void> deleteVehicle(@PathVariable Long id) {
         logger.info("Delete vehicle request: {}", id);
         boolean deleted = vehicleService.deleteVehicle(id);
