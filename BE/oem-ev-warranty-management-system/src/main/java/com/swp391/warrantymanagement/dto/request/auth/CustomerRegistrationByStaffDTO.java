@@ -27,7 +27,6 @@ public class CustomerRegistrationByStaffDTO {
     @Size(min = 6, max = 255, message = "Password must be at least 6 characters")
     private String password;
 
-    @NotBlank(message = "Address is required")
     @Size(min = 10, max = 255, message = "Address must be between 10 and 255 characters")
     private String address;
 

@@ -36,7 +36,7 @@ public class User {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    @OneToOne(mappedBy = "user")
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private Customer customer;
 
     @ManyToOne(fetch = FetchType.LAZY)
