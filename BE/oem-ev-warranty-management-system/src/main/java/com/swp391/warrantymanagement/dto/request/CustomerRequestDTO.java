@@ -30,4 +30,8 @@ public class CustomerRequestDTO {
     @NotNull(message = "User ID is required")
     @Positive(message = "User ID must be a positive number")
     private Long userId; // chủ sở hữu (User)
+
+    @NotBlank(message = "Address is required")
+    @Size(min = 10, max = 255, message = "Address must be between 10 and 255 characters")
+    private String address;
 }
