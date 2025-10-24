@@ -25,7 +25,6 @@ dist-ssr
 
 .env
 
-
 # Ignore API docs and backend temp folders
 /API_GUIDE/
 /src/src be/
