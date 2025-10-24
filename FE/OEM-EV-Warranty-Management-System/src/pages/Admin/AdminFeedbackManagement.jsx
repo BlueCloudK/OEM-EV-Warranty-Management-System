@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import * as S from './EVMFeedbacks.styles';
+import * as S from './AdminFeedbackManagement.styles';
 import {
   FaCommentDots, FaSpinner, FaStar, FaFilter, FaChartBar,
-  FaUser, FaCar, FaShieldAlt, FaCalendar
+  FaUser, FaCar, FaShieldAlt, FaCalendar, FaTrash
 } from 'react-icons/fa';
 import apiClient from '../../api/apiClient';
 
-const EVMFeedbacks = () => {
+const AdminFeedbackManagement = () => {
   const [feedbacks, setFeedbacks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -82,13 +82,32 @@ const EVMFeedbacks = () => {
     }
   };
 
+  const handleDelete = async (feedbackId, customerId) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa feedback này?')) {
+      return;
+    }
+
+    try {
+      await apiClient(`/api/feedbacks/${feedbackId}?customerId=${customerId}`, {
+        method: 'DELETE'
+      });
+
+      alert('Xóa feedback thành công!');
+      await fetchFeedbacks();
+      await fetchStatistics();
+    } catch (err) {
+      console.error('Error deleting feedback:', err);
+      alert(`Lỗi: ${err.message}`);
+    }
+  };
+
   const handlePageChange = (newPage) => {
     setPagination(prev => ({ ...prev, currentPage: newPage }));
   };
 
   const handleFilterChange = (rating) => {
     setFilterRating(rating);
-    setPagination(prev => ({ ...prev, currentPage: 0 }));
+    setPagination(prev => ({ ...prev, currentPage: 0 })); // Reset to first page
   };
 
   const renderStars = (rating) => {
@@ -118,10 +137,10 @@ const EVMFeedbacks = () => {
     <S.PageContainer>
       <S.Header>
         <S.HeaderTitle>
-          <FaCommentDots /> Xem Feedback Khách hàng
+          <FaCommentDots /> Quản lý Feedback
         </S.HeaderTitle>
         <S.HeaderSubtitle>
-          Xem phản hồi từ khách hàng về dịch vụ bảo hành
+          Xem và quản lý phản hồi từ khách hàng
         </S.HeaderSubtitle>
       </S.Header>
 
@@ -142,7 +161,7 @@ const EVMFeedbacks = () => {
 
           {statistics.ratingCounts && Object.entries(statistics.ratingCounts).map(([rating, count]) => (
             <S.StatCard key={rating}>
-              <S.StatIcon style={{ color: '#3b82f6' }}>
+              <S.StatIcon style={{ color: '#8b5cf6' }}>
                 <FaStar />
               </S.StatIcon>
               <div>
@@ -198,6 +217,7 @@ const EVMFeedbacks = () => {
             {feedbacks.map((feedback) => {
               const claimId = feedback.warrantyClaim?.warrantyClaimId || feedback.warrantyClaimId;
               const customerName = feedback.customer?.customerName || feedback.customerName || 'N/A';
+              const customerId = feedback.customer?.customerId || feedback.customerId;
               const vehicleName = feedback.warrantyClaim?.vehicle?.vehicleName ||
                                  feedback.warrantyClaim?.vehicleName ||
                                  feedback.vehicleName;
@@ -236,6 +256,12 @@ const EVMFeedbacks = () => {
                       {feedback.comment || 'Không có nội dung'}
                     </S.FeedbackText>
                   </S.FeedbackContent>
+
+                  <S.FeedbackActions>
+                    <S.DeleteButton onClick={() => handleDelete(feedback.feedbackId, customerId)}>
+                      <FaTrash /> Xóa
+                    </S.DeleteButton>
+                  </S.FeedbackActions>
                 </S.FeedbackCard>
               );
             })}
@@ -270,4 +296,4 @@ const EVMFeedbacks = () => {
   );
 };
 
-export default EVMFeedbacks;
+export default AdminFeedbackManagement;

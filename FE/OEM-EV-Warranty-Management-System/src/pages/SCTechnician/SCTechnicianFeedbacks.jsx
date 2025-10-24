@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import * as S from './EVMFeedbacks.styles';
+import * as S from './SCTechnicianFeedbacks.styles';
 import {
   FaCommentDots, FaSpinner, FaStar, FaFilter, FaChartBar,
   FaUser, FaCar, FaShieldAlt, FaCalendar
 } from 'react-icons/fa';
 import apiClient from '../../api/apiClient';
 
-const EVMFeedbacks = () => {
+const SCTechnicianFeedbacks = () => {
   const [feedbacks, setFeedbacks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -118,10 +118,10 @@ const EVMFeedbacks = () => {
     <S.PageContainer>
       <S.Header>
         <S.HeaderTitle>
-          <FaCommentDots /> Xem Feedback Khách hàng
+          <FaCommentDots /> Feedback Khách hàng
         </S.HeaderTitle>
         <S.HeaderSubtitle>
-          Xem phản hồi từ khách hàng về dịch vụ bảo hành
+          Xem phản hồi từ khách hàng về dịch vụ sửa chữa
         </S.HeaderSubtitle>
       </S.Header>
 
@@ -142,7 +142,7 @@ const EVMFeedbacks = () => {
 
           {statistics.ratingCounts && Object.entries(statistics.ratingCounts).map(([rating, count]) => (
             <S.StatCard key={rating}>
-              <S.StatIcon style={{ color: '#3b82f6' }}>
+              <S.StatIcon style={{ color: '#f59e0b' }}>
                 <FaStar />
               </S.StatIcon>
               <div>
@@ -270,4 +270,4 @@ const EVMFeedbacks = () => {
   );
 };
 
-export default EVMFeedbacks;
+export default SCTechnicianFeedbacks;

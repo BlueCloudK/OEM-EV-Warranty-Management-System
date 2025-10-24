@@ -67,6 +67,20 @@ export const AuthProvider = ({ children }) => {
 
         if (!user) throw new Error("Invalid user data after login");
 
+        // If user is CUSTOMER, fetch profile to get customerId
+        if (user.roleName === 'CUSTOMER' || user.hasCustomerRole) {
+          try {
+            const profile = await adminAuthApi.getMyProfile();
+            if (profile && profile.customerId) {
+              // Store customerId in localStorage
+              localStorage.setItem('customerId', profile.customerId);
+              console.log('✅ Customer ID saved:', profile.customerId);
+            }
+          } catch (profileError) {
+            console.warn('Failed to fetch customer profile:', profileError);
+          }
+        }
+
         setAuthState({ user, isAuthenticated: true });
         return user; // Return normalized user data
       }
@@ -75,6 +89,7 @@ export const AuthProvider = ({ children }) => {
       setAuthState({ user: null, isAuthenticated: false });
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
+      localStorage.removeItem('customerId');
       throw error;
     }
   };

@@ -5,7 +5,7 @@ import { customerApi } from '../../api/customerApi';
 import * as S from './CustomerFeedback.styles';
 import {
   FaCommentDots, FaSpinner, FaArrowLeft, FaInfoCircle, FaStar,
-  FaEdit, FaTrash, FaPlus, FaCalendar, FaShieldAlt
+  FaEdit, FaTrash, FaPlus, FaCalendar, FaShieldAlt, FaCheckCircle
 } from 'react-icons/fa';
 
 const FeedbackModal = ({ isOpen, onClose, feedback, onSubmit, warrantyClaims }) => {
@@ -21,7 +21,7 @@ const FeedbackModal = ({ isOpen, onClose, feedback, onSubmit, warrantyClaims }) 
       setFormData({
         warrantyClaimId: feedback.warrantyClaim?.warrantyClaimId || '',
         rating: feedback.rating || 5,
-        comments: feedback.comments || ''
+        comments: feedback.comment || '' // Backend uses 'comment' not 'comments'
       });
     } else {
       setFormData({
@@ -84,11 +84,17 @@ const FeedbackModal = ({ isOpen, onClose, feedback, onSubmit, warrantyClaims }) 
                   required
                 >
                   <option value="">-- Chọn yêu cầu bảo hành --</option>
-                  {warrantyClaims.map((claim) => (
-                    <option key={claim.warrantyClaimId} value={claim.warrantyClaimId}>
-                      Yêu cầu #{claim.warrantyClaimId} - {claim.vehicle?.vehicleName || claim.vehicle?.vin}
-                    </option>
-                  ))}
+                  {warrantyClaims.map((claim) => {
+                    const vehicleName = claim.vehicle?.vehicleName || claim.vehicleName;
+                    const vin = claim.vehicle?.vehicleVin || claim.vehicle?.vin || claim.vehicleVin;
+                    const displayName = vehicleName || vin || `Claim #${claim.warrantyClaimId}`;
+
+                    return (
+                      <option key={claim.warrantyClaimId} value={claim.warrantyClaimId}>
+                        Yêu cầu #{claim.warrantyClaimId} - {displayName}
+                      </option>
+                    );
+                  })}
                 </S.Select>
               </S.FormGroup>
             )}
@@ -126,39 +132,85 @@ const FeedbackModal = ({ isOpen, onClose, feedback, onSubmit, warrantyClaims }) 
 const CustomerFeedback = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [customerId, setCustomerId] = useState(null);
   const [feedbacks, setFeedbacks] = useState([]);
   const [warrantyClaims, setWarrantyClaims] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [selectedFeedback, setSelectedFeedback] = useState(null);
 
+  // Get customerId from localStorage or token
   useEffect(() => {
-    fetchData();
+    const storedCustomerId = localStorage.getItem('customerId');
+    if (storedCustomerId) {
+      setCustomerId(storedCustomerId);
+    } else {
+      // If not in localStorage, show error
+      setError("Không tìm thấy thông tin khách hàng. Vui lòng đăng nhập lại.");
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    if (customerId) {
+      fetchData();
+    }
+  }, [customerId]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
 
+      console.log("Fetching data with customerId:", customerId);
+
+      if (!customerId) {
+        console.error("No customer ID available");
+        setError("Không tìm thấy thông tin khách hàng. Vui lòng đăng nhập lại.");
+        setLoading(false);
+        return;
+      }
+
       const [feedbacksResponse, claimsResponse] = await Promise.all([
-        customerApi.getMyFeedbacks(user?.customerId, { page: 0, size: 100 }),
+        customerApi.getMyFeedbacks(customerId, { page: 0, size: 100 }),
         customerApi.getMyWarrantyClaims({ page: 0, size: 100 })
       ]);
 
       if (feedbacksResponse && feedbacksResponse.content) {
+        console.log("✅ Feedbacks loaded:", feedbacksResponse.content);
+        console.log("📋 First feedback sample:", feedbacksResponse.content[0]);
         setFeedbacks(feedbacksResponse.content);
       } else if (Array.isArray(feedbacksResponse)) {
+        console.log("✅ Feedbacks loaded (array):", feedbacksResponse);
         setFeedbacks(feedbacksResponse);
       } else {
+        console.log("⚠️ No feedbacks found");
         setFeedbacks([]);
       }
 
       if (claimsResponse && claimsResponse.content) {
-        // Only show completed claims that don't have feedback yet
+        // Get all completed claims
         const completedClaims = claimsResponse.content.filter(c => c.status === 'COMPLETED');
-        setWarrantyClaims(completedClaims);
+
+        // Get list of claim IDs that already have feedback
+        const feedbackClaimIds = new Set(
+          (feedbacksResponse?.content || feedbacksResponse || []).map(f =>
+            f.warrantyClaim?.warrantyClaimId || f.warrantyClaimId
+          )
+        );
+
+        // Only show completed claims that DON'T have feedback yet
+        const claimsWithoutFeedback = completedClaims.filter(claim =>
+          !feedbackClaimIds.has(claim.warrantyClaimId)
+        );
+
+        console.log("📊 Completed claims:", completedClaims.length);
+        console.log("📝 Claims with feedback:", feedbackClaimIds.size);
+        console.log("✅ Claims available for feedback:", claimsWithoutFeedback.length);
+
+        setWarrantyClaims(claimsWithoutFeedback);
       } else {
         setWarrantyClaims([]);
       }
@@ -186,32 +238,76 @@ const CustomerFeedback = () => {
       return;
     }
 
+    if (!customerId) {
+      setError("Không tìm thấy thông tin khách hàng.");
+      return;
+    }
+
     try {
-      await customerApi.deleteFeedback(feedbackId);
+      setError(null);
+      setSuccess(null);
+      await customerApi.deleteFeedback(feedbackId, customerId);
+      setSuccess('Xóa phản hồi thành công!');
       await fetchData();
+      setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
-      alert(`Lỗi: ${err.response?.data?.message || err.message}`);
+      setError(`Lỗi: ${err.response?.data?.message || err.message}`);
     }
   };
 
   const handleSubmit = async (formData) => {
+    if (!customerId) {
+      setError("Không tìm thấy thông tin khách hàng.");
+      return;
+    }
+
     try {
+      setError(null);
+      setSuccess(null);
+
       if (selectedFeedback) {
-        await customerApi.updateFeedback(selectedFeedback.feedbackId, {
+        // When updating, include the original warrantyClaimId
+        const warrantyClaimId = selectedFeedback.warrantyClaim?.warrantyClaimId ||
+                               selectedFeedback.warrantyClaimId;
+
+        console.log("📝 Updating feedback:", {
+          feedbackId: selectedFeedback.feedbackId,
+          warrantyClaimId,
           rating: formData.rating,
-          comments: formData.comments
+          comment: formData.comments,
+          customerId
         });
+
+        await customerApi.updateFeedback(selectedFeedback.feedbackId, {
+          warrantyClaimId: warrantyClaimId,
+          rating: formData.rating,
+          comment: formData.comments, // Backend uses 'comment' not 'comments'
+          customerId: customerId
+        });
+        setSuccess('Cập nhật phản hồi thành công!');
       } else {
+        console.log("➕ Creating feedback:", {
+          warrantyClaimId: formData.warrantyClaimId,
+          rating: formData.rating,
+          comment: formData.comments,
+          customerId
+        });
+
         await customerApi.createFeedback({
           warrantyClaimId: parseInt(formData.warrantyClaimId),
           rating: formData.rating,
-          comments: formData.comments
+          comment: formData.comments, // Backend uses 'comment' not 'comments'
+          customerId: customerId
         });
+        setSuccess('Tạo phản hồi thành công!');
       }
+
       setShowModal(false);
       await fetchData();
+      setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
-      alert(`Lỗi: ${err.response?.data?.message || err.message}`);
+      setError(`Lỗi: ${err.response?.data?.message || err.message}`);
+      setTimeout(() => setError(null), 5000);
     }
   };
 
@@ -268,6 +364,13 @@ const CustomerFeedback = () => {
           </S.ErrorMessage>
         )}
 
+        {success && (
+          <S.SuccessMessage>
+            <FaCheckCircle />
+            {success}
+          </S.SuccessMessage>
+        )}
+
         {feedbacks.length === 0 ? (
           <S.EmptyState>
             <FaCommentDots />
@@ -279,34 +382,51 @@ const CustomerFeedback = () => {
           </S.EmptyState>
         ) : (
           <S.FeedbacksGrid>
-            {feedbacks.map((feedback) => (
-              <S.FeedbackCard key={feedback.feedbackId}>
-                <S.FeedbackHeader>
-                  <S.FeedbackInfo>
-                    <S.FeedbackTitle>
-                      <FaShieldAlt /> Yêu cầu bảo hành #{feedback.warrantyClaim?.warrantyClaimId}
-                    </S.FeedbackTitle>
-                    <S.FeedbackMeta>
-                      <S.StarRating>{renderStars(feedback.rating)}</S.StarRating>
-                      <span><FaCalendar /> {formatDate(feedback.feedbackDate)}</span>
-                    </S.FeedbackMeta>
-                  </S.FeedbackInfo>
-                </S.FeedbackHeader>
+            {feedbacks.map((feedback) => {
+              // Extract claim and vehicle info with fallbacks
+              const claimId = feedback.warrantyClaim?.warrantyClaimId || feedback.warrantyClaimId;
+              const vehicleName = feedback.warrantyClaim?.vehicle?.vehicleName ||
+                                 feedback.warrantyClaim?.vehicleName ||
+                                 feedback.vehicleName;
+              const vehicleVin = feedback.warrantyClaim?.vehicle?.vehicleVin ||
+                                feedback.warrantyClaim?.vehicle?.vin ||
+                                feedback.warrantyClaim?.vehicleVin ||
+                                feedback.vehicleVin;
 
-                <S.FeedbackContent>
-                  <S.FeedbackText>{feedback.comments}</S.FeedbackText>
-                </S.FeedbackContent>
+              return (
+                <S.FeedbackCard key={feedback.feedbackId}>
+                  <S.FeedbackHeader>
+                    <S.FeedbackInfo>
+                      <S.FeedbackTitle>
+                        <FaShieldAlt /> Yêu cầu bảo hành #{claimId || 'N/A'}
+                      </S.FeedbackTitle>
+                      {(vehicleName || vehicleVin) && (
+                        <div style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>
+                          Xe: {vehicleName || vehicleVin}
+                        </div>
+                      )}
+                      <S.FeedbackMeta>
+                        <S.StarRating>{renderStars(feedback.rating)}</S.StarRating>
+                        <span><FaCalendar /> {formatDate(feedback.createdAt)}</span>
+                      </S.FeedbackMeta>
+                    </S.FeedbackInfo>
+                  </S.FeedbackHeader>
 
-                <S.FeedbackActions>
-                  <S.ActionButton onClick={() => handleEdit(feedback)}>
-                    <FaEdit /> Chỉnh sửa
-                  </S.ActionButton>
-                  <S.ActionButton $danger onClick={() => handleDelete(feedback.feedbackId)}>
-                    <FaTrash /> Xóa
-                  </S.ActionButton>
-                </S.FeedbackActions>
-              </S.FeedbackCard>
-            ))}
+                  <S.FeedbackContent>
+                    <S.FeedbackText>{feedback.comment || 'Không có nội dung'}</S.FeedbackText>
+                  </S.FeedbackContent>
+
+                  <S.FeedbackActions>
+                    <S.ActionButton onClick={() => handleEdit(feedback)}>
+                      <FaEdit /> Chỉnh sửa
+                    </S.ActionButton>
+                    <S.ActionButton $danger onClick={() => handleDelete(feedback.feedbackId)}>
+                      <FaTrash /> Xóa
+                    </S.ActionButton>
+                  </S.FeedbackActions>
+                </S.FeedbackCard>
+              );
+            })}
           </S.FeedbacksGrid>
         )}
 

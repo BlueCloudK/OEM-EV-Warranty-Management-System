@@ -53,13 +53,22 @@ export const customerApi = {
   },
   
   /**
+   * Lấy thông tin hồ sơ đầy đủ của khách hàng đang đăng nhập.
+   * Endpoint: GET /api/profile
+   * @returns {Promise<object>} Hồ sơ đầy đủ của khách hàng.
+   */
+  getMyProfile: () => {
+    return apiClient('/api/profile');
+  },
+
+  /**
    * Cập nhật thông tin hồ sơ của khách hàng đang đăng nhập.
-   * Endpoint: PUT /api/customers/profile (Hoặc một endpoint tương tự như /api/me)
-   * @param {object} profileData - Dữ liệu hồ sơ cần cập nhật.
+   * Endpoint: PUT /api/customers/profile
+   * @param {object} profileData - Dữ liệu hồ sơ cần cập nhật (name, phone, userId).
    * @returns {Promise<object>} Hồ sơ đã được cập nhật.
    */
   updateMyProfile: (profileData) => {
-    return apiClient('/api/customers/profile', { // Giả định endpoint, cần xác nhận lại từ BE
+    return apiClient('/api/customers/profile', {
       method: 'PUT',
       body: JSON.stringify(profileData),
     });
@@ -79,14 +88,15 @@ export const customerApi = {
 
   /**
    * Tạo phản hồi mới.
-   * Endpoint: POST /api/feedbacks
-   * @param {object} feedbackData - Dữ liệu phản hồi (warrantyClaimId, rating, comments).
+   * Endpoint: POST /api/feedbacks?customerId={customerId}
+   * @param {object} feedbackData - Dữ liệu phản hồi (warrantyClaimId, rating, comments, customerId).
    * @returns {Promise<object>} Phản hồi đã tạo.
    */
   createFeedback: (feedbackData) => {
-    return apiClient('/api/feedbacks', {
+    const { customerId, ...data } = feedbackData;
+    return apiClient(`/api/feedbacks?customerId=${customerId}`, {
       method: 'POST',
-      body: JSON.stringify(feedbackData),
+      body: JSON.stringify(data),
     });
   },
 
@@ -102,26 +112,28 @@ export const customerApi = {
 
   /**
    * Cập nhật phản hồi.
-   * Endpoint: PUT /api/feedbacks/{id}
+   * Endpoint: PUT /api/feedbacks/{id}?customerId={customerId}
    * @param {number} id - ID của phản hồi.
-   * @param {object} feedbackData - Dữ liệu phản hồi cần cập nhật.
+   * @param {object} feedbackData - Dữ liệu phản hồi cần cập nhật (bao gồm customerId).
    * @returns {Promise<object>} Phản hồi đã cập nhật.
    */
   updateFeedback: (id, feedbackData) => {
-    return apiClient(`/api/feedbacks/${id}`, {
+    const { customerId, ...data } = feedbackData;
+    return apiClient(`/api/feedbacks/${id}?customerId=${customerId}`, {
       method: 'PUT',
-      body: JSON.stringify(feedbackData),
+      body: JSON.stringify(data),
     });
   },
 
   /**
    * Xóa phản hồi.
-   * Endpoint: DELETE /api/feedbacks/{id}
+   * Endpoint: DELETE /api/feedbacks/{id}?customerId={customerId}
    * @param {number} id - ID của phản hồi.
+   * @param {string} customerId - ID của khách hàng.
    * @returns {Promise<void>}
    */
-  deleteFeedback: (id) => {
-    return apiClient(`/api/feedbacks/${id}`, {
+  deleteFeedback: (id, customerId) => {
+    return apiClient(`/api/feedbacks/${id}?customerId=${customerId}`, {
       method: 'DELETE',
     });
   },

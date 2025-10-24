@@ -118,10 +118,16 @@ export const adminAuthApi = {
     }
   },
 
+  // GET MY PROFILE - Lấy thông tin profile đầy đủ (bao gồm customerId cho CUSTOMER)
+  getMyProfile: async () => {
+    return apiClient('/api/profile');
+  },
+
   // LOGOUT - Đăng xuất
   logout: () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
+    localStorage.removeItem('customerId');
     // Có thể thêm logic chuyển hướng trang ở đây nếu cần
     // window.location.href = '/login';
   },

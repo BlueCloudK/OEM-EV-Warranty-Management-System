@@ -284,45 +284,63 @@ const MyVehicles = () => {
           </S.EmptyState>
         ) : (
           <S.VehiclesGrid>
-            {vehicles.map((vehicle) => (
-              <S.VehicleCard key={vehicle.vehicleId} onClick={() => openDetailModal(vehicle)}>
-                <S.VehicleHeader>
-                  <S.VehicleIcon><FaCar /></S.VehicleIcon>
-                  <div>
-                    <S.VehicleTitle>{vehicle.vehicleName}</S.VehicleTitle>
-                    <S.VehicleSubtitle>{vehicle.brand} {vehicle.model}</S.VehicleSubtitle>
-                  </div>
-                </S.VehicleHeader>
+            {vehicles.map((vehicle) => {
+              // Map backend field names
+              const vin = vehicle.vehicleVin || vehicle.vin;
+              const model = vehicle.vehicleModel || vehicle.model;
+              const year = vehicle.vehicleYear || vehicle.year;
+              const brand = vehicle.vehicleBrand || vehicle.brand;
+              const mileage = vehicle.vehicleMileage || vehicle.mileage;
+              const warrantyEndDate = vehicle.vehicleWarrantyEndDate || vehicle.warrantyEndDate;
 
-                <S.VehicleDetails>
-                  <S.DetailRow>
-                    <S.DetailLabel><FaIdCard /> VIN</S.DetailLabel>
-                    <S.DetailValue>{vehicle.vin}</S.DetailValue>
-                  </S.DetailRow>
-                  <S.DetailRow>
-                    <S.DetailLabel><FaCalendar /> Năm SX</S.DetailLabel>
-                    <S.DetailValue>{vehicle.year}</S.DetailValue>
-                  </S.DetailRow>
-                  <S.DetailRow>
-                    <S.DetailLabel><FaTachometerAlt /> Số Km</S.DetailLabel>
-                    <S.DetailValue>{vehicle.mileage ? `${vehicle.mileage.toLocaleString()} km` : 'N/A'}</S.DetailValue>
-                  </S.DetailRow>
-                  <S.DetailRow>
-                    <S.DetailLabel>
-                      {isWarrantyValid(vehicle.warrantyEndDate) ? <FaCheckCircle /> : <FaTimesCircle />}
-                      Bảo hành
-                    </S.DetailLabel>
-                    <S.WarrantyBadge $valid={isWarrantyValid(vehicle.warrantyEndDate)}>
-                      {isWarrantyValid(vehicle.warrantyEndDate) ? 'Còn hạn' : 'Hết hạn'}
-                    </S.WarrantyBadge>
-                  </S.DetailRow>
-                </S.VehicleDetails>
+              return (
+                <S.VehicleCard key={vehicle.vehicleId} onClick={() => openDetailModal(vehicle)}>
+                  <S.VehicleHeader>
+                    <S.VehicleIcon><FaCar /></S.VehicleIcon>
+                    <div>
+                      <S.VehicleTitle>{vehicle.vehicleName}</S.VehicleTitle>
+                      <S.VehicleSubtitle>
+                        {brand && model ? `${brand} ${model}` : model || brand || 'N/A'}
+                      </S.VehicleSubtitle>
+                    </div>
+                  </S.VehicleHeader>
 
-                <S.ActionButton>
-                  <FaInfoCircle /> Xem chi tiết
-                </S.ActionButton>
-              </S.VehicleCard>
-            ))}
+                  <S.VehicleDetails>
+                    <S.DetailRow>
+                      <S.DetailLabel><FaIdCard /> VIN</S.DetailLabel>
+                      <S.DetailValue>{vin || 'N/A'}</S.DetailValue>
+                    </S.DetailRow>
+                    <S.DetailRow>
+                      <S.DetailLabel><FaCalendar /> Năm SX</S.DetailLabel>
+                      <S.DetailValue>{year || 'N/A'}</S.DetailValue>
+                    </S.DetailRow>
+                    <S.DetailRow>
+                      <S.DetailLabel><FaTachometerAlt /> Số Km</S.DetailLabel>
+                      <S.DetailValue>
+                        {mileage !== null && mileage !== undefined
+                          ? `${Number(mileage).toLocaleString()} km`
+                          : 'N/A'}
+                      </S.DetailValue>
+                    </S.DetailRow>
+                    <S.DetailRow>
+                      <S.DetailLabel>
+                        {isWarrantyValid(warrantyEndDate) ? <FaCheckCircle /> : <FaTimesCircle />}
+                        Bảo hành
+                      </S.DetailLabel>
+                      <S.WarrantyBadge $valid={isWarrantyValid(warrantyEndDate)}>
+                        {warrantyEndDate
+                          ? (isWarrantyValid(warrantyEndDate) ? 'Còn hạn' : 'Hết hạn')
+                          : 'Chưa có thông tin'}
+                      </S.WarrantyBadge>
+                    </S.DetailRow>
+                  </S.VehicleDetails>
+
+                  <S.ActionButton>
+                    <FaInfoCircle /> Xem chi tiết
+                  </S.ActionButton>
+                </S.VehicleCard>
+              );
+            })}
           </S.VehiclesGrid>
         )}
 

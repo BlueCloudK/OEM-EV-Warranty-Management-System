@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
 import { customerApi } from '../../api/customerApi';
-import { dataApi } from '../../api/dataApi';
 import * as S from './CustomerProfile.styles';
 import {
   FaUser, FaSpinner, FaArrowLeft, FaInfoCircle, FaEdit, FaSave, FaTimes,
@@ -11,17 +9,16 @@ import {
 
 const CustomerProfile = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [editing, setEditing] = useState(false);
   const [profile, setProfile] = useState(null);
   const [formData, setFormData] = useState({
-    customerName: '',
-    email: '',
+    name: '',
     phone: '',
-    address: ''
+    address: '',
+    userId: null
   });
 
   useEffect(() => {
@@ -33,19 +30,19 @@ const CustomerProfile = () => {
       setLoading(true);
       setError(null);
 
-      // Get customer profile by user's customerId
-      if (user?.customerId) {
-        const response = await dataApi.getCustomerById(user.customerId);
-        setProfile(response);
-        setFormData({
-          customerName: response.customerName || '',
-          email: response.email || '',
-          phone: response.phone || '',
-          address: response.address || ''
-        });
-      }
+      // Get full customer profile from /api/profile
+      const response = await customerApi.getMyProfile();
+      console.log('📋 Customer profile loaded:', response);
+
+      setProfile(response);
+      setFormData({
+        name: response.customerName || '',
+        phone: response.customerPhone || response.phone || '',
+        address: response.address || '',
+        userId: response.userId
+      });
     } catch (err) {
-      console.error("Error fetching profile:", err);
+      console.error("❌ Error fetching profile:", err);
       setError(err.response?.data?.message || "Không thể tải thông tin hồ sơ.");
     } finally {
       setLoading(false);
@@ -64,10 +61,10 @@ const CustomerProfile = () => {
     setSuccess(null);
     // Reset form to original profile data
     setFormData({
-      customerName: profile.customerName || '',
-      email: profile.email || '',
-      phone: profile.phone || '',
-      address: profile.address || ''
+      name: profile.customerName || '',
+      phone: profile.customerPhone || profile.phone || '',
+      address: profile.address || '',
+      userId: profile.userId
     });
   };
 
@@ -75,12 +72,8 @@ const CustomerProfile = () => {
     e.preventDefault();
 
     // Validation
-    if (!formData.customerName.trim()) {
+    if (!formData.name.trim()) {
       setError('Tên khách hàng không được để trống');
-      return;
-    }
-    if (!formData.email.trim()) {
-      setError('Email không được để trống');
       return;
     }
     if (!formData.phone.trim()) {
@@ -93,7 +86,15 @@ const CustomerProfile = () => {
       setError(null);
       setSuccess(null);
 
-      await customerApi.updateMyProfile(formData);
+      console.log('📤 Updating profile with data:', formData);
+
+      // Backend expects: { name, phone, address, userId }
+      await customerApi.updateMyProfile({
+        name: formData.name,
+        phone: formData.phone,
+        address: formData.address,
+        userId: formData.userId
+      });
 
       setSuccess('Cập nhật hồ sơ thành công!');
       setEditing(false);
@@ -104,8 +105,8 @@ const CustomerProfile = () => {
       // Clear success message after 3 seconds
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
-      console.error("Error updating profile:", err);
-      setError(err.response?.data?.message || "Không thể cập nhật hồ sơ.");
+      console.error("❌ Error updating profile:", err);
+      setError(err.response?.data?.message || err.message || "Không thể cập nhật hồ sơ.");
     } finally {
       setLoading(false);
     }
@@ -172,7 +173,7 @@ const CustomerProfile = () => {
             <S.Avatar>{getInitials(profile?.customerName)}</S.Avatar>
             <S.ProfileInfo>
               <S.ProfileName>{profile?.customerName || 'Khách hàng'}</S.ProfileName>
-              <S.ProfileEmail>{profile?.email || 'N/A'}</S.ProfileEmail>
+              <S.ProfileEmail>{profile?.customerEmail || 'N/A'}</S.ProfileEmail>
             </S.ProfileInfo>
           </S.ProfileHeader>
 
@@ -185,11 +186,11 @@ const CustomerProfile = () => {
               </S.InfoItem>
               <S.InfoItem>
                 <S.InfoLabel><FaEnvelope /> Email</S.InfoLabel>
-                <S.InfoValue>{profile?.email || 'N/A'}</S.InfoValue>
+                <S.InfoValue>{profile?.customerEmail || 'N/A'}</S.InfoValue>
               </S.InfoItem>
               <S.InfoItem>
                 <S.InfoLabel><FaPhone /> Số điện thoại</S.InfoLabel>
-                <S.InfoValue>{profile?.phone || 'N/A'}</S.InfoValue>
+                <S.InfoValue>{profile?.customerPhone || profile?.phone || 'N/A'}</S.InfoValue>
               </S.InfoItem>
               <S.InfoItem>
                 <S.InfoLabel><FaMapMarkerAlt /> Địa chỉ</S.InfoLabel>
@@ -212,24 +213,24 @@ const CustomerProfile = () => {
                   <S.Label>Tên khách hàng *</S.Label>
                   <S.Input
                     type="text"
-                    name="customerName"
-                    value={formData.customerName}
+                    name="name"
+                    value={formData.name}
                     onChange={handleChange}
-                    placeholder="Nhập tên khách hàng"
+                    placeholder="Nhập tên khách hàng (ví dụ: Nguyễn Văn A)"
                     required
                   />
+                  <S.HelperText>Mỗi từ phải viết hoa chữ cái đầu, hỗ trợ tiếng Việt có dấu</S.HelperText>
                 </S.FormGroup>
 
                 <S.FormGroup>
-                  <S.Label>Email *</S.Label>
+                  <S.Label>Email (chỉ xem)</S.Label>
                   <S.Input
                     type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    placeholder="Nhập email"
-                    required
+                    value={profile?.customerEmail || ''}
+                    disabled
+                    style={{ backgroundColor: '#f3f4f6', cursor: 'not-allowed' }}
                   />
+                  <S.HelperText>Email không thể thay đổi. Liên hệ admin nếu cần cập nhật.</S.HelperText>
                 </S.FormGroup>
 
                 <S.FormGroup>
@@ -239,9 +240,10 @@ const CustomerProfile = () => {
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
-                    placeholder="Nhập số điện thoại"
+                    placeholder="Nhập số điện thoại (ví dụ: 0912345678)"
                     required
                   />
+                  <S.HelperText>Định dạng: +84xxxxxxxxx hoặc 0xxxxxxxxx</S.HelperText>
                 </S.FormGroup>
 
                 <S.FormGroup $fullWidth>
@@ -250,8 +252,9 @@ const CustomerProfile = () => {
                     name="address"
                     value={formData.address}
                     onChange={handleChange}
-                    placeholder="Nhập địa chỉ"
+                    placeholder="Nhập địa chỉ của bạn"
                   />
+                  <S.HelperText>Địa chỉ chi tiết để liên hệ và gửi thông báo</S.HelperText>
                 </S.FormGroup>
               </S.FormGrid>
 

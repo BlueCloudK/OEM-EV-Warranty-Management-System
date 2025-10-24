@@ -262,6 +262,24 @@ export const ErrorMessage = styled.div`
   }
 `;
 
+export const SuccessMessage = styled.div`
+  background: #d1fae5;
+  border: 1px solid #a7f3d0;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  color: #065f46;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 500;
+
+  svg {
+    font-size: 20px;
+  }
+`;
+
 export const ModalOverlay = styled.div`
   position: fixed;
   top: 0;

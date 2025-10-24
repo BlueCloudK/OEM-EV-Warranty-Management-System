@@ -194,6 +194,13 @@ export const TextArea = styled.textarea`
   }
 `;
 
+export const HelperText = styled.p`
+  margin: 4px 0 0 0;
+  font-size: 12px;
+  color: #6b7280;
+  font-style: italic;
+`;
+
 export const ButtonGroup = styled.div`
   display: flex;
   gap: 12px;

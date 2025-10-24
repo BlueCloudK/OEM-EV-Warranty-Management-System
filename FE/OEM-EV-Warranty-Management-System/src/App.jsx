@@ -16,6 +16,7 @@ import AdminVehicleManagement from "./pages/Admin/AdminVehicleManagement";
 import AdminPartsManagement from "./pages/Admin/AdminPartsManagement";
 import AdminWarrantyClaimsManagement from "./pages/Admin/AdminWarrantyClaimsManagement";
 import AdminServiceHistoriesManagement from "./pages/Admin/AdminServiceHistoriesManagement";
+import AdminFeedbackManagement from "./pages/Admin/AdminFeedbackManagement";
 import AdminLayout from "./components/AdminLayout";
 
 // SCStaff
@@ -26,6 +27,7 @@ import VehicleManagement from "./pages/SCStaff/VehicleManagement";
 import WarrantyClaimsManagement from "./pages/SCStaff/WarrantyClaimsManagement";
 import ServiceHistoryManagement from "./pages/SCStaff/ServiceHistoryManagement";
 import InstalledPartManagement from "./pages/SCStaff/InstalledPartManagement";
+import SCStaffFeedbackManagement from "./pages/SCStaff/SCStaffFeedbackManagement";
 import SCStaffLayout from "./components/SCStaffLayout";
 
 // EVM
@@ -45,6 +47,9 @@ import SCTechnicianLayout from "./components/SCTechnicianLayout";
 import SCTechnicianDashboard from "./pages/SCTechnician/SCTechnicianDashboard";
 import TechWarrantyClaims from "./pages/SCTechnician/TechWarrantyClaims";
 import MyWork from "./pages/SCTechnician/MyWork";
+import SCTechnicianFeedbacks from "./pages/SCTechnician/SCTechnicianFeedbacks";
+import VehicleLookup from "./pages/SCTechnician/VehicleLookup";
+import PartsLookup from "./pages/SCTechnician/PartsLookup";
 
 // Customer
 import CustomerLayout from "./components/CustomerLayout";
@@ -79,6 +84,7 @@ export default function App() {
           <Route path="warranty-claims" element={<WarrantyClaimsManagement />} />
           <Route path="service-history" element={<ServiceHistoryManagement />} />
           <Route path="installed-parts" element={<InstalledPartManagement />} />
+          <Route path="feedbacks" element={<SCStaffFeedbackManagement />} />
         </Route>
 
         {/* === ADMIN ROUTES === */}
@@ -91,6 +97,7 @@ export default function App() {
           <Route path="parts" element={<AdminPartsManagement />} />
           <Route path="warranty-claims" element={<AdminWarrantyClaimsManagement />} />
           <Route path="service-histories" element={<AdminServiceHistoriesManagement />} />
+          <Route path="feedbacks" element={<AdminFeedbackManagement />} />
         </Route>
 
         {/* === EVM STAFF ROUTES === */}
@@ -114,9 +121,10 @@ export default function App() {
           <Route path="dashboard" element={<SCTechnicianDashboard />} />
           <Route path="warranty-claims" element={<MyWork />} />
           <Route path="my-work" element={<MyWork />} />
+          <Route path="feedbacks" element={<SCTechnicianFeedbacks />} />
           <Route path="service-history" element={<div><h1>Lịch sử Sửa chữa</h1><p>Chức năng đang được xây dựng.</p></div>} />
-          <Route path="vehicles" element={<div><h1>Tra cứu Xe</h1><p>Chức năng đang được xây dựng.</p></div>} />
-          <Route path="parts" element={<div><h1>Xem Phụ tùng</h1><p>Chức năng đang được xây dựng.</p></div>} />
+          <Route path="vehicles" element={<VehicleLookup />} />
+          <Route path="parts" element={<PartsLookup />} />
         </Route>
 
         {/* === CUSTOMER ROUTES === */}
