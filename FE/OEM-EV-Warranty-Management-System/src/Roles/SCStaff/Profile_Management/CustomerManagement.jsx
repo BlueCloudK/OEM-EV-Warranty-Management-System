@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect } from 'react'; // React hooks để quản lý state và lifecycle
 import { useNavigate, useLocation } from 'react-router-dom'; // Hook để điều hướng giữa các trang
-import { 
+import {
   FaUsers,        // Icon nhóm người (cho tiêu đề)
   FaPlus,         // Icon dấu cộng (thêm mới)
   FaEdit,         // Icon bút chì (chỉnh sửa)
@@ -28,28 +28,28 @@ const CustomerManagement = () => {
   // Hook để điều hướng trang
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   // Lấy userId và các thông tin từ navigation state (từ trang tạo tài khoản)
   const { userId, fromAccountCreation, openCreateForm } = location.state || {};
-  
+
   // ===== CÁC STATE QUẢN LÝ DỮ LIỆU KHÁCH HÀNG =====
   const [customers, setCustomers] = useState([]);              // Danh sách khách hàng
   const [loading, setLoading] = useState(true);                // Trạng thái loading khi fetch data
-  
+
   // ===== CÁC STATE QUẢN LÝ TÌM KIẾM =====
   const [searchTerm, setSearchTerm] = useState('');            // Từ khóa tìm kiếm
   const [searchType, setSearchType] = useState('name');        // Loại tìm kiếm: name, email, phone
-  
+
   // ===== CÁC STATE QUẢN LÝ PHÂN TRANG =====
   const [currentPage, setCurrentPage] = useState(0);          // Trang hiện tại (bắt đầu từ 0)
   const [pageSize, setPageSize] = useState(10);               // Số item mỗi trang
   const [totalPages, setTotalPages] = useState(0);            // Tổng số trang
   const [totalElements, setTotalElements] = useState(0);      // Tổng số khách hàng
-  
+
   // ===== CÁC STATE QUẢN LÝ FORM =====
   const [showCreateForm, setShowCreateForm] = useState(false); // Hiển thị form tạo/sửa
   const [selectedCustomer, setSelectedCustomer] = useState(null); // Khách hàng được chọn để sửa
-  
+
   // State chứa dữ liệu form
   const [formData, setFormData] = useState({
     name: '',     // Tên khách hàng
@@ -58,14 +58,14 @@ const CustomerManagement = () => {
     address: '',  // Địa chỉ
     userId: ''    // ID người dùng liên kết
   });
-  
+
   // State chứa lỗi validation
   const [formErrors, setFormErrors] = useState({});
 
   // ===========================================================================================
   // PHẦN 3: DỮ LIỆU MOCK - DỮ LIỆU MẪU CHO DEMO
   // ===========================================================================================
-  
+
   // Dữ liệu khách hàng mẫu để test khi API không hoạt động
   const mockCustomers = [
     {
@@ -103,7 +103,7 @@ const CustomerManagement = () => {
   // ===========================================================================================
   // PHẦN 4: USEEFFECT - TẢI DỮ LIỆU KHI COMPONENT MOUNT VÀ KHI THAY ĐỔI TRANG
   // ===========================================================================================
-  
+
   // Gọi API lấy danh sách khách hàng khi component mount hoặc khi thay đổi trang/pageSize
   useEffect(() => {
     fetchCustomers();
@@ -124,12 +124,12 @@ const CustomerManagement = () => {
   // ===========================================================================================
   // PHẦN 5: HÀM FETCH CUSTOMERS - LẤY DANH SÁCH KHÁCH HÀNG TỪ API
   // ===========================================================================================
-  
+
   const fetchCustomers = async () => {
     try {
       setLoading(true); // Bật trạng thái loading
       const token = localStorage.getItem('token'); // Lấy token xác thực
-      
+
       // ===== KIỂM TRA TOKEN =====
       if (!token) {
         console.error('No token found');
@@ -144,7 +144,7 @@ const CustomerManagement = () => {
       // ===== XÂY DỰNG URL API DỰA TRÊN LOẠI TÌM KIẾM =====
       const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
       let url = `${API_BASE_URL}/api/customers?page=${currentPage}&size=${pageSize}`;
-      
+
       // Nếu có từ khóa tìm kiếm, thay đổi URL tương ứng
       if (searchTerm) {
         if (searchType === 'name') {
@@ -171,7 +171,7 @@ const CustomerManagement = () => {
       if (response.ok) {
         const data = await response.json();
         console.log('✅ Customers fetched:', data);
-        
+
         // Xử lý dữ liệu response khác nhau cho từng loại tìm kiếm
         if (searchType === 'email' || searchType === 'phone') {
           // Response trả về 1 khách hàng duy nhất (search by email/phone)
@@ -208,7 +208,7 @@ const CustomerManagement = () => {
   // ===========================================================================================
   // PHẦN 6: CÁC HÀM XỬ LÝ TÌM KIẾM
   // ===========================================================================================
-  
+
   // Thực hiện tìm kiếm (reset về trang đầu và gọi lại API)
   const handleSearch = () => {
     setCurrentPage(0);  // Reset về trang đầu tiên
@@ -225,10 +225,10 @@ const CustomerManagement = () => {
   // ===========================================================================================
   // PHẦN 7: HÀM XỬ LÝ TẠO/CHỈNH SỬA KHÁCH HÀNG
   // ===========================================================================================
-  
+
   const handleCreateCustomer = async (e) => {
     e.preventDefault(); // Ngăn form reload trang
-    
+
     // ===== BƯỚC 1: VALIDATE DỮ LIỆU =====
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
@@ -242,7 +242,7 @@ const CustomerManagement = () => {
 
       // ===== BƯỚC 2: PHÂN BIỆT TẠO MỚI VÀ CHỈNH SỬA =====
       const isEditing = selectedCustomer !== null;
-      const url = isEditing 
+      const url = isEditing
         ? `${API_BASE_URL}/api/customers/${selectedCustomer.customerId}`
         : `${API_BASE_URL}/api/customers`;
       const method = isEditing ? 'PUT' : 'POST';
@@ -262,12 +262,12 @@ const CustomerManagement = () => {
       if (response.ok) {
         const customerData = await response.json();
         console.log(`✅ Customer ${isEditing ? 'updated' : 'created'}:`, customerData);
-        
+
         if (isEditing) {
           // Cập nhật khách hàng trong danh sách
-          setCustomers(prev => prev.map(customer => 
-            customer.customerId === selectedCustomer.customerId 
-              ? { ...customerData, customerId: selectedCustomer.customerId, createdAt: selectedCustomer.createdAt }
+          setCustomers(prev => prev.map(customer =>
+            customer.customerId === selectedCustomer.customerId
+              ? { ...customer, ...formData } // merge dữ liệu mới vào khách hàng cũ
               : customer
           ));
           alert('Khách hàng đã được cập nhật thành công!');
@@ -277,12 +277,12 @@ const CustomerManagement = () => {
           setTotalElements(prev => prev + 1);
           alert('Khách hàng đã được tạo thành công!');
         }
-        
+
         // Reset form sau khi hoàn thành
         setFormData({ name: '', email: '', phone: '', address: '', userId: '' });
         setSelectedCustomer(null);
         setShowCreateForm(false);
-        
+
       } else {
         // ===== BƯỚC 5: XỬ LÝ LỖI TỪ API =====
         const error = await response.json();
@@ -298,41 +298,41 @@ const CustomerManagement = () => {
   // ===========================================================================================
   // PHẦN 8: HÀM VALIDATION FORM - KIỂM TRA DỮ LIỆU ĐẦU VÀO
   // ===========================================================================================
-  
+
   const validateForm = () => {
     const errors = {};
-    
+
     // ===== VALIDATION CHO TÊN KHÁCH HÀNG =====
     if (!formData.name.trim()) {
       errors.name = 'Tên khách hàng là bắt buộc';
     }
-    
+
     // ===== VALIDATION CHO EMAIL =====
     if (!formData.email.trim()) {
       errors.email = 'Email là bắt buộc';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       errors.email = 'Email không hợp lệ';
     }
-    
+
     // ===== VALIDATION CHO SỐ ĐIỆN THOẠI =====
     if (!formData.phone.trim()) {
       errors.phone = 'Số điện thoại là bắt buộc';
     } else if (!/^(\+84|0)[0-9]{9,10}$/.test(formData.phone.replace(/\s/g, ''))) {
       errors.phone = 'Số điện thoại không hợp lệ';
     }
-    
+
     // ===== VALIDATION CHO ĐỊA CHỈ =====
     if (!formData.address.trim()) {
       errors.address = 'Địa chỉ là bắt buộc';
     }
-    
+
     return errors; // Trả về object chứa các lỗi
   };
 
   // ===========================================================================================
   // PHẦN 9: HÀM XỬ LÝ CHỈNH SỬA KHÁCH HÀNG
   // ===========================================================================================
-  
+
   // Mở form chỉnh sửa với dữ liệu của khách hàng được chọn
   const handleEdit = (customer) => {
     setSelectedCustomer(customer);          // Lưu khách hàng được chọn
@@ -352,7 +352,7 @@ const CustomerManagement = () => {
   // ===========================================================================================
   // PHẦN 11: HÀM TIỆN ÍCH - FORMAT NGÀY THÁNG
   // ===========================================================================================
-  
+
   // Chuyển đổi string ISO date thành định dạng ngày tháng Việt Nam
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('vi-VN', {
@@ -367,16 +367,16 @@ const CustomerManagement = () => {
   // ===========================================================================================
   // PHẦN 12: RENDER UI - HIỂN THỊ GIAO DIỆN NGƯỜI DÙNG
   // ===========================================================================================
-  
+
   return (
     // Container chính với background gradient
-    <div style={{ 
-      minHeight: '100vh', 
+    <div style={{
+      minHeight: '100vh',
       background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
       padding: '20px'
     }}>
       <div style={{ maxWidth: '1200px', margin: 'auto' }}>
-        
+
         {/* ===== HEADER SECTION - TIÊU ĐỀ VÀ CÁC NÚT HÀNH ĐỘNG ===== */}
         <div style={{
           background: '#fff',
@@ -455,7 +455,7 @@ const CustomerManagement = () => {
             }}>
               <FaCheckCircle />
               <span>
-                Tài khoản đã được tạo thành công với User ID: <strong>{userId}</strong>. 
+                Tài khoản đã được tạo thành công với User ID: <strong>{userId}</strong>.
                 Vui lòng điền thông tin khách hàng bên dưới để hoàn tất hồ sơ.
               </span>
             </div>
@@ -623,9 +623,9 @@ const CustomerManagement = () => {
                 <tbody>
                   {customers.map((customer, index) => (
                     // Mỗi hàng trong bảng đại diện cho 1 khách hàng
-                    <tr 
-                      key={customer.customerId} 
-                      style={{ 
+                    <tr
+                      key={customer.customerId}
+                      style={{
                         borderBottom: index < customers.length - 1 ? '1px solid #f3f4f6' : 'none',
                         '&:hover': { background: '#f9fafb' }
                       }}
@@ -636,9 +636,7 @@ const CustomerManagement = () => {
                           <div style={{ fontWeight: '500', color: '#111827', marginBottom: '4px' }}>
                             {customer.name}
                           </div>
-                          <div style={{ fontSize: '12px', color: '#6b7280' }}>
-                            ID: {customer.customerId?.substring(0, 8)}...
-                          </div>
+                          {/* Customer ID hidden for privacy */}
                           <div style={{ fontSize: '12px', color: '#6b7280' }}>
                             User ID: {customer.userId} ({customer.username})
                           </div>
@@ -777,7 +775,7 @@ const CustomerManagement = () => {
               <h2 style={{ marginBottom: '20px', color: '#1f2937' }}>
                 {selectedCustomer ? 'Chỉnh sửa khách hàng' : 'Tạo khách hàng mới'}
               </h2>
-              
+
               <form onSubmit={handleCreateCustomer}>
                 {/* ===== TRƯỜNG TÊN KHÁCH HÀNG ===== */}
                 <div style={{ marginBottom: '16px' }}>
@@ -787,7 +785,7 @@ const CustomerManagement = () => {
                   <input
                     type="text"
                     value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     style={{
                       width: '100%',
                       padding: '8px 12px',
@@ -812,7 +810,7 @@ const CustomerManagement = () => {
                   <input
                     type="email"
                     value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     style={{
                       width: '100%',
                       padding: '8px 12px',
@@ -837,7 +835,7 @@ const CustomerManagement = () => {
                   <input
                     type="tel"
                     value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     style={{
                       width: '100%',
                       padding: '8px 12px',
@@ -861,7 +859,7 @@ const CustomerManagement = () => {
                   </label>
                   <textarea
                     value={formData.address}
-                    onChange={(e) => setFormData({...formData, address: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                     style={{
                       width: '100%',
                       padding: '8px 12px',
@@ -888,7 +886,7 @@ const CustomerManagement = () => {
                   <input
                     type="number"
                     value={formData.userId}
-                    onChange={(e) => setFormData({...formData, userId: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, userId: e.target.value })}
                     style={{
                       width: '100%',
                       padding: '8px 12px',

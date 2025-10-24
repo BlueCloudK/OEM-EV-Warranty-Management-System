@@ -695,7 +695,7 @@ const ServiceHistoryManagement = () => {
                     gap: '6px'
                   }}
                 >
-                  <FaArrowLeft /> Dashboard
+                  <FaArrowLeft /> Quay lại
                 </button>
               )}
               

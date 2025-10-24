@@ -181,6 +181,7 @@ const WarrantyClaimsManagement = () => {
       console.log('API Base URL:', API_BASE_URL);
       console.log('Filter status:', filterStatus);
       
+      
       if (!token || !API_BASE_URL) {
         console.warn('Missing token or API_BASE_URL, using mock data');
         setWarrantyClaims(mockWarrantyClaims);
@@ -437,7 +438,7 @@ const WarrantyClaimsManagement = () => {
         console.log('SC Staff updating warranty claim:', payload);
       } else {
         // Create new claim using SC Staff specific endpoint
-        url = `${API_BASE_URL}/api/warranty-claims/sc-create`;
+        url = `${API_BASE_URL}/api/warranty-claims`;
         method = 'POST';
         console.log('SC Staff creating warranty claim:', payload);
       }
@@ -666,7 +667,7 @@ const WarrantyClaimsManagement = () => {
                     gap: '6px'
                   }}
                 >
-                  <FaArrowLeft /> Dashboard
+                  <FaArrowLeft /> Quay lại
                 </button>
               )}
               

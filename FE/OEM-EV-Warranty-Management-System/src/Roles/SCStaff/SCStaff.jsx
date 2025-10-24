@@ -4,6 +4,7 @@ import {
   FaUsers,
   FaCar,
   FaClipboardList,
+  FaComments,
   FaHistory,
   FaArrowRight,
   FaUserCog,
@@ -25,6 +26,7 @@ export default function SCStaff() {
     submittedClaims: 23,
     completedServices: 342,
     newAccounts: 47,
+    feedbacks: 0,
     loading: true
   });
 
@@ -45,11 +47,12 @@ export default function SCStaff() {
 
         const customersP = fetch(`${API_BASE_URL}/api/customers?size=1`, { headers });
         const vehiclesP = fetch(`${API_BASE_URL}/api/vehicles?size=1`, { headers });
+  const feedbacksP = fetch(`${API_BASE_URL}/api/feedbacks?page=0&size=1`, { headers });
         const submittedClaimsP = fetch(`${API_BASE_URL}/api/warranty-claims/by-status/SUBMITTED?page=0&size=1`, { headers });
         const completedServicesP = fetch(`${API_BASE_URL}/api/service-histories?status=COMPLETED&page=0&size=1`, { headers }).catch(() => null);
         const newAccountsP = fetch(`${API_BASE_URL}/api/admin/users/statistics`, { headers }).catch(() => null);
 
-        const [customersR, vehiclesR, submittedR, servicesR, accountsR] = await Promise.all([customersP, vehiclesP, submittedClaimsP, completedServicesP, newAccountsP]);
+  const [customersR, vehiclesR, feedbacksR, submittedR, servicesR, accountsR] = await Promise.all([customersP, vehiclesP, feedbacksP, submittedClaimsP, completedServicesP, newAccountsP]);
 
         const safeCount = async (res) => {
           if (!res || !res.ok) return null;
@@ -62,9 +65,10 @@ export default function SCStaff() {
           }
         };
 
-        const [customersCount, vehiclesCount, submittedCount, servicesCount, accountsStats] = await Promise.all([
+        const [customersCount, vehiclesCount, feedbacksCount, submittedCount, servicesCount, accountsStats] = await Promise.all([
           safeCount(customersR),
           safeCount(vehiclesR),
+          safeCount(feedbacksR),
           safeCount(submittedR),
           safeCount(servicesR),
           accountsR && accountsR.ok ? accountsR.json() : null
@@ -73,6 +77,7 @@ export default function SCStaff() {
         setStats(prev => ({
           customers: customersCount ?? prev.customers,
           vehicles: vehiclesCount ?? prev.vehicles,
+          feedbacks: feedbacksCount ?? prev.feedbacks,
           submittedClaims: submittedCount ?? prev.submittedClaims,
           completedServices: servicesCount ?? prev.completedServices,
           newAccounts: (accountsStats && (accountsStats.newUsers || accountsStats.totalNew || accountsStats.count)) ?? prev.newAccounts,
@@ -130,13 +135,33 @@ export default function SCStaff() {
     },
     {
       id: 5,
-      title: "Tạo tài khoản khách hàng",
-      description: "Tạo và quản lý tài khoản khách hàng",
+      title: "Tạo tài khoản và Profile khách hàng",
+      description: "Tạo tài khoản mới và thiết lập profile khách hàng (thông tin cá nhân & xe)",
       icon: <FaUserPlus size={24} />,
       color: "#ef4444",
       bgGradient: "linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)",
       path: "/scstaff/create-customer-account",
       features: ["Tạo", "Xác thực"]
+    }
+    ,{
+      id: 6,
+      title: "Quản lý Feedbacks",
+      description: "Xem và quản lý phản hồi, đánh giá từ khách hàng",
+      icon: <FaComments size={24} />,
+      color: "#06b6d4",
+      bgGradient: "linear-gradient(135deg, #cffafe 0%, #bbf7ff 100%)",
+      path: "/scstaff/feedbacks",
+      features: ["Xem", "Phản hồi", "Thống kê"]
+    },
+    {
+      id: 7,
+      title: "Xem phụ tùng xe",
+      description: "Xem thông tin phụ tùng xe",
+      icon: <FaCog size={24} />,
+      color: "#06d47eff",
+      bgGradient: "linear-gradient(135deg, #cffafe 0%, #bbffd2ff 100%)",
+      path: "/scstaff/parts",
+      features: ["Xem","Thống kê"]
     }
   ];
 
@@ -145,6 +170,7 @@ export default function SCStaff() {
     { icon: <FaUserCog size={18} />, label: "Khách hàng", path: "/scstaff/customers" },
     { icon: <FaCar size={18} />, label: "Xe", path: "/scstaff/vehicles" },
     { icon: <FaClipboardList size={18} />, label: "Bảo hành", path: "/scstaff/warranty-claims" },
+    { icon: <FaComments size={18} />, label: "Feedbacks", path: "/scstaff/feedbacks" },
     { icon: <FaHistory size={18} />, label: "Lịch sử", path: "/scstaff/service-history" },
     { icon: <FaUserPlus size={18} />, label: "Tạo TK", path: "/scstaff/create-customer-account" }
   ];
@@ -429,6 +455,7 @@ export default function SCStaff() {
             {[
               { value: stats.customers, label: 'Khách hàng', icon: <FaUsers size={18} />, color: '#3b82f6', bgGradient: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)' },
               { value: stats.vehicles, label: 'Xe đăng ký', icon: <FaCar size={18} />, color: '#10b981', bgGradient: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)' },
+              { value: stats.feedbacks, label: 'Feedbacks', icon: <FaComments size={18} />, color: '#06b6d4', bgGradient: 'linear-gradient(135deg, #cffafe 0%, #bbf7ff 100%)' },
               { value: stats.submittedClaims, label: 'Yêu cầu chờ', icon: <FaClipboardList size={18} />, color: '#f59e0b', bgGradient: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)' },
               { value: stats.completedServices, label: 'Dịch vụ hoàn thành', icon: <FaHistory size={18} />, color: '#8b5cf6', bgGradient: 'linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%)' },
               { value: stats.newAccounts, label: 'Tài khoản mới', icon: <FaUserPlus size={18} />, color: '#ef4444', bgGradient: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)' }

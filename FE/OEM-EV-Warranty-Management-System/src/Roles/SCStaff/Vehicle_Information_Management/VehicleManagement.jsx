@@ -53,6 +53,19 @@ const VehicleManagement = () => {
   // View states
   const [activeView, setActiveView] = useState('list'); // list, detail
   const [selectedVehicle, setSelectedVehicle] = useState(null);
+  // Form states for create/update
+  const [formData, setFormData] = useState({
+    vehicleId: null,
+    vehicleName: '',
+    vehicleModel: '',
+    vehicleYear: new Date().getFullYear(),
+    vehicleVin: '',
+    vehicleColor: '',
+    vehicleEngine: '',
+    customerId: ''
+  });
+  const [formErrors, setFormErrors] = useState({});
+  const [formMessage, setFormMessage] = useState(null);
 
   // ===========================================================================================
   // MOCK DATA - For fallback when API is not available
@@ -91,6 +104,24 @@ const VehicleManagement = () => {
     fetchVehicles();
     fetchCustomers();
   }, [currentPage, pageSize]);
+
+  // Open create form with empty defaults
+  const openCreateForm = () => {
+    setFormErrors({});
+    setFormMessage(null);
+    setFormData({
+      vehicleId: null,
+      vehicleName: '',
+      vehicleModel: '',
+      vehicleYear: new Date().getFullYear(),
+      vehicleVin: '',
+      vehicleColor: '',
+      vehicleEngine: '',
+      customerId: ''
+    });
+    setSelectedVehicle(null);
+    setActiveView('form');
+  };
 
   // ===========================================================================================
   // API FUNCTIONS
@@ -271,6 +302,113 @@ const VehicleManagement = () => {
     }
   };
 
+  // Open edit form prefilled with vehicle
+  const openEditForm = (vehicle) => {
+    setFormErrors({});
+    setFormMessage(null);
+    setFormData({
+      vehicleId: vehicle.vehicleId || null,
+      vehicleName: vehicle.vehicleName || '',
+      vehicleModel: vehicle.vehicleModel || '',
+      vehicleYear: vehicle.vehicleYear || new Date().getFullYear(),
+      vehicleVin: vehicle.vehicleVin || '',
+      vehicleColor: vehicle.vehicleColor || '',
+      vehicleEngine: vehicle.vehicleEngine || '',
+      customerId: vehicle.customerId || ''
+    });
+    setSelectedVehicle(vehicle);
+    setActiveView('form');
+  };
+
+  // Helper to get auth headers
+  const getAuthHeaders = async () => {
+    const token = localStorage.getItem('token');
+    return token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+  };
+
+  // Create or update vehicle
+  const handleSubmitVehicle = async () => {
+    setFormMessage(null);
+    setFormErrors({});
+
+    // Basic validation
+    const errors = {};
+    if (!formData.vehicleName) errors.vehicleName = 'Tên xe là bắt buộc';
+    if (!formData.vehicleModel) errors.vehicleModel = 'Model là bắt buộc';
+    if (!formData.vehicleVin) errors.vehicleVin = 'VIN là bắt buộc';
+    if (!formData.vehicleYear || formData.vehicleYear < 1900) errors.vehicleYear = 'Năm hợp lệ là bắt buộc';
+    if (!formData.customerId) errors.customerId = 'Customer ID là bắt buộc';
+    if (Object.keys(errors).length) {
+      setFormErrors(errors);
+      return;
+    }
+
+    try {
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+      const token = localStorage.getItem('token');
+
+      const payload = {
+        vehicleName: formData.vehicleName,
+        vehicleModel: formData.vehicleModel,
+        vehicleYear: Number(formData.vehicleYear),
+        vehicleVin: formData.vehicleVin,
+        customerId: formData.customerId
+      };
+
+      // Mock fallback
+      if (!token || !API_BASE_URL) {
+        const mockResp = Object.assign({
+          vehicleId: formData.vehicleId || Math.floor(Math.random() * 90000) + 100,
+          customerName: customers.find(c => c.customerId === formData.customerId)?.name || ''
+        }, payload);
+
+        // If updating locally, replace in vehicles list; else prepend
+        if (formData.vehicleId) {
+          setVehicles(v => v.map(x => x.vehicleId === formData.vehicleId ? { ...x, ...mockResp } : x));
+          setFormMessage('Cập nhật (mock) thành công');
+        } else {
+          setVehicles(v => [mockResp, ...v]);
+          setFormMessage('Tạo xe (mock) thành công');
+        }
+        setActiveView('list');
+        return;
+      }
+
+      const headers = await getAuthHeaders();
+      let res;
+      if (formData.vehicleId) {
+        // update
+        res = await fetch(`${API_BASE_URL}/api/vehicles/${encodeURIComponent(formData.vehicleId)}`, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify(payload)
+        });
+      } else {
+        // create
+        res = await fetch(`${API_BASE_URL}/api/vehicles`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(payload)
+        });
+      }
+
+      if (!res.ok) {
+        const txt = await res.text();
+        try { const json = JSON.parse(txt); setFormMessage(json.message || txt); } catch(e){ setFormMessage(txt); }
+        return;
+      }
+
+      const data = await res.json();
+      // update local list and UI
+      await fetchVehicles();
+      setFormMessage(formData.vehicleId ? 'Xe đã được cập nhật' : 'Xe đã được tạo');
+      setActiveView('list');
+    } catch (err) {
+      console.error('Error saving vehicle:', err);
+      setFormMessage('Lỗi khi lưu xe. Vui lòng thử lại.');
+    }
+  };
+
   // ===========================================================================================
   // SEARCH HANDLERS
   // ===========================================================================================
@@ -347,7 +485,7 @@ const VehicleManagement = () => {
                     gap: '6px'
                   }}
                 >
-                  <FaArrowLeft /> Dashboard
+                  <FaArrowLeft /> Quay lại
                 </button>
               )}
               
@@ -363,6 +501,24 @@ const VehicleManagement = () => {
                 </p>
               </div>
             </div>
+            {/* Create new vehicle button when in list view */}
+            {activeView === 'list' && (
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={openCreateForm} style={{
+                  background: '#3b82f6',
+                  color: 'white',
+                  border: 'none',
+                  padding: '8px 14px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <FaSave /> Tạo xe mới
+                </button>
+              </div>
+            )}
           </div>
 
           {/* ===== SEARCH SECTION ===== */}

@@ -21,6 +21,8 @@ import CreateCustomerAccount from "./Roles/SCStaff/Create_Customer_Account/Creat
 import VehicleManagement from "./Roles/SCStaff/Vehicle_Information_Management/VehicleManagement";
 import WarrantyClaimsManagement from "./Roles/SCStaff/Warranty_Claims_Management/WarrantyClaimsManagement";
 import ServiceHistoryManagement from "./Roles/SCStaff/Service_History_Management/ServiceHistoryManagement";
+import FeedbackManagement from "./Roles/SCStaff/FeedbacksManagement/FeedbackManagement";
+import ViewParts from "./Roles/SCStaff/ViewParts";
 //
 import Admin from "./Roles/Admin/Admin";
 import AdminUserManagement from "./Roles/Admin/AdminUserManagement";
@@ -69,6 +71,8 @@ export default function App() {
         <Route path="/scstaff/vehicles" element={<VehicleManagement />} />
         <Route path="/scstaff/warranty-claims" element={<WarrantyClaimsManagement />} />
         <Route path="/scstaff/service-history" element={<ServiceHistoryManagement />} />
+        <Route path="/scstaff/feedbacks" element={<FeedbackManagement />} />
+        <Route path="/scstaff/parts" element={<ViewParts />} />
         // Admin
         <Route path="/admin" element={<Admin />} />
         <Route path="/admin/dashboard" element={<Admin />} />
