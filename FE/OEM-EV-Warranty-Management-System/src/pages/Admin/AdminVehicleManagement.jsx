@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext'; // Import the master auth hook
 import { useAdminVehicleManagement } from '../../hooks/useAdminVehicleManagement';
 import * as S from './AdminVehicleManagement.styles';
-import { FaCar, FaPlus, FaEdit, FaSearch, FaTrash, FaSpinner, FaClipboardCheck } from 'react-icons/fa';
+import { FaCar, FaPlus, FaEdit, FaSearch, FaTrash, FaSpinner } from 'react-icons/fa';
 
-// Form Modal Component
+// Form Modal Component (remains the same)
 const VehicleFormModal = ({ isOpen, onClose, onSubmit, vehicle, customers }) => {
   const [formData, setFormData] = useState({});
 
@@ -67,16 +68,23 @@ const VehicleFormModal = ({ isOpen, onClose, onSubmit, vehicle, customers }) => 
   );
 };
 
-// Main Page Component
+// Main Page Component with new Authentication Flow
 const AdminVehicleManagement = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const {
-    vehicles, customers, loading, error, pagination, searchTerm, setSearchTerm,
+    vehicles, customers, loading: dataLoading, error, pagination, searchTerm, setSearchTerm,
     handleSearch, handleCreateOrUpdate, handleDelete, handlePageChange
   } = useAdminVehicleManagement();
 
   const [showForm, setShowForm] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      navigate("/login");
+    }
+  }, [isAuthenticated, authLoading, navigate]);
 
   const openCreateForm = () => {
     setSelectedVehicle(null);
@@ -87,6 +95,10 @@ const AdminVehicleManagement = () => {
     setSelectedVehicle(vehicle);
     setShowForm(true);
   };
+
+  if (authLoading || dataLoading) {
+    return <S.LoadingState><FaSpinner /> <p>Đang tải...</p></S.LoadingState>;
+  }
 
   return (
     <S.PageContainer>
@@ -102,9 +114,7 @@ const AdminVehicleManagement = () => {
           </S.SearchContainer>
         </S.Header>
 
-        {loading ? (
-          <S.LoadingState><FaSpinner /> <p>Đang tải...</p></S.LoadingState>
-        ) : error ? (
+        {error ? (
           <S.EmptyState>{error}</S.EmptyState>
         ) : vehicles.length === 0 ? (
           <S.EmptyState><h3>Không tìm thấy xe</h3></S.EmptyState>

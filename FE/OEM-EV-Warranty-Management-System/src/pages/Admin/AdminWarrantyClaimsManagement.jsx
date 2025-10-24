@@ -1,95 +1,138 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAdminWarrantyClaimsManagement } from '../../hooks/useAdminWarrantyClaimsManagement';
+import React, { useState } from 'react';
+import { useAdminWarrantyClaims } from '../../hooks/useAdminWarrantyClaims';
 import * as S from './AdminWarrantyClaimsManagement.styles';
-import { FaClipboardList, FaSearch, FaTrash, FaSpinner, FaCheck, FaTimes } from 'react-icons/fa';
+import { FaClipboardCheck, FaSpinner, FaCheck, FaTimes, FaTrash } from 'react-icons/fa';
 
-// Main Page Component
-const AdminWarrantyClaimsManagement = () => {
-  const navigate = useNavigate();
-  const {
-    claims, loading, error, pagination, filters,
-    handleFilterChange, applyFilters, handleUpdateStatus, handleDelete, handlePageChange
-  } = useAdminWarrantyClaimsManagement();
+const RejectClaimModal = ({ isOpen, onClose, onSubmit }) => {
+  const [reason, setReason] = useState('');
 
-  const handleApprove = (claimId) => {
-    handleUpdateStatus(claimId, 'APPROVED');
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!reason.trim()) {
+      alert('Vui lòng nhập lý do từ chối.');
+      return;
+    }
+    const { success } = await onSubmit(reason);
+    if (success) {
+      onClose();
+    }
   };
 
-  const handleReject = (claimId) => {
-    const reason = prompt("Nhập lý do từ chối:");
-    if (reason) {
-      handleUpdateStatus(claimId, 'REJECTED', reason);
-    }
+  if (!isOpen) return null;
+
+  return (
+    <S.ModalOverlay>
+      <S.ModalContent>
+        <h2>Nhập lý do từ chối</h2>
+        <form onSubmit={handleSubmit}>
+          <S.FormGroup>
+            <S.TextArea 
+              rows="4" 
+              value={reason} 
+              onChange={(e) => setReason(e.target.value)} 
+              placeholder="Ví dụ: Hư hỏng do người dùng, không thuộc phạm vi bảo hành..."
+            />
+          </S.FormGroup>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+            <S.Button type="button" onClick={onClose}>Hủy</S.Button>
+            <S.Button $danger type="submit">Xác nhận Từ chối</S.Button>
+          </div>
+        </form>
+      </S.ModalContent>
+    </S.ModalOverlay>
+  );
+};
+
+const AdminWarrantyClaimsManagement = () => {
+  const {
+    claims, loading, error, pagination, filterStatus,
+    handleFilterChange, handleApprove, handleReject, handleDelete, handlePageChange
+  } = useAdminWarrantyClaims();
+
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [selectedClaim, setSelectedClaim] = useState(null);
+
+  const openRejectModal = (claim) => {
+    setSelectedClaim(claim);
+    setShowRejectModal(true);
+  };
+
+  const handleRejectSubmit = async (reason) => {
+    if (!selectedClaim) return;
+    return await handleReject(selectedClaim.warrantyClaimId, reason);
   };
 
   return (
     <S.PageContainer>
-      <S.ContentWrapper>
-        <S.Header>
-          <S.HeaderTop>
-            <S.HeaderTitle><FaClipboardList /> Quản lý Yêu cầu Bảo hành (Admin)</S.HeaderTitle>
-          </S.HeaderTop>
-          <S.FilterContainer>
-            <input placeholder="Tìm kiếm..." value={filters.searchTerm} onChange={(e) => handleFilterChange('searchTerm', e.target.value)} />
-            <select value={filters.status} onChange={(e) => handleFilterChange('status', e.target.value)}>
-              <option value="all">Tất cả Trạng thái</option>
-              <option value="SUBMITTED">Chờ duyệt</option>
-              <option value="APPROVED">Đã duyệt</option>
-              <option value="PROCESSING">Đang xử lý</option>
-              <option value="COMPLETED">Hoàn thành</option>
-              <option value="REJECTED">Từ chối</option>
-            </select>
-            <S.Button $small onClick={applyFilters}><FaSearch /> Lọc</S.Button>
-          </S.FilterContainer>
-        </S.Header>
+      <S.Header>
+        <S.HeaderTitle><FaClipboardCheck /> Duyệt Yêu cầu Bảo hành (Admin)</S.HeaderTitle>
+        <S.FilterContainer>
+          <S.Select value={filterStatus} onChange={(e) => handleFilterChange(e.target.value)}>
+            <option value="all">Tất cả</option>
+            <option value="SUBMITTED">Chờ duyệt (SUBMITTED)</option>
+            <option value="MANAGER_REVIEW">Đã duyệt (MANAGER_REVIEW)</option>
+            <option value="PROCESSING">Đang xử lý (PROCESSING)</option>
+            <option value="COMPLETED">Hoàn thành (COMPLETED)</option>
+            <option value="REJECTED">Từ chối (REJECTED)</option>
+          </S.Select>
+        </S.FilterContainer>
+      </S.Header>
 
-        {loading ? (
-          <S.LoadingState><FaSpinner /> <p>Đang tải...</p></S.LoadingState>
-        ) : error ? (
-          <S.EmptyState>{error}</S.EmptyState>
-        ) : claims.length === 0 ? (
-          <S.EmptyState><h3>Không có yêu cầu bảo hành nào</h3></S.EmptyState>
-        ) : (
-          <S.TableContainer>
-            <S.Table>
-              <thead>
-                <tr>
-                  <S.Th>ID</S.Th>
-                  <S.Th>Mô tả</S.Th>
-                  <S.Th>Xe (VIN)</S.Th>
-                  <S.Th>Linh kiện</S.Th>
-                  <S.Th>Trạng thái</S.Th>
-                  <S.Th>Thao tác</S.Th>
+      {loading ? (
+        <S.LoadingState><FaSpinner /> <p>Đang tải...</p></S.LoadingState>
+      ) : error ? (
+        <S.EmptyState>{error}</S.EmptyState>
+      ) : claims.length === 0 ? (
+        <S.EmptyState><h3>Không có yêu cầu nào.</h3></S.EmptyState>
+      ) : (
+        <S.TableContainer>
+          <S.Table>
+            <thead>
+              <tr>
+                <S.Th>ID</S.Th>
+                <S.Th>Khách hàng</S.Th>
+                <S.Th>Xe (VIN)</S.Th>
+                <S.Th>Linh kiện</S.Th>
+                <S.Th>Mô tả</S.Th>
+                <S.Th>Trạng thái</S.Th>
+                <S.Th>Ngày yêu cầu</S.Th>
+                <S.Th>Hành động</S.Th>
+              </tr>
+            </thead>
+            <tbody>
+              {claims.map(claim => (
+                <tr key={claim.warrantyClaimId}>
+                  <S.Td>{claim.warrantyClaimId}</S.Td>
+                  <S.Td>{claim.customerName}</S.Td>
+                  <S.Td>{claim.vehicleVin}</S.Td>
+                  <S.Td>{claim.partName}</S.Td>
+                  <S.Td>{claim.description}</S.Td>
+                  <S.Td><S.StatusBadge status={claim.status}>{claim.status}</S.StatusBadge></S.Td>
+                  <S.Td>{new Date(claim.claimDate).toLocaleDateString()}</S.Td>
+                  <S.Td>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      {claim.status === 'SUBMITTED' && (
+                        <>
+                          <S.Button $small $success onClick={() => handleApprove(claim.warrantyClaimId)}><FaCheck /> Duyệt</S.Button>
+                          <S.Button $small $danger onClick={() => openRejectModal(claim)}><FaTimes /> Từ chối</S.Button>
+                        </>
+                      )}
+                      <S.Button $small $danger onClick={() => handleDelete(claim.warrantyClaimId)}><FaTrash /></S.Button>
+                    </div>
+                  </S.Td>
                 </tr>
-              </thead>
-              <tbody>
-                {claims.map(claim => (
-                  <tr key={claim.id}>
-                    <S.Td>{claim.id}</S.Td>
-                    <S.Td>{claim.description}</S.Td>
-                    <S.Td>{claim.vehicle?.vin || 'N/A'}</S.Td>
-                    <S.Td>{claim.part?.name || 'N/A'}</S.Td>
-                    <S.Td>{claim.status}</S.Td>
-                    <S.Td>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        {claim.status === 'SUBMITTED' && (
-                          <>
-                            <S.Button $small $success onClick={() => handleApprove(claim.id)}><FaCheck /></S.Button>
-                            <S.Button $small $danger onClick={() => handleReject(claim.id)}><FaTimes /></S.Button>
-                          </>
-                        )}
-                        <S.Button $small $danger onClick={() => handleDelete(claim.id)}><FaTrash /></S.Button>
-                      </div>
-                    </S.Td>
-                  </tr>
-                ))}
-              </tbody>
-            </S.Table>
-            {/* Pagination controls can be added here */}
-          </S.TableContainer>
-        )}
-      </S.ContentWrapper>
+              ))}
+            </tbody>
+          </S.Table>
+          {/* Pagination controls can be added here */}
+        </S.TableContainer>
+      )}
+
+      <RejectClaimModal 
+        isOpen={showRejectModal} 
+        onClose={() => setShowRejectModal(false)} 
+        onSubmit={handleRejectSubmit} 
+      />
     </S.PageContainer>
   );
 };

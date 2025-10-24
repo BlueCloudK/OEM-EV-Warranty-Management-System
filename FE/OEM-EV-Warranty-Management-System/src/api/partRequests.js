@@ -1,4 +1,4 @@
-import { http } from "./httpClient";
+import apiClient from "./apiClient";
 
 export const partRequestsApi = {
   async list(params = {}) {
@@ -7,9 +7,7 @@ export const partRequestsApi = {
       size: 50,
       ...params,
     }).toString();
-    const { data } = await http.get(`/api/part-requests?${query}`, {
-      suppressAuthRedirect: true,
-    });
+    const data = await apiClient(`/api/part-requests?${query}`);
     return Array.isArray(data?.content)
       ? data.content
       : Array.isArray(data)
@@ -17,18 +15,14 @@ export const partRequestsApi = {
       : [];
   },
   async get(id) {
-    const { data } = await http.get(`/api/part-requests/${id}`, {
-      suppressAuthRedirect: true,
-    });
+    const data = await apiClient(`/api/part-requests/${id}`);
     return data;
   },
   async updateStatus(id, status) {
-    const { data } = await http.patch(
-      `/api/part-requests/${id}/status`,
-      status,
-      { suppressAuthRedirect: true }
-    );
+    const data = await apiClient(`/api/part-requests/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify(status),
+    });
     return data;
   },
 };
-

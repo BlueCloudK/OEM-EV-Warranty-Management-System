@@ -38,7 +38,7 @@ export const useCreateCustomerAccount = () => {
 
     try {
       const result = await adminAuthApi.staffRegisterCustomer(formData);
-      if (result && result.success) {
+      if (result && result.customer) { // Changed from result.success to result.customer
         setSubmitStatus('success');
         setCreatedCustomer(result.customer);
         setFormData({ username: '', email: '', password: '', address: '', name: '', phone: '' });

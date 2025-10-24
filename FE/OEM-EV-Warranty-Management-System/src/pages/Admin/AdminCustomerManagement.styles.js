@@ -160,6 +160,20 @@ export const Input = styled.input`
   box-sizing: border-box;
 `;
 
+export const Select = styled.select`
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: white;
+  font-size: 14px;
+  cursor: pointer;
+
+  &:focus {
+    outline: none;
+    border-color: #1d4ed8;
+  }
+`;
+
 export const TextArea = styled.textarea`
   width: 100%;
   padding: 8px 12px;

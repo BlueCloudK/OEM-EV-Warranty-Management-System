@@ -4,7 +4,7 @@ import apiClient from './apiClient';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
 export const adminUsersApi = {
-  // GET ALL USERS - Lấy danh sách tất cả users
+  // GET ALL USERS - Lấy danh sách tất cả users với pagination và filtering
   getAllUsers: (params = {}) => {
     const queryParams = new URLSearchParams(params).toString();
     return apiClient(`/api/admin/users?${queryParams}`);
@@ -15,7 +15,13 @@ export const adminUsersApi = {
     return apiClient(`/api/admin/users/${id}`);
   },
 
-  // UPDATE USER - Cập nhật user
+  // SEARCH USERS BY USERNAME - Tìm kiếm user theo username
+  searchUsersByUsername: (username, page = 0, size = 10) => {
+    const queryParams = new URLSearchParams({ username, page, size }).toString();
+    return apiClient(`/api/admin/users/search?${queryParams}`);
+  },
+
+  // UPDATE USER (General PUT - currently problematic with password requirement)
   updateUser: (id, userData) => {
     return apiClient(`/api/admin/users/${id}`, {
       method: 'PUT',
@@ -39,6 +45,21 @@ export const adminUsersApi = {
   // GET STATISTICS - Thống kê users (Admin)
   getStatistics: () => {
     return apiClient('/api/admin/users/statistics');
+  },
+
+  // NEW: UPDATE USER ROLE - Cập nhật vai trò người dùng
+  updateUserRole: (userId, newRoleId) => {
+    return apiClient(`/api/admin/users/${userId}/role?newRoleId=${newRoleId}`, {
+      method: 'PATCH',
+    });
+  },
+
+  // NEW: RESET USER PASSWORD - Đặt lại mật khẩu người dùng
+  resetUserPassword: async (userId) => {
+    // Return the full response data, not just success: true
+    return await apiClient(`/api/admin/users/${userId}/reset-password`, {
+      method: 'POST',
+    });
   },
 };
 

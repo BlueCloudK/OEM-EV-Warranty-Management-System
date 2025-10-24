@@ -1,12 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { dataApi } from '../api/dataApi';
 
 /**
- * @description Custom Hook for Admin Vehicle Management logic.
+ * @description Custom Hook for Admin Vehicle Management logic (Auth logic removed).
  */
 export const useAdminVehicleManagement = () => {
-  const navigate = useNavigate();
   const [vehicles, setVehicles] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -55,17 +53,13 @@ export const useAdminVehicleManagement = () => {
   }, []);
 
   useEffect(() => {
-    if (!localStorage.getItem('accessToken')) {
-      navigate("/login");
-      return;
-    }
     fetchVehicles();
     fetchCustomers();
-  }, [fetchVehicles, fetchCustomers, navigate]);
+  }, [fetchVehicles, fetchCustomers]);
 
   const handleSearch = () => {
     setPagination(prev => ({ ...prev, currentPage: 0 }));
-    // fetchVehicles will be called by the useEffect dependency change
+    // fetchVehicles will be re-triggered by the useEffect dependency change on pagination
   };
 
   const handleCreateOrUpdate = async (formData, selectedVehicleId) => {

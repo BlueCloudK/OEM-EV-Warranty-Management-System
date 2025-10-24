@@ -92,7 +92,7 @@ const CreateCustomerAccount = () => {
 
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '20px' }}>
               <S.Button type="button" onClick={() => navigate('/scstaff')}>Hủy</S.Button>
-              <S.Button primary type="submit" disabled={loading}>
+              <S.Button $primary type="submit" disabled={loading}> {/* Changed primary to $primary */}
                 {loading ? <S.Spinner><FaSpinner /></S.Spinner> : <FaSave />} {loading ? 'Đang tạo...' : 'Tạo Tài Khoản'}
               </S.Button>
             </div>

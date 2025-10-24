@@ -5,18 +5,24 @@ import * as S from './WarrantyClaimsManagement.styles';
 import { FaClipboardList, FaPlus, FaEdit, FaSearch, FaArrowLeft, FaSpinner, FaEye } from 'react-icons/fa';
 
 // Form Modal Component
-const ClaimFormModal = ({ isOpen, onClose, onSubmit, claim, vehicles, parts, prefilledVehicle }) => {
-  const [formData, setFormData] = useState({ description: '', partId: '', vehicleId: '' });
+const ClaimFormModal = ({ isOpen, onClose, onSubmit, claim, vehicles, parts, installedParts, prefilledVehicle, onVehicleChange }) => {
+  const [formData, setFormData] = useState({ description: '', installedPartId: '', vehicleId: '' });
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (isOpen) {
       if (claim) {
-        setFormData({ description: claim.description, partId: claim.part.id, vehicleId: claim.vehicle.id });
+        setFormData({ 
+          description: claim.description, 
+          installedPartId: claim.installedPartId, 
+          vehicleId: claim.vehicleId 
+        });
+        onVehicleChange(claim.vehicleId);
       } else if (prefilledVehicle) {
-        setFormData({ description: `Yêu cầu cho xe ${prefilledVehicle.vehicleName}`, partId: '', vehicleId: prefilledVehicle.vehicleId });
+        setFormData({ description: `Yêu cầu cho xe ${prefilledVehicle.vehicleName}`, installedPartId: '', vehicleId: prefilledVehicle.vehicleId });
+        onVehicleChange(prefilledVehicle.vehicleId);
       } else {
-        setFormData({ description: '', partId: '', vehicleId: '' });
+        setFormData({ description: '', installedPartId: '', vehicleId: '' });
       }
       setErrors({});
     }
@@ -26,7 +32,7 @@ const ClaimFormModal = ({ isOpen, onClose, onSubmit, claim, vehicles, parts, pre
     const newErrors = {};
     if (!formData.description) newErrors.description = 'Mô tả là bắt buộc';
     if (!formData.vehicleId) newErrors.vehicleId = 'Phải chọn xe';
-    if (!formData.partId) newErrors.partId = 'Phải chọn linh kiện';
+    if (!formData.installedPartId) newErrors.installedPartId = 'Phải chọn linh kiện đã lắp đặt';
     return newErrors;
   };
 
@@ -37,12 +43,18 @@ const ClaimFormModal = ({ isOpen, onClose, onSubmit, claim, vehicles, parts, pre
       setErrors(validationErrors);
       return;
     }
-    const { success, message } = await onSubmit(formData, claim?.id);
+    const { success, message } = await onSubmit(formData, claim?.warrantyClaimId);
     if (success) {
       onClose();
     } else {
       setErrors({ general: message });
     }
+  };
+
+  const handleVehicleChange = (e) => {
+    const vehicleId = e.target.value;
+    setFormData({ ...formData, vehicleId, installedPartId: '' }); // Reset installedPartId when vehicle changes
+    onVehicleChange(vehicleId);
   };
 
   if (!isOpen) return null;
@@ -55,19 +67,19 @@ const ClaimFormModal = ({ isOpen, onClose, onSubmit, claim, vehicles, parts, pre
           {errors.general && <S.ErrorText>{errors.general}</S.ErrorText>}
           <S.FormGroup>
             <S.Label>Xe *</S.Label>
-            <S.Select name="vehicleId" value={formData.vehicleId} onChange={(e) => setFormData({ ...formData, vehicleId: e.target.value })} hasError={!!errors.vehicleId} disabled={!!prefilledVehicle}>
+            <S.Select name="vehicleId" value={formData.vehicleId} onChange={handleVehicleChange} hasError={!!errors.vehicleId} disabled={!!prefilledVehicle || !!claim}>
               <option value="">Chọn xe</option>
-              {vehicles.map(v => <option key={v.id} value={v.id}>{v.vehicleName} ({v.vin})</option>)}
+              {vehicles.map(v => <option key={v.vehicleId} value={v.vehicleId}>{v.vehicleName} ({v.vehicleVin})</option>)} 
             </S.Select>
             {errors.vehicleId && <S.ErrorText>{errors.vehicleId}</S.ErrorText>}
           </S.FormGroup>
           <S.FormGroup>
-            <S.Label>Linh kiện *</S.Label>
-            <S.Select name="partId" value={formData.partId} onChange={(e) => setFormData({ ...formData, partId: e.target.value })} hasError={!!errors.partId}>
-              <option value="">Chọn linh kiện</option>
-              {parts.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            <S.Label>Linh kiện đã lắp đặt *</S.Label>
+            <S.Select name="installedPartId" value={formData.installedPartId} onChange={(e) => setFormData({ ...formData, installedPartId: e.target.value })} hasError={!!errors.installedPartId} disabled={!formData.vehicleId || !!claim}>
+              <option value="">Chọn linh kiện đã lắp đặt</option>
+              {installedParts.map(p => <option key={p.installedPartId} value={p.installedPartId}>{p.partName} (Lắp đặt: {p.installationDate})</option>)} 
             </S.Select>
-            {errors.partId && <S.ErrorText>{errors.partId}</S.ErrorText>}
+            {errors.installedPartId && <S.ErrorText>{errors.installedPartId}</S.ErrorText>}
           </S.FormGroup>
           <S.FormGroup>
             <S.Label>Mô tả vấn đề *</S.Label>
@@ -88,8 +100,8 @@ const ClaimFormModal = ({ isOpen, onClose, onSubmit, claim, vehicles, parts, pre
 const WarrantyClaimsManagement = () => {
   const navigate = useNavigate();
   const {
-    claims, vehicles, parts, loading, error, pagination, filterStatus, prefilledVehicle,
-    handleFilterChange, handleCreateOrUpdate, handlePageChange
+    claims, vehicles, parts, installedParts, loading, error, pagination, filterStatus, prefilledVehicle,
+    handleFilterChange, handleCreateOrUpdate, handlePageChange, fetchInstalledPartsForVehicle
   } = useWarrantyClaimsManagement();
 
   const [showForm, setShowForm] = useState(!!prefilledVehicle);
@@ -133,16 +145,31 @@ const WarrantyClaimsManagement = () => {
         ) : (
           <S.TableContainer>
             <S.Table>
-              <thead><tr><S.Th>ID</S.Th><S.Th>Mô tả</S.Th><S.Th>Xe</S.Th><S.Th>Linh kiện</S.Th><S.Th>Trạng thái</S.Th><S.Th>Thao tác</S.Th></tr></thead>
+              <thead>
+                <tr>
+                  <S.Th>ID</S.Th>
+                  <S.Th>Khách hàng</S.Th>
+                  <S.Th>Xe</S.Th>
+                  <S.Th>Linh kiện</S.Th>
+                  <S.Th>Trạng thái</S.Th>
+                  <S.Th>Ngày yêu cầu</S.Th>
+                  <S.Th>Thao tác</S.Th>
+                </tr>
+              </thead>
               <tbody>
                 {claims.map(claim => (
-                  <tr key={claim.id}>
-                    <S.Td>{claim.id}</S.Td>
-                    <S.Td>{claim.description}</S.Td>
-                    <S.Td>{claim.vehicle?.vin || 'N/A'}</S.Td>
-                    <S.Td>{claim.part?.name || 'N/A'}</S.Td>
+                  <tr key={claim.warrantyClaimId}>
+                    <S.Td>{claim.warrantyClaimId}</S.Td>
+                    <S.Td>{claim.customerName}</S.Td>
+                    <S.Td>{claim.vehicleVin}</S.Td>
+                    <S.Td>{claim.partName}</S.Td>
                     <S.Td>{claim.status}</S.Td>
-                    <S.Td><S.Button small onClick={() => openEditForm(claim)}><FaEdit /> Sửa</S.Button></S.Td>
+                    <S.Td>{new Date(claim.claimDate).toLocaleDateString()}</S.Td>
+                    <S.Td>
+                      <S.Button small onClick={() => openEditForm(claim)}>
+                        <FaEdit /> Sửa
+                      </S.Button>
+                    </S.Td>
                   </tr>
                 ))}
               </tbody>
@@ -158,7 +185,9 @@ const WarrantyClaimsManagement = () => {
           claim={selectedClaim} 
           vehicles={vehicles}
           parts={parts}
+          installedParts={installedParts}
           prefilledVehicle={prefilledVehicle}
+          onVehicleChange={fetchInstalledPartsForVehicle}
         />
       </S.ContentWrapper>
     </S.PageContainer>

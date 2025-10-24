@@ -123,7 +123,16 @@ const ServiceHistoryManagement = () => {
         ) : (
           <S.TableContainer>
             <S.Table>
-              <thead><tr><S.Th>Ngày</S.Th><S.Th>Loại DV</S.Th><S.Th>Mô tả</S.Th><S.Th>Xe</S.Th><S.Th>Linh kiện</S.Th><S.Th>Thao tác</S.Th></tr></thead>
+              <thead>
+                <tr>
+                  <S.Th>Ngày</S.Th>
+                  <S.Th>Loại DV</S.Th>
+                  <S.Th>Mô tả</S.Th>
+                  <S.Th>Xe</S.Th>
+                  <S.Th>Linh kiện</S.Th>
+                  <S.Th>Thao tác</S.Th>
+                </tr>
+              </thead>
               <tbody>
                 {histories.map(history => (
                   <tr key={history.id}>
@@ -132,12 +141,15 @@ const ServiceHistoryManagement = () => {
                     <S.Td>{history.description}</S.Td>
                     <S.Td>{history.vehicle?.vin || 'N/A'}</S.Td>
                     <S.Td>{history.part?.name || 'N/A'}</S.Td>
-                    <S.Td><S.Button small onClick={() => openEditForm(history)}><FaEdit /> Sửa</S.Button></S.Td>
+                    <S.Td>
+                      <S.Button small onClick={() => openEditForm(history)}>
+                        <FaEdit /> Sửa
+                      </S.Button>
+                    </S.Td>
                   </tr>
                 ))}
               </tbody>
             </S.Table>
-            {/* Pagination controls can be added here */}
           </S.TableContainer>
         )}
 

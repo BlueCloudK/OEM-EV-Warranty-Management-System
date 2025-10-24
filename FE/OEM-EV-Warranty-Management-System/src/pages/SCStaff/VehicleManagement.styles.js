@@ -1,13 +1,6 @@
-import styled, { keyframes } from 'styled-components';
-
-const spin = keyframes`
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-`;
+import styled from 'styled-components';
 
 export const PageContainer = styled.div`
-  min-height: 100vh;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
   padding: 20px;
 `;
 
@@ -42,10 +35,10 @@ export const HeaderTitle = styled.h1`
 `;
 
 export const Button = styled.button`
-  background: ${({ primary, danger }) => (primary ? '#10b981' : danger ? '#ef4444' : '#6b7280')};
+  background: ${({ primary, danger, small }) => (primary ? '#1d4ed8' : danger ? '#ef4444' : '#6b7280')};
   color: white;
   border: none;
-  padding: ${({ small }) => (small ? '8px 12px' : '10px 16px')};
+  padding: ${({ small }) => (small ? '6px 12px' : '10px 16px')};
   border-radius: 6px;
   cursor: pointer;
   display: inline-flex;
@@ -82,6 +75,15 @@ export const TableContainer = styled.div`
 export const Table = styled.table`
   width: 100%;
   border-collapse: collapse;
+
+  .expanded-row > td {
+    border-bottom: none;
+  }
+
+  .child-row > td {
+    padding: 0;
+    border: none;
+  }
 `;
 
 export const Th = styled.th`
@@ -96,7 +98,6 @@ export const Th = styled.th`
 export const Td = styled.td`
   padding: 12px 15px;
   border-bottom: 1px solid #f3f4f6;
-  font-family: ${({ mono }) => (mono ? 'monospace' : 'inherit')};
 `;
 
 export const EmptyState = styled.div`
@@ -110,8 +111,8 @@ export const EmptyState = styled.div`
 export const LoadingState = styled(EmptyState)`
   svg {
     font-size: 24px;
-    color: #10b981;
-    animation: ${spin} 1s linear infinite;
+    color: #1d4ed8;
+    animation: spin 1s linear infinite;
   }
   p {
     margin-top: 16px;
@@ -136,10 +137,8 @@ export const ModalContent = styled.div`
   background: white;
   border-radius: 12px;
   padding: 24px;
-  width: 600px;
+  width: 500px;
   max-width: 90vw;
-  max-height: 90vh;
-  overflow: auto;
 `;
 
 export const FormGroup = styled.div`
@@ -162,6 +161,14 @@ export const Input = styled.input`
 `;
 
 export const Select = styled.select`
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid ${({ hasError }) => (hasError ? '#ef4444' : '#d1d5db')};
+  border-radius: 6px;
+  box-sizing: border-box;
+`;
+
+export const TextArea = styled.textarea`
   width: 100%;
   padding: 10px 12px;
   border: 1px solid ${({ hasError }) => (hasError ? '#ef4444' : '#d1d5db')};

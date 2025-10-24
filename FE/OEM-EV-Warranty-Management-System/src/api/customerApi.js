@@ -64,6 +64,77 @@ export const customerApi = {
       body: JSON.stringify(profileData),
     });
   },
+
+  /**
+   * Lấy danh sách phản hồi của khách hàng đang đăng nhập.
+   * Endpoint: GET /api/feedbacks/by-customer/{customerId}
+   * @param {number} customerId - ID của khách hàng.
+   * @param {object} params - Các tham số truy vấn.
+   * @returns {Promise<object>} Dữ liệu phân trang của các phản hồi.
+   */
+  getMyFeedbacks: (customerId, params = {}) => {
+    const queryParams = new URLSearchParams(params).toString();
+    return apiClient(`/api/feedbacks/by-customer/${customerId}?${queryParams}`);
+  },
+
+  /**
+   * Tạo phản hồi mới.
+   * Endpoint: POST /api/feedbacks
+   * @param {object} feedbackData - Dữ liệu phản hồi (warrantyClaimId, rating, comments).
+   * @returns {Promise<object>} Phản hồi đã tạo.
+   */
+  createFeedback: (feedbackData) => {
+    return apiClient('/api/feedbacks', {
+      method: 'POST',
+      body: JSON.stringify(feedbackData),
+    });
+  },
+
+  /**
+   * Lấy chi tiết phản hồi.
+   * Endpoint: GET /api/feedbacks/{id}
+   * @param {number} id - ID của phản hồi.
+   * @returns {Promise<object>} Chi tiết phản hồi.
+   */
+  getFeedbackById: (id) => {
+    return apiClient(`/api/feedbacks/${id}`);
+  },
+
+  /**
+   * Cập nhật phản hồi.
+   * Endpoint: PUT /api/feedbacks/{id}
+   * @param {number} id - ID của phản hồi.
+   * @param {object} feedbackData - Dữ liệu phản hồi cần cập nhật.
+   * @returns {Promise<object>} Phản hồi đã cập nhật.
+   */
+  updateFeedback: (id, feedbackData) => {
+    return apiClient(`/api/feedbacks/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(feedbackData),
+    });
+  },
+
+  /**
+   * Xóa phản hồi.
+   * Endpoint: DELETE /api/feedbacks/{id}
+   * @param {number} id - ID của phản hồi.
+   * @returns {Promise<void>}
+   */
+  deleteFeedback: (id) => {
+    return apiClient(`/api/feedbacks/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  /**
+   * Lấy phản hồi theo yêu cầu bảo hành.
+   * Endpoint: GET /api/feedbacks/by-claim/{claimId}
+   * @param {number} claimId - ID của yêu cầu bảo hành.
+   * @returns {Promise<object>} Phản hồi cho yêu cầu bảo hành.
+   */
+  getFeedbackByClaim: (claimId) => {
+    return apiClient(`/api/feedbacks/by-claim/${claimId}`);
+  },
 };
 
 export default customerApi;

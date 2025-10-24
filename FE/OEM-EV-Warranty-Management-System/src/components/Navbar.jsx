@@ -5,11 +5,10 @@ import { FaSignOutAlt, FaUser } from "react-icons/fa";
 
 /**
  * ===========================================================================================
- *  Navbar (Context Refactored)
+ *  Navbar (Dynamic Logo Link)
  * ===========================================================================================
- * - Now consumes AuthContext to get the real-time authentication state.
- * - Automatically updates when the user logs in or out from anywhere in the app.
- * - No longer uses its own state or reads from localStorage.
+ * - The logo link now intelligently navigates to the user's dashboard if logged in,
+ *   or to the public home page if logged out.
  */
 
 export default function Navbar() {
@@ -21,11 +20,28 @@ export default function Navbar() {
     navigate("/login"); // Redirect to login page after logout
   };
 
+  // Helper function to determine the correct dashboard path based on user role
+  const getDashboardPath = () => {
+    if (!user || !user.roleName) return "/"; // Fallback to home page
+
+    const roleRedirects = {
+      ADMIN: "/admin/dashboard",
+      SC_STAFF: "/scstaff/dashboard",
+      SC_TECHNICIAN: "/sctechnician/dashboard",
+      EVM_STAFF: "/evmstaff/dashboard",
+      CUSTOMER: "/customer/dashboard",
+    };
+    return roleRedirects[user.roleName] || "/";
+  };
+
+  // Determine the correct path for the logo link
+  const logoPath = isAuthenticated ? getDashboardPath() : "/";
+
   return (
     <header className="topbar">
       <div className="container nav-inner">
         <div className="logo">
-          <Link to="/" style={{ textDecoration: "none", color: "inherit" }}>
+          <Link to={logoPath} style={{ textDecoration: "none", color: "inherit" }}>
             <span>OEM EV Warranty</span>
             <span className="sub">
               Phần mềm quản lý bảo hành xe điện từ hãng

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useVehicleManagement } from '../../hooks/useVehicleManagement';
 import * as S from './VehicleManagement.styles';
-import { FaCar, FaPlus, FaEdit, FaSearch, FaArrowLeft, FaSpinner, FaTrash, FaClipboardCheck } from 'react-icons/fa';
+import { FaCar, FaPlus, FaEdit, FaSearch, FaArrowLeft, FaSpinner, FaTrash, FaClipboardCheck, FaWrench, FaEye, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 
 // Form Modal Component
 const VehicleFormModal = ({ isOpen, onClose, onSubmit, vehicle, customers }) => {
@@ -67,15 +67,101 @@ const VehicleFormModal = ({ isOpen, onClose, onSubmit, vehicle, customers }) => 
   );
 };
 
+// Install Part Modal Component
+const InstallPartFormModal = ({ isOpen, onClose, onSubmit, vehicle, parts }) => {
+  const [formData, setFormData] = useState({});
+  const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({ 
+        vehicleId: vehicle?.vehicleId, 
+        partId: '', 
+        installationDate: new Date().toISOString().slice(0, 10), 
+        warrantyExpirationDate: '' 
+      });
+      setErrors({});
+    }
+  }, [vehicle, isOpen]);
+
+  const validate = () => {
+    const newErrors = {};
+    if (!formData.partId) newErrors.partId = 'Phụ tùng là bắt buộc.';
+    if (!formData.installationDate) newErrors.installationDate = 'Ngày lắp đặt là bắt buộc.';
+    if (!formData.warrantyExpirationDate) newErrors.warrantyExpirationDate = 'Ngày hết hạn bảo hành là bắt buộc.';
+    return newErrors;
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) setErrors(prev => ({...prev, [name]: null}));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const validationErrors = validate();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+    const installedPartId = crypto.randomUUID().toUpperCase(); // Convert to uppercase
+    const payload = { ...formData, installedPartId };
+    const { success, message } = await onSubmit(payload);
+    if (success) {
+      onClose();
+    } else {
+      setErrors({ general: message });
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <S.ModalOverlay>
+      <S.ModalContent>
+        <h2>Lắp đặt Phụ tùng cho xe {vehicle?.vehicleName}</h2>
+        <form onSubmit={handleSubmit}>
+          {errors.general && <S.ErrorText>{errors.general}</S.ErrorText>}
+          <S.FormGroup>
+            <S.Label>Phụ tùng *</S.Label>
+            <S.Select name="partId" value={formData.partId || ''} onChange={handleInputChange} required hasError={!!errors.partId}>
+              <option value="">Chọn phụ tùng</option>
+              {parts.map(p => <option key={p.partId} value={p.partId}>{p.partName}</option>)}
+            </S.Select>
+            {errors.partId && <S.ErrorText>{errors.partId}</S.ErrorText>}
+          </S.FormGroup>
+          <S.FormGroup>
+            <S.Label>Ngày lắp đặt *</S.Label>
+            <S.Input name="installationDate" type="date" value={formData.installationDate || ''} onChange={handleInputChange} required hasError={!!errors.installationDate} />
+            {errors.installationDate && <S.ErrorText>{errors.installationDate}</S.ErrorText>}
+          </S.FormGroup>
+          <S.FormGroup>
+            <S.Label>Ngày hết hạn bảo hành *</S.Label>
+            <S.Input name="warrantyExpirationDate" type="date" value={formData.warrantyExpirationDate || ''} onChange={handleInputChange} required hasError={!!errors.warrantyExpirationDate} />
+            {errors.warrantyExpirationDate && <S.ErrorText>{errors.warrantyExpirationDate}</S.ErrorText>}
+          </S.FormGroup>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+            <S.Button type="button" onClick={onClose}>Hủy</S.Button>
+            <S.Button primary type="submit">Lắp đặt</S.Button>
+          </div>
+        </form>
+      </S.ModalContent>
+    </S.ModalOverlay>
+  );
+};
+
 // Main Page Component
 const VehicleManagement = () => {
   const navigate = useNavigate();
   const {
-    vehicles, customers, loading, error, pagination, searchTerm, setSearchTerm,
-    searchType, setSearchType, handleSearch, handleCreateOrUpdate, handleDelete, handlePageChange
+    vehicles, customers, parts, installedParts, loading, error, pagination, searchTerm, setSearchTerm,
+    searchType, setSearchType, handleSearch, handleCreateOrUpdate, handleDelete, handleInstallPart, fetchInstalledPartsForVehicle, clearInstalledParts, handlePageChange
   } = useVehicleManagement();
 
   const [showForm, setShowForm] = useState(false);
+  const [showInstallPartForm, setShowInstallPartForm] = useState(false);
+  const [expandedVehicleId, setExpandedVehicleId] = useState(null);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
 
   const openCreateForm = () => {
@@ -88,8 +174,39 @@ const VehicleManagement = () => {
     setShowForm(true);
   };
 
+  const openInstallPartForm = (vehicle) => {
+    setSelectedVehicle(vehicle);
+    setShowInstallPartForm(true);
+  };
+
+  const toggleInstalledParts = (vehicleId) => {
+    if (expandedVehicleId === vehicleId) {
+      setExpandedVehicleId(null);
+      clearInstalledParts();
+    } else {
+      setExpandedVehicleId(vehicleId);
+      fetchInstalledPartsForVehicle(vehicleId);
+    }
+  };
+
   const createWarrantyClaim = (vehicle) => {
     navigate('/scstaff/warranty-claims', { state: { prefilledVehicle: vehicle, openCreateForm: true } });
+  };
+
+  const getSearchPlaceholder = () => {
+    switch (searchType) {
+      case 'id':
+        return 'Nhập Mã Xe (ID)...';
+      case 'vin':
+        return 'Nhập Số VIN...';
+      case 'customer':
+        return 'Nhập ID Khách hàng...';
+      case 'model':
+        return 'Nhập Model Xe...';
+      case 'general':
+      default:
+        return 'Nhập từ khóa bất kỳ...';
+    }
   };
 
   return (
@@ -101,8 +218,14 @@ const VehicleManagement = () => {
             <S.Button primary onClick={openCreateForm}><FaPlus /> Tạo xe mới</S.Button>
           </S.HeaderTop>
           <S.SearchContainer>
-            <select value={searchType} onChange={(e) => setSearchType(e.target.value)}><option value="general">Tìm chung</option><option value="vin">VIN</option><option value="customer">Customer ID</option></select>
-            <S.Input placeholder={`Tìm theo ${searchType}...`} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleSearch()} />
+            <select value={searchType} onChange={(e) => setSearchType(e.target.value)}>
+              <option value="general">Tìm kiếm chung</option>
+              <option value="id">Mã Xe (ID)</option>
+              <option value="vin">Số VIN</option>
+              <option value="customer">ID Khách hàng</option>
+              <option value="model">Model Xe</option>
+            </select>
+            <S.Input placeholder={getSearchPlaceholder()} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleSearch()} />
             <S.Button small onClick={handleSearch}><FaSearch /> Tìm kiếm</S.Button>
           </S.SearchContainer>
         </S.Header>
@@ -116,23 +239,63 @@ const VehicleManagement = () => {
         ) : (
           <S.TableContainer>
             <S.Table>
-              <thead><tr><S.Th>Tên xe</S.Th><S.Th>Model</S.Th><S.Th>VIN</S.Th><S.Th>Năm</S.Th><S.Th>Chủ sở hữu</S.Th><S.Th>Thao tác</S.Th></tr></thead>
+              <thead><tr><S.Th>ID Xe</S.Th><S.Th>Tên xe</S.Th><S.Th>Model</S.Th><S.Th>VIN</S.Th><S.Th>Năm</S.Th><S.Th>Chủ sở hữu</S.Th><S.Th>ID Khách hàng</S.Th><S.Th>Thao tác</S.Th></tr></thead>
               <tbody>
                 {vehicles.map(vehicle => (
-                  <tr key={vehicle.vehicleId}>
-                    <S.Td>{vehicle.vehicleName}</S.Td>
-                    <S.Td>{vehicle.vehicleModel}</S.Td>
-                    <S.Td mono>{vehicle.vehicleVin}</S.Td>
-                    <S.Td>{vehicle.vehicleYear}</S.Td>
-                    <S.Td>{vehicle.customer?.name || 'N/A'}</S.Td>
-                    <S.Td>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <S.Button small onClick={() => openEditForm(vehicle)}><FaEdit /></S.Button>
-                        <S.Button small danger onClick={() => handleDelete(vehicle.vehicleId)}><FaTrash /></S.Button>
-                        <S.Button small primary onClick={() => createWarrantyClaim(vehicle)}><FaClipboardCheck /></S.Button>
-                      </div>
-                    </S.Td>
-                  </tr>
+                  <React.Fragment key={vehicle.vehicleId}>
+                    <tr className={expandedVehicleId === vehicle.vehicleId ? 'expanded-row' : ''}>
+                      <S.Td>{vehicle.vehicleId}</S.Td>
+                      <S.Td>{vehicle.vehicleName}</S.Td>
+                      <S.Td>{vehicle.vehicleModel}</S.Td>
+                      <S.Td mono>{vehicle.vehicleVin}</S.Td>
+                      <S.Td>{vehicle.vehicleYear}</S.Td>
+                      <S.Td>{vehicle.customerName || 'N/A'}</S.Td>
+                      <S.Td>{vehicle.customerId}</S.Td>
+                      <S.Td>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <S.Button small onClick={() => openEditForm(vehicle)}><FaEdit /></S.Button>
+                          <S.Button small danger onClick={() => handleDelete(vehicle.vehicleId)}><FaTrash /></S.Button>
+                          <S.Button small onClick={() => openInstallPartForm(vehicle)}><FaWrench /></S.Button>
+                          <S.Button small primary onClick={() => createWarrantyClaim(vehicle)}><FaClipboardCheck /></S.Button>
+                          <S.Button small onClick={() => toggleInstalledParts(vehicle.vehicleId)}>
+                            {expandedVehicleId === vehicle.vehicleId ? <FaChevronUp /> : <FaChevronDown />}
+                          </S.Button>
+                        </div>
+                      </S.Td>
+                    </tr>
+                    {expandedVehicleId === vehicle.vehicleId && (
+                      <tr className="child-row">
+                        <td colSpan="8" style={{ padding: '0', border: 'none' }}>
+                          <div style={{ padding: '16px', backgroundColor: '#f9fafb', borderLeft: '3px solid #3b82f6' }}>
+                            {installedParts.length > 0 ? (
+                              <S.Table>
+                                <thead>
+                                  <tr>
+                                    <S.Th>ID Lắp đặt</S.Th>
+                                    <S.Th>ID Phụ tùng</S.Th>
+                                    <S.Th>Ngày lắp đặt</S.Th>
+                                    <S.Th>Ngày hết hạn BH</S.Th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {installedParts.map(part => (
+                                    <tr key={part.installedPartId}>
+                                      <S.Td>{part.installedPartId}</S.Td>
+                                      <S.Td>{part.partId}</S.Td>
+                                      <S.Td>{part.installationDate}</S.Td>
+                                      <S.Td>{part.warrantyExpirationDate}</S.Td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </S.Table>
+                            ) : (
+                              <div style={{ textAlign: 'center', padding: '20px' }}>Chưa có phụ tùng nào được lắp đặt.</div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 ))}
               </tbody>
             </S.Table>
@@ -147,6 +310,15 @@ const VehicleManagement = () => {
           vehicle={selectedVehicle} 
           customers={customers}
         />
+
+        <InstallPartFormModal 
+          isOpen={showInstallPartForm} 
+          onClose={() => setShowInstallPartForm(false)} 
+          onSubmit={handleInstallPart} 
+          vehicle={selectedVehicle} 
+          parts={parts}
+        />
+
       </S.ContentWrapper>
     </S.PageContainer>
   );

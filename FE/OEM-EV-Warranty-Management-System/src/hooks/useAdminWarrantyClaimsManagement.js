@@ -64,13 +64,41 @@ export const useAdminWarrantyClaimsManagement = () => {
   const handleUpdateStatus = async (claimId, status, reason = null) => {
     try {
         let response;
+
+        // Get claim details first if rejecting (to create service history)
+        let claimDetails = null;
+        if (status === 'REJECTED') {
+            claimDetails = await dataApi.getWarrantyClaimById(claimId);
+        }
+
         if(status === 'APPROVED') {
             response = await dataApi.evmAcceptClaim(claimId);
         } else if (status === 'REJECTED') {
             response = await dataApi.evmRejectClaim(claimId, { reason });
+
+            // Create service history after rejecting claim
+            if (claimDetails) {
+                try {
+                    const serviceHistoryData = {
+                        vehicleId: claimDetails.vehicleId,
+                        description: `Yêu cầu bảo hành bị từ chối - Lý do: ${reason || 'Không đủ điều kiện'}. Mô tả gốc: ${claimDetails.description || ''}`,
+                        serviceDate: new Date().toISOString(),
+                        serviceType: 'INSPECTION', // Hoặc có thể để 'REJECTED_CLAIM'
+                        partId: claimDetails.partId || null,
+                        claimId: claimId
+                    };
+
+                    await dataApi.createServiceHistory(serviceHistoryData);
+                    console.log('Service history created for rejected claim:', claimId);
+                } catch (historyErr) {
+                    console.error('Error creating service history:', historyErr);
+                    // Don't fail the rejection if history creation fails
+                }
+            }
         } else {
             response = await dataApi.updateWarrantyClaimStatus(claimId, { status });
         }
+
         fetchClaims();
         return { success: true, data: response };
     } catch(err) {

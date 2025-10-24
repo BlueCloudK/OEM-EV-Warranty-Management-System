@@ -1,29 +1,50 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext'; // Import the master auth hook
 import { useAdminPartsManagement } from '../../hooks/useAdminPartsManagement';
 import * as S from './AdminPartsManagement.styles';
 import { FaCogs, FaPlus, FaEdit, FaSearch, FaTrash, FaSpinner } from 'react-icons/fa';
 
-// Form Modal Component for creating/editing parts
+// Form Modal Component (remains the same)
 const PartFormModal = ({ isOpen, onClose, onSubmit, part }) => {
   const [formData, setFormData] = useState({});
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (isOpen) {
-      setFormData(part ? { ...part } : { name: '', partNumber: '', manufacturer: '', price: 0 });
+      setFormData(part ? { ...part } : { partId: '', partName: '', partNumber: '', manufacturer: '', price: 0 }); // Added partId
+      setErrors({}); // Clear errors when modal opens
     }
   }, [part, isOpen]);
+
+  const validate = () => {
+    const newErrors = {};
+    if (!formData.partId) newErrors.partId = 'ID Phụ tùng là bắt buộc.';
+    if (!formData.partName) newErrors.partName = 'Tên phụ tùng là bắt buộc.';
+    if (!formData.partNumber) newErrors.partNumber = 'Mã phụ tùng là bắt buộc.';
+    if (!formData.manufacturer) newErrors.manufacturer = 'Nhà sản xuất là bắt buộc.';
+    if (!formData.price || formData.price <= 0) newErrors.price = 'Giá phải lớn hơn 0.';
+    return newErrors;
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) setErrors(prev => ({...prev, [name]: null})); // Clear error when input changes
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const { success } = await onSubmit(formData, part?.id);
+    const validationErrors = validate();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+    const { success, message } = await onSubmit(formData, part?.id);
     if (success) {
       onClose();
+    } else {
+      setErrors({ general: message });
     }
   };
 
@@ -34,21 +55,31 @@ const PartFormModal = ({ isOpen, onClose, onSubmit, part }) => {
       <S.ModalContent>
         <h2>{part ? 'Chỉnh sửa Phụ tùng' : 'Tạo Phụ tùng mới'}</h2>
         <form onSubmit={handleSubmit}>
+          {errors.general && <S.ErrorText>{errors.general}</S.ErrorText>}
+          <S.FormGroup>
+            <S.Label>ID Phụ tùng *</S.Label>
+            <S.Input name="partId" value={formData.partId || ''} onChange={handleInputChange} required hasError={!!errors.partId} /> {/* Added Part ID input */}
+            {errors.partId && <S.ErrorText>{errors.partId}</S.ErrorText>}
+          </S.FormGroup>
           <S.FormGroup>
             <S.Label>Tên phụ tùng *</S.Label>
-            <S.Input name="name" value={formData.name || ''} onChange={handleInputChange} required />
+            <S.Input name="partName" value={formData.partName || ''} onChange={handleInputChange} required hasError={!!errors.partName} />
+            {errors.partName && <S.ErrorText>{errors.partName}</S.ErrorText>}
           </S.FormGroup>
           <S.FormGroup>
             <S.Label>Mã phụ tùng (Part Number) *</S.Label>
-            <S.Input name="partNumber" value={formData.partNumber || ''} onChange={handleInputChange} required />
+            <S.Input name="partNumber" value={formData.partNumber || ''} onChange={handleInputChange} required hasError={!!errors.partNumber} />
+            {errors.partNumber && <S.ErrorText>{errors.partNumber}</S.ErrorText>}
           </S.FormGroup>
           <S.FormGroup>
-            <S.Label>Nhà sản xuất</S.Label>
-            <S.Input name="manufacturer" value={formData.manufacturer || ''} onChange={handleInputChange} />
+            <S.Label>Nhà sản xuất *</S.Label>
+            <S.Input name="manufacturer" value={formData.manufacturer || ''} onChange={handleInputChange} required hasError={!!errors.manufacturer} />
+            {errors.manufacturer && <S.ErrorText>{errors.manufacturer}</S.ErrorText>}
           </S.FormGroup>
           <S.FormGroup>
-            <S.Label>Giá (VNĐ)</S.Label>
-            <S.Input name="price" type="number" value={formData.price || 0} onChange={handleInputChange} />
+            <S.Label>Giá (VNĐ) *</S.Label>
+            <S.Input name="price" type="number" value={formData.price || 0} onChange={handleInputChange} required hasError={!!errors.price} />
+            {errors.price && <S.ErrorText>{errors.price}</S.ErrorText>}
           </S.FormGroup>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
             <S.Button type="button" onClick={onClose}>Hủy</S.Button>
@@ -60,16 +91,23 @@ const PartFormModal = ({ isOpen, onClose, onSubmit, part }) => {
   );
 };
 
-// Main Page Component
+// Main Page Component with new Authentication Flow
 const AdminPartsManagement = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const {
-    parts, loading, error, pagination, searchTerm, setSearchTerm,
+    parts, loading: dataLoading, error, pagination, searchTerm, setSearchTerm,
     handleSearch, handleCreateOrUpdate, handleDelete, handlePageChange
   } = useAdminPartsManagement();
 
   const [showForm, setShowForm] = useState(false);
   const [selectedPart, setSelectedPart] = useState(null);
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      navigate("/login");
+    }
+  }, [isAuthenticated, authLoading, navigate]);
 
   const openCreateForm = () => {
     setSelectedPart(null);
@@ -80,6 +118,10 @@ const AdminPartsManagement = () => {
     setSelectedPart(part);
     setShowForm(true);
   };
+
+  if (authLoading || dataLoading) {
+    return <S.LoadingState><FaSpinner /> <p>Đang tải...</p></S.LoadingState>;
+  }
 
   return (
     <S.PageContainer>
@@ -95,35 +137,41 @@ const AdminPartsManagement = () => {
           </S.SearchContainer>
         </S.Header>
 
-        {loading ? (
-          <S.LoadingState><FaSpinner /> <p>Đang tải...</p></S.LoadingState>
-        ) : error ? (
+        {error ? (
           <S.EmptyState>{error}</S.EmptyState>
         ) : parts.length === 0 ? (
           <S.EmptyState><h3>Không tìm thấy phụ tùng</h3></S.EmptyState>
         ) : (
           <S.TableContainer>
             <S.Table>
-              <thead><tr><S.Th>ID</S.Th><S.Th>Tên</S.Th><S.Th>Mã Phụ tùng</S.Th><S.Th>Nhà sản xuất</S.Th><S.Th>Giá</S.Th><S.Th>Thao tác</S.Th></tr></thead>
+              <thead>
+                <tr>
+                  <S.Th>ID</S.Th>
+                  <S.Th>Tên</S.Th>
+                  <S.Th>Mã Phụ tùng</S.Th>
+                  <S.Th>Nhà sản xuất</S.Th>
+                  <S.Th>Giá</S.Th>
+                  <S.Th>Thao tác</S.Th>
+                </tr>
+              </thead>
               <tbody>
                 {parts.map(part => (
-                  <tr key={part.id}>
-                    <S.Td>{part.id}</S.Td>
-                    <S.Td>{part.name}</S.Td>
+                  <tr key={part.partId}>
+                    <S.Td>{part.partId}</S.Td>
+                    <S.Td>{part.partName}</S.Td>
                     <S.Td>{part.partNumber}</S.Td>
                     <S.Td>{part.manufacturer}</S.Td>
                     <S.Td>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(part.price)}</S.Td>
                     <S.Td>
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <S.Button $small onClick={() => openEditForm(part)}><FaEdit /></S.Button>
-                        <S.Button $small $danger onClick={() => handleDelete(part.id)}><FaTrash /></S.Button>
+                        <S.Button $small $danger onClick={() => handleDelete(part.partId)}><FaTrash /></S.Button>
                       </div>
                     </S.Td>
                   </tr>
                 ))}
               </tbody>
             </S.Table>
-            {/* Pagination controls can be added here */}
           </S.TableContainer>
         )}
 

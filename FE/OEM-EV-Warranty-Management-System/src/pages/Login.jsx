@@ -1,25 +1,31 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { FaCar, FaUser, FaLock } from "react-icons/fa";
-import { useAuth } from "../context/AuthContext"; // Import the useAuth hook
-
-/**
- * ===========================================================================================
- * 🔐 LOGIN PAGE (Context Refactored)
- * ===========================================================================================
- * - Uses the global `login` function from AuthContext.
- * - No longer calls API directly or manages tokens.
- * - The AuthContext handles state updates, which will automatically update the Navbar.
- */
+import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login } = useAuth(); // Use the login function from our context
+  const { login, isAuthenticated, user, loading: authLoading } = useAuth(); // Get isAuthenticated and user from context
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+
+  // Effect to redirect if already authenticated
+  useEffect(() => {
+    if (!authLoading && isAuthenticated && user) {
+      const roleRedirects = {
+        ADMIN: "/admin/dashboard",
+        SC_STAFF: "/scstaff/dashboard",
+        SC_TECHNICIAN: "/sctechnician/dashboard",
+        EVM_STAFF: "/evmstaff/dashboard",
+        CUSTOMER: "/customer/dashboard",
+      };
+      const redirectPath = roleRedirects[user.roleName] || "/";
+      navigate(redirectPath, { replace: true }); // Use replace to prevent going back to login
+    }
+  }, [isAuthenticated, user, authLoading, navigate]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -27,12 +33,9 @@ export default function Login() {
     setErrorMessage("");
 
     try {
-      // Step 1: Call the context's login function
-      const user = await login(username, password);
+      const loggedInUser = await login(username, password);
 
-      // Step 2: On success, the context's login function returns the user object.
-      // We use the roleName from it to redirect.
-      if (user && user.roleName) {
+      if (loggedInUser && loggedInUser.roleName) {
         const roleRedirects = {
           ADMIN: "/admin/dashboard",
           SC_STAFF: "/scstaff/dashboard",
@@ -40,15 +43,12 @@ export default function Login() {
           EVM_STAFF: "/evmstaff/dashboard",
           CUSTOMER: "/customer/dashboard",
         };
-
-        const redirectPath = roleRedirects[user.roleName] || "/customer/dashboard";
-        navigate(redirectPath);
+        const redirectPath = roleRedirects[loggedInUser.roleName] || "/";
+        navigate(redirectPath, { replace: true });
       } else {
-        // This is a fallback, as the context login should throw an error on failure
         throw new Error("Đăng nhập thành công nhưng không nhận được dữ liệu người dùng.");
       }
     } catch (error) {
-      // Step 3: The context's login function throws an error on failure, which we catch here.
       console.error("❌ Login error:", error);
       setErrorMessage(error.message || "Lỗi kết nối máy chủ. Vui lòng thử lại sau.");
     } finally {
@@ -56,7 +56,16 @@ export default function Login() {
     }
   };
 
-  // UI remains the same
+  // Show loading state while checking auth status
+  if (authLoading) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", background: "#f5f7fb" }}>
+        <p>Đang kiểm tra trạng thái đăng nhập...</p>
+      </div>
+    );
+  }
+
+  // Render login form only if not authenticated
   return (
     <div style={{ minHeight: "100vh", backgroundImage: "url('https://images.unsplash.com/photo-1615874959474-d609be9f0cda?auto=format&fit=crop&w=1920&q=80')", backgroundSize: "cover", backgroundPosition: "center", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
       <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.55)", backdropFilter: "blur(3px)" }} />

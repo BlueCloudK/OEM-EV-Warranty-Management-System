@@ -1,12 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { dataApi } from '../api/dataApi';
 
 /**
- * @description Custom Hook for Admin Parts Management logic.
+ * @description Custom Hook for Admin Parts Management logic (Auth logic removed).
  */
 export const useAdminPartsManagement = () => {
-  const navigate = useNavigate();
   const [parts, setParts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -43,16 +41,12 @@ export const useAdminPartsManagement = () => {
   }, [pagination.currentPage, pagination.pageSize, searchTerm]);
 
   useEffect(() => {
-    if (!localStorage.getItem('accessToken')) {
-      navigate("/login");
-      return;
-    }
     fetchParts();
-  }, [fetchParts, navigate]);
+  }, [fetchParts]);
 
   const handleSearch = () => {
     setPagination(prev => ({ ...prev, currentPage: 0 }));
-    // fetchParts will be called by the useEffect dependency change
+    // fetchParts will be re-triggered by the useEffect dependency change on pagination
   };
 
   const handleCreateOrUpdate = async (formData, selectedPartId) => {

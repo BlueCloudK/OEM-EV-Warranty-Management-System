@@ -1,21 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext'; // Import the master auth hook
 import { useCustomerManagement } from '../../hooks/useCustomerManagement';
 import * as S from './CustomerManagement.styles';
-import { FaUsers, FaPlus, FaEdit, FaSearch, FaArrowLeft, FaSpinner } from 'react-icons/fa';
+import { FaUsers, FaPlus, FaEdit, FaSearch, FaSpinner, FaUser, FaEnvelope, FaLock, FaMapMarkerAlt, FaPhone, FaAddressBook } from 'react-icons/fa';
 
-// Form Modal Component
+// Form Modal Component (now includes account creation fields)
 const CustomerFormModal = ({ isOpen, onClose, onSubmit, customer }) => {
-  const [formData, setFormData] = useState({ name: '', email: '', phone: '', address: '', userId: '' });
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '', address: '', username: '', password: '' });
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
-    if (customer) {
-      setFormData({ name: customer.name, email: customer.email, phone: customer.phone, address: customer.address, userId: customer.userId || '' });
-    } else {
-      setFormData({ name: '', email: '', phone: '', address: '', userId: '' });
+    if (isOpen) {
+      setFormData(customer ? { ...customer } : { name: '', email: '', phone: '', address: '', username: '', password: '' });
+      setErrors({});
     }
-    setErrors({});
   }, [customer, isOpen]);
 
   const validate = () => {
@@ -23,6 +22,10 @@ const CustomerFormModal = ({ isOpen, onClose, onSubmit, customer }) => {
     if (!formData.name) newErrors.name = 'Tên là bắt buộc';
     if (!formData.email || !/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email không hợp lệ';
     if (!formData.phone) newErrors.phone = 'Số điện thoại là bắt buộc';
+    if (!customer) { // Only validate for new customers
+      if (!formData.username) newErrors.username = 'Tên đăng nhập là bắt buộc';
+      if (!formData.password) newErrors.password = 'Mật khẩu là bắt buộc';
+    }
     return newErrors;
   };
 
@@ -50,27 +53,41 @@ const CustomerFormModal = ({ isOpen, onClose, onSubmit, customer }) => {
         <form onSubmit={handleSubmit}>
           {errors.general && <S.ErrorText>{errors.general}</S.ErrorText>}
           <S.FormGroup>
-            <S.Label>Tên khách hàng *</S.Label>
-            <S.Input hasError={!!errors.name} value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+            <S.Label><FaAddressBook /> Tên khách hàng *</S.Label>
+            <S.Input $hasError={!!errors.name} value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
             {errors.name && <S.ErrorText>{errors.name}</S.ErrorText>}
           </S.FormGroup>
           <S.FormGroup>
-            <S.Label>Email *</S.Label>
-            <S.Input hasError={!!errors.email} type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+            <S.Label><FaEnvelope /> Email *</S.Label>
+            <S.Input $hasError={!!errors.email} type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
             {errors.email && <S.ErrorText>{errors.email}</S.ErrorText>}
           </S.FormGroup>
           <S.FormGroup>
-            <S.Label>Số điện thoại *</S.Label>
-            <S.Input hasError={!!errors.phone} type="tel" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
+            <S.Label><FaPhone /> Số điện thoại *</S.Label>
+            <S.Input $hasError={!!errors.phone} type="tel" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
             {errors.phone && <S.ErrorText>{errors.phone}</S.ErrorText>}
           </S.FormGroup>
           <S.FormGroup>
-            <S.Label>Địa chỉ</S.Label>
+            <S.Label><FaMapMarkerAlt /> Địa chỉ</S.Label>
             <S.TextArea value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} />
           </S.FormGroup>
+          {!customer && (
+            <>
+              <S.FormGroup>
+                <S.Label><FaUser /> Tên đăng nhập *</S.Label>
+                <S.Input $hasError={!!errors.username} value={formData.username} onChange={(e) => setFormData({ ...formData, username: e.target.value })} />
+                {errors.username && <S.ErrorText>{errors.username}</S.ErrorText>}
+              </S.FormGroup>
+              <S.FormGroup>
+                <S.Label><FaLock /> Mật khẩu *</S.Label>
+                <S.Input $hasError={!!errors.password} type="password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} />
+                {errors.password && <S.ErrorText>{errors.password}</S.ErrorText>}
+              </S.FormGroup>
+            </>
+          )}
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
             <S.Button type="button" onClick={onClose}>Hủy</S.Button>
-            <S.Button primary type="submit">{customer ? 'Cập nhật' : 'Tạo mới'}</S.Button>
+            <S.Button $primary type="submit">{customer ? 'Cập nhật' : 'Tạo mới'}</S.Button>
           </div>
         </form>
       </S.ModalContent>
@@ -78,16 +95,23 @@ const CustomerFormModal = ({ isOpen, onClose, onSubmit, customer }) => {
   );
 };
 
-// Main Page Component
+// Main Page Component with new Authentication Flow
 const CustomerManagement = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const {
-    customers, loading, error, pagination, searchTerm, setSearchTerm, 
+    customers, loading: dataLoading, error, pagination, searchTerm, setSearchTerm, 
     searchType, setSearchType, handleSearch, handleCreateOrUpdate, handlePageChange
   } = useCustomerManagement();
 
   const [showForm, setShowForm] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      navigate("/login");
+    }
+  }, [isAuthenticated, authLoading, navigate]);
 
   const openCreateForm = () => {
     setSelectedCustomer(null);
@@ -99,24 +123,26 @@ const CustomerManagement = () => {
     setShowForm(true);
   };
 
+  if (authLoading || dataLoading) {
+    return <S.LoadingState><FaSpinner /> <p>Đang tải...</p></S.LoadingState>;
+  }
+
   return (
     <S.PageContainer>
       <S.ContentWrapper>
         <S.Header>
           <S.HeaderTop>
             <S.HeaderTitle><FaUsers /> Quản lý Khách hàng</S.HeaderTitle>
-            <S.Button primary onClick={openCreateForm}><FaPlus /> Tạo khách hàng</S.Button>
+            <S.Button $primary onClick={openCreateForm}><FaPlus /> Tạo khách hàng</S.Button>
           </S.HeaderTop>
           <S.SearchContainer>
             <select value={searchType} onChange={(e) => setSearchType(e.target.value)}><option value="name">Tên</option><option value="email">Email</option><option value="phone">SĐT</option></select>
             <S.Input placeholder={`Tìm theo ${searchType}...`} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleSearch()} />
-            <S.Button small onClick={handleSearch}><FaSearch /> Tìm kiếm</S.Button>
+            <S.Button $small onClick={handleSearch}><FaSearch /> Tìm kiếm</S.Button>
           </S.SearchContainer>
         </S.Header>
 
-        {loading ? (
-          <S.LoadingState><FaSpinner /> <p>Đang tải...</p></S.LoadingState>
-        ) : error ? (
+        {error ? (
           <S.EmptyState>{error}</S.EmptyState>
         ) : customers.length === 0 ? (
           <S.EmptyState><h3>Không tìm thấy khách hàng</h3></S.EmptyState>
@@ -130,7 +156,7 @@ const CustomerManagement = () => {
                     <S.Td>{customer.name}</S.Td>
                     <S.Td>{customer.email}</S.Td>
                     <S.Td>{customer.phone}</S.Td>
-                    <S.Td><S.Button small onClick={() => openEditForm(customer)}><FaEdit /> Sửa</S.Button></S.Td>
+                    <S.Td><S.Button $small onClick={() => openEditForm(customer)}><FaEdit /> Sửa</S.Button></S.Td>
                   </tr>
                 ))}
               </tbody>
