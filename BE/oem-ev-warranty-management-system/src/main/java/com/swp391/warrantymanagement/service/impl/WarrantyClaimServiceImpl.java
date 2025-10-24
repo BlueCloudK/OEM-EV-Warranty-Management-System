@@ -82,28 +82,24 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
         Vehicle vehicle = vehicleRepository.findById(requestDTO.getVehicleId())
             .orElseThrow(() -> new ResourceNotFoundException("Vehicle", "id", requestDTO.getVehicleId()));
 
-        // 2. Tìm InstalledPart đã có (part đã được lắp vào xe trước đó)
-        List<InstalledPart> installedParts = installedPartRepository.findByVehicleAndPart(
-            requestDTO.getVehicleId(),
-            requestDTO.getPartId()
-        );
+        // 2. Tìm InstalledPart theo installedPartId
+        InstalledPart installedPart = installedPartRepository.findById(requestDTO.getInstalledPartId())
+            .orElseThrow(() -> new RuntimeException("Installed part " + requestDTO.getInstalledPartId() + " not found"));
 
-        if (installedParts.isEmpty()) {
-            throw new RuntimeException("Part " + requestDTO.getPartId() + " is not installed on vehicle " + requestDTO.getVehicleId());
+        // 3. Kiểm tra xem installed part có thuộc về vehicle này không
+        if (!installedPart.getVehicle().getVehicleId().equals(requestDTO.getVehicleId())) {
+            throw new RuntimeException("Installed part " + requestDTO.getInstalledPartId() + " is not installed on vehicle " + requestDTO.getVehicleId());
         }
 
-        // Lấy InstalledPart đầu tiên (hoặc có thể lấy cái mới nhất)
-        InstalledPart installedPart = installedParts.get(0);
-
-        // 3. Kiểm tra xem part có còn trong thời hạn bảo hành không
+        // 4. Kiểm tra xem installed part có còn trong thời hạn bảo hành không
         if (installedPart.getWarrantyExpirationDate().isBefore(LocalDate.now())) {
-            throw new RuntimeException("Warranty for this part has expired on " + installedPart.getWarrantyExpirationDate());
+            throw new RuntimeException("Warranty for this installed part has expired on " + installedPart.getWarrantyExpirationDate());
         }
 
-        // 4. Convert DTO to Entity
+        // 5. Convert DTO to Entity
         WarrantyClaim claim = WarrantyClaimMapper.toEntity(requestDTO, installedPart, vehicle);
 
-        // 5. Save WarrantyClaim
+        // 6. Save WarrantyClaim
         WarrantyClaim savedClaim = warrantyClaimRepository.save(claim);
 
         // Convert entity back to response DTO
@@ -125,23 +121,20 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
         // Update description
         claim.setDescription(requestDTO.getDescription());
 
-        // Update part nếu thay đổi (tìm InstalledPart đã có)
-        if (!claim.getInstalledPart().getPart().getPartId().equals(requestDTO.getPartId())) {
-            // Tìm InstalledPart đã có
-            List<InstalledPart> installedParts = installedPartRepository.findByVehicleAndPart(
-                requestDTO.getVehicleId(),
-                requestDTO.getPartId()
-            );
+        // Update installed part nếu thay đổi
+        if (!claim.getInstalledPart().getInstalledPartId().equals(requestDTO.getInstalledPartId())) {
+            // Tìm InstalledPart theo installedPartId
+            InstalledPart installedPart = installedPartRepository.findById(requestDTO.getInstalledPartId())
+                .orElseThrow(() -> new RuntimeException("Installed part " + requestDTO.getInstalledPartId() + " not found"));
 
-            if (installedParts.isEmpty()) {
-                throw new RuntimeException("Part " + requestDTO.getPartId() + " is not installed on vehicle " + requestDTO.getVehicleId());
+            // Kiểm tra xem installed part có thuộc về vehicle này không
+            if (!installedPart.getVehicle().getVehicleId().equals(requestDTO.getVehicleId())) {
+                throw new RuntimeException("Installed part " + requestDTO.getInstalledPartId() + " is not installed on vehicle " + requestDTO.getVehicleId());
             }
-
-            InstalledPart installedPart = installedParts.get(0);
 
             // Kiểm tra bảo hành
             if (installedPart.getWarrantyExpirationDate().isBefore(LocalDate.now())) {
-                throw new RuntimeException("Warranty for this part has expired on " + installedPart.getWarrantyExpirationDate());
+                throw new RuntimeException("Warranty for this installed part has expired on " + installedPart.getWarrantyExpirationDate());
             }
 
             claim.setInstalledPart(installedPart);
@@ -207,28 +200,25 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
         Vehicle vehicle = vehicleRepository.findById(requestDTO.getVehicleId())
             .orElseThrow(() -> new ResourceNotFoundException("Vehicle", "id", requestDTO.getVehicleId()));
 
-        // 2. Tìm InstalledPart đã có (part đã được lắp vào xe trước đó)
-        List<InstalledPart> installedParts = installedPartRepository.findByVehicleAndPart(
-            requestDTO.getVehicleId(),
-            requestDTO.getPartId()
-        );
+        // 2. Tìm InstalledPart theo installedPartId
+        InstalledPart installedPart = installedPartRepository.findById(requestDTO.getInstalledPartId())
+            .orElseThrow(() -> new RuntimeException("Installed part " + requestDTO.getInstalledPartId() + " not found"));
 
-        if (installedParts.isEmpty()) {
-            throw new RuntimeException("Part " + requestDTO.getPartId() + " is not installed on vehicle " + requestDTO.getVehicleId());
+        // 3. Kiểm tra xem installed part có thuộc về vehicle này không
+        if (!installedPart.getVehicle().getVehicleId().equals(requestDTO.getVehicleId())) {
+            throw new RuntimeException("Installed part " + requestDTO.getInstalledPartId() + " is not installed on vehicle " + requestDTO.getVehicleId());
         }
 
-        InstalledPart installedPart = installedParts.get(0);
-
-        // 3. Kiểm tra xem part có còn trong thời hạn bảo hành không
+        // 4. Kiểm tra xem installed part có còn trong thời hạn bảo hành không
         if (installedPart.getWarrantyExpirationDate().isBefore(LocalDate.now())) {
-            throw new RuntimeException("Warranty for this part has expired on " + installedPart.getWarrantyExpirationDate());
+            throw new RuntimeException("Warranty for this installed part has expired on " + installedPart.getWarrantyExpirationDate());
         }
 
-        // 4. Convert DTO to Entity với status SUBMITTED
+        // 5. Convert DTO to Entity với status SUBMITTED
         WarrantyClaim claim = WarrantyClaimMapper.toEntity(requestDTO, installedPart, vehicle);
         claim.setStatus(WarrantyClaimStatus.SUBMITTED); // SC Staff tạo với status SUBMITTED
 
-        // 5. Save WarrantyClaim
+        // 6. Save WarrantyClaim
         WarrantyClaim savedClaim = warrantyClaimRepository.save(claim);
         return WarrantyClaimMapper.toResponseDTO(savedClaim);
     }
@@ -342,7 +332,7 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
         detail.setId(detailId);
         detail.setServiceHistory(savedServiceHistory);
         detail.setPart(claim.getInstalledPart().getPart());
-        detail.setQuantity(1); // Bảo hành 1 part
+        detail.setQuantity(1); // Bảo hành 1 installed part
 
         // Add detail to serviceHistory
         savedServiceHistory.getServiceHistoryDetails().add(detail);
