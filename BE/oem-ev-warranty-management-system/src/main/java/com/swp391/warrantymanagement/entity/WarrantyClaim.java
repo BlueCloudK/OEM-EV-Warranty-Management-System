@@ -47,7 +47,7 @@ public class WarrantyClaim {
     private List<WorkLog> workLogs = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "service_center_id", nullable = false)
+    @JoinColumn(name = "service_center_id")
     private ServiceCenter serviceCenter;
 
     @ManyToOne(fetch = FetchType.LAZY)
