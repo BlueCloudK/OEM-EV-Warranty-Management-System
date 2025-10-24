@@ -256,8 +256,15 @@ public class CustomerServiceImpl implements CustomerService {
             throw new RuntimeException("Phone number already exists: " + requestDTO.getPhone());
         }
 
-        // Update customer profile
+        // Update customer profile (name, phone)
         CustomerMapper.updateEntity(existingCustomer, requestDTO, user);
+
+        // Update address in User entity (address is stored in User, not Customer)
+        if (requestDTO.getAddress() != null) {
+            user.setAddress(requestDTO.getAddress());
+            userRepository.save(user);
+        }
+
         Customer updatedCustomer = customerRepository.save(existingCustomer);
 
         return CustomerMapper.toResponseDTO(updatedCustomer);
