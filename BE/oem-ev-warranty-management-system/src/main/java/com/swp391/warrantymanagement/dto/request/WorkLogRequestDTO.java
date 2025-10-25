@@ -17,10 +17,8 @@ public class WorkLogRequestDTO {
     @NotNull(message = "Start time is required")
     private LocalDateTime startTime;
 
-    @NotNull(message = "End time is required")
     private LocalDateTime endTime;
 
-    @NotBlank(message = "Description is required")
     @Size(max = 1000, message = "Description cannot exceed 1000 characters")
     private String description;
 }
