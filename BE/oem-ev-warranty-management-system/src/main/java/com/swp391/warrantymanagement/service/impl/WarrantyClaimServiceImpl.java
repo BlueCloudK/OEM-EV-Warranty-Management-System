@@ -12,6 +12,7 @@ import com.swp391.warrantymanagement.entity.ServiceHistoryDetail;
 import com.swp391.warrantymanagement.entity.User;
 import com.swp391.warrantymanagement.entity.Vehicle;
 import com.swp391.warrantymanagement.entity.WarrantyClaim;
+import com.swp391.warrantymanagement.entity.WorkLog;
 import com.swp391.warrantymanagement.entity.id.ServiceHistoryDetailId;
 import com.swp391.warrantymanagement.enums.WarrantyClaimStatus;
 import com.swp391.warrantymanagement.exception.ResourceNotFoundException;
@@ -26,8 +27,12 @@ import com.swp391.warrantymanagement.service.WarrantyClaimService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -36,6 +41,8 @@ import java.util.UUID;
 
 @Service
 public class WarrantyClaimServiceImpl implements WarrantyClaimService {
+    private static final Logger logger = LoggerFactory.getLogger(WarrantyClaimServiceImpl.class);
+
     @Autowired
     private WarrantyClaimRepository warrantyClaimRepository;
     @Autowired
@@ -48,6 +55,8 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
     private UserRepository userRepository;
     @Autowired
     private ServiceHistoryRepository serviceHistoryRepository;
+    @Autowired
+    private com.swp391.warrantymanagement.repository.WorkLogRepository workLogRepository;
 
     // Methods implementation
     @Override
@@ -282,6 +291,33 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
         }
 
         WarrantyClaim savedClaim = warrantyClaimRepository.save(claim);
+
+        // ⭐ TẠO WORK LOG - GHI START TIME
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication != null && authentication.isAuthenticated()) {
+                String username = authentication.getName();
+                User currentUser = userRepository.findByUsername(username).orElse(null);
+
+                if (currentUser != null) {
+                    WorkLog workLog = new WorkLog();
+                    workLog.setStartTime(LocalDateTime.now());
+                    workLog.setEndTime(null); // Chưa kết thúc
+                    workLog.setDescription(note != null && !note.trim().isEmpty() ? note : "Technician started processing claim");
+                    workLog.setWarrantyClaim(savedClaim);
+                    workLog.setUser(currentUser);
+
+                    workLogRepository.save(workLog);
+                    logger.info("✅ Work log created for claim {} by user {} (ID: {})", claimId, username, currentUser.getUserId());
+                } else {
+                    logger.warn("⚠️ User not found for username: {}", username);
+                }
+            }
+        } catch (Exception e) {
+            logger.error("❌ Failed to create work log for claim {}: {}", claimId, e.getMessage());
+            // Don't fail the whole transaction if work log creation fails
+        }
+
         return WarrantyClaimMapper.toResponseDTO(savedClaim);
     }
 
@@ -305,6 +341,48 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
 
         // Tự động tạo ServiceHistory khi claim hoàn tất
         createWarrantyServiceHistory(savedClaim);
+
+        // ⭐ CẬP NHẬT WORK LOG - GHI END TIME
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication != null && authentication.isAuthenticated()) {
+                String username = authentication.getName();
+                User currentUser = userRepository.findByUsername(username).orElse(null);
+
+                if (currentUser != null) {
+                    // Tìm work log chưa hoàn thành của user này cho claim này
+                    List<WorkLog> workLogs = savedClaim.getWorkLogs();
+
+                    if (workLogs != null && !workLogs.isEmpty()) {
+                        // Lấy work log gần nhất chưa có endTime và của user hiện tại
+                        WorkLog activeWorkLog = workLogs.stream()
+                            .filter(wl -> wl.getEndTime() == null && wl.getUser().getUserId().equals(currentUser.getUserId()))
+                            .findFirst()
+                            .orElse(null);
+
+                        if (activeWorkLog != null) {
+                            activeWorkLog.setEndTime(LocalDateTime.now());
+                            String updatedDescription = activeWorkLog.getDescription() + "\n[Completion]: " + completionNote;
+                            activeWorkLog.setDescription(updatedDescription);
+                            workLogRepository.save(activeWorkLog);
+
+                            long duration = java.time.Duration.between(activeWorkLog.getStartTime(), activeWorkLog.getEndTime()).toMinutes();
+                            logger.info("✅ Work log completed for claim {} by user {} (ID: {}). Duration: {} minutes",
+                                claimId, username, currentUser.getUserId(), duration);
+                        } else {
+                            logger.warn("⚠️ No active work log found for claim {} and user {}", claimId, username);
+                        }
+                    } else {
+                        logger.warn("⚠️ No work logs found for claim {}", claimId);
+                    }
+                } else {
+                    logger.warn("⚠️ User not found for username: {}", username);
+                }
+            }
+        } catch (Exception e) {
+            logger.error("❌ Failed to complete work log for claim {}: {}", claimId, e.getMessage());
+            // Don't fail the whole transaction if work log update fails
+        }
 
         return WarrantyClaimMapper.toResponseDTO(savedClaim);
     }
