@@ -17,6 +17,7 @@ import AdminPartsManagement from "./pages/Admin/AdminPartsManagement";
 import AdminWarrantyClaimsManagement from "./pages/Admin/AdminWarrantyClaimsManagement";
 import AdminServiceHistoriesManagement from "./pages/Admin/AdminServiceHistoriesManagement";
 import AdminFeedbackManagement from "./pages/Admin/AdminFeedbackManagement";
+import AdminWorkLogs from "./pages/Admin/AdminWorkLogs";
 import AdminLayout from "./components/AdminLayout";
 
 // SCStaff
@@ -50,6 +51,7 @@ import MyWork from "./pages/SCTechnician/MyWork";
 import SCTechnicianFeedbacks from "./pages/SCTechnician/SCTechnicianFeedbacks";
 import VehicleLookup from "./pages/SCTechnician/VehicleLookup";
 import PartsLookup from "./pages/SCTechnician/PartsLookup";
+import ServiceHistory from "./pages/SCTechnician/ServiceHistory";
 
 // Customer
 import CustomerLayout from "./components/CustomerLayout";
@@ -97,6 +99,7 @@ export default function App() {
           <Route path="parts" element={<AdminPartsManagement />} />
           <Route path="warranty-claims" element={<AdminWarrantyClaimsManagement />} />
           <Route path="service-histories" element={<AdminServiceHistoriesManagement />} />
+          <Route path="work-logs" element={<AdminWorkLogs />} />
           <Route path="feedbacks" element={<AdminFeedbackManagement />} />
         </Route>
 
@@ -122,7 +125,7 @@ export default function App() {
           <Route path="warranty-claims" element={<MyWork />} />
           <Route path="my-work" element={<MyWork />} />
           <Route path="feedbacks" element={<SCTechnicianFeedbacks />} />
-          <Route path="service-history" element={<div><h1>Lịch sử Sửa chữa</h1><p>Chức năng đang được xây dựng.</p></div>} />
+          <Route path="service-history" element={<ServiceHistory />} />
           <Route path="vehicles" element={<VehicleLookup />} />
           <Route path="parts" element={<PartsLookup />} />
         </Route>

@@ -3,7 +3,7 @@ import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import * as S from "./AdminLayout.styles";
 import {
   FaUsers, FaCar, FaCogs, FaClipboardList, FaHistory,
-  FaUserShield, FaTachometerAlt, FaArrowLeft, FaCommentDots
+  FaUserShield, FaTachometerAlt, FaArrowLeft, FaCommentDots, FaClipboard
 } from "react-icons/fa";
 
 const navItems = [
@@ -14,6 +14,7 @@ const navItems = [
   { path: "/admin/parts", icon: <FaCogs />, label: "Phụ tùng" },
   { path: "/admin/warranty-claims", icon: <FaClipboardList />, label: "Warranty Claims" },
   { path: "/admin/service-histories", icon: <FaHistory />, label: "Lịch sử dịch vụ" },
+  { path: "/admin/work-logs", icon: <FaClipboard />, label: "Work Logs" },
   { path: "/admin/feedbacks", icon: <FaCommentDots />, label: "Feedback" },
 ];
 

@@ -2,16 +2,17 @@ import React, { useState } from 'react';
 import * as S from './PartsLookup.styles';
 import {
   FaCog, FaSearch, FaSpinner, FaInfoCircle, FaBarcode,
-  FaIndustry, FaBox, FaDollarSign, FaCheckCircle, FaTimesCircle
+  FaIndustry, FaDollarSign
 } from 'react-icons/fa';
 import apiClient from '../../api/apiClient';
 
 const PartsLookup = () => {
-  const [searchType, setSearchType] = useState('partNumber'); // 'partNumber' or 'name'
+  const [searchType, setSearchType] = useState('id'); // 'id' or 'manufacturer'
   const [searchValue, setSearchValue] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [part, setPart] = useState(null);
+  const [parts, setParts] = useState([]);
   const [notFound, setNotFound] = useState(false);
 
   const handleSearch = async (e) => {
@@ -26,25 +27,26 @@ const PartsLookup = () => {
       setLoading(true);
       setError(null);
       setPart(null);
+      setParts([]);
       setNotFound(false);
 
       let response;
-      if (searchType === 'partNumber') {
-        // Search by part number
-        response = await apiClient(`/api/parts/by-part-number?partNumber=${encodeURIComponent(searchValue.trim())}`);
+      if (searchType === 'id') {
+        // Search by Part ID - Backend: GET /api/parts/{id}
+        response = await apiClient(`/api/parts/${encodeURIComponent(searchValue.trim())}`);
+        console.log('🔧 Part found:', response);
+        setPart(response);
       } else {
-        // Search by name
-        const searchResponse = await apiClient(`/api/parts/search?name=${encodeURIComponent(searchValue.trim())}&page=0&size=1`);
+        // Search by manufacturer - Backend: GET /api/parts/by-manufacturer?manufacturer={name}&page=0&size=10
+        const searchResponse = await apiClient(`/api/parts/by-manufacturer?manufacturer=${encodeURIComponent(searchValue.trim())}&page=0&size=10`);
         if (searchResponse.content && searchResponse.content.length > 0) {
-          response = searchResponse.content[0];
+          console.log('🔧 Parts found:', searchResponse.content);
+          setParts(searchResponse.content);
         } else {
           setNotFound(true);
           return;
         }
       }
-
-      console.log('🔧 Part found:', response);
-      setPart(response);
     } catch (err) {
       console.error('❌ Error searching part:', err);
       if (err.message.includes('404') || err.message.includes('not found')) {
@@ -60,6 +62,7 @@ const PartsLookup = () => {
   const handleReset = () => {
     setSearchValue('');
     setPart(null);
+    setParts([]);
     setError(null);
     setNotFound(false);
   };
@@ -72,21 +75,6 @@ const PartsLookup = () => {
     }).format(amount);
   };
 
-  const getStockStatus = (quantity) => {
-    if (quantity === null || quantity === undefined) {
-      return { text: 'Không xác định', color: '#6b7280', icon: <FaInfoCircle /> };
-    }
-
-    if (quantity === 0) {
-      return { text: 'Hết hàng', color: '#ef4444', icon: <FaTimesCircle /> };
-    }
-
-    if (quantity < 10) {
-      return { text: `Sắp hết (${quantity})`, color: '#f59e0b', icon: <FaInfoCircle /> };
-    }
-
-    return { text: `Còn hàng (${quantity})`, color: '#10b981', icon: <FaCheckCircle /> };
-  };
 
   return (
     <S.PageContainer>
@@ -95,7 +83,7 @@ const PartsLookup = () => {
           <FaCog /> Tra cứu Phụ tùng
         </S.HeaderTitle>
         <S.HeaderSubtitle>
-          Tìm kiếm thông tin phụ tùng theo mã hoặc tên
+          Tìm kiếm phụ tùng theo Part ID hoặc Nhà sản xuất
         </S.HeaderSubtitle>
       </S.Header>
 
@@ -103,25 +91,25 @@ const PartsLookup = () => {
       <S.SearchCard>
         <form onSubmit={handleSearch}>
           <S.SearchTypeSelector>
-            <S.RadioLabel $active={searchType === 'partNumber'}>
+            <S.RadioLabel $active={searchType === 'id'}>
               <input
                 type="radio"
                 name="searchType"
-                value="partNumber"
-                checked={searchType === 'partNumber'}
+                value="id"
+                checked={searchType === 'id'}
                 onChange={(e) => setSearchType(e.target.value)}
               />
-              Tìm theo Mã phụ tùng
+              Tìm theo Part ID
             </S.RadioLabel>
-            <S.RadioLabel $active={searchType === 'name'}>
+            <S.RadioLabel $active={searchType === 'manufacturer'}>
               <input
                 type="radio"
                 name="searchType"
-                value="name"
-                checked={searchType === 'name'}
+                value="manufacturer"
+                checked={searchType === 'manufacturer'}
                 onChange={(e) => setSearchType(e.target.value)}
               />
-              Tìm theo Tên phụ tùng
+              Tìm theo Nhà sản xuất
             </S.RadioLabel>
           </S.SearchTypeSelector>
 
@@ -130,13 +118,13 @@ const PartsLookup = () => {
               type="text"
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
-              placeholder={searchType === 'partNumber' ? 'Nhập mã phụ tùng (ví dụ: PT-001)' : 'Nhập tên phụ tùng (ví dụ: Pin Lithium)'}
+              placeholder={searchType === 'id' ? 'Nhập Part ID (ví dụ: P001)' : 'Nhập tên nhà sản xuất (ví dụ: VinFast)'}
             />
             <S.SearchButton type="submit" disabled={loading}>
               {loading ? <FaSpinner className="spin" /> : <FaSearch />}
               {loading ? 'Đang tìm...' : 'Tìm kiếm'}
             </S.SearchButton>
-            {(part || notFound || error) && (
+            {(part || parts.length > 0 || notFound || error) && (
               <S.ResetButton type="button" onClick={handleReset}>
                 Làm mới
               </S.ResetButton>
@@ -158,26 +146,27 @@ const PartsLookup = () => {
         <S.NotFoundMessage>
           <FaCog />
           <h3>Không tìm thấy phụ tùng</h3>
-          <p>Không có phụ tùng nào với {searchType === 'partNumber' ? 'mã' : 'tên'}: <strong>{searchValue}</strong></p>
+          <p>Không có phụ tùng nào với {searchType === 'id' ? 'Part ID' : 'nhà sản xuất'}: <strong>{searchValue}</strong></p>
         </S.NotFoundMessage>
       )}
 
-      {/* Part Details */}
+      {/* Single Part Details (by ID) */}
       {part && (
         <S.PartCard>
           <S.PartHeader>
             <S.PartTitle>
-              <FaCog /> {part.partName || part.name || 'N/A'}
+              <FaCog /> {part.partName || 'N/A'}
             </S.PartTitle>
-            <S.StockBadge $color={getStockStatus(part.stockQuantity || part.quantity).color}>
-              {getStockStatus(part.stockQuantity || part.quantity).icon}
-              {getStockStatus(part.stockQuantity || part.quantity).text}
-            </S.StockBadge>
           </S.PartHeader>
 
           <S.PartGrid>
             <S.InfoItem>
-              <S.InfoLabel><FaBarcode /> Mã phụ tùng</S.InfoLabel>
+              <S.InfoLabel><FaBarcode /> Part ID</S.InfoLabel>
+              <S.InfoValue>{part.partId || 'N/A'}</S.InfoValue>
+            </S.InfoItem>
+
+            <S.InfoItem>
+              <S.InfoLabel><FaBarcode /> Part Number</S.InfoLabel>
               <S.InfoValue>{part.partNumber || 'N/A'}</S.InfoValue>
             </S.InfoItem>
 
@@ -187,48 +176,51 @@ const PartsLookup = () => {
             </S.InfoItem>
 
             <S.InfoItem>
-              <S.InfoLabel><FaBox /> Danh mục</S.InfoLabel>
-              <S.InfoValue>{part.category || 'N/A'}</S.InfoValue>
-            </S.InfoItem>
-
-            <S.InfoItem>
               <S.InfoLabel><FaDollarSign /> Giá</S.InfoLabel>
-              <S.InfoValue>{formatCurrency(part.price || part.partPrice)}</S.InfoValue>
+              <S.InfoValue>{formatCurrency(part.price)}</S.InfoValue>
             </S.InfoItem>
-
-            <S.InfoItem>
-              <S.InfoLabel><FaBox /> Số lượng tồn kho</S.InfoLabel>
-              <S.InfoValue>{part.stockQuantity ?? part.quantity ?? 'N/A'}</S.InfoValue>
-            </S.InfoItem>
-
-            <S.InfoItem>
-              <S.InfoLabel><FaCheckCircle /> Được bảo hành</S.InfoLabel>
-              <S.InfoValue>
-                {part.warrantyCoverage !== undefined
-                  ? (part.warrantyCoverage ? 'Có' : 'Không')
-                  : 'N/A'}
-              </S.InfoValue>
-            </S.InfoItem>
-
-            {part.description && (
-              <S.InfoItem $fullWidth>
-                <S.InfoLabel><FaInfoCircle /> Mô tả</S.InfoLabel>
-                <S.InfoValue>{part.description}</S.InfoValue>
-              </S.InfoItem>
-            )}
-
-            {part.supplier && (
-              <S.InfoItem $fullWidth>
-                <S.InfoLabel><FaIndustry /> Nhà cung cấp</S.InfoLabel>
-                <S.InfoValue>
-                  {part.supplier.supplierName || part.supplier.name || 'N/A'}
-                  {part.supplier.supplierPhone && ` - ${part.supplier.supplierPhone}`}
-                  {part.supplier.supplierEmail && ` - ${part.supplier.supplierEmail}`}
-                </S.InfoValue>
-              </S.InfoItem>
-            )}
           </S.PartGrid>
         </S.PartCard>
+      )}
+
+      {/* Multiple Parts List (by manufacturer) */}
+      {parts.length > 0 && (
+        <div style={{ display: 'grid', gap: '16px' }}>
+          <h3 style={{ margin: '16px 0', fontSize: '20px', fontWeight: '600', color: '#1f2937' }}>
+            Tìm thấy {parts.length} phụ tùng
+          </h3>
+          {parts.map((p, index) => (
+            <S.PartCard key={index}>
+              <S.PartHeader>
+                <S.PartTitle>
+                  <FaCog /> {p.partName || 'N/A'}
+                </S.PartTitle>
+              </S.PartHeader>
+
+              <S.PartGrid>
+                <S.InfoItem>
+                  <S.InfoLabel><FaBarcode /> Part ID</S.InfoLabel>
+                  <S.InfoValue>{p.partId || 'N/A'}</S.InfoValue>
+                </S.InfoItem>
+
+                <S.InfoItem>
+                  <S.InfoLabel><FaBarcode /> Part Number</S.InfoLabel>
+                  <S.InfoValue>{p.partNumber || 'N/A'}</S.InfoValue>
+                </S.InfoItem>
+
+                <S.InfoItem>
+                  <S.InfoLabel><FaIndustry /> Nhà sản xuất</S.InfoLabel>
+                  <S.InfoValue>{p.manufacturer || 'N/A'}</S.InfoValue>
+                </S.InfoItem>
+
+                <S.InfoItem>
+                  <S.InfoLabel><FaDollarSign /> Giá</S.InfoLabel>
+                  <S.InfoValue>{formatCurrency(p.price)}</S.InfoValue>
+                </S.InfoItem>
+              </S.PartGrid>
+            </S.PartCard>
+          ))}
+        </div>
       )}
     </S.PageContainer>
   );

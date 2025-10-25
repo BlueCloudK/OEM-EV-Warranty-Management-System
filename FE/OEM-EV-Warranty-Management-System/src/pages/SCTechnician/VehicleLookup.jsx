@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import * as S from './VehicleLookup.styles';
 import {
-  FaCar, FaSearch, FaSpinner, FaInfoCircle, FaCalendar,
-  FaBarcode, FaIndustry, FaCheckCircle, FaTimesCircle
+  FaCar, FaSearch, FaSpinner, FaInfoCircle, FaCalendar, FaBarcode, FaCog
 } from 'react-icons/fa';
 import apiClient from '../../api/apiClient';
 
@@ -13,6 +12,8 @@ const VehicleLookup = () => {
   const [error, setError] = useState(null);
   const [vehicle, setVehicle] = useState(null);
   const [notFound, setNotFound] = useState(false);
+  const [installedParts, setInstalledParts] = useState([]);
+  const [loadingParts, setLoadingParts] = useState(false);
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -30,11 +31,11 @@ const VehicleLookup = () => {
 
       let response;
       if (searchType === 'vin') {
-        // Search by VIN
+        // Search by VIN - Backend: GET /api/vehicles/by-vin?vin={vin}
         response = await apiClient(`/api/vehicles/by-vin?vin=${encodeURIComponent(searchValue.trim())}`);
       } else {
-        // Search by name
-        const searchResponse = await apiClient(`/api/vehicles/search?name=${encodeURIComponent(searchValue.trim())}&page=0&size=1`);
+        // Search by name - Backend: GET /api/vehicles?search={keyword}&page=0&size=10
+        const searchResponse = await apiClient(`/api/vehicles?search=${encodeURIComponent(searchValue.trim())}&page=0&size=1`);
         if (searchResponse.content && searchResponse.content.length > 0) {
           response = searchResponse.content[0];
         } else {
@@ -45,6 +46,11 @@ const VehicleLookup = () => {
 
       console.log('🚗 Vehicle found:', response);
       setVehicle(response);
+
+      // Fetch installed parts for this vehicle
+      if (response.vehicleId) {
+        fetchInstalledParts(response.vehicleId);
+      }
     } catch (err) {
       console.error('❌ Error searching vehicle:', err);
       if (err.message.includes('404') || err.message.includes('not found')) {
@@ -57,11 +63,27 @@ const VehicleLookup = () => {
     }
   };
 
+  const fetchInstalledParts = async (vehicleId) => {
+    try {
+      setLoadingParts(true);
+      const response = await apiClient(`/api/installed-parts/by-vehicle/${vehicleId}?page=0&size=100`);
+      console.log('🔧 Installed parts:', response);
+      if (response.content && Array.isArray(response.content)) {
+        setInstalledParts(response.content);
+      }
+    } catch (err) {
+      console.error('❌ Error fetching installed parts:', err);
+    } finally {
+      setLoadingParts(false);
+    }
+  };
+
   const handleReset = () => {
     setSearchValue('');
     setVehicle(null);
     setError(null);
     setNotFound(false);
+    setInstalledParts([]);
   };
 
   const formatDate = (dateString) => {
@@ -73,24 +95,6 @@ const VehicleLookup = () => {
     });
   };
 
-  const getWarrantyStatus = (endDate) => {
-    if (!endDate) return { text: 'Không xác định', color: '#6b7280', icon: <FaInfoCircle /> };
-
-    const today = new Date();
-    const warranty = new Date(endDate);
-
-    if (warranty < today) {
-      return { text: 'Hết hạn', color: '#ef4444', icon: <FaTimesCircle /> };
-    }
-
-    const daysLeft = Math.ceil((warranty - today) / (1000 * 60 * 60 * 24));
-
-    if (daysLeft < 30) {
-      return { text: `Còn ${daysLeft} ngày`, color: '#f59e0b', icon: <FaInfoCircle /> };
-    }
-
-    return { text: 'Còn hạn', color: '#10b981', icon: <FaCheckCircle /> };
-  };
 
   return (
     <S.PageContainer>
@@ -171,58 +175,100 @@ const VehicleLookup = () => {
         <S.VehicleCard>
           <S.VehicleHeader>
             <S.VehicleTitle>
-              <FaCar /> {vehicle.vehicleName || vehicle.name || 'N/A'}
+              <FaCar /> {vehicle.vehicleName || 'N/A'}
             </S.VehicleTitle>
-            <S.WarrantyBadge $color={getWarrantyStatus(vehicle.warrantyEndDate).color}>
-              {getWarrantyStatus(vehicle.warrantyEndDate).icon}
-              {getWarrantyStatus(vehicle.warrantyEndDate).text}
-            </S.WarrantyBadge>
           </S.VehicleHeader>
 
           <S.VehicleGrid>
             <S.InfoItem>
               <S.InfoLabel><FaBarcode /> VIN</S.InfoLabel>
-              <S.InfoValue>{vehicle.vehicleVin || vehicle.vin || 'N/A'}</S.InfoValue>
-            </S.InfoItem>
-
-            <S.InfoItem>
-              <S.InfoLabel><FaIndustry /> Hãng sản xuất</S.InfoLabel>
-              <S.InfoValue>{vehicle.vehicleBrand || vehicle.brand || 'N/A'}</S.InfoValue>
+              <S.InfoValue>{vehicle.vehicleVin || 'N/A'}</S.InfoValue>
             </S.InfoItem>
 
             <S.InfoItem>
               <S.InfoLabel><FaCar /> Model</S.InfoLabel>
-              <S.InfoValue>{vehicle.vehicleModel || vehicle.model || 'N/A'}</S.InfoValue>
+              <S.InfoValue>{vehicle.vehicleModel || 'N/A'}</S.InfoValue>
             </S.InfoItem>
 
             <S.InfoItem>
               <S.InfoLabel><FaCalendar /> Năm sản xuất</S.InfoLabel>
-              <S.InfoValue>{vehicle.vehicleYear || vehicle.year || 'N/A'}</S.InfoValue>
+              <S.InfoValue>{vehicle.vehicleYear || 'N/A'}</S.InfoValue>
             </S.InfoItem>
 
-            <S.InfoItem>
-              <S.InfoLabel><FaCalendar /> Ngày bắt đầu BH</S.InfoLabel>
-              <S.InfoValue>{formatDate(vehicle.warrantyStartDate)}</S.InfoValue>
-            </S.InfoItem>
+            {vehicle.customerId && (
+              <S.InfoItem>
+                <S.InfoLabel><FaInfoCircle /> ID Khách hàng</S.InfoLabel>
+                <S.InfoValue>{vehicle.customerId}</S.InfoValue>
+              </S.InfoItem>
+            )}
 
-            <S.InfoItem>
-              <S.InfoLabel><FaCalendar /> Ngày kết thúc BH</S.InfoLabel>
-              <S.InfoValue>{formatDate(vehicle.warrantyEndDate)}</S.InfoValue>
-            </S.InfoItem>
-
-            {vehicle.customer && (
-              <>
-                <S.InfoItem $fullWidth>
-                  <S.InfoLabel><FaInfoCircle /> Chủ sở hữu</S.InfoLabel>
-                  <S.InfoValue>
-                    {vehicle.customer.customerName || vehicle.customer.name || 'N/A'}
-                    {vehicle.customer.customerPhone && ` - ${vehicle.customer.customerPhone}`}
-                  </S.InfoValue>
-                </S.InfoItem>
-              </>
+            {vehicle.customerName && (
+              <S.InfoItem $fullWidth>
+                <S.InfoLabel><FaInfoCircle /> Chủ sở hữu</S.InfoLabel>
+                <S.InfoValue>{vehicle.customerName}</S.InfoValue>
+              </S.InfoItem>
             )}
           </S.VehicleGrid>
         </S.VehicleCard>
+      )}
+
+      {/* Installed Parts Section */}
+      {vehicle && (
+        <div style={{ marginTop: '24px' }}>
+          <h3 style={{ fontSize: '20px', fontWeight: '600', color: '#1f2937', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <FaCog style={{ color: '#f59e0b' }} />
+            Phụ tùng đã lắp đặt
+          </h3>
+
+          {loadingParts && (
+            <div style={{ textAlign: 'center', padding: '40px', color: '#6b7280' }}>
+              <FaSpinner className="spin" style={{ fontSize: '32px', marginBottom: '16px' }} />
+              <p>Đang tải danh sách phụ tùng...</p>
+            </div>
+          )}
+
+          {!loadingParts && installedParts.length === 0 && (
+            <div style={{ background: 'white', borderRadius: '12px', padding: '40px', textAlign: 'center', color: '#6b7280', boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)' }}>
+              <FaCog style={{ fontSize: '48px', opacity: 0.3, marginBottom: '16px' }} />
+              <p>Chưa có phụ tùng nào được lắp đặt trên xe này</p>
+            </div>
+          )}
+
+          {!loadingParts && installedParts.length > 0 && (
+            <div style={{ display: 'grid', gap: '16px' }}>
+              {installedParts.map((installed, index) => (
+                <S.VehicleCard key={index} style={{ borderLeft: '4px solid #10b981' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+                    <S.InfoItem>
+                      <S.InfoLabel><FaCog /> Tên phụ tùng</S.InfoLabel>
+                      <S.InfoValue>{installed.partName || installed.part?.partName || 'N/A'}</S.InfoValue>
+                    </S.InfoItem>
+
+                    <S.InfoItem>
+                      <S.InfoLabel><FaBarcode /> Part ID</S.InfoLabel>
+                      <S.InfoValue>{installed.partId || installed.part?.partId || 'N/A'}</S.InfoValue>
+                    </S.InfoItem>
+
+                    <S.InfoItem>
+                      <S.InfoLabel><FaBarcode /> ID Lắp đặt</S.InfoLabel>
+                      <S.InfoValue>{installed.installedPartId || 'N/A'}</S.InfoValue>
+                    </S.InfoItem>
+
+                    <S.InfoItem>
+                      <S.InfoLabel><FaCalendar /> Ngày lắp đặt</S.InfoLabel>
+                      <S.InfoValue>{formatDate(installed.installationDate)}</S.InfoValue>
+                    </S.InfoItem>
+
+                    <S.InfoItem>
+                      <S.InfoLabel><FaCalendar /> Bảo hành đến</S.InfoLabel>
+                      <S.InfoValue>{formatDate(installed.warrantyExpirationDate)}</S.InfoValue>
+                    </S.InfoItem>
+                  </div>
+                </S.VehicleCard>
+              ))}
+            </div>
+          )}
+        </div>
       )}
     </S.PageContainer>
   );
