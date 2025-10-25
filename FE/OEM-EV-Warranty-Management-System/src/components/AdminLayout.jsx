@@ -3,7 +3,7 @@ import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import * as S from "./AdminLayout.styles";
 import {
   FaUsers, FaCar, FaCogs, FaClipboardList, FaHistory,
-  FaUserShield, FaTachometerAlt, FaArrowLeft, FaCommentDots, FaClipboard
+  FaUserShield, FaTachometerAlt, FaCommentDots, FaClipboard
 } from "react-icons/fa";
 
 const navItems = [
@@ -27,10 +27,7 @@ export default function AdminLayout() {
   return (
     <S.Container>
       <S.Header>
-        <div style={{ display: "flex", alignItems: "center", gap: "15px", marginBottom: "10px" }}>
-          <S.BackButton onClick={() => navigate("/")}><FaArrowLeft /> Trang chủ</S.BackButton>
-          <S.HeaderTitle><FaUserShield /> Admin Panel</S.HeaderTitle>
-        </div>
+        <S.HeaderTitle><FaUserShield /> Admin Panel</S.HeaderTitle>
         <S.HeaderSubtitle>Full access to all system resources and management functions</S.HeaderSubtitle>
       </S.Header>
 
