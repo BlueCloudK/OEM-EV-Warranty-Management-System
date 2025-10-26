@@ -1,5 +1,43 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
+// Public API Client - Không gửi token (cho trang chủ, public endpoints)
+export const publicApiClient = async (endpoint, options = {}) => {
+  try {
+    const headers = {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    };
+
+    const config = {
+      method: options.method || 'GET',
+      headers,
+      ...options,
+    };
+
+    if (config.body && typeof config.body === 'object' && !(config.body instanceof FormData)) {
+      config.body = JSON.stringify(config.body);
+    }
+
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ Public API Error (${endpoint}):`, {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText
+      });
+      throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error(`❌ Public API Client Error (${endpoint}):`, error);
+    throw error;
+  }
+};
+
 // Lấy tokens từ localStorage
 const getAuthTokens = () => ({
   accessToken: localStorage.getItem('accessToken'),

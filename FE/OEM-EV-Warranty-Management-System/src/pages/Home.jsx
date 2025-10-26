@@ -1,8 +1,36 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { FaPhone, FaEnvelope } from "react-icons/fa";
+import { FaPhone, FaEnvelope, FaMapMarkerAlt, FaClock } from "react-icons/fa";
+import apiClient from "../api/apiClient";
+import GoongMap from "../components/GoongMap";
 
 export default function Home() {
+  const [serviceCenters, setServiceCenters] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedCenter, setSelectedCenter] = useState(null);
+
+  useEffect(() => {
+    fetchServiceCenters();
+  }, []);
+
+  const fetchServiceCenters = async () => {
+    try {
+      setLoading(true);
+      const response = await apiClient('/api/service-centers?page=0&size=6');
+      if (response.content) {
+        setServiceCenters(response.content);
+        // Auto-select first center để hiển thị map ngay
+        if (response.content.length > 0) {
+          setSelectedCenter(response.content[0]);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching service centers:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <main>
       {/* Hero Section */}
@@ -128,6 +156,196 @@ export default function Home() {
           <p style={{ color: "#053e2eff", textAlign: "center" }}>
             Quản lý phụ tùng xe điện, các chiến dịch bảo trì một cách hiệu quả.
           </p>
+        </div>
+      </section>
+
+      {/* Service Centers Section */}
+      <section style={{
+        padding: "50px 0",
+        backgroundColor: "#f9fafb",
+        marginTop: "20px"
+      }}>
+        <div className="container">
+          <h2 style={{
+            textAlign: "center",
+            color: "#044835ff",
+            fontSize: "32px",
+            marginBottom: "10px"
+          }}>
+            <FaMapMarkerAlt style={{ marginRight: "10px" }} />
+            Trung Tâm Dịch Vụ
+          </h2>
+          <p style={{
+            textAlign: "center",
+            color: "#6b7280",
+            fontSize: "16px",
+            marginBottom: "40px"
+          }}>
+            Tìm trung tâm dịch vụ gần bạn nhất
+          </p>
+
+          {loading ? (
+            <p style={{ textAlign: "center", color: "#6b7280" }}>Đang tải...</p>
+          ) : (
+            <>
+              {/* Map showing selected service center */}
+              {serviceCenters.length > 0 && selectedCenter && (
+                <div style={{ marginBottom: "30px" }}>
+                  <p style={{
+                    textAlign: "center",
+                    marginBottom: "12px",
+                    color: "#374151",
+                    fontSize: "15px",
+                    fontWeight: "600"
+                  }}>
+                    💡 Click vào trung tâm bên dưới để xem vị trí trên bản đồ
+                  </p>
+                  <GoongMap
+                    latitude={parseFloat(selectedCenter.latitude)}
+                    longitude={parseFloat(selectedCenter.longitude)}
+                    height="400px"
+                    editable={false}
+                  />
+                  <p style={{
+                    textAlign: "center",
+                    marginTop: "10px",
+                    color: "#10b981",
+                    fontSize: "16px",
+                    fontWeight: "600"
+                  }}>
+                    📍 {selectedCenter.serviceCenterName}
+                  </p>
+                  <p style={{
+                    textAlign: "center",
+                    marginTop: "4px",
+                    color: "#6b7280",
+                    fontSize: "14px"
+                  }}>
+                    {selectedCenter.address}
+                  </p>
+                </div>
+              )}
+
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))",
+                gap: "20px",
+                maxWidth: "1200px",
+                margin: "0 auto"
+              }}>
+                {serviceCenters.map((center) => (
+                  <div
+                    key={center.serviceCenterId}
+                    onClick={() => setSelectedCenter(center)}
+                    style={{
+                      backgroundColor: "white",
+                      padding: "24px",
+                      borderRadius: "12px",
+                      boxShadow: selectedCenter?.serviceCenterId === center.serviceCenterId
+                        ? "0 8px 16px rgba(16, 185, 129, 0.3)"
+                        : "0 4px 6px rgba(0, 0, 0, 0.1)",
+                      borderLeft: selectedCenter?.serviceCenterId === center.serviceCenterId
+                        ? "4px solid #059669"
+                        : "4px solid #10b981",
+                      transition: "all 0.3s ease",
+                      cursor: "pointer",
+                      transform: selectedCenter?.serviceCenterId === center.serviceCenterId
+                        ? "translateY(-4px)"
+                        : "none"
+                    }}
+                    onMouseEnter={(e) => {
+                      if (selectedCenter?.serviceCenterId !== center.serviceCenterId) {
+                        e.currentTarget.style.transform = "translateY(-2px)";
+                        e.currentTarget.style.boxShadow = "0 6px 12px rgba(0, 0, 0, 0.15)";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (selectedCenter?.serviceCenterId !== center.serviceCenterId) {
+                        e.currentTarget.style.transform = "none";
+                        e.currentTarget.style.boxShadow = "0 4px 6px rgba(0, 0, 0, 0.1)";
+                      }
+                    }}
+                  >
+                  <h3 style={{
+                    color: "#1f2937",
+                    fontSize: "20px",
+                    marginBottom: "16px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px"
+                  }}>
+                    <FaMapMarkerAlt style={{ color: "#10b981" }} />
+                    {center.serviceCenterName}
+                  </h3>
+
+                  <div style={{ marginBottom: "12px" }}>
+                    <p style={{
+                      color: "#6b7280",
+                      fontSize: "14px",
+                      marginBottom: "4px"
+                    }}>
+                      📍 {center.address}
+                    </p>
+                  </div>
+
+                  <div style={{ marginBottom: "12px" }}>
+                    <p style={{
+                      color: "#6b7280",
+                      fontSize: "14px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px"
+                    }}>
+                      <FaPhone style={{ color: "#10b981" }} />
+                      {center.phone}
+                    </p>
+                  </div>
+
+                  <div style={{ marginBottom: "12px" }}>
+                    <p style={{
+                      color: "#6b7280",
+                      fontSize: "14px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px"
+                    }}>
+                      <FaClock style={{ color: "#10b981" }} />
+                      {center.openingHours}
+                    </p>
+                  </div>
+
+                  {center.averageRating && (
+                    <div style={{
+                      marginTop: "12px",
+                      padding: "8px 12px",
+                      backgroundColor: "#f0fdf4",
+                      borderRadius: "6px",
+                      display: "inline-block"
+                    }}>
+                      <span style={{
+                        color: "#166534",
+                        fontSize: "14px",
+                        fontWeight: "600"
+                      }}>
+                        ⭐ {center.averageRating.toFixed(1)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            </>
+          )}
+
+          {serviceCenters.length === 0 && !loading && (
+            <p style={{
+              textAlign: "center",
+              color: "#6b7280",
+              marginTop: "20px"
+            }}>
+              Hiện chưa có trung tâm dịch vụ nào
+            </p>
+          )}
         </div>
       </section>
 

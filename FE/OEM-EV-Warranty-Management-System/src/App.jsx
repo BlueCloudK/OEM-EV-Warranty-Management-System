@@ -18,6 +18,7 @@ import AdminWarrantyClaimsManagement from "./pages/Admin/AdminWarrantyClaimsMana
 import AdminServiceHistoriesManagement from "./pages/Admin/AdminServiceHistoriesManagement";
 import AdminFeedbackManagement from "./pages/Admin/AdminFeedbackManagement";
 import AdminWorkLogs from "./pages/Admin/AdminWorkLogs";
+import AdminServiceCenters from "./pages/Admin/AdminServiceCenters";
 import AdminLayout from "./components/AdminLayout";
 
 // SCStaff
@@ -100,6 +101,7 @@ export default function App() {
           <Route path="warranty-claims" element={<AdminWarrantyClaimsManagement />} />
           <Route path="service-histories" element={<AdminServiceHistoriesManagement />} />
           <Route path="work-logs" element={<AdminWorkLogs />} />
+          <Route path="service-centers" element={<AdminServiceCenters />} />
           <Route path="feedbacks" element={<AdminFeedbackManagement />} />
         </Route>
 
