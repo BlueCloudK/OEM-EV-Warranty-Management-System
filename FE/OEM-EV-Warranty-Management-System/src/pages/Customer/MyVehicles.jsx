@@ -107,27 +107,27 @@ const VehicleDetailModal = ({ isOpen, onClose, vehicle }) => {
               <S.DetailItemLabel><FaCog /> Model</S.DetailItemLabel>
               <S.DetailItemValue>{model || 'Chưa có thông tin'}</S.DetailItemValue>
             </S.DetailItem>
-            <S.DetailItem>
+            {/* <S.DetailItem>
               <S.DetailItemLabel><FaCog /> Hãng</S.DetailItemLabel>
               <S.DetailItemValue>{brand || 'Chưa có thông tin'}</S.DetailItemValue>
-            </S.DetailItem>
+            </S.DetailItem> */}
             <S.DetailItem>
               <S.DetailItemLabel><FaCalendar /> Năm sản xuất</S.DetailItemLabel>
               <S.DetailItemValue>{year || 'Chưa có thông tin'}</S.DetailItemValue>
             </S.DetailItem>
-            <S.DetailItem>
+            {/* <S.DetailItem>
               <S.DetailItemLabel><FaTachometerAlt /> Số Km</S.DetailItemLabel>
               <S.DetailItemValue>
                 {mileage !== null && mileage !== undefined
                   ? `${Number(mileage).toLocaleString()} km`
                   : 'Chưa có thông tin'}
               </S.DetailItemValue>
-            </S.DetailItem>
-            <S.DetailItem>
+            </S.DetailItem> */}
+            {/* <S.DetailItem>
               <S.DetailItemLabel><FaCalendar /> Ngày mua</S.DetailItemLabel>
               <S.DetailItemValue>{formatDate(purchaseDate)}</S.DetailItemValue>
-            </S.DetailItem>
-            <S.DetailItem>
+            </S.DetailItem> */}
+            {/* <S.DetailItem>
               <S.DetailItemLabel>
                 {isWarrantyValid(warrantyEndDate) ? <FaCheckCircle /> : <FaTimesCircle />}
                 Bảo hành đến
@@ -137,7 +137,7 @@ const VehicleDetailModal = ({ isOpen, onClose, vehicle }) => {
                   {warrantyEndDate ? formatDate(warrantyEndDate) : 'Chưa có thông tin'}
                 </S.WarrantyBadge>
               </S.DetailItemValue>
-            </S.DetailItem>
+            </S.DetailItem> */}
           </S.DetailGrid>
 
           <S.SectionTitle><FaCog /> Phụ tùng đã lắp đặt ({installedParts.length})</S.SectionTitle>
@@ -300,7 +300,7 @@ const MyVehicles = () => {
                     <div>
                       <S.VehicleTitle>{vehicle.vehicleName}</S.VehicleTitle>
                       <S.VehicleSubtitle>
-                        {brand && model ? `${brand} ${model}` : model || brand || 'N/A'}
+                        {model || 'N/A'}
                       </S.VehicleSubtitle>
                     </div>
                   </S.VehicleHeader>
@@ -314,15 +314,15 @@ const MyVehicles = () => {
                       <S.DetailLabel><FaCalendar /> Năm SX</S.DetailLabel>
                       <S.DetailValue>{year || 'N/A'}</S.DetailValue>
                     </S.DetailRow>
-                    <S.DetailRow>
+                    {/* <S.DetailRow>
                       <S.DetailLabel><FaTachometerAlt /> Số Km</S.DetailLabel>
                       <S.DetailValue>
                         {mileage !== null && mileage !== undefined
                           ? `${Number(mileage).toLocaleString()} km`
                           : 'N/A'}
                       </S.DetailValue>
-                    </S.DetailRow>
-                    <S.DetailRow>
+                    </S.DetailRow> */}
+                    {/* <S.DetailRow>
                       <S.DetailLabel>
                         {isWarrantyValid(warrantyEndDate) ? <FaCheckCircle /> : <FaTimesCircle />}
                         Bảo hành
@@ -332,7 +332,7 @@ const MyVehicles = () => {
                           ? (isWarrantyValid(warrantyEndDate) ? 'Còn hạn' : 'Hết hạn')
                           : 'Chưa có thông tin'}
                       </S.WarrantyBadge>
-                    </S.DetailRow>
+                    </S.DetailRow> */}
                   </S.VehicleDetails>
 
                   <S.ActionButton>
