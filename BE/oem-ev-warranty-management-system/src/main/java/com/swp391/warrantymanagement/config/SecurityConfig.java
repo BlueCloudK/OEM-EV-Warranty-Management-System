@@ -90,6 +90,12 @@ public class SecurityConfig {
                 // Work Logs
                 .requestMatchers("/api/work-logs/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF")
 
+                // Part Requests - Yêu cầu linh kiện từ Technician đến EVM
+                .requestMatchers("/api/part-requests/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF", "SC_TECHNICIAN")
+
+                // Recall Requests - Yêu cầu recall từ EVM đến khách hàng
+                .requestMatchers("/api/recall-requests/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF", "CUSTOMER")
+
                 // SC_TECHNICIAN - Kỹ thuật viên: xem và cập nhật service histories, warranty claims
                 // (Quyền đã được định nghĩa ở trên cùng với SC_STAFF)
 
