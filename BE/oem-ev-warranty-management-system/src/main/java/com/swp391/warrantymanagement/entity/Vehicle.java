@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,6 +32,18 @@ public class Vehicle {
 
     @Column(name = "vehicle_vin", nullable = false, length = 50, unique = true)
     private String vehicleVin;
+
+    @Column(name = "purchase_date", nullable = false)
+    private LocalDate purchaseDate;
+
+    @Column(name = "warranty_start_date", nullable = false)
+    private LocalDate warrantyStartDate;
+
+    @Column(name = "warranty_end_date", nullable = false)
+    private LocalDate warrantyEndDate;
+
+    @Column(name = "mileage", nullable = false)
+    private Integer mileage; // Số km đã đi
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id", nullable = false)

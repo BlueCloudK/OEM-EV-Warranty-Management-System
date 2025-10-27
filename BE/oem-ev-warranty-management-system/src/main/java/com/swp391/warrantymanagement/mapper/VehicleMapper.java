@@ -23,6 +23,10 @@ public final class VehicleMapper {
         entity.setVehicleModel(requestDTO.getVehicleModel());
         entity.setVehicleYear(requestDTO.getVehicleYear());
         entity.setVehicleVin(requestDTO.getVehicleVin());
+        entity.setPurchaseDate(requestDTO.getPurchaseDate());
+        entity.setWarrantyStartDate(requestDTO.getWarrantyStartDate());
+        entity.setWarrantyEndDate(requestDTO.getWarrantyEndDate());
+        entity.setMileage(requestDTO.getMileage());
         entity.setCustomer(customer);
 
         return entity;
@@ -33,8 +37,12 @@ public final class VehicleMapper {
         if (entity == null || requestDTO == null) return;
 
         entity.setVehicleName(requestDTO.getVehicleName());
+        entity.setPurchaseDate(requestDTO.getPurchaseDate());
+        entity.setWarrantyStartDate(requestDTO.getWarrantyStartDate());
+        entity.setWarrantyEndDate(requestDTO.getWarrantyEndDate());
         entity.setVehicleModel(requestDTO.getVehicleModel());
         entity.setVehicleYear(requestDTO.getVehicleYear());
+        entity.setMileage(requestDTO.getMileage());
         entity.setVehicleVin(requestDTO.getVehicleVin());
         entity.setCustomer(customer);
     }
@@ -49,6 +57,10 @@ public final class VehicleMapper {
         responseDTO.setVehicleModel(entity.getVehicleModel());
         responseDTO.setVehicleYear(entity.getVehicleYear());
         responseDTO.setVehicleVin(entity.getVehicleVin());
+        responseDTO.setPurchaseDate(entity.getPurchaseDate());
+        responseDTO.setWarrantyStartDate(entity.getWarrantyStartDate());
+        responseDTO.setWarrantyEndDate(entity.getWarrantyEndDate());
+        responseDTO.setMileage(entity.getMileage());
 
         if (entity.getCustomer() != null) {
             responseDTO.setCustomerId(entity.getCustomer().getCustomerId());

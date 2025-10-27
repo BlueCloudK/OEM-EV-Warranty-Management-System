@@ -3,6 +3,8 @@ package com.swp391.warrantymanagement.dto.request;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
+import java.time.LocalDate;
+
 /** Request DTO: Dữ liệu đầu vào từ FE cho Vehicle operations */
 @Data
 public class VehicleRequestDTO {
@@ -29,6 +31,19 @@ public class VehicleRequestDTO {
             message = "Biển số xe điện phải đúng định dạng XX-MĐ-YYY.ZZ"
     )
     private String vehicleVin;
+
+    @NotNull(message = "Purchase date is required")
+    private LocalDate purchaseDate;
+
+    @NotNull(message = "Warranty start date is required")
+    private LocalDate warrantyStartDate;
+
+    @NotNull(message = "Warranty end date is required")
+    private LocalDate warrantyEndDate;
+
+    @NotNull(message = "Mileage is required")
+    @Min(value = 0, message = "Mileage must be at least 0")
+    private Integer mileage; // Số km đã đi
 
     @NotBlank(message = "Customer ID is required")
     private String customerId; // UUID của customer
