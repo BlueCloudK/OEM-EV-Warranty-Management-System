@@ -2,29 +2,34 @@ package com.swp391.warrantymanagement.dto.request;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;
+import java.math.BigDecimal;
 
 /**
- * PartRequestDTO - Request DTO cho SC_TECHNICIAN tạo yêu cầu linh kiện
+ * PartRequestDTO - Used by EVM Staff to register new parts
+ * Business Rule: Part is standalone component (NO vehicle association)
  */
 @Data
 public class PartRequestDTO {
+    @NotBlank(message = "Part ID is required")
+    @Size(max = 50, message = "Part ID cannot exceed 50 characters")
+    @Pattern(regexp = "^[A-Z0-9-]+$", message = "Part ID must contain only uppercase letters, numbers and hyphens")
+    private String partId;
 
-    @NotNull(message = "Warranty claim ID is required")
-    private Long warrantyClaimId;
+    @NotBlank(message = "Part name is required")
+    @Size(min = 2, max = 100, message = "Part name must be between 2 and 100 characters")
+    private String partName;
 
-    @NotBlank(message = "Faulty part ID is required")
-    private String faultyPartId;
+    @NotBlank(message = "Part number is required")
+    @Size(max = 50, message = "Part number cannot exceed 50 characters")
+    @Pattern(regexp = "^[A-Z0-9-_]+$", message = "Part number must contain only uppercase letters, numbers, hyphens and underscores")
+    private String partNumber;
 
-    @NotBlank(message = "Issue description is required")
-    @Size(min = 10, max = 1000, message = "Issue description must be between 10 and 1000 characters")
-    private String issueDescription;
+    @NotBlank(message = "Manufacturer is required")
+    @Size(min = 2, max = 100, message = "Manufacturer must be between 2 and 100 characters")
+    private String manufacturer;
 
-    @NotNull(message = "Quantity is required")
-    @Min(value = 1, message = "Quantity must be at least 1")
-    @Max(value = 100, message = "Quantity cannot exceed 100")
-    private Integer quantity;
-
-    @NotNull(message = "Service center ID is required")
-    private Long serviceCenterId;
+    @NotNull(message = "Price is required")
+    @DecimalMin(value = "0.01", message = "Price must be greater than 0")
+    @DecimalMax(value = "99999999.99", message = "Price cannot exceed 99,999,999.99")
+    private BigDecimal price;
 }
-

@@ -1,6 +1,6 @@
 package com.swp391.warrantymanagement.service.impl;
 
-import com.swp391.warrantymanagement.dto.request.PartRequestDTO;
+import com.swp391.warrantymanagement.dto.request.PartRequestRequestDTO;
 import com.swp391.warrantymanagement.dto.response.PagedResponse;
 import com.swp391.warrantymanagement.dto.response.PartRequestResponseDTO;
 import com.swp391.warrantymanagement.entity.*;
@@ -39,7 +39,7 @@ public class PartRequestServiceImpl implements PartRequestService {
     private final JwtService jwtService;
 
     @Override
-    public PartRequestResponseDTO createPartRequest(PartRequestDTO requestDTO, String authorizationHeader) {
+    public PartRequestResponseDTO createPartRequest(PartRequestRequestDTO requestDTO, String authorizationHeader) {
         logger.info("Creating part request for warranty claim: {}", requestDTO.getWarrantyClaimId());
 
         // Extract user from token

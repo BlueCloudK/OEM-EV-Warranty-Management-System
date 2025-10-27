@@ -1,6 +1,7 @@
 package com.swp391.warrantymanagement.mapper;
 
 import com.swp391.warrantymanagement.dto.request.PartRequestDTO;
+import com.swp391.warrantymanagement.dto.request.PartRequestRequestDTO;
 import com.swp391.warrantymanagement.dto.response.PartRequestResponseDTO;
 import com.swp391.warrantymanagement.entity.*;
 
@@ -15,7 +16,7 @@ public final class PartRequestMapper {
     private PartRequestMapper() {}
 
     // Request DTO -> Entity (cho create operation)
-    public static PartRequest toEntity(PartRequestDTO requestDTO, WarrantyClaim warrantyClaim,
+    public static PartRequest toEntity(PartRequestRequestDTO requestDTO, WarrantyClaim warrantyClaim,
                                        Part faultyPart, User requestedBy, ServiceCenter serviceCenter) {
         if (requestDTO == null) return null;
 

@@ -1,6 +1,6 @@
 package com.swp391.warrantymanagement.controller;
 
-import com.swp391.warrantymanagement.dto.request.PartRequestDTO;
+import com.swp391.warrantymanagement.dto.request.PartRequestRequestDTO;
 import com.swp391.warrantymanagement.dto.response.PagedResponse;
 import com.swp391.warrantymanagement.dto.response.PartRequestResponseDTO;
 import com.swp391.warrantymanagement.enums.PartRequestStatus;
@@ -44,7 +44,7 @@ public class PartRequestController {
     @PostMapping
     @PreAuthorize("hasRole('SC_TECHNICIAN')")
     public ResponseEntity<PartRequestResponseDTO> createPartRequest(
-            @Valid @RequestBody PartRequestDTO requestDTO,
+            @Valid @RequestBody PartRequestRequestDTO requestDTO,
             @RequestHeader("Authorization") String authorizationHeader) {
         logger.info("Create part request - Warranty Claim ID: {}", requestDTO.getWarrantyClaimId());
         PartRequestResponseDTO response = partRequestService.createPartRequest(requestDTO, authorizationHeader);

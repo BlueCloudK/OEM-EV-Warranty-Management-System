@@ -30,26 +30,6 @@ public class PartRequest {
     @Column(name = "request_id")
     private Long requestId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "warranty_claim_id", nullable = false)
-    private WarrantyClaim warrantyClaim; // Claim liên quan đến yêu cầu này
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "faulty_part_id", nullable = false)
-    private Part faultyPart; // Part bị lỗi cần thay thế
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "requested_by_user_id", nullable = false)
-    private User requestedBy; // SC_TECHNICIAN tạo yêu cầu
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "approved_by_user_id")
-    private User approvedBy; // EVM_STAFF duyệt yêu cầu
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "service_center_id", nullable = false)
-    private ServiceCenter serviceCenter; // Service center cần nhận part
-
     @Column(name = "request_date", nullable = false)
     private LocalDateTime requestDate;
 
@@ -80,5 +60,25 @@ public class PartRequest {
 
     @Column(name = "notes", length = 1000, columnDefinition = "nvarchar(1000)")
     private String notes; // Ghi chú thêm từ EVM_STAFF
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "warranty_claim_id", nullable = false)
+    private WarrantyClaim warrantyClaim; // Claim liên quan đến yêu cầu này
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "faulty_part_id", nullable = false)
+    private Part faultyPart; // Part bị lỗi cần thay thế
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "requested_by_user_id", nullable = false)
+    private User requestedBy; // SC_TECHNICIAN tạo yêu cầu
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "approved_by_user_id")
+    private User approvedBy; // EVM_STAFF duyệt yêu cầu
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "service_center_id", nullable = false)
+    private ServiceCenter serviceCenter; // Service center cần nhận part
 }
 
