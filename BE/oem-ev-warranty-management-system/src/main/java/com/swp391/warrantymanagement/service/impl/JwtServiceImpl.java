@@ -27,8 +27,8 @@ public class JwtServiceImpl implements JwtService {
     @Value("${jwt.secret-key}")
     private String secretKey;
 
-    // Thời gian sống của access token (1 giờ)
-    private static final long ACCESS_TOKEN_EXPIRATION = 1000 * 60 * 60;
+    // Thời gian sống của access token (3 giờ)
+    private static final long ACCESS_TOKEN_EXPIRATION = 1000 * 60 * 60 * 3;
 
     // Thời gian sống của refresh token (7 ngày)
     private static final long REFRESH_TOKEN_EXPIRATION = 1000 * 60 * 60 * 24 * 7;
