@@ -53,4 +53,8 @@ public class WarrantyClaim {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assigned_to_user_id")
     private User assignedTo;  // EVM Staff được assign claim này
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "recall_request_id", unique = true)
+    private RecallRequest recallRequest;  // Link đến recall request nếu claim này từ recall (1-1 relationship)
 }
