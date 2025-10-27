@@ -1,6 +1,6 @@
 package com.swp391.warrantymanagement.service;
 
-import com.swp391.warrantymanagement.dto.request.PartRequestDTO;
+import com.swp391.warrantymanagement.dto.request.PartRequestRequestDTO;
 import com.swp391.warrantymanagement.dto.response.PagedResponse;
 import com.swp391.warrantymanagement.dto.response.PartRequestResponseDTO;
 import com.swp391.warrantymanagement.enums.PartRequestStatus;
@@ -16,7 +16,7 @@ public interface PartRequestService {
     /**
      * Technician tạo yêu cầu linh kiện mới
      */
-    PartRequestResponseDTO createPartRequest(PartRequestDTO requestDTO, String authorizationHeader);
+    PartRequestResponseDTO createPartRequest(PartRequestRequestDTO requestDTO, String authorizationHeader);
 
     /**
      * Lấy thông tin chi tiết một part request
