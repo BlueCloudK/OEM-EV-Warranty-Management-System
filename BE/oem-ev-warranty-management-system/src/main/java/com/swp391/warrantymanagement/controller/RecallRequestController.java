@@ -58,5 +58,12 @@ public class RecallRequestController {
     public ResponseEntity<List<RecallRequestResponseDTO>> getForCustomer(@PathVariable Long customerId) {
         return ResponseEntity.ok(recallRequestService.getRecallRequestsForCustomer(customerId));
     }
+
+    // Lấy danh sách recall của chính mình (customer tự động từ token)
+    @GetMapping("/my-recalls")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public ResponseEntity<List<RecallRequestResponseDTO>> getMyRecalls(@RequestHeader("Authorization") String auth) {
+        return ResponseEntity.ok(recallRequestService.getMyRecallRequests(auth));
+    }
 }
 
