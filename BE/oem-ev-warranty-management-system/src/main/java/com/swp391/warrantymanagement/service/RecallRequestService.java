@@ -18,4 +18,6 @@ public interface RecallRequestService {
     List<RecallRequestResponseDTO> getRecallRequestsForAdmin();
 
     List<RecallRequestResponseDTO> getRecallRequestsForCustomer(Long customerId);
+
+    List<RecallRequestResponseDTO> getMyRecallRequests(String authorizationHeader);
 }

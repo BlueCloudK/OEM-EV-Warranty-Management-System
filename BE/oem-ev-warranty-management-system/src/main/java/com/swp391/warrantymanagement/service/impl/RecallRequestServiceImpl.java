@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -218,5 +219,36 @@ public class RecallRequestServiceImpl implements RecallRequestService {
         logger.info("Recall request updated with customer response: {}", recallRequestId);
 
         return RecallRequestMapper.toResponseDTO(updatedRecall);
+    }
+
+    @Override
+    public List<RecallRequestResponseDTO> getMyRecallRequests(String authorizationHeader) {
+        // Extract customer từ JWT token
+        String token = authorizationHeader.replace("Bearer ", "");
+        String username = jwtService.extractUsername(token);
+        User customerUser = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
+
+        // Lấy customer entity
+        if (customerUser.getCustomer() == null) {
+            throw new IllegalStateException("User is not a customer");
+        }
+
+        UUID customerId = customerUser.getCustomer().getCustomerId();
+        logger.info("Getting recall requests for customer ID: {} (user: {})", customerId, username);
+
+        // Lấy tất cả recall requests cho customer này
+        List<RecallRequest> recalls = recallRequestRepository.findAll().stream()
+                .filter(r -> r.getInstalledPart() != null
+                        && r.getInstalledPart().getVehicle() != null
+                        && r.getInstalledPart().getVehicle().getCustomer() != null
+                        && r.getInstalledPart().getVehicle().getCustomer().getCustomerId().equals(customerId))
+                .collect(Collectors.toList());
+
+        logger.info("Found {} recall requests for customer {}", recalls.size(), customerId);
+
+        return recalls.stream()
+                .map(RecallRequestMapper::toResponseDTO)
+                .collect(Collectors.toList());
     }
 }
