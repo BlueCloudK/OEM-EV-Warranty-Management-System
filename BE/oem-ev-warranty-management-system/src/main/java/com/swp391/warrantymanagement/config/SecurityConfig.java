@@ -16,6 +16,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.http.HttpMethod;
 
 import java.util.List;
 
@@ -81,8 +82,9 @@ public class SecurityConfig {
                 .requestMatchers("/api/warranty-claims/**").hasAnyRole("ADMIN", "SC_STAFF", "SC_TECHNICIAN", "EVM_STAFF")
                 .requestMatchers("/api/service-histories/**").hasAnyRole("ADMIN", "SC_STAFF", "SC_TECHNICIAN", "EVM_STAFF", "CUSTOMER")
 
-                // Service Centers
-                .requestMatchers("/api/service-centers/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF", "SC_TECHNICIAN", "CUSTOMER")
+                // Service Centers - Allow public GET access
+                .requestMatchers(HttpMethod.GET, "/api/service-centers", "/api/service-centers/**").permitAll()
+                .requestMatchers("/api/service-centers/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF")
 
                 // Feedbacks
                 .requestMatchers("/api/feedbacks/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF", "SC_TECHNICIAN", "CUSTOMER")
@@ -94,6 +96,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/part-requests/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF", "SC_TECHNICIAN")
 
                 // Recall Requests - Yêu cầu recall từ EVM đến khách hàng
+                .requestMatchers("/api/recall-requests/my-recalls").hasRole("CUSTOMER")
+                .requestMatchers("/api/recall-requests/admin").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF")
                 .requestMatchers("/api/recall-requests/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF", "CUSTOMER")
 
                 // SC_TECHNICIAN - Kỹ thuật viên: xem và cập nhật service histories, warranty claims
