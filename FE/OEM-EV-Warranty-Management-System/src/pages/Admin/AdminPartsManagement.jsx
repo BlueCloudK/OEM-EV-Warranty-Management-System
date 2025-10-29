@@ -5,21 +5,20 @@ import { useAdminPartsManagement } from '../../hooks/useAdminPartsManagement';
 import * as S from './AdminPartsManagement.styles';
 import { FaCogs, FaPlus, FaEdit, FaSearch, FaTrash, FaSpinner } from 'react-icons/fa';
 
-// Form Modal Component (remains the same)
+// Form Modal Component - partId is now auto-generated (Long)
 const PartFormModal = ({ isOpen, onClose, onSubmit, part }) => {
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (isOpen) {
-      setFormData(part ? { ...part } : { partId: '', partName: '', partNumber: '', manufacturer: '', price: 0 }); // Added partId
+      setFormData(part ? { ...part } : { partName: '', partNumber: '', manufacturer: '', price: 0 });
       setErrors({}); // Clear errors when modal opens
     }
   }, [part, isOpen]);
 
   const validate = () => {
     const newErrors = {};
-    if (!formData.partId) newErrors.partId = 'ID Phụ tùng là bắt buộc.';
     if (!formData.partName) newErrors.partName = 'Tên phụ tùng là bắt buộc.';
     if (!formData.partNumber) newErrors.partNumber = 'Mã phụ tùng là bắt buộc.';
     if (!formData.manufacturer) newErrors.manufacturer = 'Nhà sản xuất là bắt buộc.';
@@ -40,7 +39,7 @@ const PartFormModal = ({ isOpen, onClose, onSubmit, part }) => {
       setErrors(validationErrors);
       return;
     }
-    const { success, message } = await onSubmit(formData, part?.id);
+    const { success, message } = await onSubmit(formData, part?.partId);
     if (success) {
       onClose();
     } else {
@@ -56,11 +55,12 @@ const PartFormModal = ({ isOpen, onClose, onSubmit, part }) => {
         <h2>{part ? 'Chỉnh sửa Phụ tùng' : 'Tạo Phụ tùng mới'}</h2>
         <form onSubmit={handleSubmit}>
           {errors.general && <S.ErrorText>{errors.general}</S.ErrorText>}
-          <S.FormGroup>
-            <S.Label>ID Phụ tùng *</S.Label>
-            <S.Input name="partId" value={formData.partId || ''} onChange={handleInputChange} required hasError={!!errors.partId} /> {/* Added Part ID input */}
-            {errors.partId && <S.ErrorText>{errors.partId}</S.ErrorText>}
-          </S.FormGroup>
+          {part && (
+            <S.FormGroup>
+              <S.Label>ID Phụ tùng (Tự động)</S.Label>
+              <S.Input value={part.partId} disabled style={{ background: '#f3f4f6', cursor: 'not-allowed' }} />
+            </S.FormGroup>
+          )}
           <S.FormGroup>
             <S.Label>Tên phụ tùng *</S.Label>
             <S.Input name="partName" value={formData.partName || ''} onChange={handleInputChange} required hasError={!!errors.partName} />
