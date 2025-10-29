@@ -15,7 +15,7 @@ public class PartRequestResponseDTO {
     private Long warrantyClaimId;
 
     // Faulty Part information
-    private String faultyPartId;
+    private Long faultyPartId;
     private String faultyPartName;
     private String faultyPartNumber;
 

@@ -15,7 +15,7 @@ public class WarrantyClaimResponseDTO {
 
     // InstalledPart information - đầy đủ thông tin installed part
     private String installedPartId;
-    private String partId;
+    private Long partId; // Changed from String to Long
     private String partName;
     private String partNumber;
     private String manufacturer;

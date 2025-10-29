@@ -20,4 +20,6 @@ public interface RecallRequestService {
     List<RecallRequestResponseDTO> getRecallRequestsForCustomer(Long customerId);
 
     List<RecallRequestResponseDTO> getMyRecallRequests(String authorizationHeader);
+
+    void deleteRecallRequest(Long recallRequestId, String authorizationHeader);
 }

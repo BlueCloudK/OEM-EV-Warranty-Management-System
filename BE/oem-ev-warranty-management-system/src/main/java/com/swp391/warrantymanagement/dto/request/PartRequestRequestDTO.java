@@ -12,8 +12,9 @@ public class PartRequestRequestDTO {
     @NotNull(message = "Warranty claim ID is required")
     private Long warrantyClaimId;
 
-    @NotBlank(message = "Faulty part ID is required")
-    private String faultyPartId;
+    @NotNull(message = "Faulty part ID is required")
+    @Positive(message = "Faulty part ID must be a positive number")
+    private Long faultyPartId;
 
     @NotBlank(message = "Issue description is required")
     @Size(min = 10, max = 1000, message = "Issue description must be between 10 and 1000 characters")

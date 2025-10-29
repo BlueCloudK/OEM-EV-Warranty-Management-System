@@ -17,7 +17,7 @@ import java.util.Objects;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ServiceHistoryDetailId implements Serializable {
-    private String partId;  // Changed from Long to String to match Part entity
+    private Long partId;  // Changed back to Long to match Part entity
     private Long serviceHistoryId;
 
     @Override

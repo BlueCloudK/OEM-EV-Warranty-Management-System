@@ -251,4 +251,31 @@ public class RecallRequestServiceImpl implements RecallRequestService {
                 .map(RecallRequestMapper::toResponseDTO)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public void deleteRecallRequest(Long recallRequestId, String authorizationHeader) {
+        logger.info("Deleting recall request: {}", recallRequestId);
+
+        // Extract EVM_STAFF user from token
+        String token = authorizationHeader.replace("Bearer ", "");
+        String username = jwtService.extractUsername(token);
+        User evmUser = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
+
+        RecallRequest recall = recallRequestRepository.findById(recallRequestId)
+                .orElseThrow(() -> new ResourceNotFoundException("Recall request not found: " + recallRequestId));
+
+        // Validate status - chỉ được xóa khi còn PENDING_ADMIN_APPROVAL
+        if (recall.getStatus() != RecallRequestStatus.PENDING_ADMIN_APPROVAL) {
+            throw new IllegalStateException("Can only delete recall requests with status PENDING_ADMIN_APPROVAL. Current status: " + recall.getStatus());
+        }
+
+        // Validate ownership - EVM staff chỉ được xóa recall mình tạo
+        if (!recall.getCreatedBy().getUserId().equals(evmUser.getUserId())) {
+            throw new AccessDeniedException("You can only delete recall requests that you created");
+        }
+
+        recallRequestRepository.delete(recall);
+        logger.info("Recall request deleted successfully: {}", recallRequestId);
+    }
 }

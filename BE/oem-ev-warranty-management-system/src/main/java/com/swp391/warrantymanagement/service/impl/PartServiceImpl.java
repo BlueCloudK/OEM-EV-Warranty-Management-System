@@ -49,9 +49,9 @@ public class PartServiceImpl implements PartService {
     }
 
     @Override
-    public PartResponseDTO getPartById(String id) {
+    public PartResponseDTO getPartById(Long id) {
         Part part = partRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Part", "id", id));
+            .orElseThrow(() -> new ResourceNotFoundException("Part", "id", id.toString()));
         return PartMapper.toResponseDTO(part);
     }
 
@@ -76,9 +76,9 @@ public class PartServiceImpl implements PartService {
 
     @Override
     @Transactional
-    public PartResponseDTO updatePart(String id, PartRequestDTO requestDTO) {
+    public PartResponseDTO updatePart(Long id, PartRequestDTO requestDTO) {
         Part existingPart = partRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Part", "id", id));
+            .orElseThrow(() -> new ResourceNotFoundException("Part", "id", id.toString()));
 
         // Check if part number is being changed and if it already exists
         if (!existingPart.getPartNumber().equals(requestDTO.getPartNumber())) {
@@ -100,7 +100,7 @@ public class PartServiceImpl implements PartService {
 
     @Override
     @Transactional
-    public boolean deletePart(String id) {
+    public boolean deletePart(Long id) {
         if (!partRepository.existsById(id)) {
             return false;
         }

@@ -23,10 +23,9 @@ public class ServiceHistoryRequestDTO {
     @Size(min = 10, max = 500, message = "Description must be between 10 and 500 characters")
     private String description;
 
-    @NotBlank(message = "Part ID is required")
-    @Size(max = 50, message = "Part ID cannot exceed 50 characters")
-    @Pattern(regexp = "^[A-Z0-9-]+$", message = "Part ID must contain only uppercase letters, numbers and hyphens")
-    private String partId;
+    @NotNull(message = "Part ID is required")
+    @Positive(message = "Part ID must be a positive number")
+    private Long partId; // Changed from String to Long
 
     @NotNull(message = "Vehicle ID is required")
     @Positive(message = "Vehicle ID must be a positive number")

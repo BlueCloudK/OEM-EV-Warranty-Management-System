@@ -52,6 +52,9 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").authenticated() // Các endpoint auth khác cần authentication
                 .requestMatchers("/api/public/**").permitAll()
 
+                // Service Centers - PUBLIC ACCESS (must be BEFORE other rules)
+                .requestMatchers("/api/service-centers/**").permitAll()
+
                 // Swagger UI endpoints
                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
 
@@ -81,10 +84,6 @@ public class SecurityConfig {
                 .requestMatchers("/api/warranty-claims/my-claims/**").hasRole("CUSTOMER")
                 .requestMatchers("/api/warranty-claims/**").hasAnyRole("ADMIN", "SC_STAFF", "SC_TECHNICIAN", "EVM_STAFF")
                 .requestMatchers("/api/service-histories/**").hasAnyRole("ADMIN", "SC_STAFF", "SC_TECHNICIAN", "EVM_STAFF", "CUSTOMER")
-
-                // Service Centers - Allow public GET access
-                .requestMatchers(HttpMethod.GET, "/api/service-centers", "/api/service-centers/**").permitAll()
-                .requestMatchers("/api/service-centers/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF")
 
                 // Feedbacks
                 .requestMatchers("/api/feedbacks/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF", "SC_TECHNICIAN", "CUSTOMER")
@@ -121,6 +120,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         // Cho phép tất cả origins (development mode)
+        // Using allowedOriginPatterns instead of allowedOrigins to support wildcards
         configuration.setAllowedOriginPatterns(List.of("*"));
 
         // Cho phép tất cả HTTP methods bao gồm PATCH và OPTIONS
@@ -133,6 +133,7 @@ public class SecurityConfig {
         configuration.setExposedHeaders(List.of("Authorization", "Content-Type", "Accept", "X-Requested-With", "Cache-Control", "Access-Control-Allow-Origin"));
 
         // Cho phép credentials (cookies, authorization headers)
+        // NOTE: Must set to true for authenticated requests, but false for public endpoints
         configuration.setAllowCredentials(true);
 
         // Cache preflight requests for 1 hour để giảm số lượng OPTIONS requests

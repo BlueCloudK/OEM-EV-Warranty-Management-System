@@ -23,8 +23,9 @@ import java.util.List;
 @NoArgsConstructor
 public class Part {
     @Id
-    @Column(name = "part_id", length = 50)
-    private String partId;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "part_id")
+    private Long partId;
 
     @Column(name = "part_name", nullable = false, length = 100, columnDefinition = "nvarchar(100)")
     private String partName;

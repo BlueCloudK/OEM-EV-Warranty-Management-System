@@ -15,9 +15,9 @@ public class InstalledPartRequestDTO {
     @Size(max = 50, message = "Installed part ID cannot exceed 50 characters")
     private String installedPartId;
 
-    @NotBlank(message = "Part ID is required")
-    @Size(max = 50, message = "Part ID cannot exceed 50 characters")
-    private String partId;
+    @NotNull(message = "Part ID is required")
+    @Positive(message = "Part ID must be a positive number")
+    private Long partId;
 
     @NotNull(message = "Vehicle ID is required")
     @Positive(message = "Vehicle ID must be a positive number")

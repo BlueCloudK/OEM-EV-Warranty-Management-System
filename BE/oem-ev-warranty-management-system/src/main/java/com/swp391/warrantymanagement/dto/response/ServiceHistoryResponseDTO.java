@@ -12,7 +12,7 @@ public class ServiceHistoryResponseDTO {
     private String description;
 
     // Part information
-    private String partId;
+    private Long partId; // Changed from String to Long
     private String partName;
 
     // Vehicle information

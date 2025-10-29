@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 public class RecallRequestResponseDTO {
     private Long recallRequestId;
     private String installedPartId;
-    private String partId;
+    private Long partId; // Changed from String to Long
     private String partName;
     private Long vehicleId;
     private String vehicleName;
