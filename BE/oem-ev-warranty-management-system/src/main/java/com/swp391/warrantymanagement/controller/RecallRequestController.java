@@ -65,5 +65,13 @@ public class RecallRequestController {
     public ResponseEntity<List<RecallRequestResponseDTO>> getMyRecalls(@RequestHeader("Authorization") String auth) {
         return ResponseEntity.ok(recallRequestService.getMyRecallRequests(auth));
     }
+
+    // EVM xóa recall (chỉ được xóa khi còn PENDING_ADMIN_APPROVAL)
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('EVM_STAFF')")
+    public ResponseEntity<Void> deleteRecall(@PathVariable Long id, @RequestHeader("Authorization") String auth) {
+        recallRequestService.deleteRecallRequest(id, auth);
+        return ResponseEntity.noContent().build();
+    }
 }
 

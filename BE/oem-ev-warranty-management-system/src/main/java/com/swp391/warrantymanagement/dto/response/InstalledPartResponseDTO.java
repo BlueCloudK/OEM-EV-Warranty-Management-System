@@ -17,7 +17,7 @@ public class InstalledPartResponseDTO {
     private LocalDate warrantyExpirationDate;
 
     // Part information
-    private String partId;
+    private Long partId;
     private String partName;
     private String partNumber;
     private String manufacturer;

@@ -11,10 +11,10 @@ import org.springframework.data.domain.Pageable;
  */
 public interface PartService {
     // ============= CRUD Operations =============
-    PartResponseDTO getPartById(String id);
+    PartResponseDTO getPartById(Long id);
     PartResponseDTO createPart(PartRequestDTO requestDTO);
-    PartResponseDTO updatePart(String id, PartRequestDTO requestDTO);
-    boolean deletePart(String id);
+    PartResponseDTO updatePart(Long id, PartRequestDTO requestDTO);
+    boolean deletePart(Long id);
 
     // ============= Search Operations with Pagination =============
     PagedResponse<PartResponseDTO> getAllPartsPage(Pageable pageable, String search);

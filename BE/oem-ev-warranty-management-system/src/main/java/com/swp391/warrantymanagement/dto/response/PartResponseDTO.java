@@ -9,7 +9,7 @@ import java.math.BigDecimal;
  */
 @Data
 public class PartResponseDTO {
-    private String partId;
+    private Long partId;
     private String partName;
     private String partNumber;
     private String manufacturer;

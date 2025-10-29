@@ -7,14 +7,10 @@ import java.math.BigDecimal;
 /**
  * PartRequestDTO - Used by EVM Staff to register new parts
  * Business Rule: Part is standalone component (NO vehicle association)
+ * partId is auto-generated
  */
 @Data
 public class PartRequestDTO {
-    @NotBlank(message = "Part ID is required")
-    @Size(max = 50, message = "Part ID cannot exceed 50 characters")
-    @Pattern(regexp = "^[A-Z0-9-]+$", message = "Part ID must contain only uppercase letters, numbers and hyphens")
-    private String partId;
-
     @NotBlank(message = "Part name is required")
     @Size(min = 2, max = 100, message = "Part name must be between 2 and 100 characters")
     private String partName;

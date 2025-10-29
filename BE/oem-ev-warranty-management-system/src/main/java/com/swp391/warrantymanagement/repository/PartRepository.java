@@ -15,7 +15,7 @@ import java.util.List;
  * Handles CRUD and search operations for standalone parts (NO vehicle associations)
  */
 @Repository
-public interface PartRepository extends JpaRepository<Part, String> {
+public interface PartRepository extends JpaRepository<Part, Long> {
     // ============= Basic Search Methods =============
     List<Part> findByPartNameContainingIgnoreCase(String partName);
     List<Part> findByManufacturerContainingIgnoreCase(String manufacturer);

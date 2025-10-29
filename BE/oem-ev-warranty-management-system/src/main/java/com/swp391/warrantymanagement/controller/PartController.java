@@ -45,7 +45,7 @@ public class PartController {
     // Get part by ID
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN')")
-    public ResponseEntity<PartResponseDTO> getPartById(@PathVariable String id) {
+    public ResponseEntity<PartResponseDTO> getPartById(@PathVariable Long id) {
         logger.info("Get part by id: {}", id);
         PartResponseDTO part = partService.getPartById(id);
         if (part != null) {
@@ -74,7 +74,7 @@ public class PartController {
     // Update part (Only EVM_STAFF can update parts)
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF')")
-    public ResponseEntity<PartResponseDTO> updatePart(@PathVariable String id,
+    public ResponseEntity<PartResponseDTO> updatePart(@PathVariable Long id,
                                                      @Valid @RequestBody PartRequestDTO requestDTO) {
         logger.info("Update part request: id={}, data={}", id, requestDTO);
         try {
@@ -94,7 +94,7 @@ public class PartController {
     // Delete part (Only ADMIN can delete parts)
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deletePart(@PathVariable String id) {
+    public ResponseEntity<Void> deletePart(@PathVariable Long id) {
         logger.info("Delete part request: {}", id);
         boolean deleted = partService.deletePart(id);
         if (deleted) {
