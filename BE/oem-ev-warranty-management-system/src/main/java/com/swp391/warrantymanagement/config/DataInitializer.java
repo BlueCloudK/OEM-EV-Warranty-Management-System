@@ -37,6 +37,9 @@ public class DataInitializer implements CommandLineRunner {
         if (userRepository.findByUsername("admin").isEmpty()) {
             initializeAdminUser();
         }
+
+        // Khởi tạo các tài khoản mẫu cho testing
+        initializeSampleUsers();
     }
 
     private void initializeRoles() {
@@ -67,5 +70,50 @@ public class DataInitializer implements CommandLineRunner {
         userRepository.save(adminUser);
 
         System.out.println("Default admin created: username=admin, password=admin123");
+    }
+
+    /**
+     * Khởi tạo các tài khoản mẫu cho testing
+     * Password: 1234567 cho tất cả các tài khoản
+     */
+    private void initializeSampleUsers() {
+        System.out.println("===== Initializing Sample Users =====");
+
+        // EVM Staff 1
+        createUserIfNotExists("evm1", "evm1@example.com", "1234567", "EVM_STAFF", "EVM Headquarters");
+
+        // SC Staff 1
+        createUserIfNotExists("scstaff1", "scstaff1@example.com", "1234567", "SC_STAFF", "Service Center Branch 1");
+
+        // SC Technician 1
+        createUserIfNotExists("tech1", "tech1@example.com", "1234567", "SC_TECHNICIAN", "Service Center Workshop");
+
+        System.out.println("===== Sample Users Initialization Complete =====");
+    }
+
+    /**
+     * Helper method để tạo user nếu chưa tồn tại
+     */
+    private void createUserIfNotExists(String username, String email, String password, String roleName, String address) {
+        // Kiểm tra user đã tồn tại chưa
+        if (userRepository.findByUsername(username).isPresent()) {
+            System.out.println("⏭️  User '" + username + "' already exists, skipping...");
+            return;
+        }
+
+        // Tìm role theo tên
+        Role role = roleRepository.findByRoleName(roleName)
+                .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
+
+        // Tạo user mới
+        User user = new User();
+        user.setUsername(username);
+        user.setEmail(email);
+        user.setPassword(passwordEncoder.encode(password));
+        user.setAddress(address);
+        user.setRole(role);
+
+        userRepository.save(user);
+        System.out.println("✅ Created sample user: " + username + " (Role: " + roleName + ", Password: " + password + ")");
     }
 }
