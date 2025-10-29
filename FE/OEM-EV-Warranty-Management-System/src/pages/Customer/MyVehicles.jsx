@@ -5,13 +5,24 @@ import { dataApi } from '../../api/dataApi';
 import * as S from './MyVehicles.styles';
 import {
   FaCar, FaSpinner, FaArrowLeft, FaInfoCircle, FaCog, FaCalendar,
-  FaCheckCircle, FaTimesCircle, FaIdCard, FaTachometerAlt, FaHistory
+  FaCheckCircle, FaTimesCircle, FaIdCard, FaTachometerAlt, FaHistory, FaCommentDots, FaStar, FaPaperPlane, FaSyncAlt
 } from 'react-icons/fa';
 
 const VehicleDetailModal = ({ isOpen, onClose, vehicle }) => {
+  const navigate = useNavigate();
   const [installedParts, setInstalledParts] = useState([]);
   const [serviceHistories, setServiceHistories] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // Feedback form states
+  const [showFeedbackForm, setShowFeedbackForm] = useState(false);
+  const [warrantyClaims, setWarrantyClaims] = useState([]);
+  const [feedbackForm, setFeedbackForm] = useState({
+    warrantyClaimId: '',
+    rating: 5,
+    comments: ''
+  });
+  const [submitLoading, setSubmitLoading] = useState(false);
 
   const fetchVehicleDetails = async () => {
     if (!vehicle?.vehicleId) {
@@ -23,13 +34,15 @@ const VehicleDetailModal = ({ isOpen, onClose, vehicle }) => {
       setLoading(true);
       console.log("Fetching details for vehicle:", vehicle.vehicleId);
 
-      const [partsResponse, historiesResponse] = await Promise.all([
+      const [partsResponse, historiesResponse, claimsResponse] = await Promise.all([
         dataApi.getInstalledPartsByVehicle(vehicle.vehicleId, 0, 100),
-        dataApi.getServiceHistoriesByVehicle(vehicle.vehicleId, { page: 0, size: 100 })
+        dataApi.getServiceHistoriesByVehicle(vehicle.vehicleId, { page: 0, size: 100 }),
+        customerApi.getMyWarrantyClaims({ page: 0, size: 100 })
       ]);
 
       console.log("Parts response:", partsResponse);
       console.log("Histories response:", historiesResponse);
+      console.log("Claims response:", claimsResponse);
 
       // Handle different response formats
       if (partsResponse) {
@@ -43,13 +56,67 @@ const VehicleDetailModal = ({ isOpen, onClose, vehicle }) => {
         setServiceHistories(histories);
         console.log("Service histories set:", histories.length);
       }
+
+      // Filter claims for this vehicle
+      if (claimsResponse) {
+        const allClaims = claimsResponse.content || (Array.isArray(claimsResponse) ? claimsResponse : []);
+        const vehicleClaims = allClaims.filter(claim => claim.vehicleId === vehicle.vehicleId);
+        setWarrantyClaims(vehicleClaims);
+        console.log("Warranty claims for this vehicle:", vehicleClaims.length);
+      }
     } catch (err) {
       console.error("Error fetching vehicle details:", err);
       console.error("Error details:", err.response?.data || err.message);
       setInstalledParts([]);
       setServiceHistories([]);
+      setWarrantyClaims([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSubmitFeedback = async (e) => {
+    e.preventDefault();
+
+    if (!feedbackForm.warrantyClaimId || !feedbackForm.comments.trim()) {
+      alert('Vui lòng chọn yêu cầu bảo hành và nhập nhận xét');
+      return;
+    }
+
+    try {
+      setSubmitLoading(true);
+
+      // Get customer info from profile API
+      const profile = await customerApi.getMyProfile();
+      console.log('Profile data:', profile);
+
+      const customerId = profile?.customerId || profile?.userId;
+
+      if (!customerId) {
+        alert('Không tìm thấy thông tin khách hàng. Vui lòng đăng nhập lại.');
+        return;
+      }
+
+      await customerApi.createFeedback({
+        ...feedbackForm,
+        warrantyClaimId: parseInt(feedbackForm.warrantyClaimId),
+        customerId: customerId
+      });
+
+      alert('Gửi phản hồi thành công!');
+
+      // Reset form
+      setFeedbackForm({
+        warrantyClaimId: '',
+        rating: 5,
+        comments: ''
+      });
+      setShowFeedbackForm(false);
+    } catch (err) {
+      console.error('Error submitting feedback:', err);
+      alert('Không thể gửi phản hồi: ' + (err.message || 'Lỗi không xác định'));
+    } finally {
+      setSubmitLoading(false);
     }
   };
 
@@ -61,6 +128,13 @@ const VehicleDetailModal = ({ isOpen, onClose, vehicle }) => {
       // Reset state when modal closes
       setInstalledParts([]);
       setServiceHistories([]);
+      setWarrantyClaims([]);
+      setShowFeedbackForm(false);
+      setFeedbackForm({
+        warrantyClaimId: '',
+        rating: 5,
+        comments: ''
+      });
     }
   }, [isOpen, vehicle?.vehicleId]);
 
@@ -107,27 +181,23 @@ const VehicleDetailModal = ({ isOpen, onClose, vehicle }) => {
               <S.DetailItemLabel><FaCog /> Model</S.DetailItemLabel>
               <S.DetailItemValue>{model || 'Chưa có thông tin'}</S.DetailItemValue>
             </S.DetailItem>
-            {/* <S.DetailItem>
-              <S.DetailItemLabel><FaCog /> Hãng</S.DetailItemLabel>
-              <S.DetailItemValue>{brand || 'Chưa có thông tin'}</S.DetailItemValue>
-            </S.DetailItem> */}
             <S.DetailItem>
               <S.DetailItemLabel><FaCalendar /> Năm sản xuất</S.DetailItemLabel>
               <S.DetailItemValue>{year || 'Chưa có thông tin'}</S.DetailItemValue>
             </S.DetailItem>
-            {/* <S.DetailItem>
+            <S.DetailItem>
               <S.DetailItemLabel><FaTachometerAlt /> Số Km</S.DetailItemLabel>
               <S.DetailItemValue>
                 {mileage !== null && mileage !== undefined
                   ? `${Number(mileage).toLocaleString()} km`
                   : 'Chưa có thông tin'}
               </S.DetailItemValue>
-            </S.DetailItem> */}
-            {/* <S.DetailItem>
+            </S.DetailItem>
+            <S.DetailItem>
               <S.DetailItemLabel><FaCalendar /> Ngày mua</S.DetailItemLabel>
               <S.DetailItemValue>{formatDate(purchaseDate)}</S.DetailItemValue>
-            </S.DetailItem> */}
-            {/* <S.DetailItem>
+            </S.DetailItem>
+            <S.DetailItem>
               <S.DetailItemLabel>
                 {isWarrantyValid(warrantyEndDate) ? <FaCheckCircle /> : <FaTimesCircle />}
                 Bảo hành đến
@@ -137,8 +207,144 @@ const VehicleDetailModal = ({ isOpen, onClose, vehicle }) => {
                   {warrantyEndDate ? formatDate(warrantyEndDate) : 'Chưa có thông tin'}
                 </S.WarrantyBadge>
               </S.DetailItemValue>
-            </S.DetailItem> */}
+            </S.DetailItem>
           </S.DetailGrid>
+
+          <S.SectionTitle>
+            {isWarrantyValid(warrantyEndDate) ? <FaCheckCircle /> : <FaTimesCircle />}
+            Thông tin bảo hành
+          </S.SectionTitle>
+          <S.InfoCard $color={isWarrantyValid(warrantyEndDate) ? "#10b981" : "#ef4444"}>
+            <S.InfoCardContent>
+              <div style={{ marginBottom: '8px' }}>
+                <strong>Trạng thái:</strong>{' '}
+                <S.WarrantyBadge $valid={isWarrantyValid(warrantyEndDate)}>
+                  {isWarrantyValid(warrantyEndDate) ? 'Còn hạn' : 'Hết hạn'}
+                </S.WarrantyBadge>
+              </div>
+              <div style={{ marginBottom: '8px' }}>
+                <strong>Ngày mua xe:</strong> {formatDate(purchaseDate)}
+              </div>
+              <div>
+                <strong>Bảo hành đến:</strong> {formatDate(warrantyEndDate)}
+              </div>
+            </S.InfoCardContent>
+            <S.ActionButton
+              style={{ marginTop: '12px', width: '100%' }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowFeedbackForm(!showFeedbackForm);
+              }}
+            >
+              <FaCommentDots /> {showFeedbackForm ? 'Ẩn form phản hồi' : 'Gửi phản hồi về xe này'}
+            </S.ActionButton>
+          </S.InfoCard>
+
+          {/* Feedback Form */}
+          {showFeedbackForm && (
+            <>
+              <S.SectionTitle><FaCommentDots /> Gửi phản hồi</S.SectionTitle>
+              <S.InfoCard $color="#3b82f6">
+                <form onSubmit={handleSubmitFeedback}>
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
+                      Yêu cầu bảo hành <span style={{ color: 'red' }}>*</span>
+                    </label>
+                    <select
+                      value={feedbackForm.warrantyClaimId}
+                      onChange={(e) => setFeedbackForm({ ...feedbackForm, warrantyClaimId: e.target.value })}
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        border: '1px solid #d1d5db',
+                        fontSize: '14px'
+                      }}
+                    >
+                      <option value="">-- Chọn yêu cầu bảo hành --</option>
+                      {warrantyClaims.map(claim => (
+                        <option key={claim.warrantyClaimId} value={claim.warrantyClaimId}>
+                          #{claim.warrantyClaimId} - {claim.description?.substring(0, 50) || 'N/A'}
+                        </option>
+                      ))}
+                    </select>
+                    {warrantyClaims.length === 0 && (
+                      <small style={{ color: '#6b7280', display: 'block', marginTop: '4px' }}>
+                        Chưa có yêu cầu bảo hành nào cho xe này
+                      </small>
+                    )}
+                  </div>
+
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
+                      Đánh giá <span style={{ color: 'red' }}>*</span>
+                    </label>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <FaStar
+                          key={star}
+                          onClick={() => setFeedbackForm({ ...feedbackForm, rating: star })}
+                          style={{
+                            fontSize: '24px',
+                            cursor: 'pointer',
+                            color: star <= feedbackForm.rating ? '#fbbf24' : '#d1d5db',
+                            transition: 'color 0.2s'
+                          }}
+                        />
+                      ))}
+                      <span style={{ marginLeft: '8px', color: '#6b7280' }}>
+                        ({feedbackForm.rating}/5)
+                      </span>
+                    </div>
+                  </div>
+
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
+                      Nhận xét <span style={{ color: 'red' }}>*</span>
+                    </label>
+                    <textarea
+                      value={feedbackForm.comments}
+                      onChange={(e) => setFeedbackForm({ ...feedbackForm, comments: e.target.value })}
+                      required
+                      rows="4"
+                      placeholder="Nhập nhận xét của bạn về dịch vụ bảo hành..."
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        border: '1px solid #d1d5db',
+                        fontSize: '14px',
+                        resize: 'vertical',
+                        fontFamily: 'inherit'
+                      }}
+                    />
+                  </div>
+
+                  <S.ActionButton
+                    type="submit"
+                    disabled={submitLoading || warrantyClaims.length === 0}
+                    style={{
+                      width: '100%',
+                      backgroundColor: submitLoading ? '#9ca3af' : '#3b82f6',
+                      cursor: submitLoading || warrantyClaims.length === 0 ? 'not-allowed' : 'pointer',
+                      opacity: submitLoading || warrantyClaims.length === 0 ? 0.6 : 1
+                    }}
+                  >
+                    {submitLoading ? (
+                      <>
+                        <FaSpinner style={{ animation: 'spin 1s linear infinite' }} /> Đang gửi...
+                      </>
+                    ) : (
+                      <>
+                        <FaPaperPlane /> Gửi phản hồi
+                      </>
+                    )}
+                  </S.ActionButton>
+                </form>
+              </S.InfoCard>
+            </>
+          )}
 
           <S.SectionTitle><FaCog /> Phụ tùng đã lắp đặt ({installedParts.length})</S.SectionTitle>
           {loading ? (
@@ -263,6 +469,9 @@ const MyVehicles = () => {
               <S.HeaderTitle><FaCar /> Xe của tôi</S.HeaderTitle>
               <S.HeaderSubtitle>Quản lý và theo dõi thông tin xe của bạn</S.HeaderSubtitle>
             </div>
+            <S.BackButton onClick={fetchVehicles} disabled={loading} title="Làm mới dữ liệu" style={{ marginLeft: 'auto' }}>
+              <FaSyncAlt style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} /> Làm mới
+            </S.BackButton>
           </S.HeaderTop>
         </S.Header>
 
@@ -314,15 +523,15 @@ const MyVehicles = () => {
                       <S.DetailLabel><FaCalendar /> Năm SX</S.DetailLabel>
                       <S.DetailValue>{year || 'N/A'}</S.DetailValue>
                     </S.DetailRow>
-                    {/* <S.DetailRow>
+                    <S.DetailRow>
                       <S.DetailLabel><FaTachometerAlt /> Số Km</S.DetailLabel>
                       <S.DetailValue>
                         {mileage !== null && mileage !== undefined
                           ? `${Number(mileage).toLocaleString()} km`
                           : 'N/A'}
                       </S.DetailValue>
-                    </S.DetailRow> */}
-                    {/* <S.DetailRow>
+                    </S.DetailRow>
+                    <S.DetailRow>
                       <S.DetailLabel>
                         {isWarrantyValid(warrantyEndDate) ? <FaCheckCircle /> : <FaTimesCircle />}
                         Bảo hành
@@ -332,7 +541,7 @@ const MyVehicles = () => {
                           ? (isWarrantyValid(warrantyEndDate) ? 'Còn hạn' : 'Hết hạn')
                           : 'Chưa có thông tin'}
                       </S.WarrantyBadge>
-                    </S.DetailRow> */}
+                    </S.DetailRow>
                   </S.VehicleDetails>
 
                   <S.ActionButton>

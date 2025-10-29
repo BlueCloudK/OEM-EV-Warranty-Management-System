@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import * as S from "../pages/SCStaff/SCStaffDashboard.styles"; // Tạm thời tái sử dụng styles
 import {
-  FaUserCog, FaCar, FaClipboardList, FaHistory, FaBars, FaHome, FaCommentDots
+  FaUserCog, FaCar, FaClipboardList, FaHistory, FaBars, FaHome, FaCommentDots, FaExclamationTriangle
 } from "react-icons/fa";
 
 const sidebarItems = [
@@ -10,6 +10,7 @@ const sidebarItems = [
   { icon: <FaUserCog size={18} />, label: "Khách hàng", path: "/scstaff/customers" },
   { icon: <FaCar size={18} />, label: "Xe", path: "/scstaff/vehicles" },
   { icon: <FaClipboardList size={18} />, label: "Bảo hành", path: "/scstaff/warranty-claims" },
+  { icon: <FaExclamationTriangle size={18} />, label: "Recall", path: "/scstaff/recalls" },
   { icon: <FaHistory size={18} />, label: "Lịch sử", path: "/scstaff/service-history" },
   { icon: <FaCommentDots size={18} />, label: "Feedback", path: "/scstaff/feedbacks" },
 ];

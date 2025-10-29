@@ -3,12 +3,13 @@ import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import * as S from "./SCTechnicianLayout.styles";
 import {
   FaTachometerAlt, FaClipboardCheck, FaWrench, FaHistory,
-  FaBars, FaCar, FaCog, FaCommentDots
+  FaBars, FaCar, FaCog, FaCommentDots, FaTools
 } from "react-icons/fa";
 
 const sidebarItems = [
   { icon: <FaTachometerAlt />, label: "Dashboard", path: "/sctechnician/dashboard" },
   { icon: <FaWrench />, label: "Công việc của tôi", path: "/sctechnician/my-work" },
+  { icon: <FaTools />, label: "Yêu cầu Linh kiện", path: "/sctechnician/part-requests" },
   { icon: <FaCommentDots />, label: "Feedback", path: "/sctechnician/feedbacks" },
   { icon: <FaHistory />, label: "Lịch sử Sửa chữa", path: "/sctechnician/service-history" },
   { icon: <FaCar />, label: "Tra cứu Xe", path: "/sctechnician/vehicles" },

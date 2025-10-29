@@ -2,13 +2,15 @@ import React, { useState } from "react";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import * as S from "./EVMLayout.styles";
 import {
-  FaTachometerAlt, FaCogs, 
-  FaHistory, FaBars, FaCommentDots, FaTasks
+  FaTachometerAlt, FaCogs,
+  FaHistory, FaBars, FaCommentDots, FaTasks, FaTools, FaExclamationTriangle
 } from "react-icons/fa";
 
 const sidebarItems = [
   { icon: <FaTachometerAlt />, label: "Dashboard", path: "/evmstaff/dashboard" },
   { icon: <FaCogs />, label: "Quản lý Phụ tùng", path: "/evmstaff/parts" },
+  { icon: <FaTools />, label: "Yêu cầu Linh kiện", path: "/evmstaff/part-requests" },
+  { icon: <FaExclamationTriangle />, label: "Yêu cầu Recall", path: "/evmstaff/recalls" },
   { icon: <FaHistory />, label: "Lịch sử Dịch vụ", path: "/evmstaff/service-histories" },
   { icon: <FaTasks />, label: "Work Logs", path: "/evmstaff/work-logs" },
   { icon: <FaCommentDots />, label: "Phản hồi", path: "/evmstaff/feedbacks" },

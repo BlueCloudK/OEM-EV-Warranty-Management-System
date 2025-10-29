@@ -52,6 +52,12 @@ const PartFormModal = ({ isOpen, onClose, onSubmit, part }) => {
         <h2>{part ? 'Chỉnh sửa Phụ tùng' : 'Tạo Phụ tùng mới'}</h2>
         <form onSubmit={handleSubmit}>
           {errors.general && <S.ErrorText>{errors.general}</S.ErrorText>}
+          {part && (
+            <S.FormGroup>
+              <S.Label>ID Phụ tùng (Tự động)</S.Label>
+              <S.Input value={part.partId} disabled style={{ background: '#f3f4f6', cursor: 'not-allowed' }} />
+            </S.FormGroup>
+          )}
           <S.FormGroup>
             <S.Label>Tên phụ tùng *</S.Label>
             <S.Input name="partName" value={formData.partName || ''} onChange={handleInputChange} required />

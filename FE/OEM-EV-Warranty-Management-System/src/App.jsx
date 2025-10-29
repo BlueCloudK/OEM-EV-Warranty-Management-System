@@ -37,12 +37,17 @@ import EVMLayout from "./components/EVMLayout";
 import EVMDashboard from "./pages/EVM/EVMDashboard";
 import EVMWarrantyClaims from "./pages/EVM/EVMWarrantyClaims";
 import EVMPartManagement from "./pages/EVM/EVMPartManagement";
+import EVMPartRequests from "./pages/EVM/EVMPartRequests";
 import EVMVehicleManagement from "./pages/EVM/EVMVehicleManagement";
 import EVMWorkLogs from "./pages/EVM/EVMWorkLogs";
 import EVMServiceCenters from "./pages/EVM/EVMServiceCenters";
 import EVMFeedbacks from "./pages/EVM/EVMFeedbacks";
 import EVMInstalledParts from "./pages/EVM/EVMInstalledParts";
 import EVMServiceHistories from "./pages/EVMStaff/EVMServiceHistories";
+import EVMRecallRequests from "./pages/EVM/EVMRecallRequests";
+
+// Admin Recall
+import AdminRecallManagement from "./pages/Admin/AdminRecallManagement";
 
 // SCTechnician
 import SCTechnicianLayout from "./components/SCTechnicianLayout";
@@ -53,14 +58,17 @@ import SCTechnicianFeedbacks from "./pages/SCTechnician/SCTechnicianFeedbacks";
 import VehicleLookup from "./pages/SCTechnician/VehicleLookup";
 import PartsLookup from "./pages/SCTechnician/PartsLookup";
 import ServiceHistory from "./pages/SCTechnician/ServiceHistory";
+import PartRequests from "./pages/SCTechnician/PartRequests";
 
 // Customer
 import CustomerLayout from "./components/CustomerLayout";
-import CustomerDashboardNew from "./pages/Customer/CustomerDashboardNew";
+import CustomerDashboard from "./pages/Customer/CustomerDashboard";
 import CustomerProfile from "./pages/Customer/CustomerProfile";
 import WarrantyHistory from "./pages/Customer/WarrantyHistory";
 import MyVehicles from "./pages/Customer/MyVehicles";
 import CustomerFeedback from "./pages/Customer/CustomerFeedback";
+import CustomerRecalls from "./pages/Customer/CustomerRecalls";
+import CustomerServiceCenters from "./pages/Customer/CustomerServiceCenters";
 
 export default function App() {
   const location = useLocation();
@@ -88,6 +96,7 @@ export default function App() {
           <Route path="service-history" element={<ServiceHistoryManagement />} />
           <Route path="installed-parts" element={<InstalledPartManagement />} />
           <Route path="feedbacks" element={<SCStaffFeedbackManagement />} />
+          <Route path="recalls" element={<AdminRecallManagement />} />
         </Route>
 
         {/* === ADMIN ROUTES === */}
@@ -103,6 +112,7 @@ export default function App() {
           <Route path="work-logs" element={<AdminWorkLogs />} />
           <Route path="service-centers" element={<AdminServiceCenters />} />
           <Route path="feedbacks" element={<AdminFeedbackManagement />} />
+          <Route path="recalls" element={<AdminRecallManagement />} />
         </Route>
 
         {/* === EVM STAFF ROUTES === */}
@@ -111,6 +121,8 @@ export default function App() {
           <Route path="dashboard" element={<EVMDashboard />} />
           <Route path="warranty-claims" element={<EVMWarrantyClaims />} />
           <Route path="parts" element={<EVMPartManagement />} />
+          <Route path="part-requests" element={<EVMPartRequests />} />
+          <Route path="recalls" element={<EVMRecallRequests />} />
           <Route path="vehicles" element={<EVMVehicleManagement />} />
           <Route path="customers" element={<div><h1>Quản lý Khách hàng (EVM)</h1><p>Chức năng đang được xây dựng.</p></div>} />
           <Route path="service-histories" element={<EVMServiceHistories />} />
@@ -126,6 +138,7 @@ export default function App() {
           <Route path="dashboard" element={<SCTechnicianDashboard />} />
           <Route path="warranty-claims" element={<MyWork />} />
           <Route path="my-work" element={<MyWork />} />
+          <Route path="part-requests" element={<PartRequests />} />
           <Route path="feedbacks" element={<SCTechnicianFeedbacks />} />
           <Route path="service-history" element={<ServiceHistory />} />
           <Route path="vehicles" element={<VehicleLookup />} />
@@ -134,11 +147,13 @@ export default function App() {
 
         {/* === CUSTOMER ROUTES === */}
         <Route path="/customer" element={<CustomerLayout />}>
-          <Route index element={<CustomerDashboardNew />} />
-          <Route path="dashboard" element={<CustomerDashboardNew />} />
+          <Route index element={<CustomerDashboard />} />
+          <Route path="dashboard" element={<CustomerDashboard />} />
           <Route path="my-vehicles" element={<MyVehicles />} />
           <Route path="warranty-history" element={<WarrantyHistory />} />
           <Route path="warranty-claims" element={<div><h1>Yêu cầu Bảo hành</h1><p>Chức năng đang được xây dựng.</p></div>} />
+          <Route path="recalls" element={<CustomerRecalls />} />
+          <Route path="service-centers" element={<CustomerServiceCenters />} />
           <Route path="feedback" element={<CustomerFeedback />} />
           <Route path="profile" element={<CustomerProfile />} />
         </Route>

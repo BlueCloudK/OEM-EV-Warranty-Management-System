@@ -4,13 +4,28 @@ import { useVehicleManagement } from '../../hooks/useVehicleManagement';
 import * as S from './VehicleManagement.styles';
 import { FaCar, FaPlus, FaEdit, FaSearch, FaArrowLeft, FaSpinner, FaTrash, FaClipboardCheck, FaWrench, FaEye, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 
-// Form Modal Component
+// Form Modal Component with ALL required fields
 const VehicleFormModal = ({ isOpen, onClose, onSubmit, vehicle, customers }) => {
   const [formData, setFormData] = useState({});
 
   useEffect(() => {
     if (isOpen) {
-      setFormData(vehicle ? { ...vehicle } : { vehicleName: '', vehicleModel: '', vehicleVin: '', vehicleYear: new Date().getFullYear(), customerId: '' });
+      const today = new Date().toISOString().split('T')[0];
+      const oneYearLater = new Date();
+      oneYearLater.setFullYear(oneYearLater.getFullYear() + 1);
+      const warrantyEnd = oneYearLater.toISOString().split('T')[0];
+
+      setFormData(vehicle ? { ...vehicle } : {
+        vehicleName: '',
+        vehicleModel: '',
+        vehicleVin: '', // Biển số định dạng: XX-MĐ-YYY.ZZ
+        vehicleYear: new Date().getFullYear(),
+        purchaseDate: today,
+        warrantyStartDate: today,
+        warrantyEndDate: warrantyEnd,
+        mileage: 0,
+        customerId: ''
+      });
     }
   }, [vehicle, isOpen]);
 
@@ -21,7 +36,13 @@ const VehicleFormModal = ({ isOpen, onClose, onSubmit, vehicle, customers }) => 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const { success } = await onSubmit(formData, vehicle?.vehicleId);
+    // Convert mileage to number
+    const submitData = {
+      ...formData,
+      mileage: parseInt(formData.mileage) || 0,
+      vehicleYear: parseInt(formData.vehicleYear) || new Date().getFullYear()
+    };
+    const { success } = await onSubmit(submitData, vehicle?.vehicleId);
     if (success) {
       onClose();
     }
@@ -31,25 +52,106 @@ const VehicleFormModal = ({ isOpen, onClose, onSubmit, vehicle, customers }) => 
 
   return (
     <S.ModalOverlay>
-      <S.ModalContent>
+      <S.ModalContent style={{ maxHeight: '90vh', overflowY: 'auto' }}>
         <h2>{vehicle ? 'Chỉnh sửa xe' : 'Tạo xe mới'}</h2>
         <form onSubmit={handleSubmit}>
           <S.FormGroup>
             <S.Label>Tên xe *</S.Label>
-            <S.Input name="vehicleName" value={formData.vehicleName || ''} onChange={handleInputChange} required />
+            <S.Input
+              name="vehicleName"
+              value={formData.vehicleName || ''}
+              onChange={handleInputChange}
+              placeholder="VD: VinFast VF e34"
+              required
+            />
           </S.FormGroup>
+
           <S.FormGroup>
             <S.Label>Model xe *</S.Label>
-            <S.Input name="vehicleModel" value={formData.vehicleModel || ''} onChange={handleInputChange} required />
+            <S.Input
+              name="vehicleModel"
+              value={formData.vehicleModel || ''}
+              onChange={handleInputChange}
+              placeholder="VD: VF e34"
+              required
+            />
           </S.FormGroup>
+
           <S.FormGroup>
-            <S.Label>VIN *</S.Label>
-            <S.Input name="vehicleVin" value={formData.vehicleVin || ''} onChange={handleInputChange} required maxLength={17} />
+            <S.Label>Biển số xe điện * (Định dạng: XX-MĐ-YYY.ZZ)</S.Label>
+            <S.Input
+              name="vehicleVin"
+              value={formData.vehicleVin || ''}
+              onChange={handleInputChange}
+              placeholder="VD: 29-MĐ-123.45"
+              pattern="^[0-9]{2}-MĐ-[0-9]{3}\.[0-9]{2}$"
+              title="Định dạng: XX-MĐ-YYY.ZZ (VD: 29-MĐ-123.45)"
+              required
+            />
+            <small style={{ color: '#6b7280', fontSize: '12px' }}>
+              Định dạng biển số xe điện: XX-MĐ-YYY.ZZ
+            </small>
           </S.FormGroup>
+
           <S.FormGroup>
             <S.Label>Năm sản xuất *</S.Label>
-            <S.Input name="vehicleYear" type="number" value={formData.vehicleYear || ''} onChange={handleInputChange} required />
+            <S.Input
+              name="vehicleYear"
+              type="number"
+              min="1900"
+              max="2030"
+              value={formData.vehicleYear || ''}
+              onChange={handleInputChange}
+              required
+            />
           </S.FormGroup>
+
+          <S.FormGroup>
+            <S.Label>Số km đã đi *</S.Label>
+            <S.Input
+              name="mileage"
+              type="number"
+              min="0"
+              value={formData.mileage || ''}
+              onChange={handleInputChange}
+              placeholder="VD: 5000"
+              required
+            />
+          </S.FormGroup>
+
+          <S.FormGroup>
+            <S.Label>Ngày mua xe *</S.Label>
+            <S.Input
+              name="purchaseDate"
+              type="date"
+              value={formData.purchaseDate || ''}
+              onChange={handleInputChange}
+              required
+            />
+          </S.FormGroup>
+
+          <S.FormGroup>
+            <S.Label>Ngày bắt đầu bảo hành *</S.Label>
+            <S.Input
+              name="warrantyStartDate"
+              type="date"
+              value={formData.warrantyStartDate || ''}
+              onChange={handleInputChange}
+              required
+            />
+          </S.FormGroup>
+
+          <S.FormGroup>
+            <S.Label>Ngày kết thúc bảo hành *</S.Label>
+            <S.Input
+              name="warrantyEndDate"
+              type="date"
+              value={formData.warrantyEndDate || ''}
+              onChange={handleInputChange}
+              required
+            />
+          </S.FormGroup>
+
           <S.FormGroup>
             <S.Label>Khách hàng *</S.Label>
             <S.Select name="customerId" value={formData.customerId || ''} onChange={handleInputChange} required>
@@ -57,7 +159,8 @@ const VehicleFormModal = ({ isOpen, onClose, onSubmit, vehicle, customers }) => 
               {customers.map(c => <option key={c.customerId} value={c.customerId}>{c.name}</option>)}
             </S.Select>
           </S.FormGroup>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px' }}>
             <S.Button type="button" onClick={onClose}>Hủy</S.Button>
             <S.Button primary type="submit">{vehicle ? 'Cập nhật' : 'Tạo mới'}</S.Button>
           </div>
@@ -106,7 +209,13 @@ const InstallPartFormModal = ({ isOpen, onClose, onSubmit, vehicle, parts }) => 
       return;
     }
     const installedPartId = crypto.randomUUID().toUpperCase(); // Convert to uppercase
-    const payload = { ...formData, installedPartId };
+    // Convert IDs to numbers before sending
+    const payload = {
+      ...formData,
+      installedPartId,
+      vehicleId: parseInt(formData.vehicleId),
+      partId: parseInt(formData.partId)
+    };
     const { success, message } = await onSubmit(payload);
     if (success) {
       onClose();

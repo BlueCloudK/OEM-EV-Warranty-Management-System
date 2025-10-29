@@ -118,7 +118,7 @@ const PartsLookup = () => {
               type="text"
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
-              placeholder={searchType === 'id' ? 'Nhập Part ID (ví dụ: P001)' : 'Nhập tên nhà sản xuất (ví dụ: VinFast)'}
+              placeholder={searchType === 'id' ? 'Nhập Part ID (ví dụ: 1, 2, 3...)' : 'Nhập tên nhà sản xuất (ví dụ: VinFast)'}
             />
             <S.SearchButton type="submit" disabled={loading}>
               {loading ? <FaSpinner className="spin" /> : <FaSearch />}

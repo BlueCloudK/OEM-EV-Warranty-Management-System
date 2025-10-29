@@ -31,6 +31,8 @@ const MapPlaceholder = styled.div`
  * - height: Chiều cao của map (default: '400px')
  * - onLocationChange: Callback khi click vào map để chọn location
  * - editable: Cho phép click để chọn vị trí mới
+ * - showMarker: Hiển thị marker/pin (default: true)
+ * - markerScale: Kích thước marker (default: 1, 2 = gấp đôi)
  * - apiKey: Goong API Key (nếu không truyền sẽ dùng key mặc định)
  */
 const GoongMap = ({
@@ -39,6 +41,8 @@ const GoongMap = ({
   height = '400px',
   onLocationChange = null,
   editable = false,
+  showMarker = true,
+  markerScale = 1,
   apiKey = null
 }) => {
   const mapContainerRef = useRef(null);
@@ -85,13 +89,18 @@ const GoongMap = ({
   }, []);
 
   useEffect(() => {
-    // Update marker position when lat/lng changes
-    if (mapRef.current && markerRef.current) {
-      markerRef.current.setLngLat([longitude, latitude]);
+    // Update map center and marker position when lat/lng changes
+    if (mapRef.current) {
+      // Always pan the map to new coordinates
       mapRef.current.flyTo({
         center: [longitude, latitude],
         zoom: 15
       });
+
+      // Update marker position if it exists
+      if (markerRef.current) {
+        markerRef.current.setLngLat([longitude, latitude]);
+      }
     }
   }, [latitude, longitude]);
 
@@ -108,36 +117,40 @@ const GoongMap = ({
         zoom: 15
       });
 
-      // Add marker
-      const marker = new window.goongjs.Marker({
-        draggable: editable
-      })
-        .setLngLat([longitude, latitude])
-        .addTo(map);
+      // Add marker (only if showMarker is true)
+      let marker = null;
+      if (showMarker) {
+        marker = new window.goongjs.Marker({
+          draggable: editable,
+          scale: markerScale
+        })
+          .setLngLat([longitude, latitude])
+          .addTo(map);
 
-      // Handle marker drag end
-      if (editable) {
-        marker.on('dragend', () => {
-          const lngLat = marker.getLngLat();
-          if (onLocationChange) {
-            onLocationChange({
-              latitude: lngLat.lat,
-              longitude: lngLat.lng
-            });
-          }
-        });
+        // Handle marker drag end
+        if (editable) {
+          marker.on('dragend', () => {
+            const lngLat = marker.getLngLat();
+            if (onLocationChange) {
+              onLocationChange({
+                latitude: lngLat.lat,
+                longitude: lngLat.lng
+              });
+            }
+          });
 
-        // Handle map click
-        map.on('click', (e) => {
-          const { lng, lat } = e.lngLat;
-          marker.setLngLat([lng, lat]);
-          if (onLocationChange) {
-            onLocationChange({
-              latitude: lat,
-              longitude: lng
-            });
-          }
-        });
+          // Handle map click
+          map.on('click', (e) => {
+            const { lng, lat } = e.lngLat;
+            marker.setLngLat([lng, lat]);
+            if (onLocationChange) {
+              onLocationChange({
+                latitude: lat,
+                longitude: lng
+              });
+            }
+          });
+        }
       }
 
       mapRef.current = map;

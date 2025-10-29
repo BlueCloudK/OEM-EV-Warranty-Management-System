@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAdminWarrantyClaims } from '../../hooks/useAdminWarrantyClaims';
 import * as S from './AdminWarrantyClaimsManagement.styles';
-import { FaClipboardCheck, FaSpinner, FaCheck, FaTimes, FaTrash } from 'react-icons/fa';
+import { FaClipboardCheck, FaSpinner, FaCheck, FaTimes, FaTrash, FaSyncAlt } from 'react-icons/fa';
 
 const RejectClaimModal = ({ isOpen, onClose, onSubmit }) => {
   const [reason, setReason] = useState('');
@@ -46,7 +46,7 @@ const RejectClaimModal = ({ isOpen, onClose, onSubmit }) => {
 const AdminWarrantyClaimsManagement = () => {
   const {
     claims, loading, error, pagination, filterStatus,
-    handleFilterChange, handleApprove, handleReject, handleDelete, handlePageChange
+    handleFilterChange, handleApprove, handleReject, handleDelete, handlePageChange, refreshClaims
   } = useAdminWarrantyClaims();
 
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -64,9 +64,11 @@ const AdminWarrantyClaimsManagement = () => {
 
   return (
     <S.PageContainer>
-      <S.Header>
-        <S.HeaderTitle><FaClipboardCheck /> Duyệt Yêu cầu Bảo hành (Admin)</S.HeaderTitle>
-        <S.FilterContainer>
+      <S.Header style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <S.HeaderTitle style={{ fontSize: '28px', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '12px', margin: 0 }}>
+          <FaClipboardCheck /> Duyệt Yêu cầu Bảo hành (Admin)
+        </S.HeaderTitle>
+        <S.FilterContainer style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <S.Select value={filterStatus} onChange={(e) => handleFilterChange(e.target.value)}>
             <option value="all">Tất cả</option>
             <option value="SUBMITTED">Chờ duyệt (SUBMITTED)</option>
@@ -75,6 +77,9 @@ const AdminWarrantyClaimsManagement = () => {
             <option value="COMPLETED">Hoàn thành (COMPLETED)</option>
             <option value="REJECTED">Từ chối (REJECTED)</option>
           </S.Select>
+          <S.Button onClick={refreshClaims} disabled={loading} title="Làm mới dữ liệu">
+            <FaSyncAlt style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} /> Làm mới
+          </S.Button>
         </S.FilterContainer>
       </S.Header>
 
@@ -107,7 +112,7 @@ const AdminWarrantyClaimsManagement = () => {
                   <S.Td>{claim.vehicleVin}</S.Td>
                   <S.Td>{claim.partName}</S.Td>
                   <S.Td>{claim.description}</S.Td>
-                  <S.Td><S.StatusBadge status={claim.status}>{claim.status}</S.StatusBadge></S.Td>
+                  <S.Td><S.StatusBadge $status={claim.status}>{claim.status}</S.StatusBadge></S.Td>
                   <S.Td>{new Date(claim.claimDate).toLocaleDateString()}</S.Td>
                   <S.Td>
                     <div style={{ display: 'flex', gap: '8px' }}>

@@ -16,13 +16,23 @@ export default function Home() {
   const fetchServiceCenters = async () => {
     try {
       setLoading(true);
-      const response = await apiClient('/api/service-centers?page=0&size=6');
-      if (response.content) {
-        setServiceCenters(response.content);
-        // Auto-select first center để hiển thị map ngay
-        if (response.content.length > 0) {
-          setSelectedCenter(response.content[0]);
-        }
+      // Gọi API public không cần authentication
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+      const response = await fetch(`${API_URL}/api/public/service-centers?page=0&size=6`);
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch service centers');
+      }
+
+      const data = await response.json();
+      console.log('Service Centers Response:', data); // Debug log
+      if (data.content) {
+        setServiceCenters(data.content);
+        // Không auto-select - để user tự chọn từ danh sách
+        // if (data.content.length > 0) {
+        //   console.log('Selected Center:', data.content[0]); // Debug log
+        //   setSelectedCenter(data.content[0]);
+        // }
       }
     } catch (err) {
       console.error('Error fetching service centers:', err);
@@ -188,8 +198,12 @@ export default function Home() {
             <p style={{ textAlign: "center", color: "#6b7280" }}>Đang tải...</p>
           ) : (
             <>
+              {/* Debug info */}
+              {console.log('Render - serviceCenters.length:', serviceCenters.length)}
+              {console.log('Render - selectedCenter:', selectedCenter)}
+
               {/* Map showing selected service center */}
-              {serviceCenters.length > 0 && selectedCenter && (
+              {serviceCenters.length > 0 ? (
                 <div style={{ marginBottom: "30px" }}>
                   <p style={{
                     textAlign: "center",
@@ -198,33 +212,40 @@ export default function Home() {
                     fontSize: "15px",
                     fontWeight: "600"
                   }}>
-                    💡 Click vào trung tâm bên dưới để xem vị trí trên bản đồ
+                    {selectedCenter
+                      ? "📍 Vị trí trung tâm đang chọn"
+                      : "💡 Click vào trung tâm bên dưới để xem vị trí trên bản đồ"}
                   </p>
                   <GoongMap
-                    latitude={parseFloat(selectedCenter.latitude)}
-                    longitude={parseFloat(selectedCenter.longitude)}
+                    latitude={selectedCenter ? parseFloat(selectedCenter.latitude) : 21.0285}
+                    longitude={selectedCenter ? parseFloat(selectedCenter.longitude) : 105.8542}
                     height="400px"
                     editable={false}
+                    showMarker={!!selectedCenter}
                   />
-                  <p style={{
-                    textAlign: "center",
-                    marginTop: "10px",
-                    color: "#10b981",
-                    fontSize: "16px",
-                    fontWeight: "600"
-                  }}>
-                    📍 {selectedCenter.serviceCenterName}
-                  </p>
-                  <p style={{
-                    textAlign: "center",
-                    marginTop: "4px",
-                    color: "#6b7280",
-                    fontSize: "14px"
-                  }}>
-                    {selectedCenter.address}
-                  </p>
+                  {selectedCenter && (
+                    <>
+                      <p style={{
+                        textAlign: "center",
+                        marginTop: "10px",
+                        color: "#10b981",
+                        fontSize: "16px",
+                        fontWeight: "600"
+                      }}>
+                        📍 {selectedCenter.serviceCenterName}
+                      </p>
+                      <p style={{
+                        textAlign: "center",
+                        marginTop: "4px",
+                        color: "#6b7280",
+                        fontSize: "14px"
+                      }}>
+                        {selectedCenter.address}
+                      </p>
+                    </>
+                  )}
                 </div>
-              )}
+              ) : null}
 
               <div style={{
                 display: "grid",

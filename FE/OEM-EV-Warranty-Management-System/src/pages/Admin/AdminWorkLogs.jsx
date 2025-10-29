@@ -141,21 +141,6 @@ const AdminWorkLogs = () => {
         </S.HeaderSubtitle>
       </S.Header>
 
-      {/* Important Notice */}
-      <S.NoticeBanner>
-        <FaExclamationTriangle />
-        <div>
-          <strong>Lưu ý quan trọng:</strong> Work Log sẽ được tự động tạo khi:
-          <ul style={{ margin: '8px 0 0 20px', paddingLeft: '0' }}>
-            <li><strong>Technician bắt đầu xử lý claim</strong> (PATCH /api/warranty-claims/{'{id}'}/tech-start) → Ghi startTime</li>
-            <li><strong>Technician hoàn thành claim</strong> (PATCH /api/warranty-claims/{'{id}'}/tech-complete) → Ghi endTime</li>
-          </ul>
-          <em style={{ fontSize: '13px', color: '#92400e' }}>
-            ⚠️ Backend cần tích hợp logic tạo Work Log tự động trong WarrantyClaimServiceImpl
-          </em>
-        </div>
-      </S.NoticeBanner>
-
       {/* Filter Section */}
       <S.FilterCard>
         <S.FilterLabel>

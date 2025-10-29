@@ -139,5 +139,6 @@ export const useAdminWarrantyClaims = () => {
     handleReject,
     handleDelete,
     handlePageChange,
+    refreshClaims: fetchClaims,
   };
 };

@@ -1,4 +1,13 @@
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
+
+const spin = keyframes`
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+`;
 
 export const PageContainer = styled.div`
   padding: 24px;
@@ -77,12 +86,13 @@ export const StatusBadge = styled.span`
   font-size: 12px;
   font-weight: 600;
   color: #fff;
-  background-color: ${({ status }) => {
-    switch (status) {
+  background-color: ${({ $status }) => {
+    switch ($status) {
       case 'SUBMITTED': return '#f59e0b';
       case 'PROCESSING': return '#3b82f6';
       case 'COMPLETED': return '#16a34a';
       case 'REJECTED': return '#dc2626';
+      case 'MANAGER_REVIEW': return '#8b5cf6';
       default: return '#64748b';
     }
   }};
