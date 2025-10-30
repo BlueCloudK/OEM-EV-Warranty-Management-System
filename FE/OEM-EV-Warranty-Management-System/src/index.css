@@ -1,0 +1,150 @@
+:root {
+  --brand-primary: #0b6b61; /* OEM green-teal */
+  --brand-secondary: #0f766e;
+  --brand-accent: #1e293b;
+  --brand-surface: #ffffff;
+  --brand-bg: #f5f7f9;
+  --brand-border: #e5e7eb;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+  background: var(--brand-bg);
+  color: #111827;
+}
+
+.container {
+  width: 90%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.topbar {
+  background: linear-gradient(
+    90deg,
+    var(--brand-primary),
+    var(--brand-secondary)
+  );
+  padding: 14px 0;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  color: #fff;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+}
+
+.nav-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.logo span {
+  display: block;
+}
+.logo .sub {
+  font-weight: 500;
+  opacity: 0.85;
+  font-size: 0.8rem;
+}
+
+.nav-link {
+  margin-left: 1.5rem;
+  text-decoration: none;
+  color: #eef2ff;
+  opacity: 0.9;
+}
+.nav-link:hover {
+  opacity: 1;
+}
+
+.nav-cta {
+  margin-left: 1.5rem;
+  padding: 10px 14px;
+  background: #ffffff;
+  color: var(--brand-primary);
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.hero {
+  display: flex;
+  align-items: center;
+  padding: 4rem 0;
+  background: linear-gradient(to right, #f5faff, #e8f3ff);
+}
+
+.hero-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2rem;
+}
+
+.hero-text {
+  flex: 1;
+}
+
+.hero-text h1 {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.hero-buttons .btn-primary,
+.hero-buttons .btn-secondary {
+  margin-right: 1rem;
+  padding: 0.75rem 1.5rem;
+  text-decoration: none;
+  border-radius: 5px;
+}
+
+.btn-primary {
+  background: var(--brand-primary);
+  color: #fff;
+}
+
+.btn-secondary {
+  border: 1px solid var(--brand-primary);
+  color: var(--brand-primary);
+  background: #fff;
+}
+
+.hero-image img {
+  width: 100%;
+  max-width: 400px;
+}
+
+.form-container {
+  width: 100%;
+  max-width: 400px;
+  margin: 3rem auto;
+  padding: 2rem;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.form-container input {
+  width: 100%;
+  padding: 0.75rem;
+  margin: 0.5rem 0;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+}
+
+.form-container button {
+  width: 100%;
+  padding: 0.75rem;
+  background: #0077ff;
+  border: none;
+  color: white;
+  border-radius: 5px;
+  margin-top: 1rem;
+}
