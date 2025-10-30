@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
   --brand-primary: #0b6b61; /* OEM green-teal */
   --brand-secondary: #0f766e;

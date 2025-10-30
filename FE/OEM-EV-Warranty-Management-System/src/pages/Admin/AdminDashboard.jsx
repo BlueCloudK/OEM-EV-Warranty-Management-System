@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useAdminDashboard } from "../../hooks/useAdminDashboard";
-import * as S from "./AdminDashboard.styles";
+// TailwindCSS styling – logic unchanged
 import {
   FaUsers, FaCar, FaCogs, FaClipboardList, FaHistory, 
   FaChartBar
@@ -42,34 +42,53 @@ export default function AdminDashboard() {
 
   return (
     <>
-      <S.StatsGrid>
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 mb-8">
         {statItems.map((stat, index) => (
-          <S.StatCard key={index} $color={stat.color}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div
+            key={index}
+            className="bg-white rounded-xl shadow-soft p-5 hover:shadow-lg transition-shadow duration-200"
+          >
+            <div className="flex items-center justify-between">
               <div>
-                <S.StatCardTitle>{stat.title}</S.StatCardTitle>
-                <S.StatCardValue $color={stat.color}>{dataLoading ? "..." : stat.value}</S.StatCardValue>
+                <div className="text-sm font-semibold text-slate-500 mb-1">{stat.title}</div>
+                <div
+                  className="text-3xl font-bold"
+                  style={{ color: stat.color }}
+                >
+                  {dataLoading ? "..." : stat.value}
+                </div>
               </div>
-              <div style={{ fontSize: "40px", color: stat.color, opacity: 0.7 }}>{stat.icon}</div>
+              <div className="text-4xl opacity-70" style={{ color: stat.color }}>
+                {stat.icon}
+              </div>
             </div>
-          </S.StatCard>
+          </div>
         ))}
-      </S.StatsGrid>
+      </div>
 
-      <S.RecentActivityContainer>
-        <h3 style={{ margin: "0 0 20px 0" }}><FaHistory /> Hoạt động Gần đây</h3>
-        {dataLoading ? <p>Đang tải hoạt động...</p> : (
-          recentActivity.length > 0 ? (
-            recentActivity.map((activity) => (
-              <div key={activity.id} style={{ display: "flex", alignItems: "center", gap: "15px", padding: "12px", background: "#f9fafb", borderRadius: "8px", marginBottom: '10px' }}>
-                <div style={{ fontSize: "20px", color: "#6b7280" }}>{iconMap[activity.icon]}</div>
-                <div style={{ flex: 1 }}>{activity.action}</div>
-                <div style={{ fontSize: "12px", color: "#9ca3af" }}>{activity.time}</div>
+      <div className="bg-white rounded-xl shadow-soft p-6">
+        <h3 className="text-lg font-semibold mb-5 flex items-center gap-2">
+          <FaHistory /> Hoạt động Gần đây
+        </h3>
+        {dataLoading ? (
+          <p>Đang tải hoạt động...</p>
+        ) : recentActivity.length > 0 ? (
+          recentActivity.map((activity) => (
+            <div
+              key={activity.id}
+              className="flex items-center gap-4 p-3 bg-slate-50 rounded-lg mb-2"
+            >
+              <div className="text-xl text-slate-500">
+                {iconMap[activity.icon]}
               </div>
-            ))
-          ) : <p>Chưa có hoạt động nào</p>
+              <div className="flex-1">{activity.action}</div>
+              <div className="text-xs text-slate-400">{activity.time}</div>
+            </div>
+          ))
+        ) : (
+          <p>Chưa có hoạt động nào</p>
         )}
-      </S.RecentActivityContainer>
+      </div>
     </>
   );
 }
