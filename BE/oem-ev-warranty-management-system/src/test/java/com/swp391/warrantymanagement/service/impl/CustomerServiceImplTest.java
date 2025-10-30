@@ -70,15 +70,12 @@ class CustomerServiceImplTest {
         testCustomer = new Customer();
         testCustomer.setCustomerId(testCustomerId);
         testCustomer.setName("Test Customer");
-        testCustomer.setEmail("customer@example.com");
         testCustomer.setPhone("0123456789");
-        testCustomer.setAddress("123 Test Street");
         testCustomer.setUser(testUser);
 
         testRequestDTO = new CustomerRequestDTO();
         testRequestDTO.setUserId(testUserId);
         testRequestDTO.setName("Test Customer");
-        testRequestDTO.setEmail("customer@example.com");
         testRequestDTO.setPhone("0123456789");
         testRequestDTO.setAddress("123 Test Street");
     }
@@ -135,7 +132,7 @@ class CustomerServiceImplTest {
         assertNotNull(result);
         assertEquals(testCustomerId, result.getCustomerId());
         assertEquals("Test Customer", result.getName());
-        assertEquals("customer@example.com", result.getEmail());
+        assertEquals("test@example.com", result.getEmail());
         verify(customerRepository, times(1)).findById(testCustomerId);
     }
 
@@ -192,7 +189,6 @@ class CustomerServiceImplTest {
 
         CustomerRequestDTO updateDTO = new CustomerRequestDTO();
         updateDTO.setName("Updated Customer");
-        updateDTO.setEmail("updated@example.com");
         updateDTO.setPhone("0987654321");
         updateDTO.setAddress("456 New Street");
 
@@ -251,39 +247,10 @@ class CustomerServiceImplTest {
     }
 
     @Test
-    void getCustomerByEmail_WhenCustomerExists_ShouldReturnCustomer() {
-        // Arrange
-        String email = "customer@example.com";
-        when(customerRepository.findByEmail(email)).thenReturn(testCustomer);
-
-        // Act
-        CustomerResponseDTO result = customerService.getCustomerByEmail(email);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(email, result.getEmail());
-        verify(customerRepository, times(1)).findByEmail(email);
-    }
-
-    @Test
-    void getCustomerByEmail_WhenCustomerNotExists_ShouldReturnNull() {
-        // Arrange
-        String email = "nonexistent@example.com";
-        when(customerRepository.findByEmail(email)).thenReturn(null);
-
-        // Act
-        CustomerResponseDTO result = customerService.getCustomerByEmail(email);
-
-        // Assert
-        assertNull(result);
-        verify(customerRepository, times(1)).findByEmail(email);
-    }
-
-    @Test
     void getCustomerByPhone_WhenCustomerExists_ShouldReturnCustomer() {
         // Arrange
         String phone = "0123456789";
-        when(customerRepository.findByPhone(phone)).thenReturn(testCustomer);
+        when(customerRepository.findByPhone(phone)).thenReturn(Optional.of(testCustomer));
 
         // Act
         CustomerResponseDTO result = customerService.getCustomerByPhone(phone);

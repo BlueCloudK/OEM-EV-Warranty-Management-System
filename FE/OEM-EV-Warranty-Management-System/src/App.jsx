@@ -43,7 +43,7 @@ import EVMWorkLogs from "./pages/EVM/EVMWorkLogs";
 import EVMServiceCenters from "./pages/EVM/EVMServiceCenters";
 import EVMFeedbacks from "./pages/EVM/EVMFeedbacks";
 import EVMInstalledParts from "./pages/EVM/EVMInstalledParts";
-import EVMServiceHistories from "./pages/EVMStaff/EVMServiceHistories";
+import EVMServiceHistories from "./pages/EVM/EVMServiceHistories";
 import EVMRecallRequests from "./pages/EVM/EVMRecallRequests";
 
 // Admin Recall

@@ -52,7 +52,6 @@ class CustomerMapperTest {
         testRequestDTO.setUserId(1L);
         testRequestDTO.setName("Test Customer");
         testRequestDTO.setPhone("0123456789");
-        testRequestDTO.setEmail("customer@example.com");
         testRequestDTO.setAddress("456 Customer Street");
     }
 
