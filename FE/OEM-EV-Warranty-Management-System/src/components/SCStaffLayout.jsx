@@ -10,7 +10,7 @@ const sidebarItems = [
   { icon: <FaUserCog size={18} />, label: "Khách hàng", path: "/scstaff/customers" },
   { icon: <FaCar size={18} />, label: "Xe", path: "/scstaff/vehicles" },
   { icon: <FaClipboardList size={18} />, label: "Bảo hành", path: "/scstaff/warranty-claims" },
-  { icon: <FaExclamationTriangle size={18} />, label: "Recall", path: "/scstaff/recalls" },
+  // { icon: <FaExclamationTriangle size={18} />, label: "Recall", path: "/scstaff/recalls" },
   { icon: <FaHistory size={18} />, label: "Lịch sử", path: "/scstaff/service-history" },
   { icon: <FaCommentDots size={18} />, label: "Feedback", path: "/scstaff/feedbacks" },
 ];
