@@ -4,8 +4,12 @@ import { useAuth } from "../../context/AuthContext";
 import { useAdminDashboard } from "../../hooks/useAdminDashboard";
 // TailwindCSS styling – logic unchanged
 import {
-  FaUsers, FaCar, FaCogs, FaClipboardList, FaHistory, 
-  FaChartBar
+  FaUsers,
+  FaCar,
+  FaCogs,
+  FaClipboardList,
+  FaHistory,
+  FaChartBar,
 } from "react-icons/fa";
 
 const iconMap = {
@@ -32,12 +36,42 @@ export default function AdminDashboard() {
   }
 
   const statItems = [
-    { title: "Tổng Khách hàng", value: stats.totalCustomers, icon: <FaUsers />, color: "#3b82f6" },
-    { title: "Tổng Xe điện", value: stats.totalVehicles, icon: <FaCar />, color: "#10b981" },
-    { title: "Tổng Phụ tùng", value: stats.totalParts, icon: <FaCogs />, color: "#f59e0b" },
-    { title: "Claims đang xử lý", value: stats.pendingClaims, icon: <FaClipboardList />, color: "#ef4444" },
-    { title: "Claims hoàn tất", value: stats.completedClaims, icon: <FaClipboardList />, color: "#10b981" },
-    { title: "Tổng Claims", value: stats.totalClaims, icon: <FaChartBar />, color: "#8b5cf6" },
+    {
+      title: "Tổng Khách hàng",
+      value: stats.totalCustomers,
+      icon: <FaUsers />,
+      color: "#3b82f6",
+    },
+    {
+      title: "Tổng Xe điện",
+      value: stats.totalVehicles,
+      icon: <FaCar />,
+      color: "#10b981",
+    },
+    {
+      title: "Tổng Phụ tùng",
+      value: stats.totalParts,
+      icon: <FaCogs />,
+      color: "#f59e0b",
+    },
+    {
+      title: "Claims đang xử lý",
+      value: stats.pendingClaims,
+      icon: <FaClipboardList />,
+      color: "#ef4444",
+    },
+    {
+      title: "Claims hoàn tất",
+      value: stats.completedClaims,
+      icon: <FaClipboardList />,
+      color: "#10b981",
+    },
+    {
+      title: "Tổng Claims",
+      value: stats.totalClaims,
+      icon: <FaChartBar />,
+      color: "#8b5cf6",
+    },
   ];
 
   return (
@@ -50,7 +84,9 @@ export default function AdminDashboard() {
           >
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-sm font-semibold text-slate-500 mb-1">{stat.title}</div>
+                <div className="text-sm font-semibold text-slate-500 mb-1">
+                  {stat.title}
+                </div>
                 <div
                   className="text-3xl font-bold"
                   style={{ color: stat.color }}
@@ -58,7 +94,10 @@ export default function AdminDashboard() {
                   {dataLoading ? "..." : stat.value}
                 </div>
               </div>
-              <div className="text-4xl opacity-70" style={{ color: stat.color }}>
+              <div
+                className="text-4xl opacity-70"
+                style={{ color: stat.color }}
+              >
                 {stat.icon}
               </div>
             </div>
