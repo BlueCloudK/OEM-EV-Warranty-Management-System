@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { FaPhone, FaEnvelope, FaMapMarkerAlt, FaClock } from "react-icons/fa";
 import apiClient from "../api/apiClient";
-import GoongMap from "../components/GoongMap";
+import GoongMapReadOnly from "../components/GoongMapReadOnly";
 
 export default function Home() {
   const [serviceCenters, setServiceCenters] = useState([]);
@@ -216,13 +216,12 @@ export default function Home() {
                       ? "📍 Vị trí trung tâm đang chọn"
                       : "💡 Click vào trung tâm bên dưới để xem vị trí trên bản đồ"}
                   </p>
-                  <GoongMap
-                    latitude={selectedCenter ? parseFloat(selectedCenter.latitude) : 21.0285}
-                    longitude={selectedCenter ? parseFloat(selectedCenter.longitude) : 105.8542}
-                    height="400px"
-                    editable={false}
-                    showMarker={!!selectedCenter}
-                  />
+                    <GoongMapReadOnly
+                        latitude={selectedCenter ? parseFloat(selectedCenter.latitude) : 21.0285}
+                        longitude={selectedCenter ? parseFloat(selectedCenter.longitude) : 105.8542}
+                        height="400px"
+                        showMarker={!!selectedCenter}
+                    />
                   {selectedCenter && (
                     <>
                       <p style={{

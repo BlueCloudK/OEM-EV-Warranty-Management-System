@@ -4,7 +4,7 @@ import {
   FaMapMarkerAlt, FaPhone, FaClock, FaSearch, FaSpinner, FaStar
 } from "react-icons/fa";
 import apiClient from "../../api/apiClient";
-import GoongMap from "../../components/GoongMap";
+import GoongMapReadOnly from "../../components/GoongMapReadOnly";
 
 export default function CustomerServiceCenters() {
   const [serviceCenters, setServiceCenters] = useState([]);
@@ -94,13 +94,12 @@ export default function CustomerServiceCenters() {
           <S.MapHint>
             💡 Click vào trung tâm bên dưới để xem vị trí trên bản đồ
           </S.MapHint>
-          <GoongMap
-            latitude={parseFloat(selectedCenter.latitude)}
-            longitude={parseFloat(selectedCenter.longitude)}
-            height="400px"
-            editable={false}
-            showMarker={true}
-          />
+            <GoongMapReadOnly
+                latitude={parseFloat(selectedCenter.latitude)}
+                longitude={parseFloat(selectedCenter.longitude)}
+                height="400px"
+                showMarker={true}
+            />
           <S.MapLabel>
             <div style={{ fontSize: "18px", fontWeight: "600", color: "#10b981" }}>
               📍 {selectedCenter.serviceCenterName}
