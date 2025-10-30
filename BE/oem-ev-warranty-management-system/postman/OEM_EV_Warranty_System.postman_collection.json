@@ -1,0 +1,550 @@
+{
+	"info": {
+		"_postman_id": "warranty-system-2025",
+		"name": "OEM EV Warranty Management System",
+		"description": "Complete API collection for OEM EV Warranty Management System\n\nLast Updated: October 23, 2025\n\n**Authentication:** Most endpoints require JWT Bearer token\n\n**Workflow:**\n1. Login to get access token\n2. Use token in Authorization header for protected endpoints\n3. Refresh token when expired",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{accessToken}}",
+				"type": "string"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "1. Authentication",
+			"item": [
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"accessToken\", jsonData.accessToken);",
+									"    pm.environment.set(\"refreshToken\", jsonData.refreshToken);",
+									"    pm.environment.set(\"userId\", jsonData.userId);",
+									"    console.log(\"Logged in as:\", jsonData.username, \"- Role:\", jsonData.roleName);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login with username and password to get JWT tokens"
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"accessToken\", jsonData.accessToken);",
+									"    pm.environment.set(\"refreshToken\", jsonData.refreshToken);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/refresh",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"refresh"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/logout",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"logout"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Register Customer",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"customer1\",\n  \"password\": \"password123\",\n  \"email\": \"customer1@example.com\",\n  \"fullName\": \"Customer One\",\n  \"phoneNumber\": \"0901234567\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Authentication endpoints - Login, Register, Logout, Token management"
+		},
+		{
+			"name": "7. Warranty Claims",
+			"item": [
+				{
+					"name": "Get All Claims",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/warranty-claims?page=0&size=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"warranty-claims"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Get all warranty claims (ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Claim By ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/warranty-claims/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"warranty-claims",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Claim (SC Staff)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"installedPartId\": \"INST-001\",\n  \"issueDescription\": \"Battery not charging properly\",\n  \"failureDate\": \"2024-10-22\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/warranty-claims/sc-create",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"warranty-claims",
+								"sc-create"
+							]
+						},
+						"description": "SC_STAFF creates claim for customer (SUBMITTED status)"
+					},
+					"response": []
+				},
+				{
+					"name": "Admin Accept Claim",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "\"Approved for processing\""
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/warranty-claims/1/admin-accept",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"warranty-claims",
+								"1",
+								"admin-accept"
+							]
+						},
+						"description": "ADMIN accepts claim (SUBMITTED → MANAGER_REVIEW)"
+					},
+					"response": []
+				},
+				{
+					"name": "Admin Reject Claim",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/warranty-claims/1/admin-reject?reason=Part not covered under warranty",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"warranty-claims",
+								"1",
+								"admin-reject"
+							],
+							"query": [
+								{
+									"key": "reason",
+									"value": "Part not covered under warranty"
+								}
+							]
+						},
+						"description": "ADMIN rejects claim (SUBMITTED → REJECTED)"
+					},
+					"response": []
+				},
+				{
+					"name": "Tech Start Processing",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "\"Starting diagnostic check\""
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/warranty-claims/1/tech-start",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"warranty-claims",
+								"1",
+								"tech-start"
+							]
+						},
+						"description": "SC_TECHNICIAN starts processing (MANAGER_REVIEW → PROCESSING)"
+					},
+					"response": []
+				},
+				{
+					"name": "Tech Complete Claim",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/warranty-claims/1/tech-complete?completionNote=Battery replaced successfully",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"warranty-claims",
+								"1",
+								"tech-complete"
+							],
+							"query": [
+								{
+									"key": "completionNote",
+									"value": "Battery replaced successfully"
+								}
+							]
+						},
+						"description": "SC_TECHNICIAN completes claim (PROCESSING → COMPLETED)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Claims (Customer) 🆕",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/warranty-claims/my-claims?page=0&size=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"warranty-claims",
+								"my-claims"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "CUSTOMER xem tất cả warranty claims của xe mình\n\n**NEW Feature - Oct 23, 2025**\n\nCustomer chỉ xem được claims của các xe mình sở hữu. Security check ở cả DB query và service layer."
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Claim Detail (Customer) 🆕",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/warranty-claims/my-claims/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"warranty-claims",
+								"my-claims",
+								"1"
+							]
+						},
+						"description": "CUSTOMER xem chi tiết 1 warranty claim của mình\n\n**NEW Feature - Oct 23, 2025**\n\nEndpoint kiểm tra claim có thuộc về customer không. Nếu claim không thuộc về customer → 403 Forbidden."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Claims By Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/warranty-claims/by-status/SUBMITTED?page=0&size=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"warranty-claims",
+								"by-status",
+								"SUBMITTED"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Status values: SUBMITTED, MANAGER_REVIEW, PROCESSING, COMPLETED, REJECTED"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Admin Pending Claims",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/warranty-claims/admin-pending?page=0&size=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"warranty-claims",
+								"admin-pending"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "ADMIN only - Get claims with SUBMITTED status"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Tech Pending Claims",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/warranty-claims/tech-pending?page=0&size=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"warranty-claims",
+								"tech-pending"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "SC_TECHNICIAN only - Get claims ready for processing"
+					},
+					"response": []
+				}
+			],
+			"description": "Warranty claim management endpoints\n\n**NEW (Oct 23, 2025):**\n- Customer can now view their own warranty claims\n- 2 new endpoints: /my-claims and /my-claims/{id}"
+		},
+		{
+			"name": "12. User Info",
+			"item": [
+				{
+					"name": "Get My Info",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/me",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"me"
+							]
+						},
+						"description": "Get current authenticated user information"
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		}
+	]
+}
