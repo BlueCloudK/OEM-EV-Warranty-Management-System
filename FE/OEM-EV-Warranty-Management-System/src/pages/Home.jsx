@@ -28,11 +28,11 @@ export default function Home() {
       console.log('Service Centers Response:', data); // Debug log
       if (data.content) {
         setServiceCenters(data.content);
-        // Không auto-select - để user tự chọn từ danh sách
-        // if (data.content.length > 0) {
-        //   console.log('Selected Center:', data.content[0]); // Debug log
-        //   setSelectedCenter(data.content[0]);
-        // }
+          // Auto-select center đầu tiên để hiển thị marker
+          if (data.content.length > 0) {
+              console.log('Selected Center:', data.content[0]);
+              setSelectedCenter(data.content[0]);
+          }
       }
     } catch (err) {
       console.error('Error fetching service centers:', err);
