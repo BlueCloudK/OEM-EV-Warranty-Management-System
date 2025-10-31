@@ -5,14 +5,13 @@ import com.swp391.warrantymanagement.dto.response.PartResponseDTO;
 import com.swp391.warrantymanagement.dto.response.PagedResponse;
 import com.swp391.warrantymanagement.service.PartService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * PartController - REST API for Part management
@@ -26,7 +25,11 @@ import org.slf4j.LoggerFactory;
 @CrossOrigin
 public class PartController {
     private static final Logger logger = LoggerFactory.getLogger(PartController.class);
-    @Autowired private PartService partService;
+    private final PartService partService;
+
+    public PartController(PartService partService) {
+        this.partService = partService;
+    }
 
     // Get all parts with pagination and search (EVM_STAFF registers, SC_STAFF views to select)
     @GetMapping
