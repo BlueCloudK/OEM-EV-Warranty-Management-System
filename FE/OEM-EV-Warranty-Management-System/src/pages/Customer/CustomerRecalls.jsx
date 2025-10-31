@@ -6,6 +6,7 @@ import {
   FaThumbsUp, FaThumbsDown
 } from "react-icons/fa";
 import apiClient from "../../api/apiClient";
+import { customerApi } from "../../api/customerApi";
 
 export default function CustomerRecalls() {
   const [recalls, setRecalls] = useState([]);
@@ -21,9 +22,15 @@ export default function CustomerRecalls() {
   const [customerNote, setCustomerNote] = useState("");
   const [acceptRecall, setAcceptRecall] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [vehicles, setVehicles] = useState([]);
+  const [loadingVehicles, setLoadingVehicles] = useState(true);
+  const [vehiclesError, setVehiclesError] = useState(null);
+  const [selectedVehicleInfo, setSelectedVehicleInfo] = useState(null);
 
   useEffect(() => {
     fetchRecalls();
+    // preload customer's vehicles (similar logic to MyVehicles.jsx)
+    fetchVehicles();
   }, []);
 
   useEffect(() => {
@@ -61,6 +68,31 @@ export default function CustomerRecalls() {
     }
 
     setFilteredRecalls(filtered);
+  };
+
+  const fetchVehicles = async () => {
+    try {
+      setLoadingVehicles(true);
+      setVehiclesError(null);
+      const response = await customerApi.getMyVehicles({ page: 0, size: 200 });
+      if (response && response.content) {
+        setVehicles(response.content);
+        return response.content;
+      } else if (Array.isArray(response)) {
+        setVehicles(response);
+        return response;
+      } else {
+        setVehicles([]);
+        return [];
+      }
+    } catch (err) {
+      console.error('Error fetching vehicles:', err);
+      setVehicles([]);
+      setVehiclesError(err.response?.data?.message || err.message || 'Không thể tải danh sách xe.');
+      return [];
+    } finally {
+      setLoadingVehicles(false);
+    }
   };
 
   const handleConfirmRecall = async (e) => {
@@ -104,9 +136,23 @@ export default function CustomerRecalls() {
   };
 
   const openDetailModal = (recall) => {
-    setSelectedRecall(recall);
-    setShowDetailModal(true);
+    (async () => {
+      setSelectedRecall(recall);
+      setShowDetailModal(true);
+      const vin = recall?.installedPart?.vehicle?.vin;
+      let items = vehicles;
+      if (!items || items.length === 0) {
+        items = await fetchVehicles();
+      }
+      const matched = vin ? items.find(v => (v.vin || v.vehicleVin) === vin) : null;
+      setSelectedVehicleInfo(matched || (items && items.length ? items[0] : null));
+    })();
   };
+
+  // Clear selected vehicle info when modal closes
+  useEffect(() => {
+    if (!showDetailModal) setSelectedVehicleInfo(null);
+  }, [showDetailModal]);
 
   const getStatusBadge = (status) => {
     const statusMap = {
@@ -432,15 +478,33 @@ export default function CustomerRecalls() {
                 <S.SectionTitle>Thông tin Xe</S.SectionTitle>
                 <S.DetailItem>
                   <S.DetailLabel>Xe:</S.DetailLabel>
-                  <S.DetailValue>{selectedRecall.installedPart?.vehicle?.model || "N/A"}</S.DetailValue>
+                  <S.DetailValue>
+                    {selectedVehicleInfo ? (
+                      selectedVehicleInfo.vehicleName || selectedVehicleInfo.vehicleModel || selectedVehicleInfo.model || selectedVehicleInfo.name || 'N/A'
+                    ) : (
+                      selectedRecall.installedPart?.vehicle?.model || 'N/A'
+                    )}
+                  </S.DetailValue>
                 </S.DetailItem>
                 <S.DetailItem>
                   <S.DetailLabel>VIN:</S.DetailLabel>
-                  <S.DetailValue>{selectedRecall.installedPart?.vehicle?.vin || "N/A"}</S.DetailValue>
+                  <S.DetailValue>
+                    {selectedVehicleInfo ? (
+                      selectedVehicleInfo.vehicleVin || selectedVehicleInfo.vin || 'N/A'
+                    ) : (
+                      selectedRecall.installedPart?.vehicle?.vin || 'N/A'
+                    )}
+                  </S.DetailValue>
                 </S.DetailItem>
                 <S.DetailItem>
                   <S.DetailLabel>Năm sản xuất:</S.DetailLabel>
-                  <S.DetailValue>{selectedRecall.installedPart?.vehicle?.year || "N/A"}</S.DetailValue>
+                  <S.DetailValue>
+                    {selectedVehicleInfo ? (
+                      selectedVehicleInfo.vehicleYear || selectedVehicleInfo.year || 'N/A'
+                    ) : (
+                      selectedRecall.installedPart?.vehicle?.year || 'N/A'
+                    )}
+                  </S.DetailValue>
                 </S.DetailItem>
               </S.DetailSection>
 
