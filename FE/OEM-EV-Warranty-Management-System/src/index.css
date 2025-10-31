@@ -1,6 +1,16 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors bg-indigo-600 text-white hover:bg-indigo-700;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors bg-slate-100 text-slate-700 hover:bg-slate-200;
+  }
+  .card {
+    @apply rounded-2xl bg-white p-5 shadow-md ring-1 ring-slate-100;
+  }
+}
 
 :root {
   --brand-primary: #0b6b61; /* OEM green-teal */

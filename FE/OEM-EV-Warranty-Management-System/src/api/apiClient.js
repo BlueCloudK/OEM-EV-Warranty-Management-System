@@ -1,20 +1,25 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "https://localhost:8080";
 
 // Public API Client - Không gửi token (cho trang chủ, public endpoints)
 export const publicApiClient = async (endpoint, options = {}) => {
   try {
     const headers = {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...options.headers,
     };
 
     const config = {
-      method: options.method || 'GET',
+      method: options.method || "GET",
       headers,
       ...options,
     };
 
-    if (config.body && typeof config.body === 'object' && !(config.body instanceof FormData)) {
+    if (
+      config.body &&
+      typeof config.body === "object" &&
+      !(config.body instanceof FormData)
+    ) {
       config.body = JSON.stringify(config.body);
     }
 
@@ -25,9 +30,11 @@ export const publicApiClient = async (endpoint, options = {}) => {
       console.error(`❌ Public API Error (${endpoint}):`, {
         status: response.status,
         statusText: response.statusText,
-        body: errorText
+        body: errorText,
       });
-      throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`);
+      throw new Error(
+        `HTTP ${response.status}: ${errorText || response.statusText}`
+      );
     }
 
     const data = await response.json();
@@ -40,29 +47,29 @@ export const publicApiClient = async (endpoint, options = {}) => {
 
 // Lấy tokens từ localStorage
 const getAuthTokens = () => ({
-  accessToken: localStorage.getItem('accessToken'),
-  refreshToken: localStorage.getItem('refreshToken'),
+  accessToken: localStorage.getItem("accessToken"),
+  refreshToken: localStorage.getItem("refreshToken"),
 });
 
 // Lưu tokens vào localStorage
 const setAuthTokens = (accessToken, refreshToken) => {
-  localStorage.setItem('accessToken', accessToken);
-  localStorage.setItem('refreshToken', refreshToken);
+  localStorage.setItem("accessToken", accessToken);
+  localStorage.setItem("refreshToken", refreshToken);
 };
 
 // Xóa tokens khi logout hoặc refresh thất bại
 const clearAuthTokens = () => {
-  localStorage.removeItem('accessToken');
-  localStorage.removeItem('refreshToken');
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("refreshToken");
   // Chuyển hướng về trang đăng nhập
-  window.location.href = '/login';
+  window.location.href = "/login";
 };
 
 let isRefreshing = false;
 let failedQueue = [];
 
 const processQueue = (error, token = null) => {
-  failedQueue.forEach(prom => {
+  failedQueue.forEach((prom) => {
     if (error) {
       prom.reject(error);
     } else {
@@ -78,16 +85,19 @@ const apiClient = async (endpoint, options = {}) => {
 
     // Thiết lập headers mặc định
     const headers = {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...options.headers,
     };
 
     if (accessToken) {
-      headers['Authorization'] = `Bearer ${accessToken}`;
+      headers["Authorization"] = `Bearer ${accessToken}`;
     }
 
     // Thực hiện yêu cầu API ban đầu
-    let response = await fetch(`${API_BASE_URL}${endpoint}`, { ...options, headers });
+    let response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers,
+    });
 
     // Nếu token hết hạn (401) và có refreshToken
     if (response.status === 401 && refreshToken) {
@@ -95,23 +105,25 @@ const apiClient = async (endpoint, options = {}) => {
         // Nếu đang có một yêu cầu refresh token khác, hãy đợi nó hoàn thành
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
-        })
-        .then(newAccessToken => {
-          headers['Authorization'] = `Bearer ${newAccessToken}`;
+        }).then((newAccessToken) => {
+          headers["Authorization"] = `Bearer ${newAccessToken}`;
           return fetch(`${API_BASE_URL}${endpoint}`, { ...options, headers });
         });
       } else {
         isRefreshing = true;
         try {
           // Gọi API để làm mới token trực tiếp
-          const refreshResponse = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refreshToken }),
-          });
+          const refreshResponse = await fetch(
+            `${API_BASE_URL}/api/auth/refresh`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ refreshToken }),
+            }
+          );
 
           if (!refreshResponse.ok) {
-            throw new Error('Failed to refresh token');
+            throw new Error("Failed to refresh token");
           }
 
           const newTokens = await refreshResponse.json();
@@ -123,11 +135,13 @@ const apiClient = async (endpoint, options = {}) => {
           processQueue(null, newAccessToken);
 
           // Thử lại yêu cầu ban đầu với token mới
-          headers['Authorization'] = `Bearer ${newAccessToken}`;
-          response = await fetch(`${API_BASE_URL}${endpoint}`, { ...options, headers });
-
+          headers["Authorization"] = `Bearer ${newAccessToken}`;
+          response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            ...options,
+            headers,
+          });
         } catch (refreshError) {
-          console.error('❌ Token refresh failed:', refreshError);
+          console.error("❌ Token refresh failed:", refreshError);
           processQueue(refreshError, null);
           clearAuthTokens(); // Đăng xuất người dùng nếu refresh thất bại
           return Promise.reject(refreshError);
@@ -140,18 +154,22 @@ const apiClient = async (endpoint, options = {}) => {
     // Xử lý response cuối cùng
     if (!response.ok) {
       const errorData = await response.text();
-      throw new Error(errorData || `HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(
+        errorData || `HTTP ${response.status}: ${response.statusText}`
+      );
     }
 
-    const contentType = response.headers.get('content-type');
-    if (contentType && contentType.includes('application/json')) {
+    const contentType = response.headers.get("content-type");
+    if (contentType && contentType.includes("application/json")) {
       return await response.json();
     }
 
     return null; // Cho các yêu cầu không trả về JSON (ví dụ: DELETE)
-
   } catch (error) {
-    console.error(`❌ API Client Error (${options.method} ${endpoint}):`, error);
+    console.error(
+      `❌ API Client Error (${options.method} ${endpoint}):`,
+      error
+    );
     throw error;
   }
 };
