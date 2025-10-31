@@ -632,10 +632,6 @@ const EVMRecallRequests = () => {
                   <S.DetailLabel>Xe:</S.DetailLabel>
                   <S.DetailValue>{selectedRecall.vehicleName}</S.DetailValue>
                 </S.DetailItem>
-                <S.DetailItem>
-                  <S.DetailLabel>VIN:</S.DetailLabel>
-                  <S.DetailValue>{selectedRecall.vehicleId}</S.DetailValue>
-                </S.DetailItem>
               </S.DetailSection>
 
               <S.DetailSection fullWidth>

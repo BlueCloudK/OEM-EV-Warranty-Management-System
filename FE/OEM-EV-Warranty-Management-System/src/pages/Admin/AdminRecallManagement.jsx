@@ -281,8 +281,7 @@ export default function AdminRecallManagement() {
                 const customerName = recall.customerName || recall.installedPart?.vehicle?.customer?.user?.fullName || 'N/A';
                 const partName = recall.partName || recall.installedPart?.part?.partName || 'N/A';
                 const partNumber = recall.installedPart?.part?.partNumber || '';
-                const creatorName = recall.createdByName || recall.createdBy?.fullName || 'N/A';
-
+                const creatorName = 'EVM Staff' || 'N/A';
                 return (
                     <S.TableRow key={recall.recallRequestId}>
                         <S.TableCell>#{recall.recallRequestId}</S.TableCell>
@@ -477,7 +476,7 @@ export default function AdminRecallManagement() {
                 </S.DetailItem>
                 <S.DetailItem>
                   <S.DetailLabel>Người tạo:</S.DetailLabel>
-                  <S.DetailValue>{selectedRecall.createdBy?.fullName || "N/A"}</S.DetailValue>
+                  <S.DetailValue>EVM Staff</S.DetailValue>
                 </S.DetailItem>
               </S.DetailSection>
 
@@ -485,16 +484,16 @@ export default function AdminRecallManagement() {
                 <S.SectionTitle>Thông tin Xe</S.SectionTitle>
                 <S.DetailItem>
                   <S.DetailLabel>Xe:</S.DetailLabel>
-                  <S.DetailValue>{selectedRecall.installedPart?.vehicle?.model || "N/A"}</S.DetailValue>
+                  <S.DetailValue>{selectedRecall.vehicleName || "N/A"}</S.DetailValue>
                 </S.DetailItem>
                 <S.DetailItem>
-                  <S.DetailLabel>VIN:</S.DetailLabel>
-                  <S.DetailValue>{selectedRecall.installedPart?.vehicle?.vin || "N/A"}</S.DetailValue>
+                  <S.DetailLabel>ID xe:</S.DetailLabel>
+                  <S.DetailValue>{selectedRecall.vehicleId || "N/A"}</S.DetailValue>
                 </S.DetailItem>
                 <S.DetailItem>
                   <S.DetailLabel>Khách hàng:</S.DetailLabel>
                   <S.DetailValue>
-                    {selectedRecall.installedPart?.vehicle?.customer?.user?.fullName || "N/A"}
+                    {selectedRecall.customerName || "N/A"}
                   </S.DetailValue>
                 </S.DetailItem>
               </S.DetailSection>
@@ -503,19 +502,11 @@ export default function AdminRecallManagement() {
                 <S.SectionTitle>Thông tin Phụ tùng</S.SectionTitle>
                 <S.DetailItem>
                   <S.DetailLabel>Tên phụ tùng:</S.DetailLabel>
-                  <S.DetailValue>{selectedRecall.installedPart?.part?.partName || "N/A"}</S.DetailValue>
+                  <S.DetailValue>{selectedRecall.partName || "N/A"}</S.DetailValue>
                 </S.DetailItem>
                 <S.DetailItem>
-                  <S.DetailLabel>Mã phụ tùng:</S.DetailLabel>
-                  <S.DetailValue>{selectedRecall.installedPart?.part?.partNumber || "N/A"}</S.DetailValue>
-                </S.DetailItem>
-                <S.DetailItem>
-                  <S.DetailLabel>Ngày lắp đặt:</S.DetailLabel>
-                  <S.DetailValue>
-                    {selectedRecall.installedPart?.installationDate
-                      ? new Date(selectedRecall.installedPart.installationDate).toLocaleDateString('vi-VN')
-                      : "N/A"}
-                  </S.DetailValue>
+                  <S.DetailLabel>ID phụ tùng:</S.DetailLabel>
+                  <S.DetailValue>{selectedRecall.partId || "N/A"}</S.DetailValue>
                 </S.DetailItem>
               </S.DetailSection>
 

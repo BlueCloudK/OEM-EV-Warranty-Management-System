@@ -125,26 +125,30 @@ const ServiceHistoryManagement = () => {
             <S.Table>
               <thead>
                 <tr>
-                  <S.Th>Ngày</S.Th>
-                  <S.Th>Loại DV</S.Th>
+                  <S.Th>ID</S.Th>
+                  <S.Th>Xe (VIN)</S.Th>
+                  <S.Th>Tên xe</S.Th>
+                  <S.Th>Loại dịch vụ</S.Th>
+                  <S.Th>Phụ tùng</S.Th>
                   <S.Th>Mô tả</S.Th>
-                  <S.Th>Xe</S.Th>
-                  <S.Th>Linh kiện</S.Th>
+                  <S.Th>Ngày dịch vụ</S.Th>
                   <S.Th>Thao tác</S.Th>
                 </tr>
               </thead>
               <tbody>
                 {histories.map(history => (
-                  <tr key={history.id}>
-                    <S.Td>{new Date(history.serviceDate).toLocaleDateString('vi-VN')}</S.Td>
-                    <S.Td>{history.serviceType}</S.Td>
-                    <S.Td>{history.description}</S.Td>
-                    <S.Td>{history.vehicle?.vin || 'N/A'}</S.Td>
-                    <S.Td>{history.part?.name || 'N/A'}</S.Td>
+                  <tr key={history.serviceHistoryId || history.id}>
+                    <S.Td>{history.serviceHistoryId || history.id || 'N/A'}</S.Td>
+                    <S.Td>{history.vehicleVin || history.vehicle?.vin || history.vehicleId || 'N/A'}</S.Td>
+                    <S.Td>{history.vehicleName || history.vehicle?.vehicleName || history.vehicle?.model || 'N/A'}</S.Td>
+                    <S.Td>{history.serviceType || 'N/A'}</S.Td>
+                    <S.Td>{history.partName ? `${history.partName} (${history.partId})` : history.part?.name || history.partId || 'N/A'}</S.Td>
+                    <S.Td>{history.description || 'N/A'}</S.Td>
+                    <S.Td>{history.serviceDate ? new Date(history.serviceDate).toLocaleDateString('vi-VN') : 'N/A'}</S.Td>
                     <S.Td>
-                      <S.Button small onClick={() => openEditForm(history)}>
-                        <FaEdit /> Sửa
-                      </S.Button>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <S.Button small onClick={() => openEditForm(history)}><FaEdit /> Sửa</S.Button>
+                      </div>
                     </S.Td>
                   </tr>
                 ))}

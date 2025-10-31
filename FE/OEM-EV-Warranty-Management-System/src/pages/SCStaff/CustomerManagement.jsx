@@ -149,12 +149,21 @@ const CustomerManagement = () => {
         ) : (
           <S.TableContainer>
             <S.Table>
-              <thead><tr><S.Th>Tên</S.Th><S.Th>Email</S.Th><S.Th>Điện thoại</S.Th><S.Th>Thao tác</S.Th></tr></thead>
+              <thead>
+                <tr>
+                  <S.Th>Tên</S.Th>
+                  <S.Th>Email</S.Th>
+                  <S.Th>Địa chỉ</S.Th>
+                  <S.Th>Điện thoại</S.Th>
+                  <S.Th>Thao tác</S.Th>
+                </tr>
+              </thead>
               <tbody>
                 {customers.map(customer => (
                   <tr key={customer.customerId}>
                     <S.Td>{customer.name}</S.Td>
                     <S.Td>{customer.email}</S.Td>
+                    <S.Td>{customer.address || 'N/A'}</S.Td>
                     <S.Td>{customer.phone}</S.Td>
                     <S.Td><S.Button $small onClick={() => openEditForm(customer)}><FaEdit /> Sửa</S.Button></S.Td>
                   </tr>

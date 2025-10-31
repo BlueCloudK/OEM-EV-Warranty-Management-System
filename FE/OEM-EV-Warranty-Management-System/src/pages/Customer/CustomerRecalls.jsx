@@ -293,12 +293,14 @@ export default function CustomerRecalls() {
               <S.TableRow key={recall.recallRequestId}>
                 <S.TableCell>#{recall.recallRequestId}</S.TableCell>
                 <S.TableCell>
-                  <div>{recall.installedPart?.vehicle?.model}</div>
-                  <small>{recall.installedPart?.vehicle?.vin}</small>
+                  <div>{recall ? (
+                      recall.vehicleName || recall.vehicleModel || recall.model || recall.name || 'N/A'
+                    ) : (
+                      recall.installedPart?.vehicle?.model || 'N/A'
+                    )}</div>
                 </S.TableCell>
                 <S.TableCell>
-                  <div>{recall.installedPart?.part?.partName}</div>
-                  <small>{recall.installedPart?.part?.partNumber}</small>
+                  <div>{recall.partName}</div>
                 </S.TableCell>
                 <S.TableCell>
                   {recall.reason?.length > 60
@@ -470,7 +472,7 @@ export default function CustomerRecalls() {
                 </S.DetailItem>
                 <S.DetailItem>
                   <S.DetailLabel>Người tạo yêu cầu:</S.DetailLabel>
-                  <S.DetailValue>{selectedRecall.createdBy?.fullName || "N/A"}</S.DetailValue>
+                  <S.DetailValue>EVM Staff</S.DetailValue>
                 </S.DetailItem>
               </S.DetailSection>
 
@@ -512,19 +514,11 @@ export default function CustomerRecalls() {
                 <S.SectionTitle>Thông tin Phụ tùng cần thay</S.SectionTitle>
                 <S.DetailItem>
                   <S.DetailLabel>Tên phụ tùng:</S.DetailLabel>
-                  <S.DetailValue>{selectedRecall.installedPart?.part?.partName || "N/A"}</S.DetailValue>
+                  <S.DetailValue>{selectedRecall.partName || "N/A"}</S.DetailValue>
                 </S.DetailItem>
                 <S.DetailItem>
-                  <S.DetailLabel>Mã phụ tùng:</S.DetailLabel>
-                  <S.DetailValue>{selectedRecall.installedPart?.part?.partNumber || "N/A"}</S.DetailValue>
-                </S.DetailItem>
-                <S.DetailItem>
-                  <S.DetailLabel>Ngày lắp đặt:</S.DetailLabel>
-                  <S.DetailValue>
-                    {selectedRecall.installedPart?.installationDate
-                      ? new Date(selectedRecall.installedPart.installationDate).toLocaleDateString('vi-VN')
-                      : "N/A"}
-                  </S.DetailValue>
+                  <S.DetailLabel>ID phụ tùng:</S.DetailLabel>
+                  <S.DetailValue>{selectedRecall.partId || "N/A"}</S.DetailValue>
                 </S.DetailItem>
               </S.DetailSection>
 
