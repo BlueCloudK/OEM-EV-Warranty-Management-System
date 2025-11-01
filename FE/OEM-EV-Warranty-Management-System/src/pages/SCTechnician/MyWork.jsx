@@ -63,11 +63,7 @@ const ClaimDetailModal = ({ isOpen, onClose, claim, onStartProcessing, onComplet
           </S.DetailItem>
           <S.DetailItem>
             <S.DetailLabel>Phụ tùng:</S.DetailLabel>
-            <S.DetailValue>{claim.installedPartName || claim.installedPartId || 'N/A'}</S.DetailValue>
-          </S.DetailItem>
-          <S.DetailItem>
-            <S.DetailLabel>Loại vấn đề:</S.DetailLabel>
-            <S.DetailValue>{claim.issueType || 'N/A'}</S.DetailValue>
+            <S.DetailValue>{claim.partName || claim.installedPartName || claim.installedPart?.part?.partName || claim.installedPart?.partName || 'N/A'}</S.DetailValue>
           </S.DetailItem>
           <S.DetailItem $fullWidth>
             <S.DetailLabel>Mô tả:</S.DetailLabel>
@@ -178,6 +174,7 @@ const MyWork = () => {
 
       if (response && response.content) {
         setClaims(response.content);
+        console.debug('Claims data:', response.content); // Debug log to check claim structure
         setPagination(prev => ({
           ...prev,
           totalPages: response.totalPages,
@@ -255,6 +252,7 @@ const MyWork = () => {
   };
 
   const openDetailModal = (claim) => {
+    console.debug('Opening claim detail:', claim); // Debug log to see claim data
     setSelectedClaim(claim);
     setShowDetailModal(true);
   };
@@ -390,7 +388,7 @@ const MyWork = () => {
                         <S.Td>{claim.warrantyClaimId}</S.Td>
                         <S.Td>{claim.customerName || 'N/A'}</S.Td>
                         <S.Td>{claim.vehicleVin || 'N/A'}</S.Td>
-                        <S.Td>{claim.installedPartName || claim.installedPartId || 'N/A'}</S.Td>
+                        <S.Td>{claim.partName || claim.installedPartName || claim.installedPart?.part?.partName || claim.installedPart?.partName || claim.installedPartId || 'N/A'}</S.Td>
                         <S.Td>{claim.claimDate ? new Date(claim.claimDate).toLocaleDateString('vi-VN') : 'N/A'}</S.Td>
                         <S.Td>
                           <S.StatusBadge $status={claim.status}>
