@@ -152,6 +152,22 @@ class RecallRequestServiceImplTest {
             assertThrows(ResourceNotFoundException.class,
                 () -> recallRequestService.createRecallRequest(requestDTO, authHeader));
         }
+
+        @Test
+        @DisplayName("Should throw exception when user not found")
+        void createRecallRequest_UserNotFound_ThrowsException() {
+            // Arrange
+            RecallRequestRequestDTO requestDTO = new RecallRequestRequestDTO();
+            requestDTO.setInstalledPartId(1L);
+            requestDTO.setReason("Test reason");
+
+            when(jwtService.extractUsername("valid-token")).thenReturn("unknown");
+            when(userRepository.findByUsername("unknown")).thenReturn(Optional.empty());
+
+            // Act & Assert
+            assertThrows(ResourceNotFoundException.class,
+                () -> recallRequestService.createRecallRequest(requestDTO, authHeader));
+        }
     }
 
     @Nested
@@ -218,6 +234,80 @@ class RecallRequestServiceImplTest {
             // Assert
             assertThat(result).isEmpty();
         }
+
+        @Test
+        @DisplayName("Should filter out recalls with null installedPart")
+        void getRecallRequestsForCustomer_NullInstalledPart_FiltersOut() {
+            // Arrange
+            RecallRequest recallWithNullPart = new RecallRequest();
+            recallWithNullPart.setRecallRequestId(2L);
+            recallWithNullPart.setInstalledPart(null); // Null installedPart
+
+            List<RecallRequest> recalls = new ArrayList<>();
+            recalls.add(recallRequest);
+            recalls.add(recallWithNullPart);
+
+            when(recallRequestRepository.findAll()).thenReturn(recalls);
+
+            // Act
+            List<RecallRequestResponseDTO> result = recallRequestService.getRecallRequestsForCustomer(customer.getCustomerId());
+
+            // Assert
+            assertThat(result).hasSize(1); // Only the valid one
+        }
+
+        @Test
+        @DisplayName("Should filter out recalls with null vehicle")
+        void getRecallRequestsForCustomer_NullVehicle_FiltersOut() {
+            // Arrange
+            InstalledPart partWithNullVehicle = new InstalledPart();
+            partWithNullVehicle.setInstalledPartId(2L);
+            partWithNullVehicle.setVehicle(null); // Null vehicle
+
+            RecallRequest recallWithNullVehicle = new RecallRequest();
+            recallWithNullVehicle.setRecallRequestId(2L);
+            recallWithNullVehicle.setInstalledPart(partWithNullVehicle);
+
+            List<RecallRequest> recalls = new ArrayList<>();
+            recalls.add(recallRequest);
+            recalls.add(recallWithNullVehicle);
+
+            when(recallRequestRepository.findAll()).thenReturn(recalls);
+
+            // Act
+            List<RecallRequestResponseDTO> result = recallRequestService.getRecallRequestsForCustomer(customer.getCustomerId());
+
+            // Assert
+            assertThat(result).hasSize(1);
+        }
+
+        @Test
+        @DisplayName("Should filter out recalls with null customer")
+        void getRecallRequestsForCustomer_NullCustomer_FiltersOut() {
+            // Arrange
+            Vehicle vehicleWithNullCustomer = new Vehicle();
+            vehicleWithNullCustomer.setCustomer(null); // Null customer
+
+            InstalledPart partWithNullCustomer = new InstalledPart();
+            partWithNullCustomer.setInstalledPartId(2L);
+            partWithNullCustomer.setVehicle(vehicleWithNullCustomer);
+
+            RecallRequest recallWithNullCustomer = new RecallRequest();
+            recallWithNullCustomer.setRecallRequestId(2L);
+            recallWithNullCustomer.setInstalledPart(partWithNullCustomer);
+
+            List<RecallRequest> recalls = new ArrayList<>();
+            recalls.add(recallRequest);
+            recalls.add(recallWithNullCustomer);
+
+            when(recallRequestRepository.findAll()).thenReturn(recalls);
+
+            // Act
+            List<RecallRequestResponseDTO> result = recallRequestService.getRecallRequestsForCustomer(customer.getCustomerId());
+
+            // Assert
+            assertThat(result).hasSize(1);
+        }
     }
 
     @Nested
@@ -265,6 +355,31 @@ class RecallRequestServiceImplTest {
             IllegalStateException exception = assertThrows(IllegalStateException.class,
                 () -> recallRequestService.approveRecallRequest(1L, "Note", authHeader));
             assertThat(exception.getMessage()).contains("Can only approve recall requests with status PENDING_ADMIN_APPROVAL");
+        }
+
+        @Test
+        @DisplayName("Should throw exception when user not found")
+        void approveRecallRequest_UserNotFound_ThrowsException() {
+            // Arrange
+            when(jwtService.extractUsername("valid-token")).thenReturn("unknown");
+            when(userRepository.findByUsername("unknown")).thenReturn(Optional.empty());
+
+            // Act & Assert
+            assertThrows(ResourceNotFoundException.class,
+                () -> recallRequestService.approveRecallRequest(1L, "Note", authHeader));
+        }
+
+        @Test
+        @DisplayName("Should throw exception when recall not found")
+        void approveRecallRequest_RecallNotFound_ThrowsException() {
+            // Arrange
+            when(jwtService.extractUsername("valid-token")).thenReturn("admin");
+            when(userRepository.findByUsername("admin")).thenReturn(Optional.of(adminUser));
+            when(recallRequestRepository.findById(999L)).thenReturn(Optional.empty());
+
+            // Act & Assert
+            assertThrows(ResourceNotFoundException.class,
+                () -> recallRequestService.approveRecallRequest(999L, "Note", authHeader));
         }
     }
 
@@ -314,6 +429,31 @@ class RecallRequestServiceImplTest {
                 () -> recallRequestService.rejectRecallRequest(1L, "Note", authHeader));
             assertThat(exception.getMessage()).contains("Can only reject recall requests with status PENDING_ADMIN_APPROVAL");
         }
+
+        @Test
+        @DisplayName("Should throw exception when user not found")
+        void rejectRecallRequest_UserNotFound_ThrowsException() {
+            // Arrange
+            when(jwtService.extractUsername("valid-token")).thenReturn("unknown");
+            when(userRepository.findByUsername("unknown")).thenReturn(Optional.empty());
+
+            // Act & Assert
+            assertThrows(ResourceNotFoundException.class,
+                () -> recallRequestService.rejectRecallRequest(1L, "Note", authHeader));
+        }
+
+        @Test
+        @DisplayName("Should throw exception when recall not found")
+        void rejectRecallRequest_RecallNotFound_ThrowsException() {
+            // Arrange
+            when(jwtService.extractUsername("valid-token")).thenReturn("admin");
+            when(userRepository.findByUsername("admin")).thenReturn(Optional.of(adminUser));
+            when(recallRequestRepository.findById(999L)).thenReturn(Optional.empty());
+
+            // Act & Assert
+            assertThrows(ResourceNotFoundException.class,
+                () -> recallRequestService.rejectRecallRequest(999L, "Note", authHeader));
+        }
     }
 
     @Nested
@@ -352,6 +492,98 @@ class RecallRequestServiceImplTest {
             IllegalStateException exception = assertThrows(IllegalStateException.class,
                 () -> recallRequestService.getMyRecallRequests(authHeader));
             assertThat(exception.getMessage()).isEqualTo("User is not a customer");
+        }
+
+        @Test
+        @DisplayName("Should throw exception when user not found")
+        void getMyRecallRequests_UserNotFound_ThrowsException() {
+            // Arrange
+            when(jwtService.extractUsername("valid-token")).thenReturn("unknown");
+            when(userRepository.findByUsername("unknown")).thenReturn(Optional.empty());
+
+            // Act & Assert
+            assertThrows(ResourceNotFoundException.class,
+                () -> recallRequestService.getMyRecallRequests(authHeader));
+        }
+
+        @Test
+        @DisplayName("Should filter out recalls with null installedPart")
+        void getMyRecallRequests_NullInstalledPart_FiltersOut() {
+            // Arrange
+            RecallRequest recallWithNullPart = new RecallRequest();
+            recallWithNullPart.setRecallRequestId(2L);
+            recallWithNullPart.setInstalledPart(null);
+
+            List<RecallRequest> recalls = new ArrayList<>();
+            recalls.add(recallRequest);
+            recalls.add(recallWithNullPart);
+
+            when(jwtService.extractUsername("valid-token")).thenReturn("customer");
+            when(userRepository.findByUsername("customer")).thenReturn(Optional.of(customerUser));
+            when(recallRequestRepository.findAll()).thenReturn(recalls);
+
+            // Act
+            List<RecallRequestResponseDTO> result = recallRequestService.getMyRecallRequests(authHeader);
+
+            // Assert
+            assertThat(result).hasSize(1);
+        }
+
+        @Test
+        @DisplayName("Should filter out recalls with null vehicle")
+        void getMyRecallRequests_NullVehicle_FiltersOut() {
+            // Arrange
+            InstalledPart partWithNullVehicle = new InstalledPart();
+            partWithNullVehicle.setInstalledPartId(2L);
+            partWithNullVehicle.setVehicle(null);
+
+            RecallRequest recallWithNullVehicle = new RecallRequest();
+            recallWithNullVehicle.setRecallRequestId(2L);
+            recallWithNullVehicle.setInstalledPart(partWithNullVehicle);
+
+            List<RecallRequest> recalls = new ArrayList<>();
+            recalls.add(recallRequest);
+            recalls.add(recallWithNullVehicle);
+
+            when(jwtService.extractUsername("valid-token")).thenReturn("customer");
+            when(userRepository.findByUsername("customer")).thenReturn(Optional.of(customerUser));
+            when(recallRequestRepository.findAll()).thenReturn(recalls);
+
+            // Act
+            List<RecallRequestResponseDTO> result = recallRequestService.getMyRecallRequests(authHeader);
+
+            // Assert
+            assertThat(result).hasSize(1);
+        }
+
+        @Test
+        @DisplayName("Should filter out recalls with null customer")
+        void getMyRecallRequests_NullCustomer_FiltersOut() {
+            // Arrange
+            Vehicle vehicleWithNullCustomer = new Vehicle();
+            vehicleWithNullCustomer.setCustomer(null);
+
+            InstalledPart partWithNullCustomer = new InstalledPart();
+            partWithNullCustomer.setInstalledPartId(2L);
+            partWithNullCustomer.setVehicle(vehicleWithNullCustomer);
+
+            RecallRequest recallWithNullCustomer = new RecallRequest();
+            recallWithNullCustomer.setRecallRequestId(2L);
+            recallWithNullCustomer.setInstalledPart(partWithNullCustomer);
+
+            List<RecallRequest> recalls = new ArrayList<>();
+            recalls.add(recallRequest);
+            recalls.add(recallWithNullCustomer);
+
+            when(jwtService.extractUsername("valid-token")).thenReturn("customer");
+            when(userRepository.findByUsername("customer")).thenReturn(Optional.of(customerUser));
+            when(recallRequestRepository.findAll()).thenReturn(recalls);
+
+            // Act
+            List<RecallRequestResponseDTO> result = recallRequestService.getMyRecallRequests(authHeader);
+
+            // Assert
+            assertThat(result).hasSize(1);
         }
     }
 
@@ -491,6 +723,88 @@ class RecallRequestServiceImplTest {
             // Act & Assert
             IllegalStateException exception = assertThrows(IllegalStateException.class, () -> recallRequestService.customerConfirmRecall(1L, responseDTO, authHeader));
             assertThat(exception.getMessage()).contains("Can only confirm recall requests with status WAITING_CUSTOMER_CONFIRM");
+        }
+
+        @Test
+        @DisplayName("Should throw exception when user not found")
+        void customerConfirmRecall_UserNotFound_ThrowsException() {
+            // Arrange
+            RecallCustomerResponseDTO responseDTO = new RecallCustomerResponseDTO();
+            responseDTO.setAccepted(true);
+
+            when(jwtService.extractUsername("valid-token")).thenReturn("unknown");
+            when(userRepository.findByUsername("unknown")).thenReturn(Optional.empty());
+
+            // Act & Assert
+            assertThrows(ResourceNotFoundException.class,
+                () -> recallRequestService.customerConfirmRecall(1L, responseDTO, authHeader));
+        }
+
+        @Test
+        @DisplayName("Should throw exception when recall not found")
+        void customerConfirmRecall_RecallNotFound_ThrowsException() {
+            // Arrange
+            RecallCustomerResponseDTO responseDTO = new RecallCustomerResponseDTO();
+            responseDTO.setAccepted(true);
+
+            when(jwtService.extractUsername("valid-token")).thenReturn("customer");
+            when(userRepository.findByUsername("customer")).thenReturn(Optional.of(customerUser));
+            when(recallRequestRepository.findById(999L)).thenReturn(Optional.empty());
+
+            // Act & Assert
+            assertThrows(ResourceNotFoundException.class,
+                () -> recallRequestService.customerConfirmRecall(999L, responseDTO, authHeader));
+        }
+
+        @Test
+        @DisplayName("Should throw exception when customer does not own the vehicle")
+        void customerConfirmRecall_NotOwner_ThrowsException() {
+            // Arrange
+            User otherCustomerUser = new User();
+            otherCustomerUser.setUserId(99L);
+            otherCustomerUser.setUsername("othercustomer");
+
+            RecallCustomerResponseDTO responseDTO = new RecallCustomerResponseDTO();
+            responseDTO.setAccepted(true);
+
+            when(jwtService.extractUsername("valid-token")).thenReturn("othercustomer");
+            when(userRepository.findByUsername("othercustomer")).thenReturn(Optional.of(otherCustomerUser));
+            when(recallRequestRepository.findById(1L)).thenReturn(Optional.of(recallRequest));
+
+            // Act & Assert
+            AccessDeniedException exception = assertThrows(AccessDeniedException.class,
+                () -> recallRequestService.customerConfirmRecall(1L, responseDTO, authHeader));
+            assertThat(exception.getMessage()).contains("You can only confirm recall requests for your own vehicles");
+        }
+    }
+
+    @Nested
+    @DisplayName("Delete Recall Request - Additional Tests")
+    class DeleteRecallRequestAdditional {
+
+        @Test
+        @DisplayName("Should throw exception when user not found")
+        void deleteRecallRequest_UserNotFound_ThrowsException() {
+            // Arrange
+            when(jwtService.extractUsername("valid-token")).thenReturn("unknown");
+            when(userRepository.findByUsername("unknown")).thenReturn(Optional.empty());
+
+            // Act & Assert
+            assertThrows(ResourceNotFoundException.class,
+                () -> recallRequestService.deleteRecallRequest(1L, authHeader));
+        }
+
+        @Test
+        @DisplayName("Should throw exception when recall not found")
+        void deleteRecallRequest_RecallNotFound_ThrowsException() {
+            // Arrange
+            when(jwtService.extractUsername("valid-token")).thenReturn("evmstaff");
+            when(userRepository.findByUsername("evmstaff")).thenReturn(Optional.of(evmUser));
+            when(recallRequestRepository.findById(999L)).thenReturn(Optional.empty());
+
+            // Act & Assert
+            assertThrows(ResourceNotFoundException.class,
+                () -> recallRequestService.deleteRecallRequest(999L, authHeader));
         }
     }
 }
