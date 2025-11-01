@@ -1,5 +1,5 @@
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "https://backend.bluecloudk.xyz";
+  import.meta.env.VITE_API_BASE_URL || "https://localhost:8080";
 
 // Public API Client - Không gửi token (cho trang chủ, public endpoints)
 export const publicApiClient = async (endpoint, options = {}) => {

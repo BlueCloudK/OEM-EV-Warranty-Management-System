@@ -2,7 +2,7 @@ import apiClient from "./apiClient";
 
 // URL cơ sở vẫn cần cho hàm login, vì nó không đi qua apiClient
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "https://backend.bluecloudk.xyz";
+  import.meta.env.VITE_API_BASE_URL || "https://localhost:8080";
 
 export const adminUsersApi = {
   // GET ALL USERS - Lấy danh sách tất cả users với pagination và filtering
