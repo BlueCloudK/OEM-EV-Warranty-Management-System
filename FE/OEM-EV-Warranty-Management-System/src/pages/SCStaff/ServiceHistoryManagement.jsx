@@ -58,7 +58,7 @@ const HistoryFormModal = ({ isOpen, onClose, onSubmit, history, vehicles, parts 
             <S.Label>Linh kiện *</S.Label>
             <S.Select name="partId" value={formData.partId || ''} onChange={handleInputChange} required>
               <option value="">Chọn linh kiện</option>
-              {parts.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              {parts.map(p => <option key={p.id} value={p.partId}>{p.partName}</option>)}
             </S.Select>
           </S.FormGroup>
           <S.FormGroup>
