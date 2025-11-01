@@ -27,7 +27,28 @@ export default function EVMLayout() {
       <S.Sidebar $isCollapsed={sidebarCollapsed}>
         <S.SidebarHeader $isCollapsed={sidebarCollapsed}>
           <S.SidebarToggleButton onClick={() => setSidebarCollapsed(!sidebarCollapsed)}><FaBars /></S.SidebarToggleButton>
-          {!sidebarCollapsed && <div><div style={{ fontSize: 16, fontWeight: 600 }}>EVM Staff</div><div style={{ fontSize: 12, color: "#94a3b8" }}>Portal</div></div>}
+          {!sidebarCollapsed && (
+            <div>
+              <div style={{ 
+                fontSize: 20, 
+                fontWeight: 800, 
+                letterSpacing: "-0.5px",
+                textShadow: "0 2px 12px rgba(0, 0, 0, 0.3)",
+                marginBottom: 2
+              }}>
+                EVM Staff
+              </div>
+              <div style={{ 
+                fontSize: 13, 
+                color: "rgba(255, 255, 255, 0.7)",
+                fontWeight: 500,
+                letterSpacing: "2px",
+                textTransform: "uppercase"
+              }}>
+                Portal
+              </div>
+            </div>
+          )}
         </S.SidebarHeader>
         <div style={{ flex: 1, padding: sidebarCollapsed ? 8 : 16 }}>
           {sidebarItems.map((item, index) => (

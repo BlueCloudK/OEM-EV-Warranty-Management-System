@@ -1,122 +1,243 @@
 import styled from 'styled-components';
 
-export const PageContainer = styled.div`
-  min-height: 100vh;
-  background: #f8fafc;
-  display: flex;
-  font-family: 'Inter', 'Segoe UI', sans-serif;
+export const DashboardContainer = styled.div`
+  padding: 0;
+  position: relative;
+  max-width: 1600px;
+  margin: 0 auto;
 `;
 
-export const Sidebar = styled.div`
-  width: ${({ $isCollapsed }) => ($isCollapsed ? '70px' : '260px')};
-  background: linear-gradient(180deg, #1e293b 0%, #334155 100%);
-  border-right: 1px solid #475569;
-  display: flex;
-  flex-direction: column;
-  transition: width 0.3s ease;
-  box-shadow: 2px 0 20px rgba(0, 0, 0, 0.15);
-`;
-
-export const SidebarHeader = styled.div`
-  padding: ${({ $isCollapsed }) => ($isCollapsed ? '16px' : '20px')};
-  border-bottom: 1px solid #475569;
+export const HeaderTitle = styled.h1`
+  font-size: 48px;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 48px;
   display: flex;
   align-items: center;
-  gap: 12px;
-`;
+  gap: 20px;
+  text-shadow: 
+    0 4px 20px rgba(0, 0, 0, 0.3),
+    0 0 40px rgba(255, 255, 255, 0.1);
+  letter-spacing: -0.5px;
+  position: relative;
+  padding-bottom: 24px;
 
-export const SidebarToggleButton = styled.button`
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 8px;
-  color: #e2e8f0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  &:hover {
-    background: rgba(255, 255, 255, 0.2);
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 120px;
+    height: 4px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.8) 0%, transparent 100%);
+    border-radius: 2px;
   }
-`;
 
-export const NavItem = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: ${({ $isCollapsed }) => ($isCollapsed ? '12px' : '12px 16px')};
-  margin-bottom: 4px;
-  border-radius: 8px;
-  background: ${({ $active }) => ($active ? 'rgba(59, 130, 246, 0.15)' : 'transparent')};
-  color: ${({ $active }) => ($active ? '#60a5fa' : '#cbd5e1')};
-  cursor: pointer;
-  transition: all 0.2s ease;
-  justify-content: ${({ $isCollapsed }) => ($isCollapsed ? 'center' : 'flex-start')};
-  border: 1px solid ${({ $active }) => ($active ? 'rgba(59, 130, 246, 0.3)' : 'transparent')};
-
-  &:hover {
-    background: ${({ $active }) => ($active ? 'rgba(59, 130, 246, 0.15)' : 'rgba(255, 255, 255, 0.1)')};
-    color: ${({ $active }) => ($active ? '#60a5fa' : '#f1f5f9')};
-    border: 1px solid ${({ $active }) => ($active ? 'rgba(59, 130, 246, 0.3)' : 'rgba(255, 255, 255, 0.2)')};
+  svg {
+    font-size: 40px;
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
+    animation: pulse 2s ease-in-out infinite;
   }
-`;
 
-export const MainContent = styled.div`
-  flex: 1;
-  padding: 24px;
-  overflow: auto;
+  @keyframes pulse {
+    0%, 100% {
+      transform: scale(1);
+      opacity: 1;
+  }
+    50% {
+      transform: scale(1.05);
+      opacity: 0.9;
+    }
+  }
 `;
 
 export const DashboardHeader = styled.div`
-  display: flex;
-  gap: 24px;
-  align-items: center;
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  padding: 28px;
-  border-radius: 16px;
-  box-shadow: 0 10px 40px rgba(16, 24, 40, 0.1);
-  border: 1px solid #e2e8f0;
-  margin-bottom: 28px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 24px;
+  padding: 32px;
+  margin-bottom: 40px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
   position: relative;
   overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+    opacity: 0.3;
+    z-index: 0;
+  }
+
+  > * {
+    position: relative;
+    z-index: 1;
+  }
 `;
 
 export const ManagementCardGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 32px;
+  margin-bottom: 40px;
+  padding-bottom: 40px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
   gap: 24px;
-  margin-bottom: 32px;
-`;
-
-export const Card = styled.div`
-  background: ${({ $bgGradient }) => $bgGradient || '#fff'};
-  border-radius: 16px;
-  border: 2px solid transparent;
-  padding: 24px;
-  box-shadow: 0 8px 24px rgba(16, 24, 40, 0.08);
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
-
-  &:hover {
-    transform: translateY(-8px) scale(1.02);
-    border-color: ${({ $color }) => $color || '#3b82f6'};
-    box-shadow: 0 20px 40px ${({ $color }) => $color || '#000'}20;
   }
 `;
 
+export const Card = styled.div`
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 24px;
+  padding: 32px;
+  cursor: ${({ onClick }) => (onClick ? 'pointer' : 'default')};
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.1);
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: ${({ $bgGradient }) => $bgGradient || 'linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)'};
+    opacity: 0.3;
+    transition: opacity 0.4s ease;
+    z-index: 0;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+    transform: rotate(45deg);
+    transition: transform 0.6s ease;
+    z-index: 0;
+  }
+
+  > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  ${({ onClick }) => onClick && `
+    &:hover {
+      transform: translateY(-12px) scale(1.02);
+      box-shadow: 
+        0 24px 48px rgba(0, 0, 0, 0.2),
+        0 0 0 1px rgba(255, 255, 255, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+      border-color: rgba(255, 255, 255, 0.4);
+      background: rgba(255, 255, 255, 0.15);
+
+      &::before {
+        opacity: 0.5;
+      }
+
+      &::after {
+        transform: rotate(45deg) translate(20%, 20%);
+  }
+    }
+
+    &:active {
+      transform: translateY(-8px) scale(1);
+    }
+  `}
+`;
+
 export const StatsContainer = styled.div`
-  background: #fff;
-  padding: 24px;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 6px 24px rgba(16, 24, 40, 0.04);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 24px;
+  padding: 32px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+    opacity: 0.3;
+    z-index: 0;
+  }
+
+  > * {
+    position: relative;
+    z-index: 1;
+  }
 `;
 
 export const StatsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+`;
+
+export const LoadingContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  color: #ffffff;
+
+  .spinner {
+    font-size: 48px;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
+  }
+
+  p {
+    font-size: 18px;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+`;
+
+export const ErrorMessage = styled.div`
+  background: rgba(239, 68, 68, 0.2);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 16px;
+  padding: 20px;
+  color: #ffffff;
+  margin-bottom: 24px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
 `;

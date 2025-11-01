@@ -1,48 +1,211 @@
 import styled from 'styled-components';
 
 export const DashboardContainer = styled.div`
-  padding: 24px;
+  padding: 0;
+  position: relative;
+  max-width: 1600px;
+  margin: 0 auto;
 `;
 
 export const HeaderTitle = styled.h1`
-  font-size: 28px;
-  color: #1e293b;
-  margin-bottom: 24px;
+  font-size: 48px;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 48px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 20px;
+  text-shadow: 
+    0 4px 20px rgba(0, 0, 0, 0.3),
+    0 0 40px rgba(255, 255, 255, 0.1);
+  letter-spacing: -0.5px;
+  position: relative;
+  padding-bottom: 24px;
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 120px;
+    height: 4px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.8) 0%, transparent 100%);
+    border-radius: 2px;
+  }
+
+  svg {
+    font-size: 40px;
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.05);
+      opacity: 0.9;
+    }
+  }
 `;
 
 export const StatsContainer = styled.div`
-  background: white;
-  padding: 24px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  margin-bottom: 32px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 24px;
+  padding: 32px;
+  margin-bottom: 40px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+    opacity: 0.3;
+    z-index: 0;
+  }
+
+  > * {
+    position: relative;
+    z-index: 1;
+  }
 `;
 
 export const StatsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
 `;
 
 export const ManagementCardGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 32px;
+  padding-bottom: 40px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
   gap: 24px;
+  }
 `;
 
 export const Card = styled.div`
-  background: ${({ $bgGradient }) => $bgGradient || '#fff'};
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 24px;
+  padding: 32px;
+  cursor: ${({ onClick }) => (onClick ? 'pointer' : 'default')};
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.1);
 
-  &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: ${({ $bgGradient }) => $bgGradient || 'linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)'};
+    opacity: 0.3;
+    transition: opacity 0.4s ease;
+    z-index: 0;
   }
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+    transform: rotate(45deg);
+    transition: transform 0.6s ease;
+    z-index: 0;
+  }
+
+  > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  ${({ onClick }) => onClick && `
+  &:hover {
+      transform: translateY(-12px) scale(1.02);
+      box-shadow: 
+        0 24px 48px rgba(0, 0, 0, 0.2),
+        0 0 0 1px rgba(255, 255, 255, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+      border-color: rgba(255, 255, 255, 0.4);
+      background: rgba(255, 255, 255, 0.15);
+
+      &::before {
+        opacity: 0.5;
+      }
+
+      &::after {
+        transform: rotate(45deg) translate(20%, 20%);
+      }
+    }
+
+    &:active {
+      transform: translateY(-8px) scale(1);
+    }
+  `}
+`;
+
+export const LoadingContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  color: #ffffff;
+
+  .spinner {
+    font-size: 48px;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
+  }
+
+  p {
+    font-size: 18px;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+`;
+
+export const ErrorMessage = styled.div`
+  background: rgba(239, 68, 68, 0.2);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 16px;
+  padding: 20px;
+  color: #ffffff;
+  margin-bottom: 24px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
 `;

@@ -48,31 +48,48 @@ export const useEVMDashboard = () => {
         apiClient('/api/recall-requests?page=0&size=100'),
       ]);
 
-      // Extract totals
-      const totalVehicles = vehiclesRes.status === 'fulfilled' ? (vehiclesRes.value?.totalElements || 0) : 0;
-      const totalParts = partsRes.status === 'fulfilled' ? (partsRes.value?.totalElements || 0) : 0;
+      // Extract totals - handle both paginated and non-paginated responses
+      const totalVehicles = vehiclesRes.status === 'fulfilled' 
+        ? (vehiclesRes.value?.totalElements || (Array.isArray(vehiclesRes.value) ? vehiclesRes.value.length : 0))
+        : 0;
+      
+      const totalParts = partsRes.status === 'fulfilled' 
+        ? (partsRes.value?.totalElements || (Array.isArray(partsRes.value) ? partsRes.value.length : 0))
+        : 0;
 
       // Process claims
       let pendingClaims = 0;
       let approvedClaims = 0;
+      let claimsArray = [];
       if (claimsRes.status === 'fulfilled') {
-        const claims = claimsRes.value?.content || [];
-        pendingClaims = claims.filter(c => c.status === 'APPROVED_BY_SC').length;
-        approvedClaims = claims.filter(c => c.status === 'APPROVED_BY_EVM' || c.status === 'COMPLETED').length;
+        const claimsData = Array.isArray(claimsRes.value)
+          ? claimsRes.value
+          : (claimsRes.value?.content || []);
+        claimsArray = Array.isArray(claimsData) ? claimsData : [];
+        pendingClaims = claimsArray.filter(c => c.status === 'APPROVED_BY_SC').length;
+        approvedClaims = claimsArray.filter(c => c.status === 'APPROVED_BY_EVM' || c.status === 'COMPLETED').length;
       }
 
       // Process part requests
       let pendingPartRequests = 0;
+      let partRequestsArray = [];
       if (partRequestsRes.status === 'fulfilled') {
-        const partRequests = partRequestsRes.value?.content || [];
-        pendingPartRequests = partRequests.filter(pr => pr.status === 'PENDING').length;
+        const partRequestsData = Array.isArray(partRequestsRes.value)
+          ? partRequestsRes.value
+          : (partRequestsRes.value?.content || []);
+        partRequestsArray = Array.isArray(partRequestsData) ? partRequestsData : [];
+        pendingPartRequests = partRequestsArray.filter(pr => pr.status === 'PENDING').length;
       }
 
       // Process recalls
       let pendingRecalls = 0;
+      let recallsArray = [];
       if (recallsRes.status === 'fulfilled') {
-        const recalls = recallsRes.value?.content || [];
-        pendingRecalls = recalls.filter(r => r.status === 'PENDING_ADMIN_APPROVAL').length;
+        const recallsData = Array.isArray(recallsRes.value)
+          ? recallsRes.value
+          : (recallsRes.value?.content || []);
+        recallsArray = Array.isArray(recallsData) ? recallsData : [];
+        pendingRecalls = recallsArray.filter(r => r.status === 'PENDING_ADMIN_APPROVAL').length;
       }
 
       setStats({
@@ -88,9 +105,8 @@ export const useEVMDashboard = () => {
       const activities = [];
 
       // Add recent claims
-      if (claimsRes.status === 'fulfilled') {
-        const claims = claimsRes.value?.content || [];
-        claims.slice(0, 3).forEach(claim => {
+      claimsArray.slice(0, 3).forEach((claim, index) => {
+        const claimId = claim.claimId || claim.id || `unknown-${index}`;
           const statusText = {
             'APPROVED_BY_SC': 'chờ EVM duyệt',
             'APPROVED_BY_EVM': 'đã được duyệt',
@@ -99,27 +115,24 @@ export const useEVMDashboard = () => {
 
           if (statusText) {
             activities.push({
-              id: `claim-${claim.claimId}`,
+            id: `claim-${claimId}-${index}`,
               icon: 'FaClipboardList',
-              action: `Yêu cầu bảo hành #${claim.claimId} ${statusText}`,
+            action: `Yêu cầu bảo hành #${claimId} ${statusText}`,
               time: formatTimeAgo(claim.createdAt || claim.submittedDate)
             });
           }
         });
-      }
 
       // Add recent part requests
-      if (partRequestsRes.status === 'fulfilled') {
-        const partRequests = partRequestsRes.value?.content || [];
-        partRequests.slice(0, 2).forEach(pr => {
+      partRequestsArray.slice(0, 2).forEach((pr, index) => {
+        const prId = pr.partRequestId || pr.id || `unknown-${index}`;
           activities.push({
-            id: `part-req-${pr.partRequestId}`,
+          id: `part-req-${prId}-${index}`,
             icon: 'FaBoxes',
             action: `Yêu cầu phụ tùng: ${pr.part?.partName || 'N/A'}`,
-            time: formatTimeAgo(pr.requestedDate)
-          });
+          time: formatTimeAgo(pr.requestedDate || pr.createdAt)
         });
-      }
+      });
 
       setRecentActivity(activities.slice(0, 5));
 

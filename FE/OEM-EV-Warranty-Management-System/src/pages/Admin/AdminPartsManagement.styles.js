@@ -124,38 +124,121 @@ export const ModalOverlay = styled.div`
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 9999;
+  overflow-y: auto;
+  padding: 20px;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 10px;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.4);
+    }
+  }
 `;
 
 export const ModalContent = styled.div`
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
-  width: 500px;
-  max-width: 90vw;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 24px;
+  padding: 32px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  position: relative;
+  margin: auto;
+
+  h2 {
+    margin: 0 0 24px 0;
+    font-size: 24px;
+    font-weight: 800;
+    color: #1e293b;
+    text-align: center;
+    padding-bottom: 16px;
+    border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+  }
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.3);
+    }
+  }
 `;
 
 export const FormGroup = styled.div`
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 `;
 
 export const Label = styled.label`
-  display: block;
-  margin-bottom: 6px;
-  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-weight: 600;
   color: #374151;
+  font-size: 14px;
+
+  svg {
+    font-size: 16px;
+    color: #6366f1;
+  }
 `;
 
 export const Input = styled.input`
   width: 100%;
-  padding: 10px 12px;
-  border: 1px solid ${({ $hasError }) => ($hasError ? '#ef4444' : '#d1d5db')};
-  border-radius: 6px;
+  padding: 12px 16px;
+  border: 1px solid ${({ $hasError }) => ($hasError ? '#ef4444' : 'rgba(0, 0, 0, 0.1)')};
+  border-radius: 12px;
   box-sizing: border-box;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+
+  &:focus {
+    outline: none;
+    border-color: ${({ $hasError }) => ($hasError ? '#ef4444' : '#6366f1')};
+    box-shadow: 0 0 0 3px ${({ $hasError }) => ($hasError ? 'rgba(239, 68, 68, 0.1)' : 'rgba(99, 102, 241, 0.1)')};
+    background: rgba(255, 255, 255, 1);
+  }
+
+  &:hover {
+    border-color: ${({ $hasError }) => ($hasError ? '#ef4444' : 'rgba(0, 0, 0, 0.2)')};
+  }
 `;
 
 export const ErrorText = styled.p`

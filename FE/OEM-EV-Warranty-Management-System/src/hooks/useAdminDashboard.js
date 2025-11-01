@@ -23,49 +23,157 @@ const formatTimeAgo = (dateString) => {
 export const useAdminDashboard = () => {
   const [stats, setStats] = useState({ totalCustomers: 0, totalVehicles: 0, totalParts: 0, totalClaims: 0, pendingClaims: 0, completedClaims: 0 });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [recentActivity, setRecentActivity] = useState([]);
 
   const fetchAllData = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
       const [customersRes, vehiclesRes, partsRes, claimsRes, recentCustomers, recentClaims, recentVehicles] = await Promise.allSettled([
         dataApi.getAllCustomers({ size: 1 }),
         dataApi.getAllVehicles({ size: 1 }),
         dataApi.getAllParts({ size: 1 }),
         dataApi.getAllWarrantyClaims({ size: 1000 }),
-        dataApi.getAllCustomers({ sort: "createdAt,desc", size: 2 }),
-        dataApi.getAllWarrantyClaims({ sort: "createdAt,desc", size: 2 }),
+        dataApi.getAllCustomers({ sort: "createdAt,desc", size: 3 }),
+        dataApi.getAllWarrantyClaims({ sort: "createdAt,desc", size: 3 }),
         dataApi.getAllVehicles({ sort: "createdAt,desc", size: 2 }),
       ]);
 
-      // Process stats
+      // Process stats - handle both paginated and non-paginated responses
       const newStats = {};
-      newStats.totalCustomers = customersRes.status === 'fulfilled' ? customersRes.value.totalElements || 0 : 0;
-      newStats.totalVehicles = vehiclesRes.status === 'fulfilled' ? vehiclesRes.value.totalElements || 0 : 0;
-      newStats.totalParts = partsRes.status === 'fulfilled' ? partsRes.value.totalElements || 0 : 0;
-      if (claimsRes.status === 'fulfilled' && claimsRes.value.content) {
-        const claims = claimsRes.value.content;
-        newStats.totalClaims = claimsRes.value.totalElements || 0;
-        newStats.pendingClaims = claims.filter(c => ['SUBMITTED', 'MANAGER_REVIEW', 'PROCESSING'].includes(c.status)).length;
-        newStats.completedClaims = claims.filter(c => c.status === 'COMPLETED').length;
+      
+      // Extract totalCustomers
+      if (customersRes.status === 'fulfilled') {
+        const customersData = customersRes.value;
+        newStats.totalCustomers = customersData?.totalElements || 
+          (Array.isArray(customersData) ? customersData.length : 0);
+      } else {
+        newStats.totalCustomers = 0;
       }
+
+      // Extract totalVehicles
+      if (vehiclesRes.status === 'fulfilled') {
+        const vehiclesData = vehiclesRes.value;
+        newStats.totalVehicles = vehiclesData?.totalElements || 
+          (Array.isArray(vehiclesData) ? vehiclesData.length : 0);
+      } else {
+        newStats.totalVehicles = 0;
+      }
+
+      // Extract totalParts
+      if (partsRes.status === 'fulfilled') {
+        const partsData = partsRes.value;
+        newStats.totalParts = partsData?.totalElements || 
+          (Array.isArray(partsData) ? partsData.length : 0);
+      } else {
+        newStats.totalParts = 0;
+      }
+
+      // Process claims
+      let claimsArray = [];
+      if (claimsRes.status === 'fulfilled') {
+        const claimsData = claimsRes.value;
+        claimsArray = Array.isArray(claimsData)
+          ? claimsData
+          : (claimsData?.content || []);
+        newStats.totalClaims = claimsData?.totalElements || claimsArray.length;
+        
+        // Filter pending and completed claims
+        newStats.pendingClaims = claimsArray.filter(c => 
+          ['SUBMITTED', 'MANAGER_REVIEW', 'PROCESSING', 'APPROVED_BY_SC', 'APPROVED_BY_EVM'].includes(c.status)
+        ).length;
+        
+        newStats.completedClaims = claimsArray.filter(c => 
+          c.status === 'COMPLETED'
+        ).length;
+      } else {
+        newStats.totalClaims = 0;
+        newStats.pendingClaims = 0;
+        newStats.completedClaims = 0;
+      }
+
       setStats(newStats);
 
       // Process recent activities
       const activities = [];
-      if (recentCustomers.status === 'fulfilled' && recentCustomers.value.content) {
-        recentCustomers.value.content.forEach(c => activities.push({ id: `cust-${c.customerId}`, action: `Khách hàng mới: ${c.name}`, time: formatTimeAgo(c.createdAt), icon: 'FaUsers' }));
+      
+      // Add recent customers
+      if (recentCustomers.status === 'fulfilled') {
+        const customersData = recentCustomers.value;
+        const customersArray = Array.isArray(customersData)
+          ? customersData
+          : (customersData?.content || []);
+        
+        customersArray.forEach((c, index) => {
+          const customerId = c.customerId || c.id || `unknown-${index}`;
+          activities.push({ 
+            id: `cust-${customerId}-${index}`, 
+            action: `Khách hàng mới: ${c.name || c.fullName || 'N/A'}`, 
+            time: formatTimeAgo(c.createdAt), 
+            icon: 'FaUsers',
+            timestamp: new Date(c.createdAt || Date.now()).getTime()
+          });
+        });
       }
-      if (recentClaims.status === 'fulfilled' && recentClaims.value.content) {
-        recentClaims.value.content.forEach(c => activities.push({ id: `claim-${c.warrantyClaimId}`, action: `Yêu cầu bảo hành: ${c.description}`, time: formatTimeAgo(c.claimDate), icon: 'FaClipboardList' }));
+
+      // Add recent claims
+      if (recentClaims.status === 'fulfilled') {
+        const claimsData = recentClaims.value;
+        const claimsArray = Array.isArray(claimsData)
+          ? claimsData
+          : (claimsData?.content || []);
+        
+        claimsArray.forEach((c, index) => {
+          const claimId = c.warrantyClaimId || c.claimId || c.id || `unknown-${index}`;
+          activities.push({ 
+            id: `claim-${claimId}-${index}`, 
+            action: `Yêu cầu bảo hành: ${c.description || c.issueDescription || 'N/A'}`, 
+            time: formatTimeAgo(c.claimDate || c.createdAt || c.submittedDate), 
+            icon: 'FaClipboardList',
+            timestamp: new Date(c.claimDate || c.createdAt || c.submittedDate || Date.now()).getTime()
+          });
+        });
       }
-      if (recentVehicles.status === 'fulfilled' && recentVehicles.value.content) {
-        recentVehicles.value.content.forEach(v => activities.push({ id: `veh-${v.vehicleId}`, action: `Xe mới: ${v.vehicleName}`, time: formatTimeAgo(v.createdAt), icon: 'FaCar' }));
+
+      // Add recent vehicles
+      if (recentVehicles.status === 'fulfilled') {
+        const vehiclesData = recentVehicles.value;
+        const vehiclesArray = Array.isArray(vehiclesData)
+          ? vehiclesData
+          : (vehiclesData?.content || []);
+        
+        vehiclesArray.forEach((v, index) => {
+          const vehicleId = v.vehicleId || v.id || `unknown-${index}`;
+          activities.push({ 
+            id: `veh-${vehicleId}-${index}`, 
+            action: `Xe mới: ${v.vehicleName || v.model || v.vin || 'N/A'}`, 
+            time: formatTimeAgo(v.createdAt), 
+            icon: 'FaCar',
+            timestamp: new Date(v.createdAt || Date.now()).getTime()
+          });
+        });
       }
-      setRecentActivity(activities.sort((a, b) => new Date(b.time) - new Date(a.time)).slice(0, 4));
+
+      // Sort by timestamp (newest first) and take top 5
+      const sortedActivities = activities
+        .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
+        .slice(0, 5);
+      
+      setRecentActivity(sortedActivities);
 
     } catch (err) {
       console.error("❌ Dashboard data fetch error:", err);
+      setError(err.message || 'Không thể tải dữ liệu dashboard');
+      setStats({
+        totalCustomers: 0,
+        totalVehicles: 0,
+        totalParts: 0,
+        totalClaims: 0,
+        pendingClaims: 0,
+        completedClaims: 0
+      });
+      setRecentActivity([]);
     } finally {
       setLoading(false);
     }
@@ -75,5 +183,5 @@ export const useAdminDashboard = () => {
     fetchAllData();
   }, [fetchAllData]);
 
-  return { stats, loading, recentActivity };
+  return { stats, loading, error, recentActivity, refresh: fetchAllData };
 };

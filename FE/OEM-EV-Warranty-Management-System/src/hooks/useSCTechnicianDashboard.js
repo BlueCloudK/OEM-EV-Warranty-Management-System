@@ -43,23 +43,54 @@ export const useSCTechnicianDashboard = () => {
         apiClient('/api/installed-parts?page=0&size=1'),
       ]);
 
-      // Process claims
+      // Process claims - handle both paginated and non-paginated responses
       let assignedClaims = 0;
       let inProgressClaims = 0;
       let completedClaims = 0;
 
       if (claimsRes.status === 'fulfilled') {
-        const claims = claimsRes.value?.content || [];
-        // Assuming technician sees claims that are approved
+        let claims = [];
+        const response = claimsRes.value;
+        
+        // Handle paginated response
+        if (response && Array.isArray(response.content)) {
+          claims = response.content;
+        } else if (response && Array.isArray(response)) {
+          claims = response;
+        } else if (response && response.data && Array.isArray(response.data)) {
+          claims = response.data;
+        }
+
+        // Filter claims for technician (approved by EVM or in progress)
         assignedClaims = claims.filter(c =>
-          c.status === 'APPROVED_BY_EVM' || c.status === 'IN_PROGRESS'
+          c.status === 'APPROVED_BY_EVM' || 
+          c.status === 'IN_PROGRESS' ||
+          c.status === 'APPROVED_BY_SC'
         ).length;
-        inProgressClaims = claims.filter(c => c.status === 'IN_PROGRESS').length;
-        completedClaims = claims.filter(c => c.status === 'COMPLETED').length;
+        
+        inProgressClaims = claims.filter(c => 
+          c.status === 'IN_PROGRESS'
+        ).length;
+        
+        completedClaims = claims.filter(c => 
+          c.status === 'COMPLETED'
+        ).length;
       }
 
-      // Get installed parts count
-      const installedParts = partsRes.status === 'fulfilled' ? (partsRes.value?.totalElements || 0) : 0;
+      // Get installed parts count - handle both paginated and non-paginated
+      let installedParts = 0;
+      if (partsRes.status === 'fulfilled') {
+        const response = partsRes.value;
+        if (response && typeof response.totalElements === 'number') {
+          installedParts = response.totalElements;
+        } else if (response && Array.isArray(response)) {
+          installedParts = response.length;
+        } else if (response && Array.isArray(response.content)) {
+          installedParts = response.totalElements || response.content.length;
+        } else if (response && response.data && Array.isArray(response.data)) {
+          installedParts = response.data.length;
+        }
+      }
 
       setStats({
         assignedClaims,
@@ -72,20 +103,35 @@ export const useSCTechnicianDashboard = () => {
       const activities = [];
 
       if (claimsRes.status === 'fulfilled') {
-        const claims = claimsRes.value?.content || [];
-        claims.slice(0, 5).forEach(claim => {
+        let claims = [];
+        const response = claimsRes.value;
+        
+        // Handle paginated response
+        if (response && Array.isArray(response.content)) {
+          claims = response.content;
+        } else if (response && Array.isArray(response)) {
+          claims = response;
+        } else if (response && response.data && Array.isArray(response.data)) {
+          claims = response.data;
+        }
+
+        claims.slice(0, 5).forEach((claim, index) => {
           const statusText = {
             'APPROVED_BY_EVM': 'được giao cho bạn',
+            'APPROVED_BY_SC': 'được giao cho bạn',
             'IN_PROGRESS': 'đang xử lý',
             'COMPLETED': 'đã hoàn thành'
           }[claim.status];
 
           if (statusText) {
+            const claimId = claim.claimId || claim.id || `claim-${index}`;
+            const timestamp = claim.createdAt || claim.submittedDate || claim.updatedAt || new Date().toISOString();
+            
             activities.push({
-              id: `claim-${claim.claimId}`,
+              id: `claim-${claimId}-${index}`,
               icon: 'FaWrench',
-              action: `Công việc #${claim.claimId} ${statusText}`,
-              time: formatTimeAgo(claim.createdAt || claim.submittedDate)
+              action: `Công việc #${claimId} ${statusText}`,
+              time: formatTimeAgo(timestamp)
             });
           }
         });

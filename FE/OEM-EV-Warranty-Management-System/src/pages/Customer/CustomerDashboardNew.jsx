@@ -1,8 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { useCustomerDashboard } from '../../hooks/useCustomerDashboard';
 import * as S from './CustomerDashboardNew.styles';
 import {
-  FaTachometerAlt, FaCar, FaHistory, FaClipboardList, FaUser, FaCommentDots, FaArrowRight
+  FaTachometerAlt, FaCar, FaHistory, FaClipboardList, FaUser, FaCommentDots, FaArrowRight,
+  FaShieldAlt, FaCheckCircle, FaExclamationTriangle, FaClock, FaSpinner
 } from 'react-icons/fa';
 
 const ManagementCard = ({ card, onNavigate }) => (
@@ -45,7 +48,7 @@ const ManagementCard = ({ card, onNavigate }) => (
           opacity: 0.6
         }} />
         <div style={{ position: "relative", zIndex: 1, filter: "drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3))" }}>
-          {card.icon}
+        {card.icon}
         </div>
       </div>
       <div style={{ flex: 1 }}>
@@ -109,8 +112,77 @@ const ManagementCard = ({ card, onNavigate }) => (
   </S.Card>
 );
 
+const StatCard = ({ icon, value, label, color, bgGradient, loading, onClick, clickable = false }) => (
+  <S.StatCard 
+    $bgGradient={bgGradient} 
+    $clickable={clickable} 
+    onClick={onClick}
+  >
+    <S.StatIcon $color={color}>
+      {icon}
+    </S.StatIcon>
+    <S.StatValue>{loading ? '...' : value}</S.StatValue>
+    <S.StatLabel>{label}</S.StatLabel>
+  </S.StatCard>
+);
+
 export default function CustomerDashboardNew() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { stats, loading, error } = useCustomerDashboard();
+
+  const statItems = [
+    {
+      icon: <FaCar size={24} />,
+      value: stats.totalVehicles,
+      label: 'Tổng số xe',
+      color: '#3b82f6',
+      bgGradient: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%)',
+      onClick: () => navigate('/customer/my-vehicles'),
+      clickable: true
+    },
+    {
+      icon: <FaShieldAlt size={24} />,
+      value: stats.activeWarranties,
+      label: 'Bảo hành còn hạn',
+      color: '#10b981',
+      bgGradient: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%)',
+    },
+    {
+      icon: <FaClipboardList size={24} />,
+      value: stats.totalClaims,
+      label: 'Tổng yêu cầu bảo hành',
+      color: '#8b5cf6',
+      bgGradient: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(139, 92, 246, 0.1) 100%)',
+      onClick: () => navigate('/customer/warranty-history'),
+      clickable: true
+    },
+    {
+      icon: <FaCheckCircle size={24} />,
+      value: stats.completedServices,
+      label: 'Đã hoàn thành',
+      color: '#10b981',
+      bgGradient: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%)',
+    },
+    {
+      icon: <FaExclamationTriangle size={24} />,
+      value: stats.pendingRecalls,
+      label: 'Recall cần xác nhận',
+      color: '#ef4444',
+      bgGradient: 'linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.1) 100%)',
+      onClick: () => navigate('/customer/recalls'),
+      clickable: true
+    },
+    {
+      icon: <FaClock size={24} />,
+      value: stats.pendingClaims,
+      label: 'Đang xử lý',
+      color: '#f59e0b',
+      bgGradient: 'linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0.1) 100%)',
+      onClick: () => navigate('/customer/warranty-history'),
+      clickable: true
+    },
+  ];
 
   const managementCards = [
     { id: 1, title: "Xe của tôi", description: "Xem danh sách xe và thông tin chi tiết", icon: <FaCar size={28} />, color: "#3b82f6", bgGradient: "linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%)", path: "/customer/my-vehicles" },
@@ -120,9 +192,45 @@ export default function CustomerDashboardNew() {
     { id: 5, title: "Thông tin cá nhân", description: "Quản lý thông tin tài khoản của bạn", icon: <FaUser size={28} />, color: "#ef4444", bgGradient: "linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.1) 100%)", path: "/customer/profile" },
   ];
 
+  if (loading) {
+    return (
+      <S.DashboardContainer>
+        <S.LoadingContainer>
+          <FaSpinner className="spinner" />
+          <p>Đang tải dữ liệu...</p>
+        </S.LoadingContainer>
+      </S.DashboardContainer>
+    );
+  }
+
   return (
     <S.DashboardContainer>
       <S.HeaderTitle><FaTachometerAlt /> Dashboard Khách hàng</S.HeaderTitle>
+
+      {error && (
+        <S.ErrorMessage>
+          Không thể tải dữ liệu: {error}
+        </S.ErrorMessage>
+      )}
+
+      <S.WelcomeSection>
+        <h1>Xin chào, {user?.customer?.fullName || user?.username || 'Khách hàng'}!</h1>
+        <p>Chào mừng bạn đến với hệ thống quản lý bảo hành xe điện</p>
+      </S.WelcomeSection>
+
+      <S.StatsGrid>
+        {statItems.map((stat, index) => (
+          <StatCard 
+            key={index} 
+            {...stat} 
+            loading={loading}
+          />
+        ))}
+      </S.StatsGrid>
+
+      <S.HeaderTitle style={{ fontSize: '32px', marginTop: '24px', marginBottom: '32px' }}>
+        Truy cập nhanh
+      </S.HeaderTitle>
       <S.ManagementCardGrid>
         {managementCards.map((card) => <ManagementCard key={card.id} card={card} onNavigate={navigate} />)}
       </S.ManagementCardGrid>

@@ -1,18 +1,18 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
-import * as S from "../pages/SCStaff/SCStaffDashboard.styles"; // Tạm thời tái sử dụng styles
+import * as S from "./SCStaffLayout.styles";
 import {
   FaUserCog, FaCar, FaClipboardList, FaHistory, FaBars, FaHome, FaCommentDots, FaExclamationTriangle
 } from "react-icons/fa";
 
 const sidebarItems = [
-  { icon: <FaHome size={18} />, label: "Dashboard", path: "/scstaff/dashboard" },
-  { icon: <FaUserCog size={18} />, label: "Khách hàng", path: "/scstaff/customers" },
-  { icon: <FaCar size={18} />, label: "Xe", path: "/scstaff/vehicles" },
-  { icon: <FaClipboardList size={18} />, label: "Bảo hành", path: "/scstaff/warranty-claims" },
-  { icon: <FaExclamationTriangle size={18} />, label: "Recall", path: "/scstaff/recalls" },
-  { icon: <FaHistory size={18} />, label: "Lịch sử", path: "/scstaff/service-history" },
-  { icon: <FaCommentDots size={18} />, label: "Feedback", path: "/scstaff/feedbacks" },
+  { icon: <FaHome size={20} />, label: "Dashboard", path: "/scstaff/dashboard" },
+  { icon: <FaUserCog size={20} />, label: "Khách hàng", path: "/scstaff/customers" },
+  { icon: <FaCar size={20} />, label: "Xe", path: "/scstaff/vehicles" },
+  { icon: <FaClipboardList size={20} />, label: "Bảo hành", path: "/scstaff/warranty-claims" },
+  { icon: <FaExclamationTriangle size={20} />, label: "Recall", path: "/scstaff/recalls" },
+  { icon: <FaHistory size={20} />, label: "Lịch sử", path: "/scstaff/service-history" },
+  { icon: <FaCommentDots size={20} />, label: "Feedback", path: "/scstaff/feedbacks" },
 ];
 
 export default function SCStaffLayout() {
@@ -25,12 +25,41 @@ export default function SCStaffLayout() {
     <S.PageContainer>
       <S.Sidebar $isCollapsed={sidebarCollapsed}>
         <S.SidebarHeader $isCollapsed={sidebarCollapsed}>
-          <S.SidebarToggleButton onClick={() => setSidebarCollapsed(!sidebarCollapsed)}><FaBars size={16} /></S.SidebarToggleButton>
-          {!sidebarCollapsed && <div><div style={{ fontSize: 16, fontWeight: 600, color: "#f1f5f9" }}>SC Staff</div><div style={{ fontSize: 12, color: "#94a3b8" }}>Dashboard</div></div>}
+          <S.SidebarToggleButton onClick={() => setSidebarCollapsed(!sidebarCollapsed)}>
+            <FaBars size={16} />
+          </S.SidebarToggleButton>
+          {!sidebarCollapsed && (
+            <div>
+              <div style={{
+                fontSize: 20,
+                fontWeight: 800,
+                letterSpacing: "-0.5px",
+                textShadow: "0 2px 12px rgba(0, 0, 0, 0.3)",
+                marginBottom: 2,
+                color: "#ffffff"
+              }}>
+                SC Staff
+              </div>
+              <div style={{
+                fontSize: 13,
+                color: "rgba(255, 255, 255, 0.7)",
+                fontWeight: 500,
+                letterSpacing: "2px",
+                textTransform: "uppercase"
+              }}>
+                Portal
+              </div>
+            </div>
+          )}
         </S.SidebarHeader>
-        <div style={{ flex: 1, padding: sidebarCollapsed ? 8 : 16 }}>
+        <div style={{ flex: 1, padding: sidebarCollapsed ? '12px' : '16px', overflowY: 'auto' }}>
           {sidebarItems.map((item, index) => (
-            <S.NavItem key={index} $active={currentPath === item.path} $isCollapsed={sidebarCollapsed} onClick={() => item.path && navigate(item.path)}>
+            <S.NavItem 
+              key={index} 
+              $active={currentPath === item.path} 
+              $isCollapsed={sidebarCollapsed} 
+              onClick={() => item.path && navigate(item.path)}
+            >
               {item.icon}
               {!sidebarCollapsed && <span>{item.label}</span>}
             </S.NavItem>
@@ -39,7 +68,7 @@ export default function SCStaffLayout() {
       </S.Sidebar>
 
       <S.MainContent>
-        <Outlet /> {/* Đây là nơi nội dung của các trang con sẽ được render */}
+        <Outlet />
       </S.MainContent>
     </S.PageContainer>
   );

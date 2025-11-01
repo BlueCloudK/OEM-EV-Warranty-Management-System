@@ -24,36 +24,37 @@ export default function SCTechnicianLayout() {
 
   return (
     <S.PageContainer>
-      <S.Sidebar $isCollapsed={sidebarCollapsed}>
-        <S.SidebarHeader $isCollapsed={sidebarCollapsed}>
-          <S.SidebarToggleButton onClick={() => setSidebarCollapsed(!sidebarCollapsed)}>
-            <FaBars />
-          </S.SidebarToggleButton>
-          {!sidebarCollapsed && (
-            <div>
-              <div style={{ fontSize: 16, fontWeight: 600 }}>SC Technician</div>
-              <div style={{ fontSize: 12, color: "#94a3b8" }}>Portal</div>
-            </div>
-          )}
-        </S.SidebarHeader>
-        <div style={{ flex: 1, padding: sidebarCollapsed ? 8 : 16 }}>
-          {sidebarItems.map((item, index) => (
-            <S.NavItem
-              key={index}
-              $active={currentPath === item.path}
-              $isCollapsed={sidebarCollapsed}
-              onClick={() => item.path && navigate(item.path)}
-            >
-              {item.icon}
-              {!sidebarCollapsed && <span>{item.label}</span>}
-            </S.NavItem>
-          ))}
-        </div>
-      </S.Sidebar>
+      <S.Layout>
+        <S.Sidebar $isCollapsed={sidebarCollapsed}>
+          <S.SidebarHeader $isCollapsed={sidebarCollapsed}>
+            <S.SidebarToggleButton onClick={() => setSidebarCollapsed(!sidebarCollapsed)}>
+              <FaBars />
+            </S.SidebarToggleButton>
+            {!sidebarCollapsed && (
+              <div style={{ fontSize: 18, fontWeight: 800, color: '#ffffff', textShadow: '0 2px 8px rgba(0, 0, 0, 0.3)' }}>
+                SC Technician Portal
+              </div>
+            )}
+          </S.SidebarHeader>
+          <div style={{ flex: 1 }}>
+            {sidebarItems.map((item, index) => (
+              <S.NavItem
+                key={index}
+                $active={currentPath === item.path}
+                $isCollapsed={sidebarCollapsed}
+                onClick={() => item.path && navigate(item.path)}
+              >
+                {item.icon}
+                {!sidebarCollapsed && <span>{item.label}</span>}
+              </S.NavItem>
+            ))}
+          </div>
+        </S.Sidebar>
 
-      <S.MainContent>
-        <Outlet />
-      </S.MainContent>
+        <S.MainContent>
+          <Outlet />
+        </S.MainContent>
+      </S.Layout>
     </S.PageContainer>
   );
 }

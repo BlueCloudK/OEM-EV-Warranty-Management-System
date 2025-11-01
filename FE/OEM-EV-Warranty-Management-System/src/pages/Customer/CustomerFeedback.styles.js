@@ -286,23 +286,69 @@ export const ModalOverlay = styled.div`
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 9999;
   padding: 20px;
+  overflow-y: auto;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 10px;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.4);
+    }
+  }
 `;
 
 export const ModalContent = styled.div`
-  background: white;
-  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 24px;
   padding: 0;
-  width: 600px;
-  max-width: 95vw;
+  width: 100%;
+  max-width: 600px;
   max-height: 90vh;
-  overflow: auto;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+  overflow-y: auto;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  position: relative;
+  margin: auto;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.3);
+    }
+  }
 `;
 
 export const ModalHeader = styled.div`

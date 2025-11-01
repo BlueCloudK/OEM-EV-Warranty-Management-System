@@ -71,9 +71,15 @@ const UserFormModal = ({ isOpen, onClose, onSubmit }) => {
 
   if (!isOpen) return null;
 
+  const handleOverlayClick = (e) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   return (
-    <S.ModalOverlay>
-      <S.ModalContent>
+    <S.ModalOverlay onClick={handleOverlayClick}>
+      <S.ModalContent onClick={(e) => e.stopPropagation()}>
         <h2>Tạo Người dùng mới</h2>
         <form onSubmit={handleSubmit}>
           {errors.general && <S.ErrorText>{errors.general}</S.ErrorText>}
@@ -121,7 +127,14 @@ const UserFormModal = ({ isOpen, onClose, onSubmit }) => {
             <S.Input name="address" value={formData.address || ''} onChange={handleInputChange} required $hasError={!!errors.address} />
             {errors.address && <S.ErrorText>{errors.address}</S.ErrorText>}
           </S.FormGroup>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'flex-end', 
+            gap: '12px',
+            marginTop: '24px',
+            paddingTop: '20px',
+            borderTop: '1px solid rgba(0, 0, 0, 0.1)'
+          }}>
             <S.Button type="button" onClick={onClose}>Hủy</S.Button>
             <S.Button $primary type="submit">Tạo mới</S.Button>
           </div>

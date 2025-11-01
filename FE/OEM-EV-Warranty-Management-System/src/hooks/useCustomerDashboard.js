@@ -45,61 +45,76 @@ export const useCustomerDashboard = () => {
 
       // Fetch vehicles
       const vehiclesResponse = await apiClient('/api/vehicles/my-vehicles');
-      const vehiclesData = Array.isArray(vehiclesResponse) ? vehiclesResponse : [];
-      setVehicles(vehiclesData);
+      // Handle both array response and paginated response
+      const vehiclesData = Array.isArray(vehiclesResponse) 
+        ? vehiclesResponse 
+        : (vehiclesResponse?.content || vehiclesResponse?.data || []);
+      const vehiclesArray = Array.isArray(vehiclesData) ? vehiclesData : [];
+      setVehicles(vehiclesArray);
 
       // Fetch warranty claims
       const claimsResponse = await apiClient('/api/warranty-claims/my-claims');
-      const claimsData = Array.isArray(claimsResponse) ? claimsResponse : [];
-      setRecentClaims(claimsData.slice(0, 5)); // Get latest 5 claims
+      // Handle both array response and paginated response
+      const claimsData = Array.isArray(claimsResponse)
+        ? claimsResponse
+        : (claimsResponse?.content || claimsResponse?.data || []);
+      const claimsArray = Array.isArray(claimsData) ? claimsData : [];
+      setRecentClaims(claimsArray.slice(0, 5)); // Get latest 5 claims
 
       // Fetch recalls
-      let recallsData = [];
+      let recallsArray = [];
       try {
         const recallsResponse = await apiClient('/api/recall-requests/my-recalls');
-        recallsData = Array.isArray(recallsResponse) ? recallsResponse : [];
+        // Handle both array response and paginated response
+        const recallsData = Array.isArray(recallsResponse)
+          ? recallsResponse
+          : (recallsResponse?.content || recallsResponse?.data || []);
+        recallsArray = Array.isArray(recallsData) ? recallsData : [];
       } catch (err) {
         console.warn('Could not fetch recalls:', err);
       }
 
-      // Calculate stats
-      const activeWarranties = vehiclesData.filter(v => {
+      // Calculate stats using extracted arrays
+      const activeWarranties = vehiclesArray.filter(v => {
         if (!v.warrantyEndDate) return false;
         const endDate = new Date(v.warrantyEndDate);
         return endDate > new Date();
       }).length;
 
-      const pendingClaims = claimsData.filter(c =>
+      const pendingClaims = claimsArray.filter(c =>
         c.status === 'SUBMITTED' || c.status === 'APPROVED_BY_SC'
       ).length;
 
-      const completedServices = claimsData.filter(c =>
+      const completedServices = claimsArray.filter(c =>
         c.status === 'COMPLETED'
       ).length;
 
-      const rejectedClaims = claimsData.filter(c =>
+      const rejectedClaims = claimsArray.filter(c =>
         c.status === 'REJECTED_BY_SC' || c.status === 'REJECTED_BY_EVM'
       ).length;
 
-      const pendingRecalls = recallsData.filter(r =>
+      const pendingRecalls = recallsArray.filter(r =>
         r.status === 'WAITING_CUSTOMER_CONFIRM'
       ).length;
 
-      setStats({
-        totalVehicles: vehiclesData.length,
+      const calculatedStats = {
+        totalVehicles: vehiclesArray.length,
         activeWarranties,
         pendingClaims,
         completedServices,
         pendingRecalls,
-        totalClaims: claimsData.length,
+        totalClaims: claimsArray.length,
         rejectedClaims,
-      });
+      };
+      
+      setStats(calculatedStats);
 
       // Generate recent activity
       const activities = [];
 
       // Add recent claims
-      claimsData.slice(0, 3).forEach(claim => {
+      claimsArray.slice(0, 3).forEach((claim, index) => {
+        const claimId = claim.claimId || claim.id || `unknown-${index}`;
         const statusText = {
           'SUBMITTED': 'đã được gửi',
           'APPROVED_BY_SC': 'đã được SC duyệt',
@@ -111,17 +126,18 @@ export const useCustomerDashboard = () => {
         }[claim.status] || claim.status;
 
         activities.push({
-          id: `claim-${claim.claimId}`,
+          id: `claim-${claimId}-${index}`,
           icon: 'FaClipboardList',
-          action: `Yêu cầu bảo hành #${claim.claimId} ${statusText}`,
+          action: `Yêu cầu bảo hành #${claimId} ${statusText}`,
           time: formatTimeAgo(claim.createdAt || claim.submittedDate)
         });
       });
 
       // Add recent recalls
-      recallsData.slice(0, 2).forEach(recall => {
+      recallsArray.slice(0, 2).forEach((recall, index) => {
+        const recallId = recall.recallRequestId || recall.id || `unknown-${index}`;
         activities.push({
-          id: `recall-${recall.recallRequestId}`,
+          id: `recall-${recallId}-${index}`,
           icon: 'FaExclamationTriangle',
           action: `Thông báo thu hồi phụ tùng: ${recall.installedPart?.part?.partName || 'N/A'}`,
           time: formatTimeAgo(recall.createdAt)
@@ -145,7 +161,7 @@ export const useCustomerDashboard = () => {
       }
 
       // Alert for expiring warranties
-      const expiringWarranties = vehiclesData.filter(v => {
+      const expiringWarranties = vehiclesArray.filter(v => {
         if (!v.warrantyEndDate) return false;
         const endDate = new Date(v.warrantyEndDate);
         const daysUntilExpiry = Math.ceil((endDate - new Date()) / (1000 * 60 * 60 * 24));

@@ -13,6 +13,7 @@ import {
   FaMapMarkerAlt,
   FaExclamationTriangle,
 } from "react-icons/fa";
+import * as S from "./AdminLayout.styles";
 
 const navItems = [
   { path: "/admin/dashboard", icon: <FaTachometerAlt />, label: "Dashboard" },
@@ -51,78 +52,72 @@ export default function AdminLayout() {
   const currentPath = location.pathname;
 
   return (
-    <div className="min-h-screen p-6 bg-gradient-to-br from-slate-100 via-white to-emerald-50">
-      <header className="relative overflow-hidden rounded-2xl px-6 py-5 border border-slate-200 bg-white/80 backdrop-blur shadow-[0_10px_30px_-10px_rgba(2,6,23,0.25)]">
-        <div className="absolute -top-16 -right-16 h-40 w-40 rounded-full bg-emerald-400/20 blur-2xl" />
-        <div className="absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-indigo-400/20 blur-2xl" />
-        <h1 className="relative text-xl m-0 flex items-center gap-3 font-semibold text-slate-900">
-          <span className="inline-flex h-8 w-8 items-center justify-center rounded bg-gradient-to-br from-indigo-600 to-emerald-500 text-white shadow">
-            <FaUserShield />
-          </span>
-          Admin Panel
-        </h1>
-        <p className="relative opacity-80 text-sm m-0 text-slate-500">
+    <S.PageContainer>
+      <S.Header>
+        <S.HeaderTitle>
+          <FaUserShield /> Admin Panel
+        </S.HeaderTitle>
+        <S.HeaderSubtitle>
           Full access to all system resources and management functions
-        </p>
-      </header>
+        </S.HeaderSubtitle>
+      </S.Header>
 
-      <div className="mt-5 flex gap-4">
-        <aside
-          className={`rounded-xl p-4 sticky top-4 self-start transition-all duration-300 border border-slate-200 bg-white/70 backdrop-blur shadow-[0_8px_24px_-12px_rgba(2,6,23,0.25)] ${
-            isCollapsed ? "w-[76px] min-w-[76px]" : "w-64 min-w-[256px]"
-          }`}
-        >
-          <button
-            className="w-full mb-4 text-xs px-3 py-2 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 transition shadow-sm"
+      <S.Layout>
+        <S.Sidebar $isCollapsed={isCollapsed}>
+          <S.SidebarToggleButton
             onClick={() => setIsCollapsed((v) => !v)}
             title={isCollapsed ? "Mở rộng" : "Thu gọn"}
           >
             {isCollapsed ? "☰" : "✕"}
-          </button>
-          <nav className="flex flex-col gap-1">
+          </S.SidebarToggleButton>
+          
+          {!isCollapsed && (
+            <S.SidebarHeader>
+              <div style={{
+                fontSize: 20,
+                fontWeight: 800,
+                letterSpacing: "-0.5px",
+                textShadow: "0 2px 12px rgba(0, 0, 0, 0.3)",
+                marginBottom: 2,
+                color: "#ffffff"
+              }}>
+                Admin
+              </div>
+              <div style={{
+                fontSize: 13,
+                color: "rgba(255, 255, 255, 0.7)",
+                fontWeight: 500,
+                letterSpacing: "2px",
+                textTransform: "uppercase"
+              }}>
+                Portal
+              </div>
+            </S.SidebarHeader>
+          )}
+
+          <nav>
             {navItems.map((item) => {
               const isActive = currentPath === item.path;
               return (
-                <div
+                <S.NavItem
                   key={item.path}
+                  $active={isActive}
+                  $isCollapsed={isCollapsed}
                   onClick={() => navigate(item.path)}
-                  className={`group relative flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-all ${
-                    isCollapsed ? "justify-center" : "justify-start"
-                  } ${
-                    isActive
-                      ? "bg-gradient-to-r from-indigo-50 to-emerald-50 text-slate-900 font-semibold ring-1 ring-indigo-200"
-                      : "hover:bg-slate-50 text-slate-700"
-                  }`}
                   title={item.label}
-                >
-                  <span
-                    className={`text-[18px] ${
-                      isActive
-                        ? "text-indigo-600"
-                        : "text-slate-500 group-hover:text-slate-600"
-                    }`}
                   >
                     {item.icon}
-                  </span>
-                  {!isCollapsed && (
-                    <span className="truncate text-sm">{item.label}</span>
-                  )}
-                  {isActive && (
-                    <>
-                      <span className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-[3px] rounded bg-indigo-500" />
-                      <span className="absolute inset-0 rounded-lg ring-1 ring-indigo-200/60" />
-                    </>
-                  )}
-                </div>
+                  {!isCollapsed && <span>{item.label}</span>}
+                </S.NavItem>
               );
             })}
           </nav>
-        </aside>
+        </S.Sidebar>
 
-        <main className="flex-1">
+        <S.MainContent>
           <Outlet />
-        </main>
-      </div>
-    </div>
+        </S.MainContent>
+      </S.Layout>
+    </S.PageContainer>
   );
 }
