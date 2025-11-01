@@ -176,6 +176,60 @@ class VehicleServiceImplTest {
             Exception exception = assertThrows(RuntimeException.class, () -> vehicleService.getVehiclesByCurrentUser(authHeader, PageRequest.of(0, 10)));
             assertThat(exception.getMessage()).isEqualTo("Invalid or missing authorization token");
         }
+
+        @Test
+        @DisplayName("Should throw exception when authorization header is null")
+        void getVehiclesByCurrentUser_NullAuthHeader_ThrowsException() {
+            // Act & Assert
+            Exception exception = assertThrows(RuntimeException.class, () -> vehicleService.getVehiclesByCurrentUser(null, PageRequest.of(0, 10)));
+            assertThat(exception.getMessage()).isEqualTo("Invalid or missing authorization token");
+        }
+
+        @Test
+        @DisplayName("Should throw exception when authorization header has no Bearer prefix")
+        void getVehiclesByCurrentUser_NoBearerPrefix_ThrowsException() {
+            // Arrange
+            String authHeader = "invalid-header-format";
+
+            // Act & Assert
+            Exception exception = assertThrows(RuntimeException.class, () -> vehicleService.getVehiclesByCurrentUser(authHeader, PageRequest.of(0, 10)));
+            assertThat(exception.getMessage()).isEqualTo("Invalid or missing authorization token");
+        }
+
+        @Test
+        @DisplayName("Should throw exception when user not found")
+        void getVehiclesByCurrentUser_UserNotFound_ThrowsException() {
+            // Arrange
+            String token = "valid-token";
+            String authHeader = "Bearer " + token;
+            String username = "testuser";
+
+            when(jwtService.isTokenValid(token)).thenReturn(true);
+            when(jwtService.extractUsername(token)).thenReturn(username);
+            when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
+
+            // Act & Assert
+            Exception exception = assertThrows(RuntimeException.class, () -> vehicleService.getVehiclesByCurrentUser(authHeader, PageRequest.of(0, 10)));
+            assertThat(exception.getMessage()).isEqualTo("User not found");
+        }
+
+        @Test
+        @DisplayName("Should throw exception when customer profile not found")
+        void getVehiclesByCurrentUser_CustomerNotFound_ThrowsException() {
+            // Arrange
+            String token = "valid-token";
+            String authHeader = "Bearer " + token;
+            String username = "testuser";
+
+            when(jwtService.isTokenValid(token)).thenReturn(true);
+            when(jwtService.extractUsername(token)).thenReturn(username);
+            when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
+            when(customerRepository.findByUser(user)).thenReturn(null);
+
+            // Act & Assert
+            Exception exception = assertThrows(RuntimeException.class, () -> vehicleService.getVehiclesByCurrentUser(authHeader, PageRequest.of(0, 10)));
+            assertThat(exception.getMessage()).isEqualTo("Customer profile not found for user");
+        }
     }
 
     @Nested
@@ -275,6 +329,52 @@ class VehicleServiceImplTest {
             verify(vehicleRepository).findById(vehicleId);
             verify(vehicleRepository, never()).save(any(Vehicle.class));
         }
+
+        @Test
+        @DisplayName("Should throw exception when customer not found")
+        void updateVehicle_CustomerNotFound_ThrowsException() {
+            // Arrange
+            Long vehicleId = 1L;
+            Vehicle existingVehicle = new Vehicle();
+            existingVehicle.setVehicleId(vehicleId);
+
+            VehicleRequestDTO updateDTO = new VehicleRequestDTO();
+            updateDTO.setCustomerId(customerId.toString());
+            updateDTO.setVehicleVin("VIN123456789");
+
+            when(vehicleRepository.findById(vehicleId)).thenReturn(Optional.of(existingVehicle));
+            when(customerRepository.findById(customerId)).thenReturn(Optional.empty());
+
+            // Act & Assert
+            Exception exception = assertThrows(RuntimeException.class, () -> vehicleService.updateVehicle(vehicleId, updateDTO));
+            assertThat(exception.getMessage()).contains("Customer not found with id:");
+        }
+
+        @Test
+        @DisplayName("Should throw exception when VIN exists for different vehicle")
+        void updateVehicle_VinExistsForDifferentVehicle_ThrowsException() {
+            // Arrange
+            Long vehicleId = 1L;
+            Vehicle existingVehicle = new Vehicle();
+            existingVehicle.setVehicleId(vehicleId);
+            existingVehicle.setVehicleVin("VIN123456789");
+
+            Vehicle differentVehicle = new Vehicle();
+            differentVehicle.setVehicleId(2L); // Different ID
+            differentVehicle.setVehicleVin("VIN999999999");
+
+            VehicleRequestDTO updateDTO = new VehicleRequestDTO();
+            updateDTO.setCustomerId(customerId.toString());
+            updateDTO.setVehicleVin("VIN999999999"); // Trying to use VIN of another vehicle
+
+            when(vehicleRepository.findById(vehicleId)).thenReturn(Optional.of(existingVehicle));
+            when(customerRepository.findById(customerId)).thenReturn(Optional.of(customer));
+            when(vehicleRepository.findByVehicleVin("VIN999999999")).thenReturn(differentVehicle);
+
+            // Act & Assert
+            Exception exception = assertThrows(RuntimeException.class, () -> vehicleService.updateVehicle(vehicleId, updateDTO));
+            assertThat(exception.getMessage()).contains("Vehicle with VIN VIN999999999 already exists");
+        }
     }
 
     @Nested
@@ -348,6 +448,51 @@ class VehicleServiceImplTest {
         }
 
         @Test
+        @DisplayName("Should get all vehicles with empty search string")
+        void getAllVehicles_EmptySearch_ReturnsAllVehicles() {
+            // Arrange
+            Pageable pageable = PageRequest.of(0, 10);
+            Vehicle vehicle = new Vehicle();
+            vehicle.setVehicleId(1L);
+            vehicle.setCustomer(customer);
+
+            Page<Vehicle> page = new PageImpl<>(List.of(vehicle), pageable, 1);
+
+            when(vehicleRepository.findAll(pageable)).thenReturn(page);
+
+            // Act
+            PagedResponse<VehicleResponseDTO> result = vehicleService.getAllVehiclesPage(pageable, "");
+
+            // Assert
+            assertThat(result).isNotNull();
+            assertThat(result.getContent()).hasSize(1);
+            verify(vehicleRepository).findAll(pageable);
+            verify(vehicleRepository, never()).findByVehicleNameContainingIgnoreCaseOrVehicleModelContainingIgnoreCase(anyString(), anyString(), any());
+        }
+
+        @Test
+        @DisplayName("Should get all vehicles with whitespace search string")
+        void getAllVehicles_WhitespaceSearch_ReturnsAllVehicles() {
+            // Arrange
+            Pageable pageable = PageRequest.of(0, 10);
+            Vehicle vehicle = new Vehicle();
+            vehicle.setVehicleId(1L);
+            vehicle.setCustomer(customer);
+
+            Page<Vehicle> page = new PageImpl<>(List.of(vehicle), pageable, 1);
+
+            when(vehicleRepository.findAll(pageable)).thenReturn(page);
+
+            // Act
+            PagedResponse<VehicleResponseDTO> result = vehicleService.getAllVehiclesPage(pageable, "   ");
+
+            // Assert
+            assertThat(result).isNotNull();
+            assertThat(result.getContent()).hasSize(1);
+            verify(vehicleRepository).findAll(pageable);
+        }
+
+        @Test
         @DisplayName("Should search vehicles by keyword")
         void getAllVehicles_WithSearch_ReturnsFilteredResults() {
             // Arrange
@@ -378,7 +523,7 @@ class VehicleServiceImplTest {
 
         @Test
         @DisplayName("Should search vehicles by model and brand")
-        void searchVehicles_Success() {
+        void searchVehicles_ByModelAndBrand_Success() {
             // Arrange
             String model = "Model S";
             String brand = "Tesla";
@@ -399,6 +544,80 @@ class VehicleServiceImplTest {
             assertThat(result).isNotNull();
             assertThat(result.getContent()).hasSize(1);
             verify(vehicleRepository).findByVehicleModelContainingIgnoreCaseAndVehicleNameContainingIgnoreCase(model, brand, pageable);
+        }
+
+        @Test
+        @DisplayName("Should search vehicles by model only")
+        void searchVehicles_ByModelOnly_Success() {
+            // Arrange
+            String model = "Model S";
+            Pageable pageable = PageRequest.of(0, 10);
+            Vehicle vehicle = new Vehicle();
+            vehicle.setVehicleId(1L);
+            vehicle.setCustomer(customer);
+
+            Page<Vehicle> page = new PageImpl<>(List.of(vehicle), pageable, 1);
+
+            when(vehicleRepository.findByVehicleModelContainingIgnoreCase(model, pageable))
+                .thenReturn(page);
+
+            // Act
+            PagedResponse<VehicleResponseDTO> result = vehicleService.searchVehicles(model, null, pageable);
+
+            // Assert
+            assertThat(result).isNotNull();
+            assertThat(result.getContent()).hasSize(1);
+            verify(vehicleRepository).findByVehicleModelContainingIgnoreCase(model, pageable);
+            verify(vehicleRepository, never()).findByVehicleModelContainingIgnoreCaseAndVehicleNameContainingIgnoreCase(anyString(), anyString(), any());
+        }
+
+        @Test
+        @DisplayName("Should search vehicles by brand only")
+        void searchVehicles_ByBrandOnly_Success() {
+            // Arrange
+            String brand = "Tesla";
+            Pageable pageable = PageRequest.of(0, 10);
+            Vehicle vehicle = new Vehicle();
+            vehicle.setVehicleId(1L);
+            vehicle.setCustomer(customer);
+
+            Page<Vehicle> page = new PageImpl<>(List.of(vehicle), pageable, 1);
+
+            when(vehicleRepository.findByVehicleNameContainingIgnoreCase(brand, pageable))
+                .thenReturn(page);
+
+            // Act
+            PagedResponse<VehicleResponseDTO> result = vehicleService.searchVehicles(null, brand, pageable);
+
+            // Assert
+            assertThat(result).isNotNull();
+            assertThat(result.getContent()).hasSize(1);
+            verify(vehicleRepository).findByVehicleNameContainingIgnoreCase(brand, pageable);
+            verify(vehicleRepository, never()).findByVehicleModelContainingIgnoreCase(anyString(), any());
+        }
+
+        @Test
+        @DisplayName("Should return all vehicles when neither model nor brand provided")
+        void searchVehicles_NoParameters_ReturnsAll() {
+            // Arrange
+            Pageable pageable = PageRequest.of(0, 10);
+            Vehicle vehicle = new Vehicle();
+            vehicle.setVehicleId(1L);
+            vehicle.setCustomer(customer);
+
+            Page<Vehicle> page = new PageImpl<>(List.of(vehicle), pageable, 1);
+
+            when(vehicleRepository.findAll(pageable)).thenReturn(page);
+
+            // Act
+            PagedResponse<VehicleResponseDTO> result = vehicleService.searchVehicles(null, null, pageable);
+
+            // Assert
+            assertThat(result).isNotNull();
+            assertThat(result.getContent()).hasSize(1);
+            verify(vehicleRepository).findAll(pageable);
+            verify(vehicleRepository, never()).findByVehicleModelContainingIgnoreCase(anyString(), any());
+            verify(vehicleRepository, never()).findByVehicleNameContainingIgnoreCase(anyString(), any());
         }
     }
 

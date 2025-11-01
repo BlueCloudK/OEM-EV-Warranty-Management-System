@@ -321,6 +321,37 @@ class UserServiceImplTest {
             assertThat(result.getContent()).hasSize(1);
             verify(userRepository).findByUsernameContainingIgnoreCase(eq(search), any(Pageable.class));
         }
+
+        @Test
+        @DisplayName("Should return all users when both search and role are empty strings")
+        void getAllUsers_BothEmptyStrings_ReturnsAll() {
+            // Arrange
+            Page<User> userPage = new PageImpl<>(List.of(user));
+            when(userRepository.findAll(any(Pageable.class))).thenReturn(userPage);
+
+            // Act
+            Page<User> result = userService.getAllUsers(pageable, "   ", "   ");
+
+            // Assert
+            assertThat(result.getContent()).hasSize(1);
+            verify(userRepository).findAll(any(Pageable.class));
+            verify(userRepository, never()).findByUsernameContainingIgnoreCase(anyString(), any(Pageable.class));
+            verify(userRepository, never()).findByRole(any(Role.class), any(Pageable.class));
+        }
+
+        @Test
+        @DisplayName("Should throw exception when role not found in search and role filter")
+        void getAllUsers_SearchAndRoleNotFound_ThrowsException() {
+            // Arrange
+            String search = "testuser";
+            String roleName = "INVALID_ROLE";
+            when(roleRepository.findByRoleName(roleName)).thenReturn(Optional.empty());
+
+            // Act & Assert
+            RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> userService.getAllUsers(pageable, search, roleName));
+            assertThat(exception.getMessage()).contains("Role not found");
+        }
     }
 
     @Nested
@@ -600,6 +631,130 @@ class UserServiceImplTest {
             assertThat(result.getEmail()).isEqualTo("test@example.com");
             verify(userRepository).save(user);
         }
+
+        @Test
+        @DisplayName("Should skip username update when value is null")
+        void updateUser_UsernameNull_SkipsUpdate() {
+            // Arrange
+            String originalUsername = "testuser";
+            user.setUsername(originalUsername);
+            Map<String, Object> updateRequest = new HashMap<>();
+            updateRequest.put("username", null);
+
+            when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+            when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            // Act
+            User result = userService.updateUser(1L, updateRequest);
+
+            // Assert
+            assertThat(result.getUsername()).isEqualTo(originalUsername); // Username unchanged
+            verify(userRepository, never()).existsByUsername(any());
+            verify(userRepository).save(user);
+        }
+
+        @Test
+        @DisplayName("Should skip username update when value is empty")
+        void updateUser_UsernameEmpty_SkipsUpdate() {
+            // Arrange
+            String originalUsername = "testuser";
+            user.setUsername(originalUsername);
+            Map<String, Object> updateRequest = new HashMap<>();
+            updateRequest.put("username", "   ");
+
+            when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+            when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            // Act
+            User result = userService.updateUser(1L, updateRequest);
+
+            // Assert
+            assertThat(result.getUsername()).isEqualTo(originalUsername); // Username unchanged
+            verify(userRepository, never()).existsByUsername(any());
+            verify(userRepository).save(user);
+        }
+
+        @Test
+        @DisplayName("Should skip email update when value is null")
+        void updateUser_EmailNull_SkipsUpdate() {
+            // Arrange
+            String originalEmail = "test@example.com";
+            user.setEmail(originalEmail);
+            Map<String, Object> updateRequest = new HashMap<>();
+            updateRequest.put("email", null);
+
+            when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+            when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            // Act
+            User result = userService.updateUser(1L, updateRequest);
+
+            // Assert
+            assertThat(result.getEmail()).isEqualTo(originalEmail); // Email unchanged
+            verify(userRepository, never()).existsByEmail(any());
+            verify(userRepository).save(user);
+        }
+
+        @Test
+        @DisplayName("Should skip email update when value is empty")
+        void updateUser_EmailEmpty_SkipsUpdate() {
+            // Arrange
+            String originalEmail = "test@example.com";
+            user.setEmail(originalEmail);
+            Map<String, Object> updateRequest = new HashMap<>();
+            updateRequest.put("email", "   ");
+
+            when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+            when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            // Act
+            User result = userService.updateUser(1L, updateRequest);
+
+            // Assert
+            assertThat(result.getEmail()).isEqualTo(originalEmail); // Email unchanged
+            verify(userRepository, never()).existsByEmail(any());
+            verify(userRepository).save(user);
+        }
+
+        @Test
+        @DisplayName("Should skip address update when value is null")
+        void updateUser_AddressNull_SkipsUpdate() {
+            // Arrange
+            String originalAddress = "Original Address";
+            user.setAddress(originalAddress);
+            Map<String, Object> updateRequest = new HashMap<>();
+            updateRequest.put("address", null);
+
+            when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+            when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            // Act
+            User result = userService.updateUser(1L, updateRequest);
+
+            // Assert
+            assertThat(result.getAddress()).isEqualTo(originalAddress); // Address unchanged
+            verify(userRepository).save(user);
+        }
+
+        @Test
+        @DisplayName("Should skip address update when value is empty")
+        void updateUser_AddressEmpty_SkipsUpdate() {
+            // Arrange
+            String originalAddress = "Original Address";
+            user.setAddress(originalAddress);
+            Map<String, Object> updateRequest = new HashMap<>();
+            updateRequest.put("address", "   ");
+
+            when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+            when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            // Act
+            User result = userService.updateUser(1L, updateRequest);
+
+            // Assert
+            assertThat(result.getAddress()).isEqualTo(originalAddress); // Address unchanged
+            verify(userRepository).save(user);
+        }
     }
 
     @Nested
@@ -711,6 +866,154 @@ class UserServiceImplTest {
     @Nested
     @DisplayName("Get User Full Profile")
     class GetUserFullProfile {
+
+        @Test
+        @DisplayName("Should return full user profile with role and service center")
+        void getUserFullProfile_WithRoleAndServiceCenter_Success() {
+            // Arrange
+            Long userId = 1L;
+            Role role = new Role();
+            role.setRoleId(1L);
+            role.setRoleName("EVM_STAFF");
+
+            com.swp391.warrantymanagement.entity.ServiceCenter serviceCenter =
+                new com.swp391.warrantymanagement.entity.ServiceCenter();
+            serviceCenter.setServiceCenterId(1L);
+            serviceCenter.setName("Main Service Center");
+            serviceCenter.setAddress("123 Main St");
+
+            user.setRole(role);
+            user.setServiceCenter(serviceCenter);
+            user.setAddress("123 Test Street");
+
+            when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+            when(warrantyClaimRepository.findByAssignedToUserId(eq(userId), any(Pageable.class)))
+                .thenReturn(Page.empty());
+
+            // Act
+            UserProfileResponseDTO result = userService.getUserFullProfile(userId);
+
+            // Assert
+            assertThat(result).isNotNull();
+            assertThat(result.getUserId()).isEqualTo(userId);
+            assertThat(result.getUsername()).isEqualTo("testuser");
+            assertThat(result.getEmail()).isEqualTo("test@example.com");
+            assertThat(result.getRoleName()).isEqualTo("EVM_STAFF");
+            assertThat(result.getRoleId()).isEqualTo(1L);
+            assertThat(result.getServiceCenterId()).isEqualTo(1L);
+            assertThat(result.getServiceCenterName()).isEqualTo("Main Service Center");
+            assertThat(result.getServiceCenterAddress()).isEqualTo("123 Main St");
+            verify(userRepository).findById(userId);
+            verify(warrantyClaimRepository).findByAssignedToUserId(eq(userId), any(Pageable.class));
+        }
+
+        @Test
+        @DisplayName("Should return full user profile with role but no service center")
+        void getUserFullProfile_WithRoleNoServiceCenter_Success() {
+            // Arrange
+            Long userId = 1L;
+            Role role = new Role();
+            role.setRoleId(1L);
+            role.setRoleName("ADMIN");
+
+            user.setRole(role);
+            user.setServiceCenter(null); // No service center
+            user.setAddress("123 Test Street");
+
+            when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+            when(warrantyClaimRepository.findByAssignedToUserId(eq(userId), any(Pageable.class)))
+                .thenReturn(Page.empty());
+
+            // Act
+            UserProfileResponseDTO result = userService.getUserFullProfile(userId);
+
+            // Assert
+            assertThat(result).isNotNull();
+            assertThat(result.getRoleName()).isEqualTo("ADMIN");
+            assertThat(result.getServiceCenterId()).isNull();
+            assertThat(result.getServiceCenterName()).isNull();
+            assertThat(result.getServiceCenterAddress()).isNull();
+            verify(userRepository).findById(userId);
+        }
+
+        @Test
+        @DisplayName("Should return full user profile without role")
+        void getUserFullProfile_NoRole_Success() {
+            // Arrange
+            Long userId = 1L;
+            user.setRole(null); // No role
+            user.setServiceCenter(null);
+            user.setAddress("123 Test Street");
+
+            when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+            when(warrantyClaimRepository.findByAssignedToUserId(eq(userId), any(Pageable.class)))
+                .thenReturn(Page.empty());
+
+            // Act
+            UserProfileResponseDTO result = userService.getUserFullProfile(userId);
+
+            // Assert
+            assertThat(result).isNotNull();
+            assertThat(result.getRoleName()).isNull();
+            assertThat(result.getRoleId()).isNull();
+            verify(userRepository).findById(userId);
+        }
+
+        @Test
+        @DisplayName("Should return full user profile with work logs")
+        void getUserFullProfile_WithWorkLogs_Success() {
+            // Arrange
+            Long userId = 1L;
+            Role role = new Role();
+            role.setRoleId(1L);
+            role.setRoleName("TECHNICIAN");
+
+            user.setRole(role);
+
+            // Create work logs
+            com.swp391.warrantymanagement.entity.WorkLog workLog1 =
+                new com.swp391.warrantymanagement.entity.WorkLog();
+            com.swp391.warrantymanagement.entity.WorkLog workLog2 =
+                new com.swp391.warrantymanagement.entity.WorkLog();
+            user.setWorkLogs(List.of(workLog1, workLog2));
+
+            when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+            when(warrantyClaimRepository.findByAssignedToUserId(eq(userId), any(Pageable.class)))
+                .thenReturn(Page.empty());
+
+            // Act
+            UserProfileResponseDTO result = userService.getUserFullProfile(userId);
+
+            // Assert
+            assertThat(result).isNotNull();
+            assertThat(result.getTotalWorkLogs()).isEqualTo(2);
+            verify(userRepository).findById(userId);
+        }
+
+        @Test
+        @DisplayName("Should return full user profile with null work logs")
+        void getUserFullProfile_NullWorkLogs_Success() {
+            // Arrange
+            Long userId = 1L;
+            Role role = new Role();
+            role.setRoleId(1L);
+            role.setRoleName("ADMIN");
+
+            user.setRole(role);
+            user.setWorkLogs(null); // Null work logs
+
+            when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+            when(warrantyClaimRepository.findByAssignedToUserId(eq(userId), any(Pageable.class)))
+                .thenReturn(Page.empty());
+
+            // Act
+            UserProfileResponseDTO result = userService.getUserFullProfile(userId);
+
+            // Assert
+            assertThat(result).isNotNull();
+            assertThat(result.getTotalWorkLogs()).isEqualTo(0);
+            verify(userRepository).findById(userId);
+        }
 
         @Test
         @DisplayName("Should return full user profile")
