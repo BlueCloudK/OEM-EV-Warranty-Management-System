@@ -30,14 +30,19 @@ export const useAdminDashboard = () => {
     try {
       setLoading(true);
       setError(null);
-      const [customersRes, vehiclesRes, partsRes, claimsRes, recentCustomers, recentClaims, recentVehicles] = await Promise.allSettled([
-        dataApi.getAllCustomers({ size: 1 }),
-        dataApi.getAllVehicles({ size: 1 }),
-        dataApi.getAllParts({ size: 1 }),
-        dataApi.getAllWarrantyClaims({ size: 1000 }),
-        dataApi.getAllCustomers({ sort: "createdAt,desc", size: 3 }),
-        dataApi.getAllWarrantyClaims({ sort: "createdAt,desc", size: 3 }),
-        dataApi.getAllVehicles({ sort: "createdAt,desc", size: 2 }),
+      
+      // Build query params properly
+      const recentParams = { page: 0, size: 5, sort: 'createdAt,desc' };
+      
+      const [customersRes, vehiclesRes, partsRes, claimsRes, recentCustomers, recentClaims, recentVehicles, recentServiceHistories] = await Promise.allSettled([
+        dataApi.getAllCustomers({ page: 0, size: 1 }),
+        dataApi.getAllVehicles({ page: 0, size: 1 }),
+        dataApi.getAllParts({ page: 0, size: 1 }),
+        dataApi.getAllWarrantyClaims({ page: 0, size: 1000 }),
+        dataApi.getAllCustomers(recentParams),
+        dataApi.getAllWarrantyClaims(recentParams),
+        dataApi.getAllVehicles(recentParams),
+        dataApi.getAllServiceHistories(recentParams),
       ]);
 
       // Process stats - handle both paginated and non-paginated responses
@@ -155,8 +160,29 @@ export const useAdminDashboard = () => {
         });
       }
 
+      // Add recent service histories
+      if (recentServiceHistories.status === 'fulfilled') {
+        const serviceHistoriesData = recentServiceHistories.value;
+        const serviceHistoriesArray = Array.isArray(serviceHistoriesData)
+          ? serviceHistoriesData
+          : (serviceHistoriesData?.content || []);
+        
+        serviceHistoriesArray.forEach((sh, index) => {
+          const serviceHistoryId = sh.serviceHistoryId || sh.id || `unknown-${index}`;
+          const vehicleInfo = sh.vehicle?.vehicleName || sh.vehicle?.vin || sh.vehicleId || 'N/A';
+          activities.push({ 
+            id: `svc-${serviceHistoryId}-${index}`, 
+            action: `Dịch vụ mới: ${vehicleInfo}`, 
+            time: formatTimeAgo(sh.serviceDate || sh.createdAt), 
+            icon: 'FaHistory',
+            timestamp: new Date(sh.serviceDate || sh.createdAt || Date.now()).getTime()
+          });
+        });
+      }
+
       // Sort by timestamp (newest first) and take top 5
       const sortedActivities = activities
+        .filter(a => a.timestamp) // Only include activities with valid timestamp
         .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
         .slice(0, 5);
       

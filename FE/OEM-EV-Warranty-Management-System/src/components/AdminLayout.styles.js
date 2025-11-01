@@ -123,7 +123,7 @@ export const Layout = styled.div`
   gap: 24px;
   position: relative;
   z-index: 1;
-  align-items: flex-start;
+  align-items: stretch;
   width: 100%;
   max-width: 100%;
 `;
@@ -139,14 +139,14 @@ export const Sidebar = styled.aside`
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 24px;
   padding: 20px;
-  height: fit-content;
-  position: sticky;
-  top: 24px;
+  display: flex;
+  flex-direction: column;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 
     0 8px 32px rgba(0, 0, 0, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
 
   &::before {
     content: '';

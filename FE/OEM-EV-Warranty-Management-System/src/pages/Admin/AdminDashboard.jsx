@@ -18,6 +18,7 @@ const iconMap = {
   FaUsers: <FaUsers />,
   FaCar: <FaCar />,
   FaClipboardList: <FaClipboardList />,
+  FaHistory: <FaHistory />,
 };
 
 // Main Component with new Authentication Flow

@@ -7,7 +7,8 @@ export const PageContainer = styled.div`
   background-size: 400% 400%;
   animation: gradientShift 15s ease infinite;
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
+  align-items: stretch;
 
   &::before {
     content: '';
@@ -38,6 +39,7 @@ export const PageContainer = styled.div`
 
 export const Sidebar = styled.aside`
   width: ${({ $isCollapsed }) => ($isCollapsed ? '90px' : '320px')};
+  flex-shrink: 0;
   background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
@@ -49,9 +51,6 @@ export const Sidebar = styled.aside`
   box-shadow: 
     8px 0 32px rgba(0, 0, 0, 0.12),
     inset -1px 0 0 rgba(255, 255, 255, 0.1);
-  position: sticky;
-  top: 0;
-  height: 100vh;
   overflow-y: auto;
   overflow-x: hidden;
   z-index: 100;
