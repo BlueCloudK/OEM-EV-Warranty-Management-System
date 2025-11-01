@@ -212,6 +212,135 @@ class CustomerServiceImplTest {
             Exception exception = assertThrows(RuntimeException.class, () -> customerService.createCustomer(customerRequestDTO));
             assertThat(exception.getMessage()).contains("email is required");
         }
+
+        @Test
+        @DisplayName("Should throw exception when user registration is incomplete - no address")
+        void createCustomer_IncompleteUserNoAddress_ThrowsException() {
+            // Arrange
+            User incompleteUser = new User();
+            incompleteUser.setUserId(1L);
+            incompleteUser.setUsername("testuser");
+            incompleteUser.setEmail("test@example.com");
+            incompleteUser.setAddress(""); // Empty address
+            incompleteUser.setPassword("password");
+            incompleteUser.setRole(customerRole);
+
+            when(userRepository.findById(1L)).thenReturn(Optional.of(incompleteUser));
+
+            // Act & Assert
+            Exception exception = assertThrows(RuntimeException.class, () -> customerService.createCustomer(customerRequestDTO));
+            assertThat(exception.getMessage()).contains("address is required");
+        }
+
+        @Test
+        @DisplayName("Should throw exception when user registration is incomplete - no role")
+        void createCustomer_IncompleteUserNoRole_ThrowsException() {
+            // Arrange
+            User incompleteUser = new User();
+            incompleteUser.setUserId(1L);
+            incompleteUser.setUsername("testuser");
+            incompleteUser.setEmail("test@example.com");
+            incompleteUser.setAddress("123 Test St");
+            incompleteUser.setPassword("password");
+            incompleteUser.setRole(null); // No role
+
+            when(userRepository.findById(1L)).thenReturn(Optional.of(incompleteUser));
+
+            // Act & Assert
+            Exception exception = assertThrows(RuntimeException.class, () -> customerService.createCustomer(customerRequestDTO));
+            assertThat(exception.getMessage()).contains("role is required");
+        }
+
+        @Test
+        @DisplayName("Should throw exception when user registration is incomplete - no password")
+        void createCustomer_IncompleteUserNoPassword_ThrowsException() {
+            // Arrange
+            User incompleteUser = new User();
+            incompleteUser.setUserId(1L);
+            incompleteUser.setUsername("testuser");
+            incompleteUser.setEmail("test@example.com");
+            incompleteUser.setAddress("123 Test St");
+            incompleteUser.setPassword(""); // Empty password
+            incompleteUser.setRole(customerRole);
+
+            when(userRepository.findById(1L)).thenReturn(Optional.of(incompleteUser));
+
+            // Act & Assert
+            Exception exception = assertThrows(RuntimeException.class, () -> customerService.createCustomer(customerRequestDTO));
+            assertThat(exception.getMessage()).contains("password is required");
+        }
+
+        @Test
+        @DisplayName("Should create customer successfully when created by SC_STAFF")
+        void createCustomer_ByScStaff_Success() {
+            // Arrange
+            Role scStaffRole = new Role();
+            scStaffRole.setRoleId(3L);
+            scStaffRole.setRoleName("SC_STAFF");
+
+            User scStaffUser = new User();
+            scStaffUser.setUsername("scstaff");
+            scStaffUser.setRole(scStaffRole);
+            scStaffUser.setCreatedAt(LocalDateTime.now());
+
+            Customer savedCustomer = new Customer();
+            savedCustomer.setCustomerId(UUID.randomUUID());
+            savedCustomer.setName(customerRequestDTO.getName());
+            savedCustomer.setPhone(customerRequestDTO.getPhone());
+            savedCustomer.setUser(user);
+
+            when(securityContext.getAuthentication()).thenReturn(authentication);
+            SecurityContextHolder.setContext(securityContext);
+            when(authentication.getName()).thenReturn("scstaff");
+
+            when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+            when(userRepository.findByUsername("scstaff")).thenReturn(Optional.of(scStaffUser));
+            when(customerRepository.findByPhone("1234567890")).thenReturn(Optional.empty());
+            when(customerRepository.save(any(Customer.class))).thenReturn(savedCustomer);
+
+            // Act
+            CustomerResponseDTO result = customerService.createCustomer(customerRequestDTO);
+
+            // Assert
+            assertThat(result).isNotNull();
+            verify(customerRepository).save(any(Customer.class));
+        }
+
+        @Test
+        @DisplayName("Should create customer successfully when created by EVM_STAFF")
+        void createCustomer_ByEvmStaff_Success() {
+            // Arrange
+            Role evmStaffRole = new Role();
+            evmStaffRole.setRoleId(4L);
+            evmStaffRole.setRoleName("EVM_STAFF");
+
+            User evmStaffUser = new User();
+            evmStaffUser.setUsername("evmstaff");
+            evmStaffUser.setRole(evmStaffRole);
+            evmStaffUser.setCreatedAt(LocalDateTime.now());
+
+            Customer savedCustomer = new Customer();
+            savedCustomer.setCustomerId(UUID.randomUUID());
+            savedCustomer.setName(customerRequestDTO.getName());
+            savedCustomer.setPhone(customerRequestDTO.getPhone());
+            savedCustomer.setUser(user);
+
+            when(securityContext.getAuthentication()).thenReturn(authentication);
+            SecurityContextHolder.setContext(securityContext);
+            when(authentication.getName()).thenReturn("evmstaff");
+
+            when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+            when(userRepository.findByUsername("evmstaff")).thenReturn(Optional.of(evmStaffUser));
+            when(customerRepository.findByPhone("1234567890")).thenReturn(Optional.empty());
+            when(customerRepository.save(any(Customer.class))).thenReturn(savedCustomer);
+
+            // Act
+            CustomerResponseDTO result = customerService.createCustomer(customerRequestDTO);
+
+            // Assert
+            assertThat(result).isNotNull();
+            verify(customerRepository).save(any(Customer.class));
+        }
     }
 
     @Nested
@@ -477,6 +606,55 @@ class CustomerServiceImplTest {
         }
 
         @Test
+        @DisplayName("Should return all customers with empty search string")
+        void getAllCustomersPage_EmptySearch_ReturnsAll() {
+            // Arrange
+            Pageable pageable = PageRequest.of(0, 10);
+            List<Customer> customers = new ArrayList<>();
+            Customer customer1 = new Customer();
+            customer1.setCustomerId(UUID.randomUUID());
+            customer1.setName("Customer 1");
+            customer1.setUser(user);
+            customers.add(customer1);
+
+            Page<Customer> customerPage = new PageImpl<>(customers, pageable, 1);
+            when(customerRepository.findAll(pageable)).thenReturn(customerPage);
+
+            // Act
+            PagedResponse<CustomerResponseDTO> result = customerService.getAllCustomersPage(pageable, "");
+
+            // Assert
+            assertThat(result).isNotNull();
+            assertThat(result.getContent()).hasSize(1);
+            verify(customerRepository).findAll(pageable);
+            verify(customerRepository, never()).findByNameContainingIgnoreCase(anyString(), any());
+        }
+
+        @Test
+        @DisplayName("Should return all customers with whitespace search string")
+        void getAllCustomersPage_WhitespaceSearch_ReturnsAll() {
+            // Arrange
+            Pageable pageable = PageRequest.of(0, 10);
+            List<Customer> customers = new ArrayList<>();
+            Customer customer1 = new Customer();
+            customer1.setCustomerId(UUID.randomUUID());
+            customer1.setName("Customer 1");
+            customer1.setUser(user);
+            customers.add(customer1);
+
+            Page<Customer> customerPage = new PageImpl<>(customers, pageable, 1);
+            when(customerRepository.findAll(pageable)).thenReturn(customerPage);
+
+            // Act
+            PagedResponse<CustomerResponseDTO> result = customerService.getAllCustomersPage(pageable, "   ");
+
+            // Assert
+            assertThat(result).isNotNull();
+            assertThat(result.getContent()).hasSize(1);
+            verify(customerRepository).findAll(pageable);
+        }
+
+        @Test
         @DisplayName("Should return paginated customers with search")
         void getAllCustomersPage_WithSearch_ReturnsFilteredCustomers() {
             // Arrange
@@ -712,6 +890,90 @@ class CustomerServiceImplTest {
                 () -> customerService.updateCustomerProfile(customerRequestDTO, "Bearer token"));
             assertThat(exception.getMessage()).isEqualTo("Phone number already exists: 9876543210");
         }
+
+        @Test
+        @DisplayName("Should update successfully when phone belongs to same customer")
+        void updateCustomerProfile_SamePhoneSameCustomer_Success() {
+            // Arrange
+            UUID customerId = UUID.randomUUID();
+            customerRequestDTO.setPhone("1234567890");
+            customerRequestDTO.setAddress("Updated Address"); // Add address to trigger userRepository.save()
+
+            Customer existingCustomer = new Customer();
+            existingCustomer.setCustomerId(customerId);
+            existingCustomer.setPhone("1234567890");
+            existingCustomer.setUser(user);
+
+            Page<Customer> customerPage = new PageImpl<>(Collections.singletonList(existingCustomer));
+
+            when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+            when(customerRepository.findByUserUserId(1L, Pageable.unpaged())).thenReturn(customerPage);
+            when(customerRepository.findByPhone("1234567890")).thenReturn(Optional.of(existingCustomer)); // Same customer
+            when(userRepository.save(any(User.class))).thenReturn(user);
+            when(customerRepository.save(any(Customer.class))).thenReturn(existingCustomer);
+
+            // Act
+            CustomerResponseDTO result = customerService.updateCustomerProfile(customerRequestDTO, "Bearer token");
+
+            // Assert
+            assertThat(result).isNotNull();
+            verify(customerRepository).save(any(Customer.class));
+            verify(userRepository).save(user); // Now this stubbing is used
+        }
+
+        @Test
+        @DisplayName("Should update successfully when phone is not taken")
+        void updateCustomerProfile_PhoneNotTaken_Success() {
+            // Arrange
+            customerRequestDTO.setPhone("9999999999");
+            customerRequestDTO.setAddress("New Address"); // Add address to trigger userRepository.save()
+
+            Customer existingCustomer = new Customer();
+            existingCustomer.setCustomerId(UUID.randomUUID());
+            existingCustomer.setUser(user);
+
+            Page<Customer> customerPage = new PageImpl<>(Collections.singletonList(existingCustomer));
+
+            when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+            when(customerRepository.findByUserUserId(1L, Pageable.unpaged())).thenReturn(customerPage);
+            when(customerRepository.findByPhone("9999999999")).thenReturn(Optional.empty()); // Phone not taken
+            when(userRepository.save(any(User.class))).thenReturn(user);
+            when(customerRepository.save(any(Customer.class))).thenReturn(existingCustomer);
+
+            // Act
+            CustomerResponseDTO result = customerService.updateCustomerProfile(customerRequestDTO, "Bearer token");
+
+            // Assert
+            assertThat(result).isNotNull();
+            verify(customerRepository).save(any(Customer.class));
+            verify(userRepository).save(user); // Now this stubbing is used
+        }
+
+        @Test
+        @DisplayName("Should update successfully when address is null")
+        void updateCustomerProfile_NullAddress_Success() {
+            // Arrange
+            customerRequestDTO.setAddress(null); // Null address
+
+            Customer existingCustomer = new Customer();
+            existingCustomer.setCustomerId(UUID.randomUUID());
+            existingCustomer.setUser(user);
+
+            Page<Customer> customerPage = new PageImpl<>(Collections.singletonList(existingCustomer));
+
+            when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+            when(customerRepository.findByUserUserId(1L, Pageable.unpaged())).thenReturn(customerPage);
+            when(customerRepository.findByPhone(anyString())).thenReturn(Optional.empty());
+            when(customerRepository.save(any(Customer.class))).thenReturn(existingCustomer);
+
+            // Act
+            CustomerResponseDTO result = customerService.updateCustomerProfile(customerRequestDTO, "Bearer token");
+
+            // Assert
+            assertThat(result).isNotNull();
+            verify(customerRepository).save(any(Customer.class));
+            verify(userRepository, never()).save(any(User.class)); // User not saved when address is null
+        }
     }
 
     @Nested
@@ -729,16 +991,36 @@ class CustomerServiceImplTest {
             customer.setPhone("1234567890");
             customer.setUser(user);
 
-            // Set up vehicles with empty warranty claims list
+            // Set up vehicles with warranty claims
             List<Vehicle> vehicles = new ArrayList<>();
             Vehicle vehicle = new Vehicle();
             vehicle.setVehicleId(1L);
-            vehicle.setWarrantyClaims(new ArrayList<>());
+
+            // Set up warranty claims
+            List<com.swp391.warrantymanagement.entity.WarrantyClaim> warrantyClaims = new ArrayList<>();
+            com.swp391.warrantymanagement.entity.WarrantyClaim claim1 = new com.swp391.warrantymanagement.entity.WarrantyClaim();
+            claim1.setStatus(com.swp391.warrantymanagement.enums.WarrantyClaimStatus.COMPLETED);
+            claim1.setInstalledPart(new com.swp391.warrantymanagement.entity.InstalledPart());
+            claim1.getInstalledPart().setPart(new com.swp391.warrantymanagement.entity.Part());
+
+            com.swp391.warrantymanagement.entity.WarrantyClaim claim2 = new com.swp391.warrantymanagement.entity.WarrantyClaim();
+            claim2.setStatus(com.swp391.warrantymanagement.enums.WarrantyClaimStatus.PROCESSING);
+            claim2.setInstalledPart(new com.swp391.warrantymanagement.entity.InstalledPart());
+            claim2.getInstalledPart().setPart(new com.swp391.warrantymanagement.entity.Part());
+
+            warrantyClaims.add(claim1);
+            warrantyClaims.add(claim2);
+            vehicle.setWarrantyClaims(warrantyClaims);
             vehicles.add(vehicle);
             customer.setVehicles(vehicles);
 
             // Set up feedbacks
             List<Feedback> feedbacks = new ArrayList<>();
+            Feedback feedback1 = new Feedback();
+            feedback1.setFeedbackId(1L);
+            feedback1.setRating(5);
+            feedback1.setComment("Great service");
+            feedbacks.add(feedback1);
             customer.setFeedbacks(feedbacks);
 
             when(customerRepository.findById(customerId)).thenReturn(Optional.of(customer));
@@ -754,6 +1036,39 @@ class CustomerServiceImplTest {
             assertThat(result.getCustomerEmail()).isEqualTo("test@example.com");
             assertThat(result.getUsername()).isEqualTo("testuser");
             assertThat(result.getTotalVehicles()).isEqualTo(1);
+            assertThat(result.getTotalClaims()).isEqualTo(2);
+            assertThat(result.getCompletedClaims()).isEqualTo(1);
+            assertThat(result.getPendingClaims()).isEqualTo(1);
+            assertThat(result.getTotalFeedbacks()).isEqualTo(1);
+            verify(customerRepository).findById(customerId);
+        }
+
+
+        @Test
+        @DisplayName("Should return profile with empty vehicles and feedbacks lists")
+        void getCustomerFullProfile_EmptyLists_Success() {
+            // Arrange
+            UUID customerId = UUID.randomUUID();
+            Customer customer = new Customer();
+            customer.setCustomerId(customerId);
+            customer.setName("Test Customer");
+            customer.setPhone("1234567890");
+            customer.setUser(user);
+            customer.setVehicles(new ArrayList<>()); // Empty list
+            customer.setFeedbacks(new ArrayList<>()); // Empty list
+
+            when(customerRepository.findById(customerId)).thenReturn(Optional.of(customer));
+
+            // Act
+            CustomerProfileResponseDTO result = customerService.getCustomerFullProfile(customerId);
+
+            // Assert
+            assertThat(result).isNotNull();
+            assertThat(result.getTotalVehicles()).isEqualTo(0);
+            assertThat(result.getTotalClaims()).isEqualTo(0);
+            assertThat(result.getCompletedClaims()).isEqualTo(0);
+            assertThat(result.getPendingClaims()).isEqualTo(0);
+            assertThat(result.getTotalFeedbacks()).isEqualTo(0);
             verify(customerRepository).findById(customerId);
         }
 

@@ -318,4 +318,77 @@ class FeedbackControllerTest {
                 .andExpect(jsonPath("$.serviceCenterId").value(serviceCenterId))
                 .andExpect(jsonPath("$.averageRating").value(4.8));
     }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    @DisplayName("GET /api/feedbacks/statistics/count-by-rating/{rating} should return 200 OK with count")
+    void countByRating_Success() throws Exception {
+        // Arrange
+        Integer rating = 5;
+        when(feedbackService.countByRating(rating)).thenReturn(10L);
+
+        // Act & Assert
+        mockMvc.perform(get("/api/feedbacks/statistics/count-by-rating/" + rating))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rating").value(rating))
+                .andExpect(jsonPath("$.count").value(10));
+    }
+
+    @Test
+    @WithMockUser(roles = "EVM_STAFF")
+    @DisplayName("GET /api/feedbacks/statistics/count-by-rating/{rating} should work for EVM_STAFF")
+    void countByRating_EvmStaff_Success() throws Exception {
+        // Arrange
+        Integer rating = 4;
+        when(feedbackService.countByRating(rating)).thenReturn(15L);
+
+        // Act & Assert
+        mockMvc.perform(get("/api/feedbacks/statistics/count-by-rating/" + rating))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rating").value(rating))
+                .andExpect(jsonPath("$.count").value(15));
+    }
+
+    @Test
+    @WithMockUser(roles = "SC_TECHNICIAN")
+    @DisplayName("GET /api/feedbacks/statistics/summary should return 200 OK with statistics")
+    void getFeedbackStatistics_Success() throws Exception {
+        // Arrange
+        when(feedbackService.getAverageRating()).thenReturn(4.5);
+        when(feedbackService.countByRating(1)).thenReturn(2L);
+        when(feedbackService.countByRating(2)).thenReturn(3L);
+        when(feedbackService.countByRating(3)).thenReturn(5L);
+        when(feedbackService.countByRating(4)).thenReturn(8L);
+        when(feedbackService.countByRating(5)).thenReturn(10L);
+
+        // Act & Assert
+        mockMvc.perform(get("/api/feedbacks/statistics/summary"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.averageRating").value(4.5))
+                .andExpect(jsonPath("$.ratingCounts['1']").value(2))
+                .andExpect(jsonPath("$.ratingCounts['2']").value(3))
+                .andExpect(jsonPath("$.ratingCounts['3']").value(5))
+                .andExpect(jsonPath("$.ratingCounts['4']").value(8))
+                .andExpect(jsonPath("$.ratingCounts['5']").value(10));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    @DisplayName("GET /api/feedbacks/statistics/summary should handle null average rating")
+    void getFeedbackStatistics_NullAverageRating_ReturnsZero() throws Exception {
+        // Arrange
+        when(feedbackService.getAverageRating()).thenReturn(null);
+        when(feedbackService.countByRating(1)).thenReturn(0L);
+        when(feedbackService.countByRating(2)).thenReturn(0L);
+        when(feedbackService.countByRating(3)).thenReturn(0L);
+        when(feedbackService.countByRating(4)).thenReturn(0L);
+        when(feedbackService.countByRating(5)).thenReturn(0L);
+
+        // Act & Assert
+        mockMvc.perform(get("/api/feedbacks/statistics/summary"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.averageRating").value(0.0))
+                .andExpect(jsonPath("$.ratingCounts['1']").value(0))
+                .andExpect(jsonPath("$.ratingCounts['5']").value(0));
+    }
 }

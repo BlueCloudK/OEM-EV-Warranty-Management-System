@@ -325,6 +325,53 @@ class ServiceHistoryServiceImplTest {
         }
 
         @Test
+        @DisplayName("Should get all service histories with empty search string")
+        void getAllServiceHistories_EmptySearch_ReturnsAll() {
+            // Arrange
+            Pageable pageable = PageRequest.of(0, 10);
+            ServiceHistory history = new ServiceHistory();
+            history.setServiceHistoryId(1L);
+            history.setServiceDate(serviceLocalDate);
+            history.setVehicle(vehicle);
+
+            Page<ServiceHistory> page = new PageImpl<>(List.of(history), pageable, 1);
+
+            when(serviceHistoryRepository.findAll(pageable)).thenReturn(page);
+
+            // Act
+            PagedResponse<ServiceHistoryResponseDTO> result = serviceHistoryService.getAllServiceHistoriesPage(pageable, "");
+
+            // Assert
+            assertThat(result).isNotNull();
+            assertThat(result.getContent()).hasSize(1);
+            verify(serviceHistoryRepository).findAll(pageable);
+            verify(serviceHistoryRepository, never()).findByServiceTypeContainingIgnoreCase(anyString(), any());
+        }
+
+        @Test
+        @DisplayName("Should get all service histories with whitespace search string")
+        void getAllServiceHistories_WhitespaceSearch_ReturnsAll() {
+            // Arrange
+            Pageable pageable = PageRequest.of(0, 10);
+            ServiceHistory history = new ServiceHistory();
+            history.setServiceHistoryId(1L);
+            history.setServiceDate(serviceLocalDate);
+            history.setVehicle(vehicle);
+
+            Page<ServiceHistory> page = new PageImpl<>(List.of(history), pageable, 1);
+
+            when(serviceHistoryRepository.findAll(pageable)).thenReturn(page);
+
+            // Act
+            PagedResponse<ServiceHistoryResponseDTO> result = serviceHistoryService.getAllServiceHistoriesPage(pageable, "   ");
+
+            // Assert
+            assertThat(result).isNotNull();
+            assertThat(result.getContent()).hasSize(1);
+            verify(serviceHistoryRepository).findAll(pageable);
+        }
+
+        @Test
         @DisplayName("Should search service histories by service type")
         void getAllServiceHistories_WithSearch_ReturnsFilteredResults() {
             // Arrange
@@ -448,6 +495,31 @@ class ServiceHistoryServiceImplTest {
             verify(jwtService).extractUsername("valid-token");
             verify(userRepository).findByUsername(username);
             verify(customerRepository).findByUser(user);
+        }
+
+        @Test
+        @DisplayName("Should throw exception when authorization header is null")
+        void getServiceHistoriesByCurrentUser_NullAuthHeader_ThrowsException() {
+            // Arrange
+            Pageable pageable = PageRequest.of(0, 10);
+
+            // Act & Assert
+            RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> serviceHistoryService.getServiceHistoriesByCurrentUser(null, pageable));
+            assertThat(exception.getMessage()).contains("Invalid or missing authorization token");
+        }
+
+        @Test
+        @DisplayName("Should throw exception when authorization header has no Bearer prefix")
+        void getServiceHistoriesByCurrentUser_NoBearerPrefix_ThrowsException() {
+            // Arrange
+            String authHeader = "invalid-header-format";
+            Pageable pageable = PageRequest.of(0, 10);
+
+            // Act & Assert
+            RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> serviceHistoryService.getServiceHistoriesByCurrentUser(authHeader, pageable));
+            assertThat(exception.getMessage()).contains("Invalid or missing authorization token");
         }
 
         @Test
