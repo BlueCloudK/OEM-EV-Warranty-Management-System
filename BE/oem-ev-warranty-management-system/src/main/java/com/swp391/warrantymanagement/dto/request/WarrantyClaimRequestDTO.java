@@ -10,9 +10,9 @@ public class WarrantyClaimRequestDTO {
     @Positive(message = "Vehicle ID must be a positive number")
     private Long vehicleId;
 
-    @NotBlank(message = "Installed part ID is required")
-    @Size(max = 50, message = "Installed part ID cannot exceed 50 characters")
-    private String installedPartId;
+    @NotNull(message = "Installed part ID is required")
+    @Positive(message = "Installed part ID must be a positive number")
+    private Long installedPartId;
 
     @Size(min = 10, max = 500, message = "Description must be between 10 and 500 characters")
     private String description;

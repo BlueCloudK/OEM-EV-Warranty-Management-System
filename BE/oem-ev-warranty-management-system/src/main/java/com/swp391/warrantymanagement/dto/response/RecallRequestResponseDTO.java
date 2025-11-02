@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 @Data
 public class RecallRequestResponseDTO {
     private Long recallRequestId;
-    private String installedPartId;
+    private Long installedPartId;
     private Long partId; // Changed from String to Long
     private String partName;
     private Long vehicleId;

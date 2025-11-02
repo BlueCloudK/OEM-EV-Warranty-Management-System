@@ -5,6 +5,7 @@ import com.swp391.warrantymanagement.dto.request.RecallRequestRequestDTO;
 import com.swp391.warrantymanagement.dto.response.RecallRequestResponseDTO;
 
 import java.util.List;
+import java.util.UUID;
 
 public interface RecallRequestService {
     RecallRequestResponseDTO createRecallRequest(RecallRequestRequestDTO dto, String authorizationHeader);
@@ -17,7 +18,7 @@ public interface RecallRequestService {
 
     List<RecallRequestResponseDTO> getRecallRequestsForAdmin();
 
-    List<RecallRequestResponseDTO> getRecallRequestsForCustomer(Long customerId);
+    List<RecallRequestResponseDTO> getRecallRequestsForCustomer(UUID customerId);
 
     List<RecallRequestResponseDTO> getMyRecallRequests(String authorizationHeader);
 

@@ -4,17 +4,17 @@ import com.swp391.warrantymanagement.dto.response.UserResponseDTO;
 import com.swp391.warrantymanagement.entity.User;
 import com.swp391.warrantymanagement.mapper.UserMapper;
 import com.swp391.warrantymanagement.service.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import jakarta.validation.Valid;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,11 +28,11 @@ import java.util.Map;
 @RequestMapping("api/admin/users")
 @CrossOrigin
 @PreAuthorize("hasRole('ADMIN')")
+@RequiredArgsConstructor
 public class UserManagementController {
     private static final Logger logger = LoggerFactory.getLogger(UserManagementController.class);
 
-    @Autowired
-    private UserService userService;
+    private final UserService userService;
 
     /**
      * Get all users with pagination and filtering
@@ -320,4 +320,3 @@ public class UserManagementController {
         }
     }
 }
-

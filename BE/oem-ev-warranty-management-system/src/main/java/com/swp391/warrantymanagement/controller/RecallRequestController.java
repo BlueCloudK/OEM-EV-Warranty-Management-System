@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/recall-requests")
@@ -55,7 +56,7 @@ public class RecallRequestController {
     // Lấy danh sách recall cho khách hàng
     @GetMapping("/customer/{customerId}")
     @PreAuthorize("hasRole('CUSTOMER')")
-    public ResponseEntity<List<RecallRequestResponseDTO>> getForCustomer(@PathVariable Long customerId) {
+    public ResponseEntity<List<RecallRequestResponseDTO>> getForCustomer(@PathVariable UUID customerId) {
         return ResponseEntity.ok(recallRequestService.getRecallRequestsForCustomer(customerId));
     }
 
