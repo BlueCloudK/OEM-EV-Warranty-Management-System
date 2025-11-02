@@ -1,30 +1,35 @@
 package com.swp391.warrantymanagement.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 @Entity // map/ánh xạ class này với bảng trong database
 @Table(name = "installed_parts") // đặt tên bảng trong database
-@Data // tự động tạo getter, setter, toString, hashCode, equals
+@Getter
+@Setter
 @AllArgsConstructor // tự động tạo constructor với tất cả các tham số
 @NoArgsConstructor // tự động tạo constructor không tham số
+// Tối ưu hóa việc so sánh và logging cho Entity:
+// - @EqualsAndHashCode: Chỉ định rằng hai đối tượng InstalledPart được coi là bằng nhau nếu chúng có cùng `installedPartId`.
+// - @ToString: Khi in đối tượng này ra (ví dụ: khi debug), không hiển thị các trường quan hệ để tránh lỗi đệ quy vô hạn và LazyInitializationException.
+@EqualsAndHashCode(onlyExplicitlyIncluded = true) // chỉ so sánh trường installedPartId
+@ToString(exclude = {"part", "vehicle", "warrantyClaims"}) // không bao gồm trường part, vehicle và warrantyClaims
 public class InstalledPart {
     @Id
-    @Column(name = "installed_part_id", length = 50)
-    private String installedPartId;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "installed_part_id")
+    @EqualsAndHashCode.Include
+    private Long installedPartId;
 
     @Column(name = "installation_date", nullable = false)
     private LocalDate installationDate;
 
     @Column(name = "warranty_expiration_date", nullable = false)
-    private LocalDate  warrantyExpirationDate;
+    private LocalDate warrantyExpirationDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "part_id", nullable = false)
