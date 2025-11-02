@@ -34,4 +34,3 @@ build/
 
 ### DOTENV ###
 .env
-/src/test/
