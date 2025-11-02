@@ -11,9 +11,6 @@ import java.time.LocalDate;
  */
 @Data
 public class InstalledPartRequestDTO {
-    @NotBlank(message = "Installed part ID is required")
-    @Size(max = 50, message = "Installed part ID cannot exceed 50 characters")
-    private String installedPartId;
 
     @NotNull(message = "Part ID is required")
     @Positive(message = "Part ID must be a positive number")
