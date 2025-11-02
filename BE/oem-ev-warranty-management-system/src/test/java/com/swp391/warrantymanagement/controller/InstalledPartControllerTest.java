@@ -94,7 +94,6 @@ class InstalledPartControllerTest {
         testVehicleId = 1L;
 
         requestDTO = new InstalledPartRequestDTO();
-        requestDTO.setInstalledPartId(testInstalledPartId);
         requestDTO.setPartId(testPartId);
         requestDTO.setVehicleId(testVehicleId);
         requestDTO.setInstallationDate(LocalDate.now().minusDays(1));
