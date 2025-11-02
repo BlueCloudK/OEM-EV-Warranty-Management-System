@@ -207,7 +207,7 @@ public class PartRequestController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF')")
     public ResponseEntity<PartRequestResponseDTO> rejectPartRequest(
             @PathVariable Long id,
-            @RequestParam String rejectionReason,
+            @RequestParam(required = false) String rejectionReason,
             @RequestHeader("Authorization") String authorizationHeader) {
 
         logger.info("Reject part request: {}", id);
