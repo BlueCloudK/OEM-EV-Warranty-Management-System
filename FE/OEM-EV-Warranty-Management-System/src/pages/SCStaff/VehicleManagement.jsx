@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useVehicleManagement } from '../../hooks/useVehicleManagement';
 import * as S from './VehicleManagement.styles';
-import { FaCar, FaPlus, FaEdit, FaSearch, FaArrowLeft, FaSpinner, FaTrash, FaClipboardCheck, FaWrench, FaEye, FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import { FaCar, FaPlus, FaEdit, FaSearch, FaSpinner, FaTrash, FaClipboardCheck, FaWrench, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 
 // Form Modal Component with ALL required fields
 const VehicleFormModal = ({ isOpen, onClose, onSubmit, vehicle, customers }) => {
@@ -208,13 +208,13 @@ const InstallPartFormModal = ({ isOpen, onClose, onSubmit, vehicle, parts }) => 
       setErrors(validationErrors);
       return;
     }
-    const installedPartId = crypto.randomUUID().toUpperCase(); // Convert to uppercase
-    // Convert IDs to numbers before sending
+    // Convert IDs to numbers (Long type) before sending
+    // installedPartId sẽ được backend tự động generate
     const payload = {
-      ...formData,
-      installedPartId,
-      vehicleId: parseInt(formData.vehicleId),
-      partId: parseInt(formData.partId)
+      vehicleId: parseInt(formData.vehicleId, 10),
+      partId: parseInt(formData.partId, 10), // Part ID phải là Long
+      installationDate: formData.installationDate,
+      warrantyExpirationDate: formData.warrantyExpirationDate
     };
     const { success, message } = await onSubmit(payload);
     if (success) {
@@ -264,8 +264,8 @@ const InstallPartFormModal = ({ isOpen, onClose, onSubmit, vehicle, parts }) => 
 const VehicleManagement = () => {
   const navigate = useNavigate();
   const {
-    vehicles, customers, parts, installedParts, loading, error, pagination, searchTerm, setSearchTerm,
-    searchType, setSearchType, handleSearch, handleCreateOrUpdate, handleDelete, handleInstallPart, fetchInstalledPartsForVehicle, clearInstalledParts, handlePageChange
+    vehicles, customers, parts, installedParts, loading, error, searchTerm, setSearchTerm,
+    searchType, setSearchType, handleSearch, handleCreateOrUpdate, handleDelete, handleInstallPart, fetchInstalledPartsForVehicle, clearInstalledParts
   } = useVehicleManagement();
 
   const [showForm, setShowForm] = useState(false);
@@ -334,7 +334,7 @@ const VehicleManagement = () => {
               <option value="customer">ID Khách hàng</option>
               <option value="model">Model Xe</option>
             </select>
-            <S.Input placeholder={getSearchPlaceholder()} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleSearch()} />
+            <S.Input placeholder={getSearchPlaceholder()} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSearch()} />
             <S.Button small onClick={handleSearch}><FaSearch /> Tìm kiếm</S.Button>
           </S.SearchContainer>
         </S.Header>

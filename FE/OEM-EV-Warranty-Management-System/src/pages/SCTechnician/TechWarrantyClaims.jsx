@@ -21,10 +21,7 @@ const ClaimDetailModal = ({ isOpen, onClose, claim, onStartProcessing, onComplet
   };
 
   const handleComplete = async () => {
-    if (!completionNote.trim()) {
-      alert('Vui lòng nhập ghi chú hoàn thành');
-      return;
-    }
+    // Ghi chú hoàn thành không bắt buộc
     const result = await onComplete(claim.warrantyClaimId, completionNote);
     if (result.success) {
       setShowCompleteForm(false);
@@ -119,13 +116,13 @@ const ClaimDetailModal = ({ isOpen, onClose, claim, onStartProcessing, onComplet
           {showCompleteForm && (
             <>
               <div style={{ width: '100%', marginBottom: '16px' }}>
-                <S.Label>Ghi chú hoàn thành *:</S.Label>
+                <S.Label>Ghi chú hoàn thành:</S.Label>
                 <S.TextArea
                   value={completionNote}
                   onChange={(e) => setCompletionNote(e.target.value)}
                   placeholder="Nhập ghi chú về kết quả xử lý..."
                   rows={4}
-                  required
+                />
                 />
               </div>
               <S.Button primary onClick={handleComplete}>

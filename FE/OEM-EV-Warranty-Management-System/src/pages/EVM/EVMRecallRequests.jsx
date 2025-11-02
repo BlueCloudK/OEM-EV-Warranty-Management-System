@@ -142,7 +142,7 @@ const EVMRecallRequests = () => {
             await apiClient('/api/recall-requests', {
               method: 'POST',
               body: JSON.stringify({
-                installedPartId: ip.installedPartId.toString(),
+                installedPartId: ip.installedPartId,
                 reason: formData.reason
               })
             });
@@ -160,7 +160,7 @@ const EVMRecallRequests = () => {
         await apiClient('/api/recall-requests', {
           method: 'POST',
           body: JSON.stringify({
-            installedPartId: formData.installedPartId.toString(),
+            installedPartId: parseInt(formData.installedPartId),
             reason: formData.reason
           })
         });
