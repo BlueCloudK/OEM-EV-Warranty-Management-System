@@ -97,6 +97,7 @@ public class AuthController {
 
     // TẠO TÀI KHOẢN BỞI ADMIN - CHỈ ADMIN MỚI TRUY CẬP ĐƯỢC
     @PostMapping("/admin/create-user")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Map<String, Object>> createUserByAdmin(@Valid @RequestBody AdminUserCreationDTO adminCreationRequest) {
         logger.info("Admin user creation attempt for username: {}", adminCreationRequest.getUsername());
         try {
