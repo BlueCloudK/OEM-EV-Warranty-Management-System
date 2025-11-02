@@ -135,92 +135,44 @@ mvn clean install -DskipTests
 ## Test Coverage
 
 ### Goal
-The project aims for a minimum test coverage of **80%** for all layers.
+The project aims for a minimum test coverage of **80%** for all layers. The current coverage is below this target, and improving it is a high priority.
 
-### Current Status
-**Updated**: November, 2025
+### Generating and Viewing the Report
+To check the current test coverage, run the JaCoCo report generation command and open the resulting HTML file.
 
-| Metric | Result | Status |
-|--------|---------|------------|
-| **Instructions Coverage** | 29% (4,274/14,264) | ⚠️ Goal Not Met |
-| **Branches Coverage** | 22% (164/740) | ⚠️ Goal Not Met |
-| **Lines Coverage** | 30% (903/3,055) | ⚠️ Goal Not Met |
-| **Methods Coverage** | 30% (158/525) | ⚠️ Goal Not Met |
-| **Classes Coverage** | 95% (56/59) | ✅ Goal Met |
-
-### Details by Package
-
-| Package | Coverage | Methods Tested | Priority |
-|---------|----------|----------------|---------|
-| **enums** | 94% | 6/9 | ✅ Good |
-| **config** | 71% | 15/22 | ✅ Good |
-| **mapper** | 69% | 24/43 | 🟡 Needs Improvement |
-| **entity** | 67% | 4/6 | 🟡 Needs Improvement |
-| **exception** | 28% | 3/9 | 🔴 High Priority |
-| **util** | 29% | 5/13 | 🔴 High Priority |
-| **service.impl** | 24% | 57/258 | 🔴 **Highest Priority** |
-| **controller** | 14% | 43/161 | 🔴 **Highest Priority** |
-| **entity.id** | 0% | 0/2 | 🔴 No tests |
-
-### Improvement Recommendations
-
-#### 1. Controller Layer (14% → 80%)
-**Current State**: Only 43/161 methods are tested
-
-**Action**:
-- Add tests for missing endpoints
-- Test validation cases
-- Test error handling and exception cases
-- Verify security constraints (@PreAuthorize)
-
-#### 2. Service Layer (24% → 80%)
-**Current State**: Only 57/258 methods are tested
-
-**Action**:
-- Write unit tests for all business logic
-- Mock repository dependencies
-- Test edge cases and error scenarios
-- Verify transaction handling
-
-#### 3. Entity ID (0% → 80%)
-**Current State**: No tests yet
-
-**Action**:
-- Create tests for composite key classes
-- Test equals() and hashCode()
-- Verify serialization/deserialization
-
-#### 4. Util & Exception (29% and 28%)
-**Action**:
-- Test utility methods with different inputs
-- Test exception constructors and messages
-
-### Generating JaCoCo Report
-
-Run the following command to execute tests and generate the coverage report:
-
+**1. Generate the report:**
+Run the following command from the project root:
 ```bash
 mvn clean verify
 ```
 
-### Viewing the Report
-
-After the `mvn verify` command runs successfully, the detailed report will be generated at:
-
+**2. View the report:**
+After the command completes, open the report in your browser:
 ```
 target/site/jacoco/index.html
 ```
+This report will provide a detailed breakdown of coverage by package, class, and method, highlighting areas that need improvement.
 
-**How to open the report:**
-1. Open Windows Explorer
-2. Navigate to: `D:\Project\OEM-EV-Warranty-Management-System\BE\oem-ev-warranty-management-system\target\site\jacoco\`
-3. Double-click the `index.html` file
-4. The report will open in your default browser
+### Improvement Recommendations
+Based on previous reports, the following areas require the most attention:
 
-**Or use the command line:**
-```bash
-start target\site\jacoco\index.html
-```
+#### 1. Controller Layer
+**Action**:
+- Add tests for missing endpoints.
+- Test validation cases.
+- Test error handling and exception cases.
+- Verify security constraints (`@PreAuthorize`).
+
+#### 2. Service Layer
+**Action**:
+- Write unit tests for all business logic.
+- Mock repository dependencies.
+- Test edge cases and error scenarios.
+- Verify transaction handling.
+
+#### 3. Other Packages
+- **`entity.id`**: Create tests for composite key classes, including `equals()` and `hashCode()`.
+- **`util` & `exception`**: Increase coverage for utility methods and exception classes.
 
 ### Understanding the JaCoCo Report
 
