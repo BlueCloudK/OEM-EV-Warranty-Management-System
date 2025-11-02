@@ -1,38 +1,38 @@
-# Tài liệu Kiểm thử - Hệ thống Quản lý Bảo hành Xe điện
+# Testing Documentation - EV Warranty Management System
 
 ## OEM EV Warranty Management System - Testing Documentation
 
-Tài liệu này mô tả chiến lược kiểm thử và hướng dẫn chạy test cho phần backend của dự án.
+This document describes the testing strategy and instructions for running tests for the backend of the project.
 
 ---
 
-## Tổng quan
+## Overview
 
-Dự án này sử dụng một bộ kiểm thử toàn diện để đảm bảo chất lượng mã nguồn và tính đúng đắn của các logic nghiệp vụ. Các bài kiểm thử được xây dựng theo các phương pháp hiện đại, tập trung vào việc cô lập và xác minh từng thành phần của ứng dụng.
+This project uses a comprehensive test suite to ensure code quality and the correctness of business logic. The tests are built using modern methods, focusing on isolating and verifying each component of the application.
 
-## Công nghệ sử dụng
+## Technologies Used
 
-*   **Spring Boot Test**: Nền tảng chính để kiểm thử tích hợp cho các ứng dụng Spring Boot
-*   **JUnit 5 (Jupiter)**: Framework kiểm thử phổ biến nhất cho Java, hỗ trợ các annotation hiện đại
-*   **Mockito**: Thư viện mạnh mẽ để tạo các đối tượng giả (mock) nhằm cô lập các lớp khỏi phụ thuộc
-*   **MockMvc**: Framework để kiểm thử REST API mà không cần khởi động server thật
-*   **AssertJ**: Thư viện để viết các câu lệnh xác minh (assertion) một cách trôi chảy, dễ đọc
-*   **H2 Database**: Cơ sở dữ liệu trong bộ nhớ (in-memory) cho các bài kiểm thử repository
-*   **JaCoCo**: Plugin Maven để đo lường độ bao phủ mã nguồn (code coverage)
+*   **Spring Boot Test**: The main platform for integration testing for Spring Boot applications
+*   **JUnit 5 (Jupiter)**: The most popular testing framework for Java, supporting modern annotations
+*   **Mockito**: A powerful library for creating mock objects to isolate classes from their dependencies
+*   **MockMvc**: A framework for testing REST APIs without starting a real server
+*   **AssertJ**: A library for writing fluent and readable assertion statements
+*   **H2 Database**: An in-memory database for repository tests
+*   **JaCoCo**: A Maven plugin to measure code coverage
 
-## Cấu trúc Kiểm thử
+## Test Structure
 
-Các bài kiểm thử được tổ chức theo 3 tầng kiến trúc chính:
+The tests are organized according to the 3 main architectural layers:
 
 ### 1. Repository Layer (`@DataJpaTest`)
-Các bài kiểm thử tích hợp tập trung vào việc xác minh các phương thức truy vấn tùy chỉnh trong repository có tương tác đúng với cơ sở dữ liệu hay không.
+Integration tests focused on verifying whether custom query methods in the repository interact correctly with the database.
 
-**Đặc điểm:**
-- Sử dụng H2 in-memory database
-- Tự động rollback sau mỗi test
-- Chỉ load các bean liên quan đến JPA
+**Characteristics:**
+- Uses H2 in-memory database
+- Automatically rolls back after each test
+- Only loads JPA-related beans
 
-**Ví dụ:**
+**Example:**
 ```java
 @DataJpaTest
 class CustomerRepositoryTest {
@@ -43,14 +43,14 @@ class CustomerRepositoryTest {
 ```
 
 ### 2. Service Layer (`@ExtendWith(MockitoExtension.class)`)
-Các bài kiểm thử đơn vị (unit test) tập trung vào việc kiểm tra logic nghiệp vụ bên trong các lớp service. Các phụ thuộc như repository được giả lập (mock) để cô lập hoàn toàn logic của service.
+Unit tests focused on checking the business logic inside the service classes. Dependencies like repositories are mocked to completely isolate the service's logic.
 
-**Đặc điểm:**
-- Mock tất cả dependencies (repositories, external services)
-- Kiểm tra logic nghiệp vụ thuần túy
-- Chạy nhanh, không cần database
+**Characteristics:**
+- Mocks all dependencies (repositories, external services)
+- Tests pure business logic
+- Runs fast, no database required
 
-**Ví dụ:**
+**Example:**
 ```java
 @ExtendWith(MockitoExtension.class)
 class CustomerServiceTest {
@@ -64,15 +64,15 @@ class CustomerServiceTest {
 ```
 
 ### 3. Controller Layer (`@WebMvcTest`)
-Các bài kiểm thử tích hợp tập trung vào việc kiểm tra các API endpoint, bao gồm việc xử lý request, validation, và xác thực quyền truy cập (`@PreAuthorize`). Các lớp service được giả lập (mock) để không thực thi logic nghiệp vụ thực sự.
+Integration tests focused on testing API endpoints, including request handling, validation, and access control verification (`@PreAuthorize`). Service classes are mocked so that the actual business logic is not executed.
 
-**Đặc điểm:**
-- Sử dụng MockMvc để gửi HTTP requests
-- Mock các service dependencies
-- Kiểm tra JSON serialization/deserialization
-- Xác thực security constraints
+**Characteristics:**
+- Uses MockMvc to send HTTP requests
+- Mocks service dependencies
+- Tests JSON serialization/deserialization
+- Verifies security constraints
 
-**Ví dụ:**
+**Example:**
 ```java
 @WebMvcTest(CustomerController.class)
 class CustomerControllerTest {
@@ -87,44 +87,44 @@ class CustomerControllerTest {
 
 ---
 
-## Hướng dẫn Chạy Kiểm thử
+## How to Run Tests
 
-### Yêu cầu
-- **JDK**: 17 hoặc cao hơn
-- **Maven**: 3.6.3 hoặc cao hơn
+### Requirements
+- **JDK**: 17 or higher
+- **Maven**: 3.6.3 or higher
 
-### Thư mục làm việc
-**⚠️ Quan trọng**: Bạn phải thực thi các lệnh Maven từ thư mục gốc của dự án backend:
+### Working Directory
+**⚠️ Important**: You must execute the Maven commands from the root directory of the backend project:
 
 ```
 D:\Project\OEM-EV-Warranty-Management-System\BE\oem-ev-warranty-management-system
 ```
 
-### Chạy tất cả test
+### Run all tests
 
 ```bash
 mvn test
 ```
 
-Lệnh này sẽ:
-- Tự động tải các dependency cần thiết
-- Biên dịch mã nguồn test
-- Chạy toàn bộ các bài kiểm thử (Repository, Service, Controller)
-- Hiển thị kết quả test trong console
+This command will:
+- Automatically download necessary dependencies
+- Compile the test source code
+- Run all tests (Repository, Service, Controller)
+- Display the test results in the console
 
-### Chạy test của một class cụ thể
+### Run tests for a specific class
 
 ```bash
 mvn test -Dtest=CustomerServiceTest
 ```
 
-### Chạy test với output chi tiết
+### Run tests with detailed output
 
 ```bash
 mvn test -X
 ```
 
-### Bỏ qua test khi build
+### Skip tests during build
 
 ```bash
 mvn clean install -DskipTests
@@ -132,113 +132,113 @@ mvn clean install -DskipTests
 
 ---
 
-## Độ bao phủ Kiểm thử (Test Coverage)
+## Test Coverage
 
-### Mục tiêu
-Dự án đặt mục tiêu độ bao phủ kiểm thử (test coverage) **tối thiểu là 80%** cho tất cả các tầng.
+### Goal
+The project aims for a minimum test coverage of **80%** for all layers.
 
-### Tình trạng hiện tại
-**Cập nhật**: Tháng 11, 2025
+### Current Status
+**Updated**: November, 2025
 
-| Metric | Kết quả | Trạng thái |
+| Metric | Result | Status |
 |--------|---------|------------|
-| **Instructions Coverage** | 29% (4,274/14,264) | ⚠️ Chưa đạt mục tiêu |
-| **Branches Coverage** | 22% (164/740) | ⚠️ Chưa đạt mục tiêu |
-| **Lines Coverage** | 30% (903/3,055) | ⚠️ Chưa đạt mục tiêu |
-| **Methods Coverage** | 30% (158/525) | ⚠️ Chưa đạt mục tiêu |
-| **Classes Coverage** | 95% (56/59) | ✅ Đạt mục tiêu |
+| **Instructions Coverage** | 29% (4,274/14,264) | ⚠️ Goal Not Met |
+| **Branches Coverage** | 22% (164/740) | ⚠️ Goal Not Met |
+| **Lines Coverage** | 30% (903/3,055) | ⚠️ Goal Not Met |
+| **Methods Coverage** | 30% (158/525) | ⚠️ Goal Not Met |
+| **Classes Coverage** | 95% (56/59) | ✅ Goal Met |
 
-### Chi tiết theo Package
+### Details by Package
 
-| Package | Coverage | Methods Tested | Ưu tiên |
+| Package | Coverage | Methods Tested | Priority |
 |---------|----------|----------------|---------|
-| **enums** | 94% | 6/9 | ✅ Tốt |
-| **config** | 71% | 15/22 | ✅ Tốt |
-| **mapper** | 69% | 24/43 | 🟡 Cần cải thiện |
-| **entity** | 67% | 4/6 | 🟡 Cần cải thiện |
-| **exception** | 28% | 3/9 | 🔴 Ưu tiên cao |
-| **util** | 29% | 5/13 | 🔴 Ưu tiên cao |
-| **service.impl** | 24% | 57/258 | 🔴 **Ưu tiên cao nhất** |
-| **controller** | 14% | 43/161 | 🔴 **Ưu tiên cao nhất** |
-| **entity.id** | 0% | 0/2 | 🔴 Chưa có test |
+| **enums** | 94% | 6/9 | ✅ Good |
+| **config** | 71% | 15/22 | ✅ Good |
+| **mapper** | 69% | 24/43 | 🟡 Needs Improvement |
+| **entity** | 67% | 4/6 | 🟡 Needs Improvement |
+| **exception** | 28% | 3/9 | 🔴 High Priority |
+| **util** | 29% | 5/13 | 🔴 High Priority |
+| **service.impl** | 24% | 57/258 | 🔴 **Highest Priority** |
+| **controller** | 14% | 43/161 | 🔴 **Highest Priority** |
+| **entity.id** | 0% | 0/2 | 🔴 No tests |
 
-### Khuyến nghị cải thiện
+### Improvement Recommendations
 
 #### 1. Controller Layer (14% → 80%)
-**Hiện trạng**: Chỉ 43/161 methods được test
+**Current State**: Only 43/161 methods are tested
 
-**Hành động**:
-- Thêm test cho các endpoint còn thiếu
-- Kiểm tra các trường hợp validation
-- Test error handling và exception cases
+**Action**:
+- Add tests for missing endpoints
+- Test validation cases
+- Test error handling and exception cases
 - Verify security constraints (@PreAuthorize)
 
 #### 2. Service Layer (24% → 80%)
-**Hiện trạng**: Chỉ 57/258 methods được test
+**Current State**: Only 57/258 methods are tested
 
-**Hành động**:
-- Viết unit test cho tất cả business logic
-- Mock các repository dependencies
-- Test các edge cases và error scenarios
+**Action**:
+- Write unit tests for all business logic
+- Mock repository dependencies
+- Test edge cases and error scenarios
 - Verify transaction handling
 
 #### 3. Entity ID (0% → 80%)
-**Hiện trạng**: Chưa có test nào
+**Current State**: No tests yet
 
-**Hành động**:
-- Tạo test cho composite key classes
-- Kiểm tra equals() và hashCode()
+**Action**:
+- Create tests for composite key classes
+- Test equals() and hashCode()
 - Verify serialization/deserialization
 
-#### 4. Util & Exception (29% và 28%)
-**Hành động**:
-- Test utility methods với các input khác nhau
-- Test exception constructors và messages
+#### 4. Util & Exception (29% and 28%)
+**Action**:
+- Test utility methods with different inputs
+- Test exception constructors and messages
 
-### Tạo báo cáo JaCoCo
+### Generating JaCoCo Report
 
-Chạy lệnh sau để thực thi test và tạo báo cáo coverage:
+Run the following command to execute tests and generate the coverage report:
 
 ```bash
 mvn clean verify
 ```
 
-### Xem báo cáo
+### Viewing the Report
 
-Sau khi lệnh `mvn verify` chạy thành công, báo cáo chi tiết sẽ được tạo tại:
+After the `mvn verify` command runs successfully, the detailed report will be generated at:
 
 ```
 target/site/jacoco/index.html
 ```
 
-**Cách mở báo cáo:**
-1. Mở Windows Explorer
-2. Điều hướng đến: `D:\Project\OEM-EV-Warranty-Management-System\BE\oem-ev-warranty-management-system\target\site\jacoco\`
-3. Double-click vào file `index.html`
-4. Báo cáo sẽ mở trong trình duyệt mặc định
+**How to open the report:**
+1. Open Windows Explorer
+2. Navigate to: `D:\Project\OEM-EV-Warranty-Management-System\BE\oem-ev-warranty-management-system\target\site\jacoco\`
+3. Double-click the `index.html` file
+4. The report will open in your default browser
 
-**Hoặc sử dụng command line:**
+**Or use the command line:**
 ```bash
 start target\site\jacoco\index.html
 ```
 
-### Hiểu báo cáo JaCoCo
+### Understanding the JaCoCo Report
 
-Báo cáo JaCoCo cung cấp các metric sau:
-- **Instructions Coverage**: Phần trăm bytecode instructions được thực thi
-- **Branches Coverage**: Phần trăm các nhánh điều kiện (if/else) được test
-- **Lines Coverage**: Phần trăm dòng code được thực thi
-- **Methods Coverage**: Phần trăm methods được gọi trong test
-- **Classes Coverage**: Phần trăm classes có ít nhất một method được test
+The JaCoCo report provides the following metrics:
+- **Instructions Coverage**: Percentage of bytecode instructions executed
+- **Branches Coverage**: Percentage of conditional branches (if/else) tested
+- **Lines Coverage**: Percentage of code lines executed
+- **Methods Coverage**: Percentage of methods called in tests
+- **Classes Coverage**: Percentage of classes with at least one method tested
 
 ---
 
-## Quy ước Viết Test
+## Test Writing Conventions
 
 ### Naming Convention
 
 ```java
-@DisplayName("Mô tả ngắn gọn về test case")
+@DisplayName("Brief description of the test case")
 @Test
 void methodName_scenario_expectedBehavior() {
     // Given (Arrange)
@@ -247,7 +247,7 @@ void methodName_scenario_expectedBehavior() {
 }
 ```
 
-### Ví dụ:
+### Example:
 ```java
 @Test
 @DisplayName("Should return customer when valid ID is provided")
@@ -270,8 +270,8 @@ void getCustomerById_ValidId_ReturnsCustomer() {
 
 ## Troubleshooting
 
-### Test thất bại do database connection
-Đảm bảo H2 dependency có trong `pom.xml`:
+### Test fails due to database connection
+Ensure the H2 dependency is in `pom.xml`:
 ```xml
 <dependency>
     <groupId>com.h2database</groupId>
@@ -280,14 +280,14 @@ void getCustomerById_ValidId_ReturnsCustomer() {
 </dependency>
 ```
 
-### MockMvc không inject được
-Kiểm tra xem bạn đã thêm annotation `@WebMvcTest` chưa:
+### MockMvc not injected
+Check if you have added the `@WebMvcTest` annotation:
 ```java
 @WebMvcTest(YourController.class)
 ```
 
-### Security test thất bại
-Sử dụng `@WithMockUser` hoặc configure security cho test:
+### Security test fails
+Use `@WithMockUser` or configure security for the test:
 ```java
 @Test
 @WithMockUser(roles = "ADMIN")
@@ -298,13 +298,13 @@ void testAdminEndpoint() {
 
 ---
 
-## Liên hệ & Hỗ trợ
+## Contact & Support
 
-Nếu gặp vấn đề khi chạy test, vui lòng:
-1. Kiểm tra log chi tiết trong `target/surefire-reports/`
-2. Đảm bảo JDK version tương thích
-3. Clean và rebuild project: `mvn clean install`
+If you encounter problems while running tests, please:
+1. Check the detailed logs in `target/surefire-reports/`
+2. Ensure JDK version is compatible
+3. Clean and rebuild the project: `mvn clean install`
 
 ---
 
-**Cập nhật lần cuối**: Tháng 11, 2025
+**Last updated**: November, 2025
