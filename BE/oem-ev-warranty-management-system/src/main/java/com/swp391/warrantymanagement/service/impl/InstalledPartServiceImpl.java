@@ -54,7 +54,7 @@ public class InstalledPartServiceImpl implements InstalledPartService {
     }
 
     @Override
-    public InstalledPartResponseDTO getInstalledPartById(String id) {
+    public InstalledPartResponseDTO getInstalledPartById(Long id) {
         InstalledPart installedPart = installedPartRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("InstalledPart", "id", id));
         return InstalledPartMapper.toResponseDTO(installedPart);
@@ -88,7 +88,7 @@ public class InstalledPartServiceImpl implements InstalledPartService {
 
     @Override
     @Transactional
-    public InstalledPartResponseDTO updateInstalledPart(String id, InstalledPartRequestDTO requestDTO) {
+    public InstalledPartResponseDTO updateInstalledPart(Long id, InstalledPartRequestDTO requestDTO) {
         InstalledPart existingInstalledPart = installedPartRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("InstalledPart", "id", id));
 
@@ -117,7 +117,7 @@ public class InstalledPartServiceImpl implements InstalledPartService {
 
     @Override
     @Transactional
-    public boolean deleteInstalledPart(String id) {
+    public boolean deleteInstalledPart(Long id) {
         if (!installedPartRepository.existsById(id)) {
             return false;
         }
@@ -143,7 +143,7 @@ public class InstalledPartServiceImpl implements InstalledPartService {
     }
 
     @Override
-    public PagedResponse<InstalledPartResponseDTO> getInstalledPartsByPart(String partId, Pageable pageable) {
+    public PagedResponse<InstalledPartResponseDTO> getInstalledPartsByPart(Long partId, Pageable pageable) {
         Page<InstalledPart> installedPartPage = installedPartRepository.findByPartPartId(partId, pageable);
         List<InstalledPartResponseDTO> responseDTOs = InstalledPartMapper.toResponseDTOList(
             installedPartPage.getContent());
