@@ -11,14 +11,14 @@ import org.springframework.data.domain.Pageable;
  */
 public interface InstalledPartService {
     // ============= CRUD Operations =============
-    InstalledPartResponseDTO getInstalledPartById(String id);
+    InstalledPartResponseDTO getInstalledPartById(Long id);
     InstalledPartResponseDTO createInstalledPart(InstalledPartRequestDTO requestDTO);
-    InstalledPartResponseDTO updateInstalledPart(String id, InstalledPartRequestDTO requestDTO);
-    boolean deleteInstalledPart(String id);
+    InstalledPartResponseDTO updateInstalledPart(Long id, InstalledPartRequestDTO requestDTO);
+    boolean deleteInstalledPart(Long id);
 
     // ============= Search Operations with Pagination =============
     PagedResponse<InstalledPartResponseDTO> getAllInstalledParts(Pageable pageable);
     PagedResponse<InstalledPartResponseDTO> getInstalledPartsByVehicle(Long vehicleId, Pageable pageable);
-    PagedResponse<InstalledPartResponseDTO> getInstalledPartsByPart(String partId, Pageable pageable);
+    PagedResponse<InstalledPartResponseDTO> getInstalledPartsByPart(Long partId, Pageable pageable);
     PagedResponse<InstalledPartResponseDTO> getInstalledPartsWithExpiringWarranty(int daysFromNow, Pageable pageable);
 }

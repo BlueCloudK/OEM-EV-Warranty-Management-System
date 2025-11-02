@@ -12,7 +12,7 @@ import java.time.LocalDate;
 @Data
 public class InstalledPartResponseDTO {
     // Installed Part info
-    private String installedPartId;
+    private Long installedPartId;
     private LocalDate installationDate;
     private LocalDate warrantyExpirationDate;
 
