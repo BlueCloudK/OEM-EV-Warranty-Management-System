@@ -54,5 +54,16 @@ public class RecallRequest {
 
     @OneToOne(mappedBy = "recallRequest", fetch = FetchType.LAZY)
     private WarrantyClaim warrantyClaim; // Recall này đã tạo claim nào
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.createdAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 }
 
