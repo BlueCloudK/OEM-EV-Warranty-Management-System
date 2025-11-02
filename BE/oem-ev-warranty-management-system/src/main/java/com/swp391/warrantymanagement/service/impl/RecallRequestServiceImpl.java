@@ -86,7 +86,7 @@ public class RecallRequestServiceImpl implements RecallRequestService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<RecallRequestResponseDTO> getRecallRequestsForCustomer(Long customerId) {
+    public List<RecallRequestResponseDTO> getRecallRequestsForCustomer(UUID customerId) {
         logger.info("Getting recall requests for customer: {}", customerId);
         return recallRequestRepository.findAll().stream()
                 .filter(r -> r.getInstalledPart() != null &&

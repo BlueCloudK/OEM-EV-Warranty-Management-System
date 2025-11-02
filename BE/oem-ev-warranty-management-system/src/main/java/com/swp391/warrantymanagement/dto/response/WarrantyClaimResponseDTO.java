@@ -14,7 +14,7 @@ public class WarrantyClaimResponseDTO {
     private LocalDateTime resolutionDate;
 
     // InstalledPart information - đầy đủ thông tin installed part
-    private String installedPartId;
+    private Long installedPartId;
     private Long partId; // Changed from String to Long
     private String partName;
     private String partNumber;
