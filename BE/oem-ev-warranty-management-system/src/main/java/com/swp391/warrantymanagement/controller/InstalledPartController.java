@@ -46,7 +46,7 @@ public class InstalledPartController {
     // Get installed part by ID
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN') or hasRole('CUSTOMER')")
-    public ResponseEntity<InstalledPartResponseDTO> getInstalledPartById(@PathVariable String id) {
+    public ResponseEntity<InstalledPartResponseDTO> getInstalledPartById(@PathVariable Long id) {
         logger.info("Get installed part by id: {}", id);
         InstalledPartResponseDTO installedPart = installedPartService.getInstalledPartById(id);
         if (installedPart != null) {
@@ -77,7 +77,7 @@ public class InstalledPartController {
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF')")
     public ResponseEntity<InstalledPartResponseDTO> updateInstalledPart(
-            @PathVariable String id,
+            @PathVariable Long id,
             @Valid @RequestBody InstalledPartRequestDTO requestDTO) {
         logger.info("Update installed part request: id={}, data={}", id, requestDTO);
         try {
@@ -98,7 +98,7 @@ public class InstalledPartController {
     // Delete installed part
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteInstalledPart(@PathVariable String id) {
+    public ResponseEntity<Void> deleteInstalledPart(@PathVariable Long id) {
         logger.info("Delete installed part request: {}", id);
         boolean deleted = installedPartService.deleteInstalledPart(id);
         if (deleted) {
@@ -128,7 +128,7 @@ public class InstalledPartController {
     @GetMapping("/by-part/{partId}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('EVM_STAFF')")
     public ResponseEntity<PagedResponse<InstalledPartResponseDTO>> getInstalledPartsByPart(
-            @PathVariable String partId,
+            @PathVariable Long partId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         logger.info("Get installed parts by partId: {}, page={}, size={}", partId, page, size);
