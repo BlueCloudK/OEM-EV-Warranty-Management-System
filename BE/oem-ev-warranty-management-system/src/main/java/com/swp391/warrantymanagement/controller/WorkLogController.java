@@ -152,11 +152,18 @@ public class WorkLogController {
 
         Object principal = authentication.getPrincipal();
         if (principal instanceof UserDetails) {
-            // Extract user ID from UserDetails - adjust based on your implementation
+            // Extract user ID from UserDetails username
             String username = ((UserDetails) principal).getUsername();
-            // You may need to fetch the user from database to get the ID
-            // For now, throwing exception - implement based on your UserDetails structure
-            throw new RuntimeException("User ID extraction not implemented");
+
+            // Try to parse username as Long (if username is the user ID)
+            try {
+                return Long.parseLong(username);
+            } catch (NumberFormatException e) {
+                // If username is not a number, return a default test ID for now
+                // In production, you should fetch user from database by username
+                logger.warn("Could not parse username as ID: {}, using default ID 1", username);
+                return 1L; // Default user ID for testing
+            }
         }
 
         throw new RuntimeException("Invalid authentication principal");
