@@ -32,7 +32,7 @@ public class VehicleController {
 
     // Get all vehicles with pagination (ADMIN/STAFF only)
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN')")
     public ResponseEntity<PagedResponse<VehicleResponseDTO>> getAllVehicles(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -47,7 +47,7 @@ public class VehicleController {
 
     // Get vehicle by ID
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('CUSTOMER')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN') or hasRole('CUSTOMER')")
     public ResponseEntity<VehicleResponseDTO> getVehicleById(@PathVariable Long id) {
         logger.info("Get vehicle by id: {}", id);
         VehicleResponseDTO vehicle = vehicleService.getVehicleById(id);
@@ -61,7 +61,7 @@ public class VehicleController {
 
     // Create new vehicle (ADMIN/EVM_STAFF/SC_STAFF)
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN')")
     public ResponseEntity<VehicleResponseDTO> createVehicle(@Valid @RequestBody VehicleRequestDTO requestDTO) {
         logger.info("Create vehicle request: {}", requestDTO);
         try {
@@ -76,7 +76,7 @@ public class VehicleController {
 
     // Update vehicle (ADMIN/EVM_STAFF/SC_STAFF)
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN')")
     public ResponseEntity<VehicleResponseDTO> updateVehicle(
             @PathVariable Long id,
             @Valid @RequestBody VehicleRequestDTO requestDTO) {
@@ -93,7 +93,7 @@ public class VehicleController {
 
     // Delete vehicle (ADMIN/EVM_STAFF/SC_STAFF)
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN')")
     public ResponseEntity<Void> deleteVehicle(@PathVariable Long id) {
         logger.info("Delete vehicle request: {}", id);
         boolean deleted = vehicleService.deleteVehicle(id);
@@ -107,7 +107,7 @@ public class VehicleController {
 
     // Get vehicles by customer ID (ADMIN/STAFF only)
     @GetMapping("/by-customer/{customerId}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN')")
     public ResponseEntity<PagedResponse<VehicleResponseDTO>> getVehiclesByCustomer(
             @PathVariable UUID customerId,
             @RequestParam(defaultValue = "0") int page,
@@ -140,7 +140,7 @@ public class VehicleController {
 
     // Search vehicles by VIN (ADMIN/STAFF only - sensitive information)
     @GetMapping("/by-vin")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN')")
     public ResponseEntity<VehicleResponseDTO> getVehicleByVin(@RequestParam String vin) {
         logger.info("Get vehicle by VIN: {}", vin);
         VehicleResponseDTO vehicle = vehicleService.getVehicleByVin(vin);
@@ -154,7 +154,7 @@ public class VehicleController {
 
     // Search vehicles by model/brand (All authenticated users)
     @GetMapping("/search")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('CUSTOMER')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN') or hasRole('CUSTOMER')")
     public ResponseEntity<PagedResponse<VehicleResponseDTO>> searchVehicles(
             @RequestParam(required = false) String model,
             @RequestParam(required = false) String brand,
@@ -170,7 +170,7 @@ public class VehicleController {
 
     // Get vehicles with warranty expiring soon (ADMIN/STAFF only - business intelligence)
     @GetMapping("/warranty-expiring")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN')")
     public ResponseEntity<PagedResponse<VehicleResponseDTO>> getVehiclesWithExpiringWarranty(
             @RequestParam(defaultValue = "30") int daysFromNow,
             @RequestParam(defaultValue = "0") int page,
