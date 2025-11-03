@@ -123,6 +123,14 @@ public class SecurityConfig {
         // Using allowedOriginPatterns instead of allowedOrigins to support wildcards
         configuration.setAllowedOriginPatterns(List.of("*"));
 
+        // Cho phép các origins cụ thể
+//        configuration.setAllowedOrigins(List.of(
+//                "https://8086127e5439.ngrok-free.app",
+//                "http://localhost:3000",
+//                "http://localhost:5173",
+//                "http://localhost:8081"
+//        ));
+
         // Cho phép tất cả HTTP methods bao gồm PATCH và OPTIONS
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"));
 
@@ -133,7 +141,6 @@ public class SecurityConfig {
         configuration.setExposedHeaders(List.of("Authorization", "Content-Type", "Accept", "X-Requested-With", "Cache-Control", "Access-Control-Allow-Origin"));
 
         // Cho phép credentials (cookies, authorization headers)
-        // NOTE: Must set to true for authenticated requests, but false for public endpoints
         configuration.setAllowCredentials(true);
 
         // Cache preflight requests for 1 hour để giảm số lượng OPTIONS requests
@@ -144,4 +151,3 @@ public class SecurityConfig {
         return source;
     }
 }
-
