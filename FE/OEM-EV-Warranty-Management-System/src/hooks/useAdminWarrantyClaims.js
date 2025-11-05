@@ -1,21 +1,23 @@
 import { useState, useEffect, useCallback } from 'react';
 import { dataApi } from '../api/dataApi';
+import { useConfirm } from './useConfirm.jsx';
 
 export const useAdminWarrantyClaims = () => {
+  const { showConfirm, confirmDialog } = useConfirm();
   const [claims, setClaims] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [pagination, setPagination] = useState({ currentPage: 0, pageSize: 10, totalPages: 0, totalElements: 0 });
-  const [filterStatus, setFilterStatus] = useState('all'); // Changed default to 'all'
+  const [filterStatus, setFilterStatus] = useState('all');
 
   const fetchClaims = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const params = { 
-        page: pagination.currentPage, 
-        size: pagination.pageSize, 
+      const params = {
+        page: pagination.currentPage,
+        size: pagination.pageSize,
       };
 
       let response;
@@ -44,12 +46,25 @@ export const useAdminWarrantyClaims = () => {
   }, [fetchClaims]);
 
   const handleApprove = async (claimId) => {
-    if (window.confirm('Bạn có chắc chắn muốn DUYỆT yêu cầu bảo hành này không?')) {
+    const confirmed = await showConfirm({
+      title: 'Duyệt yêu cầu bảo hành',
+      message: 'Bạn có chắc chắn muốn DUYỆT yêu cầu bảo hành này không?',
+      confirmText: 'Duyệt',
+      type: 'success'
+    });
+
+    if (confirmed) {
       try {
         await dataApi.adminAcceptClaim(claimId);
         fetchClaims();
       } catch (err) {
-        alert(`Lỗi khi duyệt yêu cầu: ${err.message}`);
+        await showConfirm({
+          title: 'Lỗi',
+          message: `Lỗi khi duyệt yêu cầu: ${err.message}`,
+          confirmText: 'Đóng',
+          cancelText: '',
+          type: 'danger'
+        });
       }
     }
   };
@@ -109,12 +124,25 @@ export const useAdminWarrantyClaims = () => {
   };
 
   const handleDelete = async (claimId) => {
-    if (window.confirm('Bạn có chắc chắn muốn XÓA yêu cầu bảo hành này không?')) {
+    const confirmed = await showConfirm({
+      title: 'Xóa yêu cầu bảo hành',
+      message: 'Bạn có chắc chắn muốn XÓA yêu cầu bảo hành này không?\nHành động này không thể hoàn tác.',
+      confirmText: 'Xóa',
+      type: 'danger'
+    });
+
+    if (confirmed) {
       try {
         await dataApi.deleteWarrantyClaim(claimId);
         fetchClaims();
       } catch (err) {
-        alert(`Lỗi khi xóa yêu cầu: ${err.message}`);
+        await showConfirm({
+          title: 'Lỗi',
+          message: `Lỗi khi xóa yêu cầu: ${err.message}`,
+          confirmText: 'Đóng',
+          cancelText: '',
+          type: 'danger'
+        });
       }
     }
   };
@@ -140,5 +168,7 @@ export const useAdminWarrantyClaims = () => {
     handleDelete,
     handlePageChange,
     refreshClaims: fetchClaims,
+    confirmDialog,
   };
 };
+

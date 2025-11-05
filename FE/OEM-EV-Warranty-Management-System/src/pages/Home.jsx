@@ -17,8 +17,8 @@ export default function Home() {
     try {
       setLoading(true);
       // Gọi API public không cần authentication
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
-      const response = await fetch(`${API_URL}/api/public/service-centers?page=0&size=6`);
+      const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+      const response = await fetch(`${API_URL}/api/public/service-centers?page=0&size=100`); // Fetch all centers
 
       if (!response.ok) {
         throw new Error('Failed to fetch service centers');
@@ -28,11 +28,9 @@ export default function Home() {
       console.log('Service Centers Response:', data); // Debug log
       if (data.content) {
         setServiceCenters(data.content);
-          // Auto-select center đầu tiên để hiển thị marker
-          if (data.content.length > 0) {
-              console.log('Selected Center:', data.content[0]);
-              setSelectedCenter(data.content[0]);
-          }
+        if (data.content.length > 0) {
+          setSelectedCenter(data.content[0]);
+        }
       }
     } catch (err) {
       console.error('Error fetching service centers:', err);
@@ -102,7 +100,7 @@ export default function Home() {
               borderRadius: "10px",
             }}
             src="https://tse1.mm.bing.net/th/id/OIP.iOjCE2-1ClgqVkhU-BR7KgHaE7?w=495&h=329&rs=1&pid=ImgDetMain&o=7&rm=3"
-            alt="logo"
+              alt="logo"
           />
           <h3 style={{ color: "#044835ff", marginTop: "15px" }}>Đặt Lịch Dịch Vụ Trực Tuyến</h3>
           <p style={{ color: "#053e2eff", textAlign: "center" }}>
@@ -131,7 +129,7 @@ export default function Home() {
               borderRadius: "10px",
             }}
             src="https://media-cdn-v2.laodong.vn/Storage/NewsPortal/2022/3/30/1029145/Anh-Chup-Man-Hinh-20.jpg"
-            alt="logo"
+              alt="logo"
           />
           <h3 style={{ color: "#044835ff", marginTop: "15px" }}>Yêu Cầu Bảo Hành</h3>
           <p style={{ color: "#053e2eff", textAlign: "center" }}>
@@ -160,7 +158,7 @@ export default function Home() {
               borderRadius: "10px",
             }}
             src="https://cdn.tgdd.vn/hoi-dap/1384009/xe-o-to-dien-la-gi-tim-hieu-ve-cau-tao-cach-thuc-hoat-dong-1-1-800x600.jpg"
-            alt="logo"
+              alt="logo"
           />
           <h3 style={{ color: "#044835ff", marginTop: "15px" }}>Phụ Tùng & Dịch Vụ EV</h3>
           <p style={{ color: "#053e2eff", textAlign: "center" }}>
@@ -198,11 +196,6 @@ export default function Home() {
             <p style={{ textAlign: "center", color: "#6b7280" }}>Đang tải...</p>
           ) : (
             <>
-              {/* Debug info */}
-              {console.log('Render - serviceCenters.length:', serviceCenters.length)}
-              {console.log('Render - selectedCenter:', selectedCenter)}
-
-              {/* Map showing selected service center */}
               {serviceCenters.length > 0 ? (
                 <div style={{ marginBottom: "30px" }}>
                   <p style={{
@@ -213,36 +206,14 @@ export default function Home() {
                     fontWeight: "600"
                   }}>
                     {selectedCenter
-                      ? "📍 Vị trí trung tâm đang chọn"
+                      ? `📍 Vị trí trung tâm đang chọn: ${selectedCenter.serviceCenterName}`
                       : "💡 Click vào trung tâm bên dưới để xem vị trí trên bản đồ"}
                   </p>
-                    <GoongMapReadOnly
-                        latitude={selectedCenter ? parseFloat(selectedCenter.latitude) : 21.0285}
-                        longitude={selectedCenter ? parseFloat(selectedCenter.longitude) : 105.8542}
-                        height="400px"
-                        showMarker={!!selectedCenter}
-                    />
-                  {selectedCenter && (
-                    <>
-                      <p style={{
-                        textAlign: "center",
-                        marginTop: "10px",
-                        color: "#10b981",
-                        fontSize: "16px",
-                        fontWeight: "600"
-                      }}>
-                        📍 {selectedCenter.serviceCenterName}
-                      </p>
-                      <p style={{
-                        textAlign: "center",
-                        marginTop: "4px",
-                        color: "#6b7280",
-                        fontSize: "14px"
-                      }}>
-                        {selectedCenter.address}
-                      </p>
-                    </>
-                  )}
+                  <GoongMapReadOnly
+                    locations={serviceCenters}
+                    selectedLocation={selectedCenter}
+                    height="500px"
+                  />
                 </div>
               ) : null}
 
@@ -397,168 +368,3 @@ export default function Home() {
     </main>
   );
 }
-
-// import React from "react";
-// import { Link } from "react-router-dom";
-// import { FaPhone, FaEnvelope } from "react-icons/fa";
-
-// export default function Home() {
-//   return (
-//     <main>
-//       {/* Hero Section */}
-//       <section style={{ className: "hero-mint", background: "linear-gradient(135deg, #325f65ff 0%, #e8f5e9 100%)", padding: "56px 0", color: "black", marginTop: "-20px" }}>
-//         <div className="container hero-inner">
-//           <div className="hero-text">
-//             <h1>
-//               Welcome to <br /> OEM EV Warranty Management System
-//             </h1>
-//             <p className="lead">
-//               Track your car warranty, book services, and manage your EV easily.
-//             </p>
-//             <div className="hero-buttons">
-//               <Link to="/register" className="btn-primary large">
-//                 Register
-//               </Link>
-//               <Link to="/login" className="btn-primary large" >
-//                 Login
-//               </Link>
-//             </div>
-//           </div>
-//           <div className="hero-image">
-//             <img
-//               src="https://static.wixstatic.com/media/e8a86a_3465bc67fe5e4e49be8f4c0be7ae6493~mv2.png/v1/fill/w_240,h_180,al_c/vinfast-logo.png"
-//               alt="logo"
-//             />
-//           </div>
-//         </div>
-//       </section>
-
-//       {/* Features Section */}
-//       <section
-//         className="features-row"
-//         style={{
-//           display: "flex",
-//           justifyContent: "center",
-//           alignItems: "stretch", // tất cả cột cao bằng nhau
-//           gap: "20px",
-//           width: "90%",
-//           margin: "50px auto",
-//           marginTop: "0px"
-//         }}
-//       >
-//         {/* Cột 1 */}
-//         <div
-//           style={{
-//             flex: 1,
-//             padding: "20px",
-//             backgroundColor: "#fff",
-//             borderRadius: "10px",
-//             boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-//             display: "flex",
-//             flexDirection: "column",
-//             alignItems: "center",
-//           }}
-//         >
-//           <img
-//             style={{
-//               width: "100%",
-//               height: "250px",
-//               objectFit: "cover",
-//               borderRadius: "10px",
-//             }}
-//             src="https://tse1.mm.bing.net/th/id/OIP.iOjCE2-1ClgqVkhU-BR7KgHaE7?w=495&h=329&rs=1&pid=ImgDetMain&o=7&rm=3"
-//             alt="logo"
-//           />
-//           <h3 style={{ color: "#044835ff", marginTop: "15px" }}>Book Service Online</h3>
-//           <p style={{ color: "#053e2eff", textAlign: "center" }}>
-//             Choose a service center, book appointments, and track progress.
-//           </p>
-//         </div>
-
-//         {/* Cột 2 */}
-//         <div
-//           style={{
-//             flex: 1,
-//             padding: "20px",
-//             backgroundColor: "#fff",
-//             borderRadius: "10px",
-//             boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-//             display: "flex",
-//             flexDirection: "column",
-//             alignItems: "center",
-//           }}
-//         >
-//           <img
-//             style={{
-//               width: "100%",
-//               height: "250px",
-//               objectFit: "cover",
-//               borderRadius: "10px",
-//             }}
-//             src="https://media-cdn-v2.laodong.vn/Storage/NewsPortal/2022/3/30/1029145/Anh-Chup-Man-Hinh-20.jpg"
-//             alt="logo"
-//           />
-//           <h3 style={{ color: "#044835ff", marginTop: "15px" }}>Warranty Claims</h3>
-//           <p style={{ color: "#053e2eff", textAlign: "center" }}>
-//             Submit and track your EV warranty claims easily and quickly.
-//           </p>
-//         </div>
-
-//         {/* Cột 3 */}
-//         <div
-//           style={{
-//             flex: 1,
-//             padding: "20px",
-//             backgroundColor: "#fff",
-//             borderRadius: "10px",
-//             boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-//             display: "flex",
-//             flexDirection: "column",
-//             alignItems: "center",
-//           }}
-//         >
-//           <img
-//             style={{
-//               width: "100%",
-//               height: "250px",
-//               objectFit: "cover",
-//               borderRadius: "10px",
-//             }}
-//             src="https://cdn.tgdd.vn/hoi-dap/1384009/xe-o-to-dien-la-gi-tim-hieu-ve-cau-tao-cach-thuc-hoat-dong-1-1-800x600.jpg"
-//             alt="logo"
-//           />
-//           <h3 style={{ color: "#044835ff", marginTop: "15px" }}>EV Parts & Service</h3>
-//           <p style={{ color: "#053e2eff", textAlign: "center" }}>
-//             Manage EV parts, recalls, and maintenance campaigns effectively.
-//           </p>
-//         </div>
-//       </section>
-
-//       {/* Support Section */}
-//       <div
-//         style={{
-//           textAlign: "center",
-//           padding: "10px",
-//           backgroundColor: "#465551ff",
-//           marginTop: "-40px"
-//         }}
-//       >
-//         <h2 style={{ color: "white", fontSize: "14px" }}>Need Support</h2>
-//         <p style={{ color: "white", fontSize: "14px" }}>Our team is here to help you 24/7 for all your EV warranty needs.</p>
-        
-//         {/* Thêm liên hệ */}
-//         <div style={{ display: "flex", justifyContent: "center", gap: "50px" }}>
-//           <a href="tel:1900232389" style={{ fontSize: "15px", display: "flex", alignItems: "center",color: "#deeae6ff" }}>
-//             <FaPhone style={{ marginRight: "10px", color: "#e8efecff" }} />
-//             1900 23 23 89
-//           </a>
-//           <a href="mailto:support.vn@vinfastauto.com" style={{ fontSize: "15px", display: "flex", alignItems: "center",color: "#deeae6ff" }}>
-//             <FaEnvelope style={{ marginRight: "10px", color: "#deeae6ff" }} />
-//             support.vn@vinfastauto.com
-//           </a>
-//         </div>
-//       </div>
-
-//     </main>
-//   );
-// }

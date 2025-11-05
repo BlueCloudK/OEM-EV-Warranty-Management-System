@@ -108,7 +108,7 @@ export const useAdminWarrantyClaimsManagement = () => {
   };
 
   const handleDelete = async (claimId) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa yêu cầu này không? (Admin Only)')) {
+    if (await window.confirm('Bạn có chắc chắn muốn xóa yêu cầu này không? (Admin Only)')) {
         try {
             await dataApi.deleteWarrantyClaim(claimId);
             fetchClaims(); // Refresh list

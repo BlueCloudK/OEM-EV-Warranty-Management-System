@@ -1,88 +1,102 @@
 import styled from 'styled-components';
 
-export const Container = styled.div`
+export const PageContainer = styled.div`
+  display: flex;
   min-height: 100vh;
-  background: linear-gradient(135deg, #0b6b61 0%, #0f766e 40%, #1e293b 100%);
-  padding: 28px;
-`;
-
-export const Header = styled.div`
-  background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
-  color: white;
-  padding: 30px 40px;
-  border-radius: 16px;
-  margin-bottom: 24px;
-  box-shadow: 0 14px 40px rgba(2, 44, 40, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-`;
-
-export const HeaderTitle = styled.h1`
-  font-size: 32px;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-`;
-
-export const HeaderSubtitle = styled.p`
-  opacity: 0.9;
-  font-size: 16px;
-  margin: 0;
-`;
-
-export const BackButton = styled.button`
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  color: white;
-  padding: 8px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 14px;
-  transition: all 0.3s;
-  &:hover {
-    background: rgba(255, 255, 255, 0.3);
-  }
-`;
-
-export const Layout = styled.div`
-  display: flex;
-  gap: 18px;
+  background: #f8fafc;
 `;
 
 export const Sidebar = styled.aside`
-  width: ${({ $isCollapsed }) => ($isCollapsed ? '72px' : '260px')};
-  min-width: ${({ $isCollapsed }) => ($isCollapsed ? '72px' : '240px')};
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  padding: 16px;
-  height: fit-content;
-  position: sticky;
-  top: 16px;
-  align-self: flex-start;
-  transition: all 0.3s ease;
+  width: ${({ $isCollapsed }) => ($isCollapsed ? '80px' : '280px')};
+  background: linear-gradient(180deg, #1e293b 0%, #334155 100%);
+  color: white;
+  transition: width 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 4px 0 12px rgba(0, 0, 0, 0.1);
+  position: fixed;
+  left: 0;
+  top: 62px; /* Start below navbar */
+  height: calc(100vh - 62px); /* Full height minus navbar */
+  overflow-y: auto;
+  z-index: 1000;
+
+  /* Beautiful scrollbar */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+  }
+`;
+
+export const SidebarHeader = styled.div`
+  padding: ${({ $isCollapsed }) => ($isCollapsed ? '20px 10px' : '24px 20px')};
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  justify-content: ${({ $isCollapsed }) => ($isCollapsed ? 'center' : 'flex-start')};
+`;
+
+export const SidebarToggleButton = styled.button`
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: white;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
 `;
 
 export const NavItem = styled.div`
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  color: #1f2937;
+  gap: 12px;
+  padding: ${({ $isCollapsed }) => ($isCollapsed ? '12px' : '12px 16px')};
+  margin-bottom: 4px;
+  border-radius: 8px;
   cursor: pointer;
-  font-weight: ${({ $active }) => ($active ? 700 : 500)};
-  background: ${({ $active }) => ($active ? '#eef2ff' : 'transparent')};
-  justify-content: ${({ $isCollapsed }) => ($isCollapsed ? 'center' : 'flex-start')}; /* Added this line */
-  
+  transition: all 0.2s ease;
+  background: ${({ $active }) => ($active ? 'rgba(59, 130, 246, 0.2)' : 'transparent')};
+  color: ${({ $active }) => ($active ? '#dbeafe' : '#cbd5e1')};
+  justify-content: ${({ $isCollapsed }) => ($isCollapsed ? 'center' : 'flex-start')};
+  font-size: 14px;
+  font-weight: 500;
+
+  svg {
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
   &:hover {
-    background: ${({ $active }) => ($active ? '#eef2ff' : '#f8fafc')};
+    background: rgba(59, 130, 246, 0.15);
+    color: #dbeafe;
   }
 `;
 
 export const MainContent = styled.main`
   flex: 1;
+  margin-left: ${({ $isCollapsed }) => ($isCollapsed ? '80px' : '280px')};
+  padding: 32px;
+  overflow-y: auto;
+  transition: margin-left 0.3s ease;
 `;

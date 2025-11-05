@@ -4,7 +4,8 @@ import { useEVMDashboard } from '../../hooks/useEVMDashboard';
 import * as S from './EVMDashboard.styles';
 import {
   FaTachometerAlt, FaClipboardCheck, FaCogs, FaCar, FaUsers, FaHistory,
-  FaArrowRight, FaBoxes, FaExclamationTriangle, FaCheckCircle, FaClipboardList
+  FaArrowRight, FaBoxes, FaExclamationTriangle, FaCheckCircle, FaClipboardList,
+  FaTasks, FaCommentDots, FaTools
 } from 'react-icons/fa';
 
 const iconMap = {
@@ -53,11 +54,12 @@ export default function EVMDashboard() {
   ];
 
   const managementCards = [
-    { id: 1, title: "Duyệt Yêu cầu Bảo hành", description: "Xem và duyệt các yêu cầu bảo hành từ trung tâm dịch vụ", icon: <FaClipboardCheck size={24} />, color: "#f59e0b", bgGradient: "linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)", path: "/evmstaff/warranty-claims" },
-    { id: 2, title: "Quản lý Phụ tùng", description: "Tạo, cập nhật và quản lý danh mục phụ tùng", icon: <FaCogs size={24} />, color: "#10b981", bgGradient: "linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)", path: "/evmstaff/parts" },
-    { id: 3, title: "Quản lý Xe", description: "Xem, tạo, cập nhật và xóa thông tin xe", icon: <FaCar size={24} />, color: "#3b82f6", bgGradient: "linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)", path: "/evmstaff/vehicles" },
-    { id: 4, title: "Yêu cầu Phụ tùng", description: "Xử lý yêu cầu phụ tùng từ kỹ thuật viên", icon: <FaBoxes size={24} />, color: "#ef4444", bgGradient: "linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)", path: "/evmstaff/part-requests" },
-    { id: 5, title: "Quản lý Recall", description: "Tạo và quản lý các yêu cầu thu hồi phụ tùng", icon: <FaExclamationTriangle size={24} />, color: "#ec4899", bgGradient: "linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%)", path: "/evmstaff/recalls" },
+    { id: 1, title: "Quản lý Phụ tùng", description: "Tạo, cập nhật và quản lý danh mục phụ tùng", icon: <FaCogs size={24} />, color: "#10b981", bgGradient: "linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)", path: "/evmstaff/parts" },
+    { id: 2, title: "Yêu cầu Linh kiện", description: "Xử lý yêu cầu phụ tùng từ kỹ thuật viên", icon: <FaTools size={24} />, color: "#ef4444", bgGradient: "linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)", path: "/evmstaff/part-requests" },
+    { id: 3, title: "Yêu cầu Recall", description: "Tạo và quản lý các yêu cầu thu hồi phụ tùng", icon: <FaExclamationTriangle size={24} />, color: "#ec4899", bgGradient: "linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%)", path: "/evmstaff/recalls" },
+    { id: 4, title: "Lịch sử Dịch vụ", description: "Xem và theo dõi lịch sử dịch vụ bảo hành", icon: <FaHistory size={24} />, color: "#8b5cf6", bgGradient: "linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%)", path: "/evmstaff/service-histories" },
+    { id: 5, title: "Work Logs", description: "Quản lý nhật ký công việc và báo cáo", icon: <FaTasks size={24} />, color: "#f59e0b", bgGradient: "linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)", path: "/evmstaff/work-logs" },
+    { id: 6, title: "Phản hồi", description: "Xem và quản lý phản hồi từ khách hàng", icon: <FaCommentDots size={24} />, color: "#06b6d4", bgGradient: "linear-gradient(135deg, #cffafe 0%, #a5f3fc 100%)", path: "/evmstaff/feedbacks" },
   ];
 
   return (

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import * as S from "./SCTechnicianLayout.styles";
 import {
-  FaTachometerAlt, FaClipboardCheck, FaWrench, FaHistory,
+  FaTachometerAlt, FaWrench, FaHistory,
   FaBars, FaCar, FaCog, FaCommentDots, FaTools
 } from "react-icons/fa";
 
@@ -51,7 +51,7 @@ export default function SCTechnicianLayout() {
         </div>
       </S.Sidebar>
 
-      <S.MainContent>
+      <S.MainContent $isCollapsed={sidebarCollapsed}>
         <Outlet />
       </S.MainContent>
     </S.PageContainer>

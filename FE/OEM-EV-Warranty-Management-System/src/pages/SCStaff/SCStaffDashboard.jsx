@@ -5,7 +5,7 @@ import { useSCStaffDashboard } from "../../hooks/useSCStaffDashboard";
 import * as S from "./SCStaffDashboard.styles";
 import {
   FaUsers, FaCar, FaClipboardList, FaHistory, FaArrowRight, 
-  FaUserCog, FaTachometerAlt, FaUserPlus
+  FaUserCog, FaTachometerAlt, FaUserPlus, FaExclamationTriangle, FaCommentDots
 } from "react-icons/fa";
 
 // Child components remain the same...
@@ -60,7 +60,8 @@ export default function SCStaffDashboard() {
     { id: 2, title: "Quản lý thông tin xe", description: "Danh sách xe, thêm mới, cập nhật", icon: <FaCar size={24} />, color: "#10b981", bgGradient: "linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)", path: "/scstaff/vehicles" },
     { id: 3, title: "Yêu cầu bảo hành", description: "Tiếp nhận và xử lý yêu cầu từ khách hàng", icon: <FaClipboardList size={24} />, color: "#f59e0b", bgGradient: "linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)", path: "/scstaff/warranty-claims" },
     { id: 4, title: "Lịch sử dịch vụ", description: "Theo dõi dịch vụ & lịch sử sửa chữa", icon: <FaHistory size={24} />, color: "#8b5cf6", bgGradient: "linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%)", path: "/scstaff/service-history" },
-    { id: 5, title: "Tạo tài khoản khách hàng", description: "Tạo và quản lý tài khoản cho khách hàng mới", icon: <FaUserPlus size={24} />, color: "#ef4444", bgGradient: "linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)", path: "/scstaff/create-customer-account" }
+    { id: 5, title: "Recall", description: "Quản lý thông báo thu hồi sản phẩm", icon: <FaExclamationTriangle size={24} />, color: "#ef4444", bgGradient: "linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)", path: "/scstaff/recalls" },
+    { id: 6, title: "Feedback", description: "Xem và quản lý phản hồi từ khách hàng", icon: <FaCommentDots size={24} />, color: "#06b6d4", bgGradient: "linear-gradient(135deg, #cffafe 0%, #a5f3fc 100%)", path: "/scstaff/feedbacks" }
   ];
 
   const statItems = [

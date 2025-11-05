@@ -79,7 +79,7 @@ export const useAdminVehicleManagement = () => {
   };
 
   const handleDelete = async (vehicleId) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa xe này không? (Admin Only)')) {
+    if (await window.confirm('Bạn có chắc chắn muốn xóa xe này không? (Admin Only)')) {
         try {
             await dataApi.deleteVehicle(vehicleId);
             fetchVehicles(); // Refresh list

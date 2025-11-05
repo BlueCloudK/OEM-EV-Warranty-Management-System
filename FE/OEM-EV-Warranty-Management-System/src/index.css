@@ -5,6 +5,7 @@
   --brand-surface: #ffffff;
   --brand-bg: #f5f7f9;
   --brand-border: #e5e7eb;
+  --navbar-height: 62px; /* Navbar height for consistent spacing */
 }
 
 body {
@@ -29,21 +30,31 @@ body {
   padding: 14px 0;
   position: sticky;
   top: 0;
-  z-index: 1000;
+  z-index: 1100;
   color: #fff;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  width: 100%;
 }
+
+/* Remove navbar shift - it stays full width at top */
+/* Sidebar will be below navbar */
 
 .nav-inner {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 1rem;
+  width: 100%;
+  max-width: 100%;
+  padding: 0 1.5rem;
+  box-sizing: border-box;
 }
 
 .logo {
   font-size: 1.1rem;
   font-weight: 700;
   line-height: 1.2;
+  flex-shrink: 0;
 }
 .logo span {
   display: block;
@@ -52,6 +63,12 @@ body {
   font-weight: 500;
   opacity: 0.85;
   font-size: 0.8rem;
+}
+
+.nav-inner nav {
+  display: flex;
+  align-items: center;
+  gap: 15px;
 }
 
 .nav-link {

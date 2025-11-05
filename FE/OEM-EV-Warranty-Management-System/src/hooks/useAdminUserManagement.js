@@ -127,7 +127,7 @@ export const useAdminUserManagement = () => {
   };
 
   const handleChangeRole = async (userId, newRoleId) => {
-    if (window.confirm(`Bạn có chắc chắn muốn thay đổi vai trò của người dùng này không?`)) {
+    if (await window.confirm(`Bạn có chắc chắn muốn thay đổi vai trò của người dùng này không?`)) {
       try {
         await adminUsersApi.updateUserRole(userId, newRoleId);
         fetchUsers(); // Refresh list
@@ -141,7 +141,7 @@ export const useAdminUserManagement = () => {
   };
 
   const handleResetPassword = async (userId) => {
-    if (window.confirm('Bạn có chắc chắn muốn đặt lại mật khẩu người dùng này không?')) {
+    if (await window.confirm('Bạn có chắc chắn muốn đặt lại mật khẩu người dùng này không?')) {
       try {
         const response = await adminUsersApi.resetUserPassword(userId);
         const newPassword = response.newPassword; 
@@ -157,7 +157,7 @@ export const useAdminUserManagement = () => {
   };
 
   const handleDelete = async (userId) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa người dùng này không?')) {
+    if (await window.confirm('Bạn có chắc chắn muốn xóa người dùng này không?')) {
         try {
             await adminUsersApi.deleteUser(userId);
             fetchUsers(); // Refresh list

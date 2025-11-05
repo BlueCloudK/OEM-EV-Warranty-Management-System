@@ -38,7 +38,7 @@ export default function SCStaffLayout() {
         </div>
       </S.Sidebar>
 
-      <S.MainContent>
+      <S.MainContent $isCollapsed={sidebarCollapsed}>
         <Outlet /> {/* Đây là nơi nội dung của các trang con sẽ được render */}
       </S.MainContent>
     </S.PageContainer>

@@ -39,7 +39,7 @@ export default function EVMLayout() {
         </div>
       </S.Sidebar>
 
-      <S.MainContent>
+      <S.MainContent $isCollapsed={sidebarCollapsed}>
         <Outlet />
       </S.MainContent>
     </S.PageContainer>

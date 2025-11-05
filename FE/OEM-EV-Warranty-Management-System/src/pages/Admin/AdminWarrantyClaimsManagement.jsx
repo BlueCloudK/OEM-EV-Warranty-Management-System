@@ -46,7 +46,8 @@ const RejectClaimModal = ({ isOpen, onClose, onSubmit }) => {
 const AdminWarrantyClaimsManagement = () => {
   const {
     claims, loading, error, pagination, filterStatus,
-    handleFilterChange, handleApprove, handleReject, handleDelete, handlePageChange, refreshClaims
+    handleFilterChange, handleApprove, handleReject, handleDelete, handlePageChange, refreshClaims,
+    confirmDialog
   } = useAdminWarrantyClaims();
 
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -138,6 +139,7 @@ const AdminWarrantyClaimsManagement = () => {
         onClose={() => setShowRejectModal(false)} 
         onSubmit={handleRejectSubmit} 
       />
+      {confirmDialog}
     </S.PageContainer>
   );
 };

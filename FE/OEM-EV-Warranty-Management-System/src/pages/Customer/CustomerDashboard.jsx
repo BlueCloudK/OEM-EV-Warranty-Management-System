@@ -5,8 +5,8 @@ import { useCustomerDashboard } from '../../hooks/useCustomerDashboard';
 import * as S from './CustomerDashboard.styles';
 import {
   FaCar, FaShieldAlt, FaClipboardList, FaHistory, FaExclamationTriangle,
-  FaBell, FaArrowRight, FaSpinner, FaMapMarkerAlt, FaTools,
-  FaCheckCircle, FaClock
+  FaBell, FaArrowRight, FaSpinner, FaMapMarkerAlt,
+  FaCheckCircle, FaClock, FaUser, FaCommentDots
 } from 'react-icons/fa';
 
 const StatCard = ({ icon, value, label, color, bgGradient, loading, onClick, clickable = false }) => (
@@ -142,10 +142,10 @@ export default function CustomerDashboard() {
       description: 'Xem danh sách xe và thông tin bảo hành',
       color: '#3b82f6',
       bgGradient: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
-      onClick: () => navigate('/customer/vehicles')
+      onClick: () => navigate('/customer/my-vehicles')
     },
     {
-      icon: <FaClipboardList size={24} />,
+      icon: <FaHistory size={24} />,
       title: 'Lịch sử Bảo hành',
       description: 'Theo dõi các yêu cầu bảo hành của bạn',
       color: '#10b981',
@@ -169,12 +169,20 @@ export default function CustomerDashboard() {
       onClick: () => navigate('/customer/service-centers')
     },
     {
-      icon: <FaTools size={24} />,
-      title: 'Phản hồi Dịch vụ',
+      icon: <FaCommentDots size={24} />,
+      title: 'Phản hồi',
       description: 'Đánh giá và phản hồi về dịch vụ',
       color: '#8b5cf6',
       bgGradient: 'linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%)',
       onClick: () => navigate('/customer/feedback')
+    },
+    {
+      icon: <FaUser size={24} />,
+      title: 'Thông tin cá nhân',
+      description: 'Quản lý thông tin tài khoản của bạn',
+      color: '#06b6d4',
+      bgGradient: 'linear-gradient(135deg, #cffafe 0%, #a5f3fc 100%)',
+      onClick: () => navigate('/customer/profile')
     },
   ];
 

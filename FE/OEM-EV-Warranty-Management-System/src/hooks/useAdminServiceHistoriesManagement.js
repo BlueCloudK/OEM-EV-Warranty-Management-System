@@ -106,7 +106,7 @@ export const useAdminServiceHistoriesManagement = () => {
   };
 
   const handleDelete = async (historyId) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa lịch sử này không?')) {
+    if (await window.confirm('Bạn có chắc chắn muốn xóa lịch sử này không?')) {
       try {
         await dataApi.deleteServiceHistory(historyId);
         fetchServiceHistories();
