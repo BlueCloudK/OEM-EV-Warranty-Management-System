@@ -112,7 +112,7 @@ const AdminServiceCenters = () => {
   };
 
   const handleDeleteClick = async (centerId) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa trung tâm dịch vụ này?')) {
+    if (!await window.confirm('Bạn có chắc chắn muốn xóa trung tâm dịch vụ này?')) {
       return;
     }
 

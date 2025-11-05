@@ -133,7 +133,7 @@ export const useVehicleManagement = () => {
   };
 
   const handleDelete = async (vehicleId) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa xe này không?')) {
+    if (await window.confirm('Bạn có chắc chắn muốn xóa xe này không?')) {
         try {
             await dataApi.deleteVehicle(vehicleId);
             fetchVehicles(); 

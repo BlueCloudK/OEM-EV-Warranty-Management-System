@@ -234,7 +234,7 @@ const CustomerFeedback = () => {
   };
 
   const handleDelete = async (feedbackId) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa phản hồi này?')) {
+    if (!await window.confirm('Bạn có chắc chắn muốn xóa phản hồi này?')) {
       return;
     }
 

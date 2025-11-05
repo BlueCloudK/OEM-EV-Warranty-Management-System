@@ -66,7 +66,7 @@ export const useAdminPartsManagement = () => {
   };
 
   const handleDelete = async (partId) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa phụ tùng này không? (Admin Only)')) {
+    if (await window.confirm('Bạn có chắc chắn muốn xóa phụ tùng này không? (Admin Only)')) {
         try {
             await dataApi.deletePart(partId);
             fetchParts(); // Refresh list

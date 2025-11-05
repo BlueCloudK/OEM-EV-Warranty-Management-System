@@ -52,7 +52,6 @@ import AdminRecallManagement from "./pages/Admin/AdminRecallManagement";
 // SCTechnician
 import SCTechnicianLayout from "./components/SCTechnicianLayout";
 import SCTechnicianDashboard from "./pages/SCTechnician/SCTechnicianDashboard";
-import TechWarrantyClaims from "./pages/SCTechnician/TechWarrantyClaims";
 import MyWork from "./pages/SCTechnician/MyWork";
 import SCTechnicianFeedbacks from "./pages/SCTechnician/SCTechnicianFeedbacks";
 import VehicleLookup from "./pages/SCTechnician/VehicleLookup";
@@ -73,9 +72,22 @@ import CustomerServiceCenters from "./pages/Customer/CustomerServiceCenters";
 export default function App() {
   const location = useLocation();
 
+  // Check if current page is a dashboard page
+  const dashboardPaths = ['/admin', '/customer', '/scstaff', '/sctechnician', '/evmstaff'];
+  const isDashboardPage = dashboardPaths.some(path => location.pathname.startsWith(path));
+
+  // Add class to body for navbar adjustment
+  React.useEffect(() => {
+    if (isDashboardPage) {
+      document.body.classList.add('has-sidebar');
+    } else {
+      document.body.classList.remove('has-sidebar');
+    }
+  }, [isDashboardPage]);
+
   return (
     <>
-      {location.pathname && <Navbar />}
+      <Navbar />
 
       <Routes>
         {/* Core Routes */}

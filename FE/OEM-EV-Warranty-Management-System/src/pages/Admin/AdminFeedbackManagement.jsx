@@ -83,7 +83,7 @@ const AdminFeedbackManagement = () => {
   };
 
   const handleDelete = async (feedbackId, customerId) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa feedback này?')) {
+    if (!await window.confirm('Bạn có chắc chắn muốn xóa feedback này?')) {
       return;
     }
 

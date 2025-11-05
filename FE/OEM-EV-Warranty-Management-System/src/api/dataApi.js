@@ -83,6 +83,11 @@ export const dataApi = {
   // Part Requests (Assumed endpoints based on UI needs)
   getAllPartRequests: (params = {}) => apiClient(`/api/part-requests?${new URLSearchParams(params)}`),
   createPartRequest: (data) => apiClient('/api/part-requests', { method: 'POST', body: JSON.stringify(data) }),
+
+  // Recall Campaigns (Assumed endpoints)
+  getRecallCampaignProgress: () => apiClient('/api/recalls/progress'),
+  getRecallFunnel: () => apiClient('/api/recalls/funnel'),
+  getRecallCampaignStatus: () => apiClient('/api/recalls/status'),
 };
 
 export default dataApi;

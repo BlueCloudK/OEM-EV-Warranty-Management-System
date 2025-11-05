@@ -8,13 +8,37 @@ export const PageContainer = styled.div`
 `;
 
 export const Sidebar = styled.div`
-  width: ${({ $isCollapsed }) => ($isCollapsed ? '70px' : '260px')};
+  width: ${({ $isCollapsed }) => ($isCollapsed ? '80px' : '280px')};
   background: linear-gradient(180deg, #1e293b 0%, #334155 100%);
   border-right: 1px solid #475569;
   display: flex;
   flex-direction: column;
   transition: width 0.3s ease;
   box-shadow: 2px 0 20px rgba(0, 0, 0, 0.15);
+  position: fixed;
+  left: 0;
+  top: 62px; /* Start below navbar */
+  height: calc(100vh - 62px); /* Full height minus navbar */
+  overflow-y: auto;
+  z-index: 1000;
+
+  /* Beautiful scrollbar */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+  }
 `;
 
 export const SidebarHeader = styled.div`
@@ -64,8 +88,10 @@ export const NavItem = styled.div`
 
 export const MainContent = styled.div`
   flex: 1;
+  margin-left: ${({ $isCollapsed }) => ($isCollapsed ? '80px' : '280px')};
   padding: 24px;
   overflow: auto;
+  transition: margin-left 0.3s ease;
 `;
 
 export const DashboardHeader = styled.div`

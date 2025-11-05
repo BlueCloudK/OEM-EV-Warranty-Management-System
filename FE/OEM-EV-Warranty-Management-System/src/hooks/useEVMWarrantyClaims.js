@@ -40,7 +40,7 @@ export const useEVMWarrantyClaims = () => {
   }, [fetchClaims]);
 
   const handleApprove = async (claimId) => {
-    if (window.confirm('Bạn có chắc chắn muốn DUYỆT yêu cầu bảo hành này không?')) {
+    if (await window.confirm('Bạn có chắc chắn muốn DUYỆT yêu cầu bảo hành này không?')) {
       try {
         await dataApi.evmAcceptClaim(claimId);
         fetchClaims(); // Refresh the list

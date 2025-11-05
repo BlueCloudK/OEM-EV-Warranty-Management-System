@@ -3,10 +3,11 @@ import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import * as S from "./AdminLayout.styles";
 import {
   FaUsers, FaCar, FaCogs, FaClipboardList, FaHistory,
-  FaUserShield, FaTachometerAlt, FaCommentDots, FaClipboard, FaMapMarkerAlt, FaExclamationTriangle
+  FaUserShield, FaTachometerAlt, FaCommentDots, FaClipboard,
+  FaMapMarkerAlt, FaExclamationTriangle, FaBars
 } from "react-icons/fa";
 
-const navItems = [
+const sidebarItems = [
   { path: "/admin/dashboard", icon: <FaTachometerAlt />, label: "Dashboard" },
   { path: "/admin/users", icon: <FaUserShield />, label: "Users & Roles" },
   { path: "/admin/customers", icon: <FaUsers />, label: "Khách hàng" },
@@ -23,36 +24,29 @@ const navItems = [
 export default function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const currentPath = location.pathname;
 
   return (
-    <S.Container>
-      <S.Header>
-        <S.HeaderTitle><FaUserShield /> Admin Panel</S.HeaderTitle>
-        <S.HeaderSubtitle>Full access to all system resources and management functions</S.HeaderSubtitle>
-      </S.Header>
-
-      <S.Layout>
-        <S.Sidebar $isCollapsed={isCollapsed}>
-          <button onClick={() => setIsCollapsed(v => !v)}>{isCollapsed ? ">>" : "<<"}</button>
-          {navItems.map(item => (
-            <S.NavItem 
-              key={item.path} 
-              $active={currentPath === item.path} 
-              $isCollapsed={isCollapsed} 
-              onClick={() => navigate(item.path)}
-            >
+    <S.PageContainer>
+      <S.Sidebar $isCollapsed={sidebarCollapsed}>
+        <S.SidebarHeader $isCollapsed={sidebarCollapsed}>
+          <S.SidebarToggleButton onClick={() => setSidebarCollapsed(!sidebarCollapsed)}><FaBars /></S.SidebarToggleButton>
+          {!sidebarCollapsed && <div><div style={{ fontSize: 16, fontWeight: 600 }}>Admin</div><div style={{ fontSize: 12, color: "#94a3b8" }}>Panel</div></div>}
+        </S.SidebarHeader>
+        <div style={{ flex: 1, padding: sidebarCollapsed ? 8 : 16 }}>
+          {sidebarItems.map((item, index) => (
+            <S.NavItem key={index} $active={currentPath === item.path} $isCollapsed={sidebarCollapsed} onClick={() => item.path && navigate(item.path)}>
               {item.icon}
-              {!isCollapsed && <span>{item.label}</span>}
+              {!sidebarCollapsed && <span>{item.label}</span>}
             </S.NavItem>
           ))}
-        </S.Sidebar>
+        </div>
+      </S.Sidebar>
 
-        <S.MainContent>
-          <Outlet />
-        </S.MainContent>
-      </S.Layout>
-    </S.Container>
+      <S.MainContent $isCollapsed={sidebarCollapsed}>
+        <Outlet />
+      </S.MainContent>
+    </S.PageContainer>
   );
 }

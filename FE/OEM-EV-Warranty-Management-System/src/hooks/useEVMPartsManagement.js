@@ -58,7 +58,7 @@ export const useEVMPartsManagement = () => {
   };
 
   const handleDelete = async (partId) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa phụ tùng này không?')) {
+    if (await window.confirm('Bạn có chắc chắn muốn xóa phụ tùng này không?')) {
         try {
             await dataApi.deletePart(partId);
             fetchParts();

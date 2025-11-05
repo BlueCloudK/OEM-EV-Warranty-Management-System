@@ -92,7 +92,7 @@ export const useAdminCustomerManagement = () => {
   };
 
   const handleDelete = async (customerId) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa khách hàng này không? (Admin Only)')) {
+    if (await window.confirm('Bạn có chắc chắn muốn xóa khách hàng này không? (Admin Only)')) {
         try {
             await dataApi.deleteCustomer(customerId);
             fetchCustomers(); // Refresh list
