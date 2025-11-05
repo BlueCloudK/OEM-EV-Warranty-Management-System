@@ -1,0 +1,1150 @@
+ KẾ HOẠCH XÂY DỰNG FRONTEND - OEM EV WARRANTY MANAGEMENT SYSTEM
+
+  ---
+  GIAI ĐOẠN 1: SETUP DỰ ÁN & CẤU TRÚC CƠ BẢN
+
+  Task 1.1: Khởi tạo dự án React với Vite
+
+  npm create vite@latest oem-warranty-frontend -- --template react
+  cd oem-warranty-frontend
+
+  Task 1.2: Cài đặt dependencies cần thiết
+
+  # Core dependencies
+  npm install react-router-dom axios react-query zustand
+
+  # TailwindCSS
+  npm install -D tailwindcss postcss autoprefixer
+  npx tailwindcss init -p
+
+  # UI Components & Icons
+  npm install @headlessui/react @heroicons/react
+  npm install react-icons
+
+  # Form handling & validation
+  npm install react-hook-form yup @hookform/resolvers
+
+  # Date handling
+  npm install date-fns
+
+  # Notifications
+  npm install react-hot-toast
+
+  # Utils
+  npm install clsx
+
+  Task 1.3: Cấu hình TailwindCSS
+
+  File: tailwind.config.js
+  export default {
+    content: ['./index.html', './src/**/*.{js,jsx}'],
+    theme: {
+      extend: {
+        colors: {
+          primary: { /* custom colors */ },
+          secondary: { /* custom colors */ }
+        }
+      }
+    },
+    plugins: []
+  }
+
+  Task 1.4: Tạo cấu trúc thư mục
+
+  src/
+  ├── api/                    # API client layer
+  │   ├── client.js          # Axios instance với interceptors
+  │   ├── auth.api.js
+  │   ├── customer.api.js
+  │   ├── vehicle.api.js
+  │   ├── warrantyClaim.api.js
+  │   ├── part.api.js
+  │   ├── partRequest.api.js
+  │   ├── serviceCenter.api.js
+  │   ├── serviceHistory.api.js
+  │   ├── feedback.api.js
+  │   ├── recallRequest.api.js
+  │   ├── workLog.api.js
+  │   ├── installedPart.api.js
+  │   ├── userManagement.api.js
+  │   └── public.api.js
+  ├── components/            # Reusable components
+  │   ├── common/           # Button, Input, Modal, Table...
+  │   ├── layout/           # Header, Sidebar, Footer
+  │   └── features/         # Feature-specific components
+  ├── pages/                # Page components
+  │   ├── auth/
+  │   ├── dashboard/
+  │   ├── customers/
+  │   ├── vehicles/
+  │   ├── warranty-claims/
+  │   ├── parts/
+  │   ├── service-centers/
+  │   └── ...
+  ├── store/                # Zustand stores
+  │   ├── authStore.js
+  │   ├── userStore.js
+  │   └── ...
+  ├── hooks/                # Custom React hooks
+  │   ├── useAuth.js
+  │   ├── useDebounce.js
+  │   └── ...
+  ├── utils/                # Utility functions
+  │   ├── constants.js
+  │   ├── validators.js
+  │   └── formatters.js
+  ├── routes/               # Route configuration
+  │   ├── index.jsx
+  │   ├── ProtectedRoute.jsx
+  │   └── RoleBasedRoute.jsx
+  └── App.jsx
+
+  ---
+  GIAI ĐOẠN 2: TẦNG API CLIENT
+
+  Task 2.1: Setup Axios client với interceptors
+
+  File: src/api/client.js
+  import axios from 'axios';
+  import { authStore } from '../store/authStore';
+
+  const apiClient = axios.create({
+    baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080',
+    headers: { 'Content-Type': 'application/json' }
+  });
+
+  // Request interceptor: Thêm token vào header
+  apiClient.interceptors.request.use(config => {
+    const token = authStore.getState().accessToken;
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  });
+
+  // Response interceptor: Xử lý refresh token
+  apiClient.interceptors.response.use(
+    response => response,
+    async error => {
+      const originalRequest = error.config;
+      if (error.response?.status === 401 && !originalRequest._retry) {
+        originalRequest._retry = true;
+        try {
+          const newToken = await refreshToken();
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          return apiClient(originalRequest);
+        } catch (refreshError) {
+          authStore.getState().logout();
+          window.location.href = '/login';
+        }
+      }
+      return Promise.reject(error);
+    }
+  );
+
+  Task 2.2: Viết API functions cho Authentication
+
+  File: src/api/auth.api.js
+  import apiClient from './client';
+
+  export const authAPI = {
+    // POST /api/auth/login
+    login: (credentials) =>
+      apiClient.post('/api/auth/login', credentials),
+
+    // POST /api/auth/register
+    register: (userData) =>
+      apiClient.post('/api/auth/register', userData),
+
+    // POST /api/auth/refresh
+    refreshToken: (refreshToken) =>
+      apiClient.post('/api/auth/refresh', { refreshToken }),
+
+    // POST /api/auth/logout
+    logout: (accessToken) =>
+      apiClient.post('/api/auth/logout', { accessToken }),
+
+    // POST /api/auth/forgot-password
+    forgotPassword: (email) =>
+      apiClient.post('/api/auth/forgot-password', { email }),
+
+    // POST /api/auth/reset-password
+    resetPassword: (data) =>
+      apiClient.post('/api/auth/reset-password', data),
+
+    // GET /api/auth/validate
+    validateToken: () =>
+      apiClient.get('/api/auth/validate'),
+
+    // POST /api/auth/admin/create-user (ADMIN only)
+    createUserByAdmin: (userData) =>
+      apiClient.post('/api/auth/admin/create-user', userData),
+
+    // POST /api/auth/staff/register-customer (Staff only)
+    registerCustomerByStaff: (customerData) =>
+      apiClient.post('/api/auth/staff/register-customer', customerData)
+  };
+
+  Task 2.3-2.14: Viết API functions cho các modules khác
+
+  Tương tự tạo các file:
+  - customer.api.js - 10 endpoints
+  - vehicle.api.js - 10 endpoints
+  - warrantyClaim.api.js - 17 endpoints
+  - part.api.js - 6 endpoints
+  - partRequest.api.js - 15 endpoints
+  - serviceCenter.api.js - 9 endpoints
+  - serviceHistory.api.js - 8 endpoints
+  - feedback.api.js - 13 endpoints
+  - recallRequest.api.js - 7 endpoints
+  - workLog.api.js - 7 endpoints
+  - installedPart.api.js - 8 endpoints
+  - userManagement.api.js - 9 endpoints
+  - public.api.js - 2 endpoints
+
+  ---
+  GIAI ĐOẠN 3: STATE MANAGEMENT & AUTH
+
+  Task 3.1: Tạo Auth Store với Zustand
+
+  File: src/store/authStore.js
+  import { create } from 'zustand';
+  import { persist } from 'zustand/middleware';
+
+  export const useAuthStore = create(
+    persist(
+      (set, get) => ({
+        user: null,
+        accessToken: null,
+        refreshToken: null,
+
+        setAuth: (authData) => set({
+          user: authData.user,
+          accessToken: authData.accessToken,
+          refreshToken: authData.refreshToken
+        }),
+
+        logout: () => set({
+          user: null,
+          accessToken: null,
+          refreshToken: null
+        }),
+
+        updateUser: (userData) => set({ user: userData }),
+
+        isAuthenticated: () => !!get().accessToken,
+
+        hasRole: (role) => get().user?.roleName === role,
+
+        hasAnyRole: (roles) => roles.includes(get().user?.roleName)
+      }),
+      { name: 'auth-storage' }
+    )
+  );
+
+  Task 3.2: Tạo custom hooks cho authentication
+
+  File: src/hooks/useAuth.js
+  import { useAuthStore } from '../store/authStore';
+  import { authAPI } from '../api/auth.api';
+  import { useMutation } from 'react-query';
+
+  export const useAuth = () => {
+    const { setAuth, logout, user, isAuthenticated, hasRole } = useAuthStore();
+
+    const loginMutation = useMutation(authAPI.login, {
+      onSuccess: (response) => setAuth(response.data)
+    });
+
+    const logoutMutation = useMutation(authAPI.logout, {
+      onSuccess: () => logout()
+    });
+
+    return {
+      user,
+      isAuthenticated: isAuthenticated(),
+      hasRole,
+      login: loginMutation.mutate,
+      logout: logoutMutation.mutate,
+      isLoading: loginMutation.isLoading
+    };
+  };
+
+  Task 3.3: Tạo Protected Route & Role-based Route
+
+  File: src/routes/ProtectedRoute.jsx
+  import { Navigate } from 'react-router-dom';
+  import { useAuthStore } from '../store/authStore';
+
+  export const ProtectedRoute = ({ children, allowedRoles }) => {
+    const { isAuthenticated, hasAnyRole } = useAuthStore();
+
+    if (!isAuthenticated()) {
+      return <Navigate to="/login" replace />;
+    }
+
+    if (allowedRoles && !hasAnyRole(allowedRoles)) {
+      return <Navigate to="/unauthorized" replace />;
+    }
+
+    return children;
+  };
+
+  ---
+  GIAI ĐOẠN 4: COMMON COMPONENTS
+
+  Task 4.1: Tạo Common UI Components
+
+  - Button.jsx - Customizable button với variants
+  - Input.jsx - Form input với error handling
+  - Select.jsx - Dropdown select
+  - Modal.jsx - Reusable modal dialog
+  - Table.jsx - Data table với pagination
+  - Pagination.jsx - Pagination component
+  - Card.jsx - Card container
+  - Badge.jsx - Status badges
+  - LoadingSpinner.jsx - Loading indicator
+  - ErrorMessage.jsx - Error display
+  - SearchBar.jsx - Search input
+  - DatePicker.jsx - Date selection
+
+  Task 4.2: Tạo Layout Components
+
+  - MainLayout.jsx - Main application layout
+  - Header.jsx - Top navigation bar
+  - Sidebar.jsx - Side navigation menu
+  - Footer.jsx - Footer component
+  - Breadcrumb.jsx - Breadcrumb navigation
+
+  ---
+  GIAI ĐOẠN 5: PHÁT TRIỂN TÍNH NĂNG - AUTH MODULE
+
+  Task 5.1: Login Page
+
+  File: src/pages/auth/LoginPage.jsx
+  - APIs sử dụng:
+    - POST /api/auth/login
+  - Chức năng:
+    - Form đăng nhập (username, password)
+    - Remember me checkbox
+    - Link quên mật khẩu
+    - Redirect theo role sau khi login
+  - Validation: Yup schema cho username & password
+
+  Task 5.2: Register Page (Customer self-registration)
+
+  File: src/pages/auth/RegisterPage.jsx
+  - APIs sử dụng:
+    - POST /api/auth/register
+  - Chức năng:
+    - Form đăng ký customer
+    - Validation email, phone, password
+    - Terms & conditions checkbox
+
+  Task 5.3: Forgot Password Page
+
+  File: src/pages/auth/ForgotPasswordPage.jsx
+  - APIs sử dụng:
+    - POST /api/auth/forgot-password
+  - Chức năng:
+    - Nhập email để nhận link reset password
+
+  Task 5.4: Reset Password Page
+
+  File: src/pages/auth/ResetPasswordPage.jsx
+  - APIs sử dụng:
+    - POST /api/auth/reset-password
+  - Chức năng:
+    - Form nhập mật khẩu mới với token từ email
+
+  ---
+  GIAI ĐOẠN 6: DASHBOARD MODULE
+
+  Task 6.1: Admin Dashboard
+
+  File: src/pages/dashboard/AdminDashboard.jsx
+  - APIs sử dụng:
+    - GET /api/admin/users/statistics
+    - GET /api/feedbacks/statistics/summary
+    - GET /api/part-requests/statistics
+  - Chức năng:
+    - Overview statistics (users, claims, parts)
+    - Charts (warranty claims by status, feedbacks)
+    - Recent activities table
+
+  Task 6.2: Customer Dashboard
+
+  File: src/pages/dashboard/CustomerDashboard.jsx
+  - APIs sử dụng:
+    - GET /api/vehicles/my-vehicles
+    - GET /api/warranty-claims/my-claims
+    - GET /api/recall-requests/my-recalls
+  - Chức năng:
+    - My vehicles card
+    - Active warranty claims
+    - Recall notifications
+    - Service history summary
+
+  Task 6.3: Service Center Dashboard
+
+  File: src/pages/dashboard/ServiceCenterDashboard.jsx
+  - APIs sử dụng:
+    - GET /api/warranty-claims/tech-pending
+    - GET /api/part-requests/by-service-center/{id}
+    - GET /api/work-logs/my-work-logs
+  - Chức năng:
+    - Pending claims queue
+    - Parts inventory status
+    - Today's work logs
+
+  ---
+  GIAI ĐOẠN 7: CUSTOMER MANAGEMENT MODULE
+
+  Task 7.1: Customer List Page
+
+  File: src/pages/customers/CustomerListPage.jsx
+  - APIs sử dụng:
+    - GET /api/customers (với pagination)
+    - GET /api/customers/search?name={query}
+    - DELETE /api/customers/{id}
+  - Chức năng:
+    - Table hiển thị danh sách customers
+    - Search by name
+    - Pagination
+    - Actions: View, Edit, Delete
+  - Roles: ADMIN, SC_STAFF, EVM_STAFF
+
+  Task 7.2: Customer Detail Page
+
+  File: src/pages/customers/CustomerDetailPage.jsx
+  - APIs sử dụng:
+    - GET /api/customers/{id}
+    - GET /api/vehicles/by-customer/{customerId}
+    - GET /api/warranty-claims (filter by customer)
+  - Chức năng:
+    - Customer info display
+    - Associated vehicles list
+    - Warranty claims history
+    - Edit customer button
+
+  Task 7.3: Create/Edit Customer Page
+
+  File: src/pages/customers/CustomerFormPage.jsx
+  - APIs sử dụng:
+    - POST /api/customers
+    - PUT /api/customers/{id}
+    - POST /api/auth/staff/register-customer (for staff)
+  - Chức năng:
+    - Form tạo/sửa customer
+    - Validation (email, phone, address)
+    - Option tạo user account kèm theo (staff only)
+
+  Task 7.4: Customer Profile Page (For Customer role)
+
+  File: src/pages/customers/MyProfilePage.jsx
+  - APIs sử dụng:
+    - GET /api/profile
+    - PUT /api/customers/profile
+  - Chức năng:
+    - View own profile
+    - Edit own information
+  - Roles: CUSTOMER
+
+  ---
+  GIAI ĐOẠN 8: VEHICLE MANAGEMENT MODULE
+
+  Task 8.1: Vehicle List Page
+
+  File: src/pages/vehicles/VehicleListPage.jsx
+  - APIs sử dụng:
+    - GET /api/vehicles (pagination)
+    - GET /api/vehicles/search?query={text}
+    - GET /api/vehicles/warranty-expiring
+    - DELETE /api/vehicles/{id}
+  - Chức năng:
+    - Table vehicles với search
+    - Filter: Warranty expiring soon
+    - Actions: View, Edit, Delete
+
+  Task 8.2: Vehicle Detail Page
+
+  File: src/pages/vehicles/VehicleDetailPage.jsx
+  - APIs sử dụng:
+    - GET /api/vehicles/{id}
+    - GET /api/installed-parts/by-vehicle/{vehicleId}
+    - GET /api/service-histories/by-vehicle/{vehicleId}
+  - Chức năng:
+    - Vehicle information
+    - Installed parts list
+    - Service history timeline
+    - QR code for vehicle (optional)
+
+  Task 8.3: Create/Edit Vehicle Page
+
+  File: src/pages/vehicles/VehicleFormPage.jsx
+  - APIs sử dụng:
+    - GET /api/customers (để chọn owner)
+    - POST /api/vehicles
+    - PUT /api/vehicles/{id}
+    - GET /api/vehicles/by-vin?vin={vin} (check duplicate)
+  - Chức năng:
+    - Form create/edit vehicle
+    - Select customer owner
+    - VIN validation
+    - Warranty period calculation
+
+  Task 8.4: My Vehicles Page (Customer)
+
+  File: src/pages/vehicles/MyVehiclesPage.jsx
+  - APIs sử dụng:
+    - GET /api/vehicles/my-vehicles
+  - Chức năng:
+    - Grid/List view of customer's vehicles
+    - Warranty status indicator
+    - Quick actions: View details, Service history
+  - Roles: CUSTOMER
+
+  ---
+  GIAI ĐOẠN 9: WARRANTY CLAIM MODULE
+
+  Task 9.1: Warranty Claim List Page
+
+  File: src/pages/warranty-claims/ClaimListPage.jsx
+  - APIs sử dụng:
+    - GET /api/warranty-claims
+    - GET /api/warranty-claims/by-status/{status}
+    - GET /api/warranty-claims/admin-pending (ADMIN)
+    - GET /api/warranty-claims/tech-pending (SC_TECHNICIAN)
+  - Chức năng:
+    - Table claims với filters (status, date range)
+    - Status badges (PENDING, APPROVED, IN_PROGRESS, COMPLETED)
+    - Pagination
+    - Quick actions by role
+
+  Task 9.2: Warranty Claim Detail Page
+
+  File: src/pages/warranty-claims/ClaimDetailPage.jsx
+  - APIs sử dụng:
+    - GET /api/warranty-claims/{id}
+    - GET /api/work-logs/by-claim/{claimId}
+    - GET /api/part-requests/by-claim/{claimId}
+    - GET /api/feedbacks/by-claim/{claimId}
+  - Chức năng:
+    - Claim information display
+    - Status workflow timeline
+    - Associated work logs
+    - Part requests for this claim
+    - Customer feedback (if completed)
+    - Action buttons based on role & status
+
+  Task 9.3: Create Claim Page (Service Center Staff)
+
+  File: src/pages/warranty-claims/CreateClaimPage.jsx
+  - APIs sử dụng:
+    - POST /api/warranty-claims/sc-create
+    - GET /api/vehicles/search (select vehicle)
+    - GET /api/customers/search (select customer)
+    - GET /api/installed-parts/by-vehicle/{vehicleId} (select part)
+  - Chức năng:
+    - Multi-step form wizard
+    - Step 1: Select customer & vehicle
+    - Step 2: Select faulty installed part
+    - Step 3: Describe issue & attach photos
+    - Step 4: Review & submit
+  - Roles: SC_STAFF
+
+  Task 9.4: Claim Processing Pages (by role)
+
+  9.4a: Admin Approval Page
+  - APIs:
+    - PATCH /api/warranty-claims/{id}/admin-accept
+    - PATCH /api/warranty-claims/{id}/admin-reject
+    - POST /api/warranty-claims/{claimId}/assign-to-me
+  - Chức năng: Review claim details, Approve/Reject/Assign
+
+  9.4b: Technician Processing Page
+  - APIs:
+    - PATCH /api/warranty-claims/{id}/tech-start
+    - PATCH /api/warranty-claims/{id}/tech-complete
+    - POST /api/work-logs (add work log)
+    - POST /api/part-requests (request parts)
+  - Chức năng: Start work, Log progress, Complete claim
+
+  Task 9.5: My Claims Page (Customer)
+
+  File: src/pages/warranty-claims/MyClaimsPage.jsx
+  - APIs sử dụng:
+    - GET /api/warranty-claims/my-claims
+    - GET /api/warranty-claims/my-claims/{claimId}
+  - Chức năng:
+    - View own warranty claims
+    - Track claim status
+    - View work logs & updates
+  - Roles: CUSTOMER
+
+  ---
+  GIAI ĐOẠN 10: PARTS MANAGEMENT MODULE
+
+  Task 10.1: Parts Catalog Page
+
+  File: src/pages/parts/PartListPage.jsx
+  - APIs sử dụng:
+    - GET /api/parts (pagination)
+    - GET /api/parts/by-manufacturer?manufacturer={name}
+    - DELETE /api/parts/{id}
+  - Chức năng:
+    - Table parts catalog
+    - Filter by manufacturer
+    - Search functionality
+    - CRUD actions
+  - Roles: ADMIN, EVM_STAFF, SC_STAFF
+
+  Task 10.2: Create/Edit Part Page
+
+  File: src/pages/parts/PartFormPage.jsx
+  - APIs sử dụng:
+    - POST /api/parts
+    - PUT /api/parts/{id}
+    - GET /api/parts/{id}
+  - Chức năng:
+    - Form for part details
+    - Fields: Part number, name, manufacturer, warranty period
+  - Roles: ADMIN, EVM_STAFF
+
+  Task 10.3: Installed Parts Page
+
+  File: src/pages/parts/InstalledPartsPage.jsx
+  - APIs sử dụng:
+    - GET /api/installed-parts
+    - GET /api/installed-parts/by-vehicle/{vehicleId}
+    - GET /api/installed-parts/warranty-expiring
+  - Chức năng:
+    - List installed parts
+    - Filter by vehicle
+    - Warranty expiry alerts
+    - Install new part action
+  - Roles: ADMIN, SC_STAFF, EVM_STAFF
+
+  Task 10.4: Install Part Page
+
+  File: src/pages/parts/InstallPartPage.jsx
+  - APIs sử dụng:
+    - POST /api/installed-parts
+    - GET /api/parts (select part)
+    - GET /api/vehicles (select vehicle)
+  - Chức năng:
+    - Form to record part installation
+    - Select vehicle & part
+    - Installation date & warranty calculation
+  - Roles: ADMIN, SC_STAFF
+
+  ---
+  GIAI ĐOẠN 11: PART REQUEST MODULE
+
+  Task 11.1: Part Request List Page
+
+  File: src/pages/part-requests/PartRequestListPage.jsx
+  - APIs sử dụng:
+    - GET /api/part-requests
+    - GET /api/part-requests/by-status/{status}
+    - GET /api/part-requests/pending (ADMIN, EVM_STAFF)
+    - GET /api/part-requests/my-requests (SC_TECHNICIAN)
+  - Chức năng:
+    - Table part requests
+    - Status filters (PENDING, APPROVED, SHIPPED, DELIVERED...)
+    - Role-based view
+  - Roles: ADMIN, EVM_STAFF, SC_STAFF, SC_TECHNICIAN
+
+  Task 11.2: Create Part Request Page
+
+  File: src/pages/part-requests/CreatePartRequestPage.jsx
+  - APIs sử dụng:
+    - POST /api/part-requests
+    - GET /api/parts (select part)
+    - GET /api/warranty-claims (associate with claim)
+  - Chức năng:
+    - Form create part request
+    - Select part & quantity
+    - Associate with warranty claim
+    - Justification notes
+  - Roles: SC_TECHNICIAN
+
+  Task 11.3: Part Request Detail & Workflow Page
+
+  File: src/pages/part-requests/PartRequestDetailPage.jsx
+  - APIs sử dụng:
+    - GET /api/part-requests/{id}
+    - PATCH /api/part-requests/{id}/approve (ADMIN, EVM_STAFF)
+    - PATCH /api/part-requests/{id}/reject (ADMIN, EVM_STAFF)
+    - PATCH /api/part-requests/{id}/ship (ADMIN, EVM_STAFF)
+    - PATCH /api/part-requests/{id}/deliver (SC_STAFF)
+    - PATCH /api/part-requests/{id}/cancel (SC_TECHNICIAN)
+  - Chức năng:
+    - Display request details
+    - Status workflow buttons based on role
+    - Tracking information
+    - Action history timeline
+
+  Task 11.4: Part Request Statistics Dashboard
+
+  File: src/pages/part-requests/PartRequestStatsPage.jsx
+  - APIs sử dụng:
+    - GET /api/part-requests/statistics
+  - Chức năng:
+    - Charts: Requests by status, by month
+    - Average processing time
+    - Top requested parts
+  - Roles: ADMIN, EVM_STAFF
+
+  ---
+  GIAI ĐOẠN 12: SERVICE CENTER MODULE
+
+  Task 12.1: Service Center List Page
+
+  File: src/pages/service-centers/ServiceCenterListPage.jsx
+  - APIs sử dụng:
+    - GET /api/service-centers (pagination)
+    - GET /api/service-centers/search?name={query}
+    - DELETE /api/service-centers/{id}
+  - Chức năng:
+    - Table/Grid view of service centers
+    - Search by name
+    - View on map option
+  - Roles: All authenticated users
+
+  Task 12.2: Service Center Detail Page
+
+  File: src/pages/service-centers/ServiceCenterDetailPage.jsx
+  - APIs sử dụng:
+    - GET /api/service-centers/{id}
+    - GET /api/feedbacks/statistics/service-center/{id}/average-rating
+  - Chức năng:
+    - Center information (address, phone, hours)
+    - Google Maps integration
+    - Average rating display
+    - Contact information
+
+  Task 12.3: Create/Edit Service Center Page
+
+  File: src/pages/service-centers/ServiceCenterFormPage.jsx
+  - APIs sử dụng:
+    - POST /api/service-centers
+    - PUT /api/service-centers/{id}
+    - PATCH /api/service-centers/{id}/location
+  - Chức năng:
+    - Form for service center info
+    - Address input with geocoding
+    - Operating hours configuration
+  - Roles: ADMIN
+
+  Task 12.4: Find Nearby Service Centers Page (Public)
+
+  File: src/pages/public/FindServiceCenterPage.jsx
+  - APIs sử dụng:
+    - GET /api/public/service-centers
+    - GET /api/service-centers/nearby?lat={lat}&lng={lng}&radius={km}
+    - GET /api/service-centers/ordered-by-distance?lat={lat}&lng={lng}
+  - Chức năng:
+    - Map view with markers
+    - Geolocation để tìm centers gần nhất
+    - List view với distance sorting
+  - Roles: Public (no auth required)
+
+  ---
+  GIAI ĐOẠN 13: SERVICE HISTORY MODULE
+
+  Task 13.1: Service History List Page
+
+  File: src/pages/service-history/ServiceHistoryListPage.jsx
+  - APIs sử dụng:
+    - GET /api/service-histories (pagination)
+    - GET /api/service-histories/by-date-range?startDate={}&endDate={}
+    - DELETE /api/service-histories/{id}
+  - Chức năng:
+    - Table service histories
+    - Date range filter
+    - Export to CSV option
+  - Roles: ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF
+
+  Task 13.2: Create/Edit Service History Page
+
+  File: src/pages/service-history/ServiceHistoryFormPage.jsx
+  - APIs sử dụng:
+    - POST /api/service-histories
+    - PUT /api/service-histories/{id}
+    - GET /api/vehicles (select vehicle)
+    - GET /api/parts (select parts serviced)
+  - Chức năng:
+    - Form record service
+    - Select vehicle
+    - Service date, description, cost
+    - Associated parts
+  - Roles: ADMIN, SC_STAFF, SC_TECHNICIAN, EVM_STAFF
+
+  Task 13.3: My Service History Page (Customer)
+
+  File: src/pages/service-history/MyServiceHistoryPage.jsx
+  - APIs sử dụng:
+    - GET /api/service-histories/my-services
+  - Chức năng:
+    - View own service records
+    - Timeline view
+    - Download service reports
+  - Roles: CUSTOMER
+
+  ---
+  GIAI ĐOẠN 14: FEEDBACK MODULE
+
+  Task 14.1: Feedback List Page (Admin/Staff)
+
+  File: src/pages/feedbacks/FeedbackListPage.jsx
+  - APIs sử dụng:
+    - GET /api/feedbacks (pagination)
+    - GET /api/feedbacks/by-rating/{rating}
+    - GET /api/feedbacks/min-rating/{rating}
+    - DELETE /api/feedbacks/{id}
+  - Chức năng:
+    - Table feedbacks
+    - Filter by rating (1-5 stars)
+    - View associated claim
+  - Roles: ADMIN, EVM_STAFF, SC_STAFF, SC_TECHNICIAN
+
+  Task 14.2: Create Feedback Page (Customer)
+
+  File: src/pages/feedbacks/CreateFeedbackPage.jsx
+  - APIs sử dụng:
+    - POST /api/feedbacks
+    - GET /api/warranty-claims/my-claims (select completed claim)
+  - Chức năng:
+    - Select completed warranty claim
+    - Rating stars (1-5)
+    - Comments textarea
+    - Submit feedback
+  - Roles: CUSTOMER
+
+  Task 14.3: Feedback Statistics Page
+
+  File: src/pages/feedbacks/FeedbackStatsPage.jsx
+  - APIs sử dụng:
+    - GET /api/feedbacks/statistics/summary
+    - GET /api/feedbacks/statistics/average-rating
+    - GET /api/feedbacks/statistics/count-by-rating/{rating}
+  - Chức năng:
+    - Overall average rating
+    - Rating distribution chart
+    - Recent feedbacks widget
+  - Roles: ADMIN, EVM_STAFF, SC_STAFF
+
+  ---
+  GIAI ĐOẠN 15: RECALL REQUEST MODULE
+
+  Task 15.1: Recall Request List Page
+
+  File: src/pages/recalls/RecallListPage.jsx
+  - APIs sử dụng:
+    - GET /api/recall-requests/admin (ADMIN, EVM_STAFF, SC_STAFF)
+    - GET /api/recall-requests/my-recalls (CUSTOMER)
+  - Chức năng:
+    - Table recall requests
+    - Status badges (PENDING, APPROVED, REJECTED, CONFIRMED)
+    - Filter by status
+  - Roles: All authenticated users
+
+  Task 15.2: Create Recall Request Page
+
+  File: src/pages/recalls/CreateRecallPage.jsx
+  - APIs sử dụng:
+    - POST /api/recall-requests
+    - GET /api/customers (select affected customers)
+    - GET /api/parts (select affected parts)
+  - Chức năng:
+    - Form create recall campaign
+    - Select affected part
+    - Bulk select customers
+    - Recall reason & instructions
+  - Roles: EVM_STAFF
+
+  Task 15.3: Recall Request Detail & Actions Page
+
+  File: src/pages/recalls/RecallDetailPage.jsx
+  - APIs sử dụng:
+    - GET /api/recall-requests/{id} (inferred)
+    - PATCH /api/recall-requests/{id}/approve (ADMIN, SC_STAFF)
+    - PATCH /api/recall-requests/{id}/reject (ADMIN, SC_STAFF)
+    - PATCH /api/recall-requests/{id}/customer-confirm (CUSTOMER)
+    - DELETE /api/recall-requests/{id} (EVM_STAFF)
+  - Chức năng:
+    - Display recall details
+    - Admin/SC: Approve/Reject buttons
+    - Customer: Confirm participation button
+    - Email notification log
+
+  Task 15.4: My Recalls Page (Customer)
+
+  File: src/pages/recalls/MyRecallsPage.jsx
+  - APIs sử dụng:
+    - GET /api/recall-requests/customer/{customerId}
+    - GET /api/recall-requests/my-recalls
+  - Chức năng:
+    - List recalls affecting customer
+    - Highlight unconfirmed recalls
+    - Quick confirm action
+  - Roles: CUSTOMER
+
+  ---
+  GIAI ĐOẠN 16: WORK LOG MODULE
+
+  Task 16.1: Work Log List Page
+
+  File: src/pages/work-logs/WorkLogListPage.jsx
+  - APIs sử dụng:
+    - GET /api/work-logs (ADMIN, EVM_STAFF)
+    - GET /api/work-logs/my-work-logs (Authenticated)
+    - GET /api/work-logs/by-user/{userId} (ADMIN, EVM_STAFF)
+  - Chức năng:
+    - Table work logs
+    - Filter by user
+    - Date range filter
+    - Export timesheet
+  - Roles: ADMIN, EVM_STAFF, (own logs for others)
+
+  Task 16.2: Create/Edit Work Log Page
+
+  File: src/pages/work-logs/WorkLogFormPage.jsx
+  - APIs sử dụng:
+    - POST /api/work-logs
+    - PUT /api/work-logs/{id}
+    - GET /api/warranty-claims (associate with claim)
+  - Chức năng:
+    - Form log work
+    - Select warranty claim
+    - Work description, hours spent
+    - Date & time picker
+  - Roles: ADMIN, EVM_STAFF, SC_TECHNICIAN
+
+  Task 16.3: Work Log by Claim View (Component)
+
+  File: src/components/features/workLogs/WorkLogsByClaim.jsx
+  - APIs sử dụng:
+    - GET /api/work-logs/by-claim/{claimId}
+  - Chức năng:
+    - Display all work logs for a claim
+    - Timeline view
+    - Total hours calculation
+    - Embedded in Claim Detail Page
+  - Roles: ADMIN, EVM_STAFF, SC_STAFF, SC_TECHNICIAN
+
+  ---
+  GIAI ĐOẠN 17: USER MANAGEMENT MODULE (ADMIN)
+
+  Task 17.1: User List Page
+
+  File: src/pages/admin/UserListPage.jsx
+  - APIs sử dụng:
+    - GET /api/admin/users (pagination)
+    - GET /api/admin/users/search?username={query}
+    - GET /api/admin/users/by-role/{roleName}
+    - DELETE /api/admin/users/{userId}
+  - Chức năng:
+    - Table all users
+    - Search by username
+    - Filter by role
+    - Actions: Edit, Delete, Reset Password
+  - Roles: ADMIN only
+
+  Task 17.2: User Detail/Edit Page
+
+  File: src/pages/admin/UserDetailPage.jsx
+  - APIs sử dụng:
+    - GET /api/admin/users/{userId}
+    - PUT /api/admin/users/{userId}
+    - PATCH /api/admin/users/{userId}/role
+  - Chức năng:
+    - Display user info
+    - Edit user details
+    - Change user role dropdown
+    - Account status toggle
+  - Roles: ADMIN only
+
+  Task 17.3: Create User Page
+
+  File: src/pages/admin/CreateUserPage.jsx
+  - APIs sử dụng:
+    - POST /api/auth/admin/create-user
+  - Chức năng:
+    - Form create new user
+    - Select role (ADMIN, EVM_STAFF, SC_STAFF, SC_TECHNICIAN)
+    - Set initial password
+  - Roles: ADMIN only
+
+  Task 17.4: Reset User Password Page
+
+  File: src/pages/admin/ResetUserPasswordPage.jsx
+  - APIs sử dụng:
+    - POST /api/admin/users/{userId}/reset-password
+  - Chức năng:
+    - Admin-initiated password reset
+    - Generate temporary password
+    - Send email notification
+  - Roles: ADMIN only
+
+  Task 17.5: User Statistics Page
+
+  File: src/pages/admin/UserStatsPage.jsx
+  - APIs sử dụng:
+    - GET /api/admin/users/statistics
+  - Chức năng:
+    - Charts: Users by role
+    - Active vs inactive users
+    - Registration trends
+  - Roles: ADMIN only
+
+  ---
+  GIAI ĐOẠN 18: PROFILE & SETTINGS
+
+  Task 18.1: User Profile Page
+
+  File: src/pages/profile/ProfilePage.jsx
+  - APIs sử dụng:
+    - GET /api/profile
+    - GET /api/me
+    - GET /api/me/basic
+  - Chức năng:
+    - Display current user profile
+    - Role-specific information
+    - Link to edit profile
+  - Roles: All authenticated users
+
+  Task 18.2: Edit Profile Page
+
+  File: src/pages/profile/EditProfilePage.jsx
+  - APIs sử dụng:
+    - PUT /api/customers/profile (if CUSTOMER)
+    - Other role-specific endpoints (if available)
+  - Chức năng:
+    - Form edit own profile
+    - Update contact info
+    - Avatar upload (optional)
+
+  Task 18.3: Change Password Page
+
+  File: src/pages/profile/ChangePasswordPage.jsx
+  - APIs sử dụng:
+    - Custom endpoint (if exists) or use forgot password flow
+  - Chức năng:
+    - Form change own password
+    - Current password verification
+    - New password validation
+
+  ---
+  GIAI ĐOẠN 19: TESTING & OPTIMIZATION
+
+  Task 19.1: Unit Testing
+
+  - Viết tests cho utility functions
+  - Test custom hooks
+  - Test Zustand stores
+
+  Task 19.2: Integration Testing
+
+  - Test API integration với MSW (Mock Service Worker)
+  - Test authentication flow
+  - Test protected routes
+
+  Task 19.3: Performance Optimization
+
+  - Implement React.lazy() cho code splitting
+  - Optimize re-renders với React.memo
+  - Add infinite scroll cho large tables
+  - Implement caching với React Query
+
+  Task 19.4: Error Handling & Loading States
+
+  - Global error boundary
+  - API error handling với toast notifications
+  - Loading skeletons cho tất cả pages
+  - Network error retry mechanism
+
+  ---
+  GIAI ĐOẠN 20: DEPLOYMENT PREPARATION
+
+  Task 20.1: Environment Configuration
+
+  - Setup .env files (.env.development, .env.production)
+  - Configure API base URLs
+  - Setup build scripts
+
+  Task 20.2: Build Optimization
+
+  npm run build
+  - Analyze bundle size
+  - Optimize images & assets
+  - Configure cache headers
+
+  Task 20.3: Docker Configuration (Optional)
+
+  File: Dockerfile
+  FROM node:18-alpine as build
+  WORKDIR /app
+  COPY package*.json ./
+  RUN npm ci
+  COPY . .
+  RUN npm run build
+
+  FROM nginx:alpine
+  COPY --from=build /app/dist /usr/share/nginx/html
+  COPY nginx.conf /etc/nginx/conf.d/default.conf
+  EXPOSE 80
+  CMD ["nginx", "-g", "daemon off;"]
+
+  ---
+  TỔNG KẾT CÁC TASKS
+
+  Tổng số tasks: ~90 tasks
+
+  Thời gian ước tính: 8-12 tuần (với 1-2 developers)
+
+  Phân chia ưu tiên:
+
+  SPRINT 1 (Tuần 1-2): Foundation
+  - Giai đoạn 1-4: Setup dự án, API client, State management, Common components
+
+  SPRINT 2 (Tuần 3-4): Core Features
+  - Giai đoạn 5-6: Authentication & Dashboard
+
+  SPRINT 3 (Tuần 5-6): Main Business Modules
+  - Giai đoạn 7-9: Customer, Vehicle, Warranty Claim management
+
+  SPRINT 4 (Tuần 7-8): Secondary Modules
+  - Giai đoạn 10-13: Parts, Part Requests, Service Centers, Service History
+
+  SPRINT 5 (Tuần 9-10): Supporting Features
+  - Giai đoạn 14-16: Feedback, Recalls, Work Logs
+
+  SPRINT 6 (Tuần 11): Admin Features
+  - Giai đoạn 17-18: User Management, Profile & Settings
+
+  SPRINT 7 (Tuần 12): Polish & Deploy
+  - Giai đoạn 19-20: Testing, Optimization, Deployment
+
+  ---
+  DEPENDENCIES GIỮA CÁC TASKS
+
+  Setup (1-4) → Auth (5) → Dashboard (6)
+                  ↓
+  Customer (7) → Vehicle (8) → Warranty Claims (9)
+                  ↓                     ↓
+              Parts (10) ← Part Requests (11)
+                  ↓
+          Service Centers (12) → Service History (13)
+                  ↓
+          Feedback (14) ← Warranty Claims (9)
+                  ↓
+              Recalls (15)
+                  ↓
+          Work Logs (16) ← Warranty Claims (9)
+                  ↓
+          User Management (17)
+
+  ---
+
