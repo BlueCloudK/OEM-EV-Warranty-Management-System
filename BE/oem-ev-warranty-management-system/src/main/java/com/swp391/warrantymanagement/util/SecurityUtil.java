@@ -32,8 +32,10 @@ public final class SecurityUtil {
     public static Optional<Authentication> getCurrentAuthentication() {
         // Step 1: Lấy Authentication object từ SecurityContextHolder.
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        // Step 2: Kiểm tra nếu object là null hoặc chưa được xác thực (ví dụ: anonymous user).
-        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+        // Step 2: Kiểm tra nếu object là null hoặc chưa được xác thực.
+        // FIX: Removed "anonymousUser" check vì có thể gây false positive với JWT authentication.
+        // Check isAuthenticated() là đủ để verify user đã login thành công.
+        if (authentication == null || !authentication.isAuthenticated()) {
             return Optional.empty();
         }
         // Step 3: Trả về Optional chứa Authentication object.
