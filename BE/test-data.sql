@@ -39,11 +39,11 @@ ON DUPLICATE KEY UPDATE
 -- =====================================================
 -- 2. INSERT USERS
 -- =====================================================
--- All users use password: "password123" (for easy testing)
--- BCrypt hash: $2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy
--- Generate more at: https://bcrypt-generator.com/
+-- Passwords match DataInitializer.java:
+-- - admin: "admin123" (BCrypt: $2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy)
+-- - others: "1234567" (BCrypt: $2a$10$eImiTXuWVxfM37uY4JANjO8YRqBJFBAa3sMlm0KfHvPXPz7xWPKPi)
 
--- ADMIN User
+-- ADMIN User (password: admin123)
 INSERT INTO users (user_id, username, password, email, phone, full_name, role_id, created_at, updated_at) VALUES
 (1, 'admin', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'admin@warranty.com', '0901234567', 'System Administrator', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE
@@ -51,33 +51,33 @@ ON DUPLICATE KEY UPDATE
     email = VALUES(email),
     updated_at = NOW();
 
--- EVM_STAFF User
+-- EVM_STAFF User (password: 1234567)
 INSERT INTO users (user_id, username, password, email, phone, full_name, role_id, created_at, updated_at) VALUES
-(2, 'evmstaff', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'evm.staff@manufacturer.com', '0901234568', 'EVM Staff Manager', 2, NOW(), NOW())
+(2, 'evmstaff', '$2a$10$eImiTXuWVxfM37uY4JANjO8YRqBJFBAa3sMlm0KfHvPXPz7xWPKPi', 'evm.staff@manufacturer.com', '0901234568', 'EVM Staff Manager', 2, NOW(), NOW())
 ON DUPLICATE KEY UPDATE
     password = VALUES(password),
     email = VALUES(email),
     updated_at = NOW();
 
--- SC_STAFF User
+-- SC_STAFF User (password: 1234567)
 INSERT INTO users (user_id, username, password, email, phone, full_name, role_id, created_at, updated_at) VALUES
-(3, 'scstaff', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'sc.staff@servicecenter.com', '0901234569', 'Service Center Manager', 3, NOW(), NOW())
+(3, 'scstaff', '$2a$10$eImiTXuWVxfM37uY4JANjO8YRqBJFBAa3sMlm0KfHvPXPz7xWPKPi', 'sc.staff@servicecenter.com', '0901234569', 'Service Center Manager', 3, NOW(), NOW())
 ON DUPLICATE KEY UPDATE
     password = VALUES(password),
     email = VALUES(email),
     updated_at = NOW();
 
--- SC_TECHNICIAN User
+-- SC_TECHNICIAN User (password: 1234567)
 INSERT INTO users (user_id, username, password, email, phone, full_name, role_id, created_at, updated_at) VALUES
-(4, 'technician', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'technician@servicecenter.com', '0901234570', 'Lead Technician', 4, NOW(), NOW())
+(4, 'technician', '$2a$10$eImiTXuWVxfM37uY4JANjO8YRqBJFBAa3sMlm0KfHvPXPz7xWPKPi', 'technician@servicecenter.com', '0901234570', 'Lead Technician', 4, NOW(), NOW())
 ON DUPLICATE KEY UPDATE
     password = VALUES(password),
     email = VALUES(email),
     updated_at = NOW();
 
--- CUSTOMER User
+-- CUSTOMER User (password: 1234567)
 INSERT INTO users (user_id, username, password, email, phone, full_name, role_id, created_at, updated_at) VALUES
-(5, 'customer', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'customer@email.com', '0901234571', 'John Customer', 5, NOW(), NOW())
+(5, 'customer', '$2a$10$eImiTXuWVxfM37uY4JANjO8YRqBJFBAa3sMlm0KfHvPXPz7xWPKPi', 'customer@email.com', '0901234571', 'John Customer', 5, NOW(), NOW())
 ON DUPLICATE KEY UPDATE
     password = VALUES(password),
     email = VALUES(email),
@@ -151,14 +151,16 @@ ON DUPLICATE KEY UPDATE
 -- =====================================================
 -- TEST CREDENTIALS SUMMARY
 -- =====================================================
--- ALL USERS USE SAME PASSWORD FOR EASY TESTING: password123
+-- Passwords match DataInitializer.java for consistency
 --
--- Username: admin      | Password: password123 | Role: ADMIN
--- Username: evmstaff   | Password: password123 | Role: EVM_STAFF
--- Username: scstaff    | Password: password123 | Role: SC_STAFF
--- Username: technician | Password: password123 | Role: SC_TECHNICIAN
--- Username: customer   | Password: password123 | Role: CUSTOMER
+-- Username: admin      | Password: admin123 | Role: ADMIN
+-- Username: evmstaff   | Password: 1234567  | Role: EVM_STAFF
+-- Username: scstaff    | Password: 1234567  | Role: SC_STAFF
+-- Username: technician | Password: 1234567  | Role: SC_TECHNICIAN
+-- Username: customer   | Password: 1234567  | Role: CUSTOMER
 -- =====================================================
--- BCrypt hash used: $2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy
+-- BCrypt hashes:
+-- - admin123: $2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy
+-- - 1234567:  $2a$10$eImiTXuWVxfM37uY4JANjO8YRqBJFBAa3sMlm0KfHvPXPz7xWPKPi
 -- Generate custom passwords at: https://bcrypt-generator.com/
 -- =====================================================
