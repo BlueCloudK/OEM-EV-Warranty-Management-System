@@ -96,13 +96,9 @@ public class VehicleController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN')")
     public ResponseEntity<Void> deleteVehicle(@PathVariable Long id) {
         logger.info("Delete vehicle request: {}", id);
-        boolean deleted = vehicleService.deleteVehicle(id);
-        if (deleted) {
-            logger.info("Vehicle deleted: {}", id);
-            return ResponseEntity.noContent().build();
-        }
-        logger.warn("Vehicle not found for delete: {}", id);
-        return ResponseEntity.notFound().build();
+        vehicleService.deleteVehicle(id);
+        logger.info("Vehicle deleted: {}", id);
+        return ResponseEntity.noContent().build();
     }
 
     // Get vehicles by customer ID (ADMIN/STAFF only)
