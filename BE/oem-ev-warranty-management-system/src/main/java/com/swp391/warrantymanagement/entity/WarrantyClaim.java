@@ -36,7 +36,7 @@ import java.util.List;
 // Chỉ include ID để tránh so sánh sâu các lazy relationships
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 // Exclude relationships để tránh vòng lặp đệ quy và lazy loading exception
-@ToString(exclude = {"installedPart", "vehicle", "workLogs", "serviceCenter", "assignedTo", "recallRequest"})
+@ToString(exclude = {"installedPart", "vehicle", "workLogs", "serviceCenter", "assignedTo", "recallResponse"})
 public class WarrantyClaim {
 
     @Id
@@ -132,21 +132,21 @@ public class WarrantyClaim {
     private User assignedTo;
 
     /**
-     * Recall request tạo ra claim này (quan hệ 1-1 optional).
+     * Recall response tạo ra claim này (quan hệ 1-1 optional).
      * <p>
      * <strong>Tại sao cần trường này:</strong> Phân biệt 2 loại claim:
      * <ul>
      *     <li><strong>Customer-initiated:</strong> Customer tự phát hiện và tạo claim
-     *     ({@code recallRequest = null})</li>
+     *     ({@code recallResponse = null})</li>
      *     <li><strong>Recall-initiated:</strong> Nhà sản xuất phát hiện lỗi hàng loạt,
-     *     tạo recall request, hệ thống tự động tạo claim cho các xe bị ảnh hưởng
-     *     (có {@code recallRequest != null})</li>
+     *     tạo recall campaign, khách hàng chấp nhận → hệ thống tự động tạo claim
+     *     (có {@code recallResponse != null})</li>
      * </ul>
      * <p>
-     * <strong>Tại sao unique = true:</strong> Mỗi recall request chỉ tạo tối đa 1 claim
-     * cho mỗi xe/part cụ thể (tránh duplicate claims cho cùng một vấn đề).
+     * <strong>Tại sao unique = true:</strong> Mỗi recall response chỉ tạo đúng 1 claim
+     * (tránh duplicate claims cho cùng một vấn đề).
      */
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "recall_request_id", unique = true)
-    private RecallRequest recallRequest;
+    @JoinColumn(name = "recall_response_id", unique = true)
+    private RecallResponse recallResponse;
 }
