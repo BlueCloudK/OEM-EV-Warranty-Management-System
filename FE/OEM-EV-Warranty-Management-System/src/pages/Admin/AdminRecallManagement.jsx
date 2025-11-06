@@ -5,7 +5,7 @@ import {
   FaHourglassHalf, FaUserCheck, FaFileAlt, FaSearch, FaFilter,
   FaSpinner, FaEye
 } from "react-icons/fa";
-import apiClient from "../../api/apiClient";
+import { recallRequestsApi } from "../../api/recallRequests";
 
 export default function AdminRecallManagement() {
   const [recalls, setRecalls] = useState([]);
@@ -34,9 +34,9 @@ export default function AdminRecallManagement() {
   const fetchRecalls = async () => {
     try {
       setLoading(true);
-      const response = await apiClient('/api/recall-requests/admin');
-      console.log('Recall data:', response); // Debug: xem structure của data
-      setRecalls(response || []);
+      const response = await recallRequestsApi.getAllForAdmin();
+      console.log('📋 Recall Requests loaded:', response);
+      setRecalls(response?.content || response || []);
     } catch (error) {
       console.error("Error fetching recalls:", error);
       alert("Không thể tải danh sách yêu cầu recall");
@@ -56,10 +56,10 @@ export default function AdminRecallManagement() {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(r =>
         r.recallRequestId?.toString().includes(term) ||
-        r.installedPart?.part?.partName?.toLowerCase().includes(term) ||
-        r.installedPart?.vehicle?.vin?.toLowerCase().includes(term) ||
-        r.installedPart?.vehicle?.customer?.user?.fullName?.toLowerCase().includes(term) ||
-        r.reason?.toLowerCase().includes(term)
+        r.part?.partName?.toLowerCase().includes(term) ||
+        r.part?.partNumber?.toLowerCase().includes(term) ||
+        r.reason?.toLowerCase().includes(term) ||
+        r.createdBy?.fullName?.toLowerCase().includes(term)
       );
     }
 
@@ -72,11 +72,10 @@ export default function AdminRecallManagement() {
 
     try {
       setSubmitting(true);
-      await apiClient(
-        `/api/recall-requests/${selectedRecall.recallRequestId}/approve?note=${encodeURIComponent(adminNote || '')}`,
-        { method: 'PATCH' }
-      );
-      alert("Đã phê duyệt yêu cầu recall thành công!");
+      await recallRequestsApi.approve(selectedRecall.recallRequestId, {
+        adminNote: adminNote.trim() || null
+      });
+      alert("✅ Đã phê duyệt yêu cầu recall! Hệ thống sẽ tự động tạo RecallResponse cho các xe bị ảnh hưởng.");
       setShowApproveModal(false);
       setAdminNote("");
       setSelectedRecall(null);
@@ -98,11 +97,10 @@ export default function AdminRecallManagement() {
 
     try {
       setSubmitting(true);
-      await apiClient(
-        `/api/recall-requests/${selectedRecall.recallRequestId}/reject?note=${encodeURIComponent(rejectReason)}`,
-        { method: 'PATCH' }
-      );
-      alert("Đã từ chối yêu cầu recall");
+      await recallRequestsApi.reject(selectedRecall.recallRequestId, {
+        rejectionReason: rejectReason.trim()
+      });
+      alert("❌ Đã từ chối yêu cầu recall");
       setShowRejectModal(false);
       setRejectReason("");
       setSelectedRecall(null);
@@ -133,26 +131,29 @@ export default function AdminRecallManagement() {
   };
 
   const getStatusBadge = (status) => {
+    // RecallRequest statuses (campaign-level)
     const statusMap = {
-      PENDING_ADMIN_APPROVAL: { color: "#f39c12", label: "Chờ duyệt" },
-      REJECTED_BY_ADMIN: { color: "#e74c3c", label: "Admin từ chối" },
-      WAITING_CUSTOMER_CONFIRM: { color: "#3498db", label: "Chờ khách hàng" },
-      REJECTED_BY_CUSTOMER: { color: "#95a5a6", label: "Khách từ chối" },
-      CLAIM_CREATED: { color: "#27ae60", label: "Đã tạo claim" },
-      COMPLETED: { color: "#1a73e8", label: "Hoàn thành" }
+      PENDING_ADMIN_APPROVAL: { color: "#f39c12", label: "Chờ duyệt", icon: <FaClock /> },
+      APPROVED_BY_ADMIN: { color: "#27ae60", label: "Admin đã duyệt", icon: <FaCheckCircle /> },
+      REJECTED_BY_ADMIN: { color: "#e74c3c", label: "Admin từ chối", icon: <FaTimesCircle /> },
+      WAITING_CUSTOMER_CONFIRM: { color: "#3498db", label: "Chờ khách hàng", icon: <FaHourglassHalf /> },
+      COMPLETED: { color: "#1a73e8", label: "Hoàn thành", icon: <FaCheckCircle /> }
     };
-    const config = statusMap[status] || { color: "#7f8c8d", label: status };
-    return <S.StatusBadge color={config.color}>{config.label}</S.StatusBadge>;
+    const config = statusMap[status] || { color: "#7f8c8d", label: status, icon: <FaFileAlt /> };
+    return (
+      <S.StatusBadge color={config.color}>
+        {config.icon} {config.label}
+      </S.StatusBadge>
+    );
   };
 
   const getStatistics = () => {
     return {
       total: recalls.length,
       pending: recalls.filter(r => r.status === "PENDING_ADMIN_APPROVAL").length,
-      approved: recalls.filter(r => r.status === "WAITING_CUSTOMER_CONFIRM").length,
+      approved: recalls.filter(r => r.status === "APPROVED_BY_ADMIN").length,
+      waitingCustomer: recalls.filter(r => r.status === "WAITING_CUSTOMER_CONFIRM").length,
       rejected: recalls.filter(r => r.status === "REJECTED_BY_ADMIN").length,
-      customerRejected: recalls.filter(r => r.status === "REJECTED_BY_CUSTOMER").length,
-      claimCreated: recalls.filter(r => r.status === "CLAIM_CREATED").length,
       completed: recalls.filter(r => r.status === "COMPLETED").length
     };
   };
@@ -182,7 +183,7 @@ export default function AdminRecallManagement() {
           <S.StatIcon color="#667eea"><FaFileAlt /></S.StatIcon>
           <S.StatContent>
             <S.StatNumber>{stats.total}</S.StatNumber>
-            <S.StatLabel>Tổng yêu cầu</S.StatLabel>
+            <S.StatLabel>Tổng chiến dịch</S.StatLabel>
           </S.StatContent>
         </S.StatCard>
 
@@ -194,10 +195,18 @@ export default function AdminRecallManagement() {
           </S.StatContent>
         </S.StatCard>
 
+        <S.StatCard color="#27ae60" onClick={() => setStatusFilter("APPROVED_BY_ADMIN")}>
+          <S.StatIcon color="#27ae60"><FaCheckCircle /></S.StatIcon>
+          <S.StatContent>
+            <S.StatNumber>{stats.approved}</S.StatNumber>
+            <S.StatLabel>Admin đã duyệt</S.StatLabel>
+          </S.StatContent>
+        </S.StatCard>
+
         <S.StatCard color="#3498db" onClick={() => setStatusFilter("WAITING_CUSTOMER_CONFIRM")}>
           <S.StatIcon color="#3498db"><FaHourglassHalf /></S.StatIcon>
           <S.StatContent>
-            <S.StatNumber>{stats.approved}</S.StatNumber>
+            <S.StatNumber>{stats.waitingCustomer}</S.StatNumber>
             <S.StatLabel>Chờ khách hàng</S.StatLabel>
           </S.StatContent>
         </S.StatCard>
@@ -207,22 +216,6 @@ export default function AdminRecallManagement() {
           <S.StatContent>
             <S.StatNumber>{stats.rejected}</S.StatNumber>
             <S.StatLabel>Admin từ chối</S.StatLabel>
-          </S.StatContent>
-        </S.StatCard>
-
-        <S.StatCard color="#95a5a6" onClick={() => setStatusFilter("REJECTED_BY_CUSTOMER")}>
-          <S.StatIcon color="#95a5a6"><FaUserCheck /></S.StatIcon>
-          <S.StatContent>
-            <S.StatNumber>{stats.customerRejected}</S.StatNumber>
-            <S.StatLabel>Khách từ chối</S.StatLabel>
-          </S.StatContent>
-        </S.StatCard>
-
-        <S.StatCard color="#27ae60" onClick={() => setStatusFilter("CLAIM_CREATED")}>
-          <S.StatIcon color="#27ae60"><FaCheckCircle /></S.StatIcon>
-          <S.StatContent>
-            <S.StatNumber>{stats.claimCreated}</S.StatNumber>
-            <S.StatLabel>Đã tạo claim</S.StatLabel>
           </S.StatContent>
         </S.StatCard>
 
@@ -240,7 +233,7 @@ export default function AdminRecallManagement() {
           <FaSearch />
           <input
             type="text"
-            placeholder="Tìm theo ID, xe, khách hàng, lý do..."
+            placeholder="Tìm theo ID, phụ tùng, lý do, người tạo..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -251,10 +244,9 @@ export default function AdminRecallManagement() {
           <S.FilterSelect value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="ALL">Tất cả</option>
             <option value="PENDING_ADMIN_APPROVAL">Chờ duyệt</option>
+            <option value="APPROVED_BY_ADMIN">Admin đã duyệt</option>
             <option value="WAITING_CUSTOMER_CONFIRM">Chờ khách hàng</option>
             <option value="REJECTED_BY_ADMIN">Admin từ chối</option>
-            <option value="REJECTED_BY_CUSTOMER">Khách từ chối</option>
-            <option value="CLAIM_CREATED">Đã tạo claim</option>
             <option value="COMPLETED">Đã hoàn thành</option>
           </S.FilterSelect>
         </S.FilterGroup>
@@ -274,10 +266,8 @@ export default function AdminRecallManagement() {
           <S.TableHeader>
             <tr>
               <S.TableHeaderCell>ID</S.TableHeaderCell>
-              <S.TableHeaderCell>Xe</S.TableHeaderCell>
-              <S.TableHeaderCell>Khách hàng</S.TableHeaderCell>
-              <S.TableHeaderCell>Phụ tùng</S.TableHeaderCell>
-              <S.TableHeaderCell>Lý do</S.TableHeaderCell>
+              <S.TableHeaderCell>Phụ tùng bị lỗi</S.TableHeaderCell>
+              <S.TableHeaderCell>Lý do Recall</S.TableHeaderCell>
               <S.TableHeaderCell>Người tạo</S.TableHeaderCell>
               <S.TableHeaderCell>Ngày tạo</S.TableHeaderCell>
               <S.TableHeaderCell>Trạng thái</S.TableHeaderCell>
@@ -285,71 +275,54 @@ export default function AdminRecallManagement() {
             </tr>
           </S.TableHeader>
           <S.TableBody>
-            {filteredRecalls.map((recall) => {
-                // Handle both nested and flat data structures
-                const vehicleInfo = recall.vehicleName || recall.installedPart?.vehicle?.model || 'N/A';
-                const vehicleVin = recall.vehicleId || recall.installedPart?.vehicle?.vin || 'N/A';
-                const customerName = recall.customerName || recall.installedPart?.vehicle?.customer?.user?.fullName || 'N/A';
-                const partName = recall.partName || recall.installedPart?.part?.partName || 'N/A';
-                const partNumber = recall.installedPart?.part?.partNumber || '';
-                const creatorName = recall.createdByName || recall.createdBy?.fullName || 'N/A';
-
-                return (
-                    <S.TableRow key={recall.recallRequestId}>
-                        <S.TableCell>#{recall.recallRequestId}</S.TableCell>
-                        <S.TableCell>
-                            <div style={{fontWeight: '500'}}>{vehicleInfo}</div>
-                            <small style={{color: '#7f8c8d'}}>VIN: {vehicleVin}</small>
-                        </S.TableCell>
-                        <S.TableCell>
-                            <div style={{fontWeight: '500'}}>{customerName}</div>
-                        </S.TableCell>
-                        <S.TableCell>
-                            <div style={{fontWeight: '500'}}>{partName}</div>
-                            {partNumber && <small style={{color: '#7f8c8d'}}>{partNumber}</small>}
-                        </S.TableCell>
-                        <S.TableCell>
-                            <div style={{maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis'}}>
-                                {recall.reason?.length > 50
-                                    ? recall.reason.substring(0, 50) + "..."
-                                    : recall.reason || 'N/A'}
-                            </div>
-                        </S.TableCell>
-                        <S.TableCell>
-                            <div style={{fontWeight: '500'}}>{creatorName}</div>
-                        </S.TableCell>
-                        <S.TableCell>
-                            {recall.createdAt ? new Date(recall.createdAt).toLocaleDateString('vi-VN') : "N/A"}
-                        </S.TableCell>
-                        <S.TableCell>
-                            {getStatusBadge(recall.status)}
-                        </S.TableCell>
-                        <S.TableCell>
-                            <div style={{display: "flex", gap: "8px", flexWrap: "wrap"}}>
-                                <S.ActionButton onClick={() => openDetailModal(recall)}>
-                                    <FaEye/> Chi tiết
-                                </S.ActionButton>
-                                {recall.status === "PENDING_ADMIN_APPROVAL" && (
-                                    <>
-                                        <S.ActionButton
-                                            style={{background: "#27ae60"}}
-                                            onClick={() => openApproveModal(recall)}
-                                        >
-                                            <FaCheckCircle/> Duyệt
-                                        </S.ActionButton>
-                                        <S.ActionButton
-                                            style={{background: "#e74c3c"}}
-                                            onClick={() => openRejectModal(recall)}
-                                        >
-                                            <FaTimesCircle/> Từ chối
-                                        </S.ActionButton>
-                                    </>
-                                )}
-                            </div>
-                        </S.TableCell>
-                    </S.TableRow>
-                )
-            })}
+            {filteredRecalls.map((recall) => (
+              <S.TableRow key={recall.recallRequestId}>
+                <S.TableCell>#{recall.recallRequestId}</S.TableCell>
+                <S.TableCell>
+                  <div style={{ fontWeight: '500' }}>{recall.part?.partName || 'N/A'}</div>
+                  <small style={{ color: '#7f8c8d' }}>{recall.part?.partNumber || 'N/A'}</small>
+                </S.TableCell>
+                <S.TableCell>
+                  <div style={{ maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {recall.reason?.length > 60
+                      ? recall.reason.substring(0, 60) + "..."
+                      : recall.reason || 'N/A'}
+                  </div>
+                </S.TableCell>
+                <S.TableCell>
+                  <div style={{ fontWeight: '500' }}>{recall.createdBy?.fullName || 'N/A'}</div>
+                </S.TableCell>
+                <S.TableCell>
+                  {recall.createdAt ? new Date(recall.createdAt).toLocaleDateString('vi-VN') : "N/A"}
+                </S.TableCell>
+                <S.TableCell>
+                  {getStatusBadge(recall.status)}
+                </S.TableCell>
+                <S.TableCell>
+                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                    <S.ActionButton onClick={() => openDetailModal(recall)}>
+                      <FaEye /> Chi tiết
+                    </S.ActionButton>
+                    {recall.status === "PENDING_ADMIN_APPROVAL" && (
+                      <>
+                        <S.ActionButton
+                          style={{ background: "#27ae60" }}
+                          onClick={() => openApproveModal(recall)}
+                        >
+                          <FaCheckCircle /> Duyệt
+                        </S.ActionButton>
+                        <S.ActionButton
+                          style={{ background: "#e74c3c" }}
+                          onClick={() => openRejectModal(recall)}
+                        >
+                          <FaTimesCircle /> Từ chối
+                        </S.ActionButton>
+                      </>
+                    )}
+                  </div>
+                </S.TableCell>
+              </S.TableRow>
+            ))}
           </S.TableBody>
         </S.Table>
       )}
@@ -368,28 +341,28 @@ export default function AdminRecallManagement() {
             </S.ModalHeader>
             <S.Form onSubmit={handleApprove}>
               <S.FormGroup>
-                <S.Label>Recall ID:</S.Label>
+                <S.Label>Recall Campaign ID:</S.Label>
                 <S.Input type="text" value={`#${selectedRecall.recallRequestId}`} disabled />
               </S.FormGroup>
               <S.FormGroup>
-                <S.Label>Xe:</S.Label>
+                <S.Label>Phụ tùng bị lỗi:</S.Label>
                 <S.Input
                   type="text"
-                  value={`${selectedRecall.installedPart?.vehicle?.model} (${selectedRecall.installedPart?.vehicle?.vin})`}
-                  disabled
-                />
-              </S.FormGroup>
-              <S.FormGroup>
-                <S.Label>Khách hàng:</S.Label>
-                <S.Input
-                  type="text"
-                  value={selectedRecall.installedPart?.vehicle?.customer?.user?.fullName || "N/A"}
+                  value={`${selectedRecall.part?.partName || 'N/A'} (${selectedRecall.part?.partNumber || 'N/A'})`}
                   disabled
                 />
               </S.FormGroup>
               <S.FormGroup>
                 <S.Label>Lý do recall:</S.Label>
-                <S.TextArea value={selectedRecall.reason} disabled />
+                <S.TextArea value={selectedRecall.reason || 'N/A'} disabled />
+              </S.FormGroup>
+              <S.FormGroup>
+                <S.Label>Người tạo yêu cầu:</S.Label>
+                <S.Input
+                  type="text"
+                  value={selectedRecall.createdBy?.fullName || "N/A"}
+                  disabled
+                />
               </S.FormGroup>
               <S.FormGroup>
                 <S.Label>Ghi chú của Admin (tùy chọn):</S.Label>
@@ -400,6 +373,12 @@ export default function AdminRecallManagement() {
                   disabled={submitting}
                 />
               </S.FormGroup>
+              <S.InfoBox>
+                <FaExclamationTriangle />
+                <div>
+                  <strong>Lưu ý:</strong> Khi bạn phê duyệt, hệ thống sẽ tự động tạo RecallResponse cho tất cả các xe đang sử dụng phụ tùng này.
+                </div>
+              </S.InfoBox>
               <S.ModalFooter>
                 <S.Button type="button" onClick={() => setShowApproveModal(false)} disabled={submitting}>
                   Hủy
@@ -423,20 +402,20 @@ export default function AdminRecallManagement() {
             </S.ModalHeader>
             <S.Form onSubmit={handleReject}>
               <S.FormGroup>
-                <S.Label>Recall ID:</S.Label>
+                <S.Label>Recall Campaign ID:</S.Label>
                 <S.Input type="text" value={`#${selectedRecall.recallRequestId}`} disabled />
               </S.FormGroup>
               <S.FormGroup>
-                <S.Label>Xe:</S.Label>
+                <S.Label>Phụ tùng bị lỗi:</S.Label>
                 <S.Input
                   type="text"
-                  value={`${selectedRecall.installedPart?.vehicle?.model} (${selectedRecall.installedPart?.vehicle?.vin})`}
+                  value={`${selectedRecall.part?.partName || 'N/A'} (${selectedRecall.part?.partNumber || 'N/A'})`}
                   disabled
                 />
               </S.FormGroup>
               <S.FormGroup>
                 <S.Label>Lý do recall:</S.Label>
-                <S.TextArea value={selectedRecall.reason} disabled />
+                <S.TextArea value={selectedRecall.reason || 'N/A'} disabled />
               </S.FormGroup>
               <S.FormGroup>
                 <S.Label>Lý do từ chối: *</S.Label>
@@ -471,9 +450,9 @@ export default function AdminRecallManagement() {
             </S.ModalHeader>
             <S.DetailGrid>
               <S.DetailSection>
-                <S.SectionTitle>Thông tin Recall</S.SectionTitle>
+                <S.SectionTitle>Thông tin Chiến dịch Recall</S.SectionTitle>
                 <S.DetailItem>
-                  <S.DetailLabel>Recall ID:</S.DetailLabel>
+                  <S.DetailLabel>Campaign ID:</S.DetailLabel>
                   <S.DetailValue>#{selectedRecall.recallRequestId}</S.DetailValue>
                 </S.DetailItem>
                 <S.DetailItem>
@@ -492,41 +471,19 @@ export default function AdminRecallManagement() {
                 </S.DetailItem>
               </S.DetailSection>
 
-              <S.DetailSection>
-                <S.SectionTitle>Thông tin Xe</S.SectionTitle>
-                <S.DetailItem>
-                  <S.DetailLabel>Xe:</S.DetailLabel>
-                  <S.DetailValue>{selectedRecall.installedPart?.vehicle?.model || "N/A"}</S.DetailValue>
-                </S.DetailItem>
-                <S.DetailItem>
-                  <S.DetailLabel>VIN:</S.DetailLabel>
-                  <S.DetailValue>{selectedRecall.installedPart?.vehicle?.vin || "N/A"}</S.DetailValue>
-                </S.DetailItem>
-                <S.DetailItem>
-                  <S.DetailLabel>Khách hàng:</S.DetailLabel>
-                  <S.DetailValue>
-                    {selectedRecall.installedPart?.vehicle?.customer?.user?.fullName || "N/A"}
-                  </S.DetailValue>
-                </S.DetailItem>
-              </S.DetailSection>
-
               <S.DetailSection fullWidth>
-                <S.SectionTitle>Thông tin Phụ tùng</S.SectionTitle>
+                <S.SectionTitle>Thông tin Phụ tùng bị lỗi</S.SectionTitle>
                 <S.DetailItem>
                   <S.DetailLabel>Tên phụ tùng:</S.DetailLabel>
-                  <S.DetailValue>{selectedRecall.installedPart?.part?.partName || "N/A"}</S.DetailValue>
+                  <S.DetailValue>{selectedRecall.part?.partName || "N/A"}</S.DetailValue>
                 </S.DetailItem>
                 <S.DetailItem>
                   <S.DetailLabel>Mã phụ tùng:</S.DetailLabel>
-                  <S.DetailValue>{selectedRecall.installedPart?.part?.partNumber || "N/A"}</S.DetailValue>
+                  <S.DetailValue>{selectedRecall.part?.partNumber || "N/A"}</S.DetailValue>
                 </S.DetailItem>
                 <S.DetailItem>
-                  <S.DetailLabel>Ngày lắp đặt:</S.DetailLabel>
-                  <S.DetailValue>
-                    {selectedRecall.installedPart?.installationDate
-                      ? new Date(selectedRecall.installedPart.installationDate).toLocaleDateString('vi-VN')
-                      : "N/A"}
-                  </S.DetailValue>
+                  <S.DetailLabel>Nhà sản xuất:</S.DetailLabel>
+                  <S.DetailValue>{selectedRecall.part?.manufacturer || "N/A"}</S.DetailValue>
                 </S.DetailItem>
               </S.DetailSection>
 
@@ -545,24 +502,25 @@ export default function AdminRecallManagement() {
               {selectedRecall.approvedBy && (
                 <S.DetailSection>
                   <S.SectionTitle>Người phê duyệt</S.SectionTitle>
-                  <S.DetailValue>{selectedRecall.approvedBy.fullName || "N/A"}</S.DetailValue>
-                </S.DetailSection>
-              )}
-
-              {selectedRecall.customerNote && (
-                <S.DetailSection fullWidth>
-                  <S.SectionTitle>Phản hồi Khách hàng</S.SectionTitle>
-                  <S.DetailValue>{selectedRecall.customerNote}</S.DetailValue>
-                </S.DetailSection>
-              )}
-
-              {selectedRecall.warrantyClaim && (
-                <S.DetailSection fullWidth>
-                  <S.SectionTitle>Warranty Claim đã tạo</S.SectionTitle>
                   <S.DetailItem>
-                    <S.DetailLabel>Claim ID:</S.DetailLabel>
-                    <S.DetailValue>#{selectedRecall.warrantyClaim.warrantyClaimId}</S.DetailValue>
+                    <S.DetailLabel>Admin:</S.DetailLabel>
+                    <S.DetailValue>{selectedRecall.approvedBy.fullName || "N/A"}</S.DetailValue>
                   </S.DetailItem>
+                  {selectedRecall.approvedAt && (
+                    <S.DetailItem>
+                      <S.DetailLabel>Ngày duyệt:</S.DetailLabel>
+                      <S.DetailValue>
+                        {new Date(selectedRecall.approvedAt).toLocaleString('vi-VN')}
+                      </S.DetailValue>
+                    </S.DetailItem>
+                  )}
+                </S.DetailSection>
+              )}
+
+              {selectedRecall.rejectionReason && (
+                <S.DetailSection fullWidth>
+                  <S.SectionTitle>Lý do từ chối</S.SectionTitle>
+                  <S.DetailValue>{selectedRecall.rejectionReason}</S.DetailValue>
                 </S.DetailSection>
               )}
             </S.DetailGrid>
