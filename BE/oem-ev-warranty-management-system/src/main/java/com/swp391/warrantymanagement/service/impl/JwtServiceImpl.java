@@ -16,10 +16,7 @@ import java.util.function.Function;
 
 /**
  * Implementation của JwtService
- * - Tạo và validate JWT token
- * - Hỗ trợ cả access token và refresh token
- * - Access token: thời gian ngắn (1 giờ)
- * - Refresh token: thời gian dài (7 ngày)
+ * Xử lý generation, validation, và extraction của JWT tokens
  */
 @Service
 public class JwtServiceImpl implements JwtService {
@@ -27,13 +24,15 @@ public class JwtServiceImpl implements JwtService {
     @Value("${jwt.secret-key}")
     private String secretKey;
 
-    // Thời gian sống của access token (3 giờ)
-    private static final long ACCESS_TOKEN_EXPIRATION = 1000 * 60 * 60 * 3;
+    private static final long ACCESS_TOKEN_EXPIRATION = 1000 * 60 * 60 * 3; // 3 giờ
+    private static final long REFRESH_TOKEN_EXPIRATION = 1000 * 60 * 60 * 24 * 7; // 7 ngày
 
-    // Thời gian sống của refresh token (7 ngày)
-    private static final long REFRESH_TOKEN_EXPIRATION = 1000 * 60 * 60 * 24 * 7;
-
-    // Tạo access token từ User object
+    /**
+     * Tạo access token với thời hạn 3 giờ
+     *
+     * @param user User entity
+     * @return JWT access token string
+     */
     @Override
     public String generateToken(User user) {
         Map<String, Object> claims = new HashMap<>();
@@ -43,7 +42,12 @@ public class JwtServiceImpl implements JwtService {
         return createToken(claims, user.getUsername(), ACCESS_TOKEN_EXPIRATION);
     }
 
-    // Tạo refresh token từ User object
+    /**
+     * Tạo refresh token với thời hạn 7 ngày
+     *
+     * @param user User entity
+     * @return JWT refresh token string
+     */
     @Override
     public String generateRefreshToken(User user) {
         Map<String, Object> claims = new HashMap<>();
@@ -52,38 +56,32 @@ public class JwtServiceImpl implements JwtService {
         return createToken(claims, user.getUsername(), REFRESH_TOKEN_EXPIRATION);
     }
 
-    // Lấy username từ token
     @Override
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
 
-    // Lấy thời gian hết hạn từ token
     public Date extractExpiration(String token) {
         return extractClaim(token, Claims::getExpiration);
     }
 
-    // Lấy claim cụ thể từ token
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
     }
 
-    // Lấy tất cả claims từ token
     private Claims extractAllClaims(String token) {
         return Jwts.parser()
-                .verifyWith(getSignKey()) // key dạng SecretKey hoặc PublicKey
+                .verifyWith(getSignKey())
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
     }
 
-    // Kiểm tra token đã hết hạn chưa
     private Boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
     }
 
-    // Kiểm tra token có hợp lệ không
     @Override
     public boolean isTokenValid(String token) {
         try {
@@ -93,7 +91,6 @@ public class JwtServiceImpl implements JwtService {
         }
     }
 
-    // Tạo token với claims, subject và thời gian hết hạn
     private String createToken(Map<String, Object> claims, String subject, long expirationTime) {
         return Jwts.builder()
                 .claims(claims)
@@ -104,7 +101,6 @@ public class JwtServiceImpl implements JwtService {
                 .compact();
     }
 
-    // Lấy SecretKey từ chuỗi secretKey đã mã hóa Base64
     private SecretKey getSignKey() {
         byte[] keyBytes = java.util.Base64.getDecoder().decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);

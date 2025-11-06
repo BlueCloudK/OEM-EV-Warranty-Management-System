@@ -6,76 +6,98 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Set;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
  * Utility class để lấy thông tin user hiện tại từ Security Context
+ * - Cung cấp các phương thức static, an toàn để truy cập thông tin xác thực.
+ * - Sử dụng Optional để tránh NullPointerException.
  */
-public class SecurityUtil {
+public final class SecurityUtil {
 
     /**
-     * Lấy Authentication object hiện tại
+     * Private constructor để ngăn không cho class này được khởi tạo.
+     * Đây là best practice cho các utility class.
      */
-    public static Authentication getCurrentAuthentication() {
-        return SecurityContextHolder.getContext().getAuthentication();
+    private SecurityUtil() {
+        throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
     }
 
     /**
-     * Lấy username của user hiện tại
+     * Lấy Optional chứa Authentication object hiện tại từ SecurityContext.
+     *
+     * @return Optional chứa Authentication nếu user đã xác thực, ngược lại trả về Optional.empty().
      */
-    public static String getCurrentUsername() {
-        Authentication auth = getCurrentAuthentication();
-        if (auth == null || !auth.isAuthenticated()) {
-            return null;
+    public static Optional<Authentication> getCurrentAuthentication() {
+        // Step 1: Lấy Authentication object từ SecurityContextHolder.
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        // Step 2: Kiểm tra nếu object là null hoặc chưa được xác thực (ví dụ: anonymous user).
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            return Optional.empty();
         }
-        return auth.getName();
+        // Step 3: Trả về Optional chứa Authentication object.
+        return Optional.of(authentication);
     }
 
     /**
-     * Lấy tất cả roles của user hiện tại
-     * @return Set roles (ví dụ: ["ROLE_ADMIN", "ROLE_USER"])
+     * Lấy username (tên đăng nhập) của user hiện tại.
+     *
+     * @return Optional chứa username nếu user đã xác thực, ngược lại trả về Optional.empty().
+     */
+    public static Optional<String> getCurrentUsername() {
+        // Sử dụng Optional để xử lý chuỗi một cách an toàn và hiện đại.
+        return getCurrentAuthentication().map(Authentication::getName);
+    }
+
+    /**
+     * Lấy tất cả các roles (quyền) của user hiện tại.
+     *
+     * @return Một Set các chuỗi roles (ví dụ: ["ROLE_ADMIN", "ROLE_USER"]). Trả về Set rỗng nếu không xác thực.
      */
     public static Set<String> getCurrentRoles() {
-        Authentication auth = getCurrentAuthentication();
-        if (auth == null || !auth.isAuthenticated()) {
-            return Set.of();
-        }
-
-        return auth.getAuthorities().stream()
+        // orElse(Set.of()) đảm bảo phương thức này luôn trả về một Set, không bao giờ là null.
+        return getCurrentAuthentication()
+                .map(auth -> auth.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toSet()))
+                .orElse(Set.of());
     }
 
     /**
-     * Kiểm tra user hiện tại có role cụ thể không
-     * @param role tên role (ví dụ: "ADMIN" hoặc "ROLE_ADMIN")
+     * Kiểm tra user hiện tại có một role cụ thể hay không.
+     *
+     * @param role Tên role cần kiểm tra (ví dụ: "ADMIN" hoặc "ROLE_ADMIN").
+     * @return true nếu user có role đó, ngược lại là false.
      */
     public static boolean hasRole(String role) {
+        // Lý do: Logic này linh hoạt, chấp nhận cả tên role có và không có prefix "ROLE_".
         Set<String> roles = getCurrentRoles();
-        return roles.contains("ROLE_" + role) || roles.contains(role);
+        // Chuẩn hóa input để tránh lỗi.
+        String roleWithPrefix = role.startsWith("ROLE_") ? role : "ROLE_" + role.toUpperCase();
+        return roles.contains(roleWithPrefix);
     }
 
     /**
-     * Lấy UserDetails object của user hiện tại
+     * Lấy UserDetails object của user hiện tại.
+     * UserDetails là interface của Spring Security chứa thông tin chi tiết về user.
+     *
+     * @return Optional chứa UserDetails nếu user đã xác thực, ngược lại trả về Optional.empty().
      */
-    public static UserDetails getCurrentUserDetails() {
-        Authentication auth = getCurrentAuthentication();
-        if (auth == null || !auth.isAuthenticated()) {
-            return null;
-        }
-
-        Object principal = auth.getPrincipal();
-        if (principal instanceof UserDetails) {
-            return (UserDetails) principal;
-        }
-        return null;
+    public static Optional<UserDetails> getCurrentUserDetails() {
+        return getCurrentAuthentication()
+                .map(Authentication::getPrincipal)
+                .filter(UserDetails.class::isInstance)
+                .map(UserDetails.class::cast);
     }
 
     /**
-     * Kiểm tra user đã authenticated chưa
+     * Kiểm tra user hiện tại đã được xác thực hay chưa.
+     *
+     * @return true nếu có một user đã đăng nhập và không phải là anonymous, ngược lại là false.
      */
     public static boolean isAuthenticated() {
-        Authentication auth = getCurrentAuthentication();
-        return auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName());
+        // .isPresent() là cách kiểm tra an toàn xem Optional có chứa giá trị hay không.
+        return getCurrentAuthentication().isPresent();
     }
 }

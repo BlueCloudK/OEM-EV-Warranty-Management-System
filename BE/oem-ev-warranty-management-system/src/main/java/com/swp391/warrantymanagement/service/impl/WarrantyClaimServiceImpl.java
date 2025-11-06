@@ -24,11 +24,10 @@ import com.swp391.warrantymanagement.repository.PartRepository;
 import com.swp391.warrantymanagement.repository.ServiceHistoryRepository;
 import com.swp391.warrantymanagement.repository.VehicleRepository;
 import com.swp391.warrantymanagement.service.WarrantyClaimService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.swp391.warrantymanagement.util.SecurityUtil;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
@@ -37,28 +36,33 @@ import org.slf4j.LoggerFactory;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Service xử lý warranty claims với workflow: SUBMITTED → MANAGER_REVIEW → PROCESSING → COMPLETED/REJECTED.
+ * Bao gồm business validations, work log tracking, và tự động tạo service history khi hoàn tất.
+ */
 @Service
+@RequiredArgsConstructor
 public class WarrantyClaimServiceImpl implements WarrantyClaimService {
+
     private static final Logger logger = LoggerFactory.getLogger(WarrantyClaimServiceImpl.class);
 
-    @Autowired
-    private WarrantyClaimRepository warrantyClaimRepository;
-    @Autowired
-    private InstalledPartRepository installedPartRepository;
-    @Autowired
-    private PartRepository partRepository;
-    @Autowired
-    private VehicleRepository vehicleRepository;
-    @Autowired
-    private UserRepository userRepository;
-    @Autowired
-    private ServiceHistoryRepository serviceHistoryRepository;
-    @Autowired
-    private com.swp391.warrantymanagement.repository.WorkLogRepository workLogRepository;
+    private final WarrantyClaimRepository warrantyClaimRepository;
+    private final InstalledPartRepository installedPartRepository;
+    private final PartRepository partRepository;
+    private final VehicleRepository vehicleRepository;
+    private final UserRepository userRepository;
+    private final ServiceHistoryRepository serviceHistoryRepository;
+    private final com.swp391.warrantymanagement.repository.WorkLogRepository workLogRepository;
 
-    // Methods implementation
+    /**
+     * Lấy tất cả warranty claims với phân trang cho Admin/EVM Staff.
+     *
+     * @param pageable thông tin phân trang và sắp xếp
+     * @return PagedResponse chứa danh sách WarrantyClaimResponseDTO
+     */
     @Override
     public PagedResponse<WarrantyClaimResponseDTO> getAllClaimsPage(Pageable pageable) {
         Page<WarrantyClaim> claimPage = warrantyClaimRepository.findAll(pageable);
@@ -75,7 +79,13 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
         );
     }
 
-    // Get claim by ID
+    /**
+     * Lấy thông tin chi tiết warranty claim theo ID.
+     *
+     * @param id warranty claim ID
+     * @return WarrantyClaimResponseDTO chứa thông tin claim
+     * @throws ResourceNotFoundException nếu claim không tồn tại
+     */
     @Override
     public WarrantyClaimResponseDTO getClaimById(Long id) {
         WarrantyClaim claim = warrantyClaimRepository.findById(id)
@@ -83,110 +93,141 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
         return WarrantyClaimMapper.toResponseDTO(claim);
     }
 
-    // Create new claim
+    /**
+     * Tạo warranty claim mới với validations về vehicle ownership và warranty expiration.
+     * <p>
+     * <strong>Business validations:</strong>
+     * <ul>
+     * <li>Vehicle phải tồn tại trong hệ thống</li>
+     * <li>Installed part phải tồn tại và thuộc về vehicle đó</li>
+     * <li>Warranty của installed part phải còn hạn</li>
+     * </ul>
+     *
+     * @param requestDTO thông tin warranty claim mới
+     * @return WarrantyClaimResponseDTO chứa thông tin claim đã tạo
+     * @throws ResourceNotFoundException nếu vehicle hoặc installed part không tồn tại
+     * @throws IllegalArgumentException nếu part không thuộc vehicle hoặc warranty đã hết hạn
+     */
     @Override
     @Transactional
     public WarrantyClaimResponseDTO createClaim(WarrantyClaimRequestDTO requestDTO) {
-        // 1. Load Vehicle entity từ vehicleId
         Vehicle vehicle = vehicleRepository.findById(requestDTO.getVehicleId())
             .orElseThrow(() -> new ResourceNotFoundException("Vehicle", "id", requestDTO.getVehicleId()));
 
-        // 2. Tìm InstalledPart theo installedPartId
         InstalledPart installedPart = installedPartRepository.findById(requestDTO.getInstalledPartId())
-            .orElseThrow(() -> new RuntimeException("Installed part " + requestDTO.getInstalledPartId() + " not found"));
+            .orElseThrow(() -> new ResourceNotFoundException("InstalledPart", "id", requestDTO.getInstalledPartId()));
 
-        // 3. Kiểm tra xem installed part có thuộc về vehicle này không
         if (!installedPart.getVehicle().getVehicleId().equals(requestDTO.getVehicleId())) {
-            throw new RuntimeException("Installed part " + requestDTO.getInstalledPartId() + " is not installed on vehicle " + requestDTO.getVehicleId());
+            throw new IllegalArgumentException("Installed part " + requestDTO.getInstalledPartId() + " is not installed on vehicle " + requestDTO.getVehicleId());
         }
 
-        // 4. Kiểm tra xem installed part có còn trong thời hạn bảo hành không
         if (installedPart.getWarrantyExpirationDate().isBefore(LocalDate.now())) {
-            throw new RuntimeException("Warranty for this installed part has expired on " + installedPart.getWarrantyExpirationDate());
+            throw new IllegalArgumentException("Warranty for this installed part has expired on " + installedPart.getWarrantyExpirationDate());
         }
 
-        // 5. Convert DTO to Entity
         WarrantyClaim claim = WarrantyClaimMapper.toEntity(requestDTO, installedPart, vehicle);
-
-        // 6. Save WarrantyClaim
         WarrantyClaim savedClaim = warrantyClaimRepository.save(claim);
 
-        // Convert entity back to response DTO
         return WarrantyClaimMapper.toResponseDTO(savedClaim);
     }
 
-    // Helper method để tạo InstalledPart ID unique
+    /**
+     * Helper method tạo unique ID cho installed part với format "IP-XXXXXXXX".
+     *
+     * @return installed part ID với 8 ký tự UUID viết hoa
+     */
     private String generateInstalledPartId() {
         return "IP-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
 
-    // Update existing claim (except status)
+    /**
+     * Cập nhật thông tin warranty claim (description và installed part).
+     * <p>
+     * <strong>Lưu ý:</strong> Chỉ update description và installed part. Để thay đổi status, sử dụng các workflow methods.
+     *
+     * @param id claim ID cần cập nhật
+     * @param requestDTO thông tin cập nhật
+     * @return WarrantyClaimResponseDTO chứa thông tin claim đã cập nhật
+     * @throws ResourceNotFoundException nếu claim hoặc installed part không tồn tại
+     * @throws IllegalArgumentException nếu part không thuộc vehicle hoặc warranty đã hết hạn
+     */
     @Override
     @Transactional
     public WarrantyClaimResponseDTO updateClaim(Long id, WarrantyClaimRequestDTO requestDTO) {
         WarrantyClaim claim = warrantyClaimRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("WarrantyClaim", "id", id));
 
-        // Update description
         claim.setDescription(requestDTO.getDescription());
 
-        // Update installed part nếu thay đổi
         if (!claim.getInstalledPart().getInstalledPartId().equals(requestDTO.getInstalledPartId())) {
-            // Tìm InstalledPart theo installedPartId
             InstalledPart installedPart = installedPartRepository.findById(requestDTO.getInstalledPartId())
-                .orElseThrow(() -> new RuntimeException("Installed part " + requestDTO.getInstalledPartId() + " not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("InstalledPart", "id", requestDTO.getInstalledPartId()));
 
-            // Kiểm tra xem installed part có thuộc về vehicle này không
             if (!installedPart.getVehicle().getVehicleId().equals(requestDTO.getVehicleId())) {
-                throw new RuntimeException("Installed part " + requestDTO.getInstalledPartId() + " is not installed on vehicle " + requestDTO.getVehicleId());
+                throw new IllegalArgumentException("Installed part " + requestDTO.getInstalledPartId() + " is not installed on vehicle " + requestDTO.getVehicleId());
             }
 
-            // Kiểm tra bảo hành
             if (installedPart.getWarrantyExpirationDate().isBefore(LocalDate.now())) {
-                throw new RuntimeException("Warranty for this installed part has expired on " + installedPart.getWarrantyExpirationDate());
+                throw new IllegalArgumentException("Warranty for this installed part has expired on " + installedPart.getWarrantyExpirationDate());
             }
 
             claim.setInstalledPart(installedPart);
         }
 
-        // Save updated entity
         WarrantyClaim savedClaim = warrantyClaimRepository.save(claim);
         return WarrantyClaimMapper.toResponseDTO(savedClaim);
     }
 
-    // Update claim status with business logic validation
+    /**
+     * Cập nhật status của warranty claim với business logic validation.
+     *
+     * @param id claim ID
+     * @param requestDTO thông tin status mới
+     * @return WarrantyClaimResponseDTO chứa thông tin claim đã cập nhật
+     * @throws ResourceNotFoundException nếu claim không tồn tại
+     * @throws IllegalStateException nếu status transition không hợp lệ
+     */
     @Override
     @Transactional
     public WarrantyClaimResponseDTO updateClaimStatus(Long id, WarrantyClaimStatusUpdateRequestDTO requestDTO) {
         WarrantyClaim claim = warrantyClaimRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("WarrantyClaim", "id", id));
 
-        // Validate status transition
         if (!isValidStatusTransition(claim.getStatus(), requestDTO.getStatus())) {
             throw new IllegalStateException("Invalid status transition from " + claim.getStatus() + " to " + requestDTO.getStatus());
         }
-        // Update status
+
         claim.setStatus(requestDTO.getStatus());
         if (requestDTO.getStatus() == WarrantyClaimStatus.COMPLETED) {
             claim.setResolutionDate(LocalDateTime.now());
         }
-        // Save updated entity
+
         WarrantyClaim savedClaim = warrantyClaimRepository.save(claim);
         return WarrantyClaimMapper.toResponseDTO(savedClaim);
     }
 
-    // Delete claim by ID
+    /**
+     * Xóa warranty claim theo ID.
+     *
+     * @param id claim ID cần xóa
+     * @throws ResourceNotFoundException nếu claim không tồn tại
+     */
     @Override
     @Transactional
-    public boolean deleteClaim(Long id) {
+    public void deleteClaim(Long id) {
         if (!warrantyClaimRepository.existsById(id)) {
-            return false;
+            throw new ResourceNotFoundException("WarrantyClaim", "id", id);
         }
         warrantyClaimRepository.deleteById(id);
-        return true;
     }
 
-    // Helper method cho business logic validation
+    /**
+     * Validate status transition theo state machine rules.
+     *
+     * @param current status hiện tại
+     * @param target status mục tiêu
+     * @return true nếu transition hợp lệ
+     */
     private boolean isValidStatusTransition(WarrantyClaimStatus current, WarrantyClaimStatus target) {
         switch (current) {
             case SUBMITTED:
@@ -200,51 +241,59 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
         }
     }
 
-    // ========== WORKFLOW METHODS IMPLEMENTATION ==========
-
+    /**
+     * SC Staff tạo warranty claim với status SUBMITTED (chờ admin review).
+     *
+     * @param requestDTO thông tin warranty claim
+     * @return WarrantyClaimResponseDTO chứa thông tin claim đã tạo
+     * @throws ResourceNotFoundException nếu vehicle hoặc installed part không tồn tại
+     * @throws IllegalArgumentException nếu part không thuộc vehicle hoặc warranty đã hết hạn
+     */
     @Override
     @Transactional
     public WarrantyClaimResponseDTO createClaimBySCStaff(WarrantyClaimRequestDTO requestDTO) {
-        // 1. Load Vehicle entity từ vehicleId
         Vehicle vehicle = vehicleRepository.findById(requestDTO.getVehicleId())
             .orElseThrow(() -> new ResourceNotFoundException("Vehicle", "id", requestDTO.getVehicleId()));
 
-        // 2. Tìm InstalledPart theo installedPartId
         InstalledPart installedPart = installedPartRepository.findById(requestDTO.getInstalledPartId())
-            .orElseThrow(() -> new RuntimeException("Installed part " + requestDTO.getInstalledPartId() + " not found"));
+            .orElseThrow(() -> new ResourceNotFoundException("InstalledPart", "id", requestDTO.getInstalledPartId()));
 
-        // 3. Kiểm tra xem installed part có thuộc về vehicle này không
         if (!installedPart.getVehicle().getVehicleId().equals(requestDTO.getVehicleId())) {
-            throw new RuntimeException("Installed part " + requestDTO.getInstalledPartId() + " is not installed on vehicle " + requestDTO.getVehicleId());
+            throw new IllegalArgumentException("Installed part " + requestDTO.getInstalledPartId() + " is not installed on vehicle " + requestDTO.getVehicleId());
         }
 
-        // 4. Kiểm tra xem installed part có còn trong thời hạn bảo hành không
         if (installedPart.getWarrantyExpirationDate().isBefore(LocalDate.now())) {
-            throw new RuntimeException("Warranty for this installed part has expired on " + installedPart.getWarrantyExpirationDate());
+            throw new IllegalArgumentException("Warranty for this installed part has expired on " + installedPart.getWarrantyExpirationDate());
         }
 
-        // 5. Convert DTO to Entity với status SUBMITTED
         WarrantyClaim claim = WarrantyClaimMapper.toEntity(requestDTO, installedPart, vehicle);
-        claim.setStatus(WarrantyClaimStatus.SUBMITTED); // SC Staff tạo với status SUBMITTED
+        claim.setStatus(WarrantyClaimStatus.SUBMITTED);
 
-        // 6. Save WarrantyClaim
         WarrantyClaim savedClaim = warrantyClaimRepository.save(claim);
         return WarrantyClaimMapper.toResponseDTO(savedClaim);
     }
 
+    /**
+     * Admin accept claim, chuyển status từ SUBMITTED sang MANAGER_REVIEW.
+     *
+     * @param claimId claim ID cần accept
+     * @param note ghi chú của admin (optional)
+     * @return WarrantyClaimResponseDTO chứa thông tin claim đã cập nhật
+     * @throws ResourceNotFoundException nếu claim không tồn tại
+     * @throws IllegalStateException nếu claim không ở status SUBMITTED
+     */
     @Override
     @Transactional
     public WarrantyClaimResponseDTO adminAcceptClaim(Long claimId, String note) {
         WarrantyClaim claim = warrantyClaimRepository.findById(claimId)
             .orElseThrow(() -> new ResourceNotFoundException("WarrantyClaim", "id", claimId));
 
-        // Kiểm tra status hiện tại phải là SUBMITTED
         if (claim.getStatus() != WarrantyClaimStatus.SUBMITTED) {
-            throw new RuntimeException("Claim must be in SUBMITTED status to accept. Current status: " + claim.getStatus());
+            throw new IllegalStateException("Claim must be in SUBMITTED status to accept. Current status: " + claim.getStatus());
         }
 
-        // Chuyển status sang MANAGER_REVIEW để Tech có thể xử lý
         claim.setStatus(WarrantyClaimStatus.MANAGER_REVIEW);
+
         if (note != null && !note.trim().isEmpty()) {
             claim.setDescription(claim.getDescription() + "\n[Admin Note]: " + note);
         }
@@ -253,18 +302,25 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
         return WarrantyClaimMapper.toResponseDTO(savedClaim);
     }
 
+    /**
+     * Admin reject claim, chuyển status từ SUBMITTED sang REJECTED và set resolution date.
+     *
+     * @param claimId claim ID cần reject
+     * @param reason lý do từ chối
+     * @return WarrantyClaimResponseDTO chứa thông tin claim đã cập nhật
+     * @throws ResourceNotFoundException nếu claim không tồn tại
+     * @throws IllegalStateException nếu claim không ở status SUBMITTED
+     */
     @Override
     @Transactional
     public WarrantyClaimResponseDTO adminRejectClaim(Long claimId, String reason) {
         WarrantyClaim claim = warrantyClaimRepository.findById(claimId)
             .orElseThrow(() -> new ResourceNotFoundException("WarrantyClaim", "id", claimId));
 
-        // Kiểm tra status hiện tại phải là SUBMITTED
         if (claim.getStatus() != WarrantyClaimStatus.SUBMITTED) {
-            throw new RuntimeException("Claim must be in SUBMITTED status to reject. Current status: " + claim.getStatus());
+            throw new IllegalStateException("Claim must be in SUBMITTED status to reject. Current status: " + claim.getStatus());
         }
 
-        // Chuyển status sang REJECTED
         claim.setStatus(WarrantyClaimStatus.REJECTED);
         claim.setDescription(claim.getDescription() + "\n[Admin Rejection]: " + reason);
         claim.setResolutionDate(LocalDateTime.now());
@@ -273,18 +329,25 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
         return WarrantyClaimMapper.toResponseDTO(savedClaim);
     }
 
+    /**
+     * Technician bắt đầu xử lý claim, chuyển status từ MANAGER_REVIEW sang PROCESSING và tạo work log.
+     *
+     * @param claimId claim ID cần xử lý
+     * @param note ghi chú của technician (optional)
+     * @return WarrantyClaimResponseDTO chứa thông tin claim đã cập nhật
+     * @throws ResourceNotFoundException nếu claim không tồn tại
+     * @throws IllegalStateException nếu claim không ở status MANAGER_REVIEW
+     */
     @Override
     @Transactional
     public WarrantyClaimResponseDTO techStartProcessing(Long claimId, String note) {
         WarrantyClaim claim = warrantyClaimRepository.findById(claimId)
             .orElseThrow(() -> new ResourceNotFoundException("WarrantyClaim", "id", claimId));
 
-        // Kiểm tra status hiện tại phải là MANAGER_REVIEW
         if (claim.getStatus() != WarrantyClaimStatus.MANAGER_REVIEW) {
-            throw new RuntimeException("Claim must be in MANAGER_REVIEW status to start processing. Current status: " + claim.getStatus());
+            throw new IllegalStateException("Claim must be in MANAGER_REVIEW status to start processing. Current status: " + claim.getStatus());
         }
 
-        // Chuyển status sang PROCESSING
         claim.setStatus(WarrantyClaimStatus.PROCESSING);
         if (note != null && !note.trim().isEmpty()) {
             claim.setDescription(claim.getDescription() + "\n[Tech Start]: " + note);
@@ -292,117 +355,105 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
 
         WarrantyClaim savedClaim = warrantyClaimRepository.save(claim);
 
-        // ⭐ TẠO WORK LOG - GHI START TIME
         try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            if (authentication != null && authentication.isAuthenticated()) {
-                String username = authentication.getName();
-                User currentUser = userRepository.findByUsername(username).orElse(null);
+            SecurityUtil.getCurrentUsername().ifPresent(username -> {
+                User currentUser = userRepository.findByUsername(username)
+                        .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
 
-                if (currentUser != null) {
-                    WorkLog workLog = new WorkLog();
-                    workLog.setStartTime(LocalDateTime.now());
-                    workLog.setEndTime(null); // Chưa kết thúc
-                    workLog.setDescription(note != null && !note.trim().isEmpty() ? note : "Technician started processing claim");
-                    workLog.setWarrantyClaim(savedClaim);
-                    workLog.setUser(currentUser);
+                WorkLog workLog = new WorkLog();
+                workLog.setStartTime(LocalDateTime.now());
+                workLog.setEndTime(null);
+                workLog.setDescription(note != null && !note.trim().isEmpty() ? note : "Technician started processing claim");
+                workLog.setWarrantyClaim(savedClaim);
+                workLog.setUser(currentUser);
 
-                    workLogRepository.save(workLog);
-                    logger.info("✅ Work log created for claim {} by user {} (ID: {})", claimId, username, currentUser.getUserId());
-                } else {
-                    logger.warn("⚠️ User not found for username: {}", username);
-                }
-            }
+                workLogRepository.save(workLog);
+                logger.info("Work log created for claim {} by user {} (ID: {})", claimId, username, currentUser.getUserId());
+            });
         } catch (Exception e) {
-            logger.error("❌ Failed to create work log for claim {}: {}", claimId, e.getMessage());
-            // Don't fail the whole transaction if work log creation fails
+            logger.error("Failed to create work log for claim {}: {}", claimId, e.getMessage());
         }
 
         return WarrantyClaimMapper.toResponseDTO(savedClaim);
     }
 
+    /**
+     * Technician hoàn tất claim, chuyển status từ PROCESSING sang COMPLETED, cập nhật work log và tạo service history.
+     *
+     * @param claimId claim ID cần hoàn tất
+     * @param completionNote ghi chú hoàn tất
+     * @return WarrantyClaimResponseDTO chứa thông tin claim đã cập nhật
+     * @throws ResourceNotFoundException nếu claim không tồn tại
+     * @throws IllegalStateException nếu claim không ở status PROCESSING
+     */
     @Override
     @Transactional
     public WarrantyClaimResponseDTO techCompleteClaim(Long claimId, String completionNote) {
         WarrantyClaim claim = warrantyClaimRepository.findById(claimId)
             .orElseThrow(() -> new ResourceNotFoundException("WarrantyClaim", "id", claimId));
 
-        // Kiểm tra status hiện tại phải là PROCESSING
         if (claim.getStatus() != WarrantyClaimStatus.PROCESSING) {
-            throw new RuntimeException("Claim must be in PROCESSING status to complete. Current status: " + claim.getStatus());
+            throw new IllegalStateException("Claim must be in PROCESSING status to complete. Current status: " + claim.getStatus());
         }
 
-        // Chuyển status sang COMPLETED
         claim.setStatus(WarrantyClaimStatus.COMPLETED);
         claim.setDescription(claim.getDescription() + "\n[Tech Completion]: " + completionNote);
         claim.setResolutionDate(LocalDateTime.now());
 
         WarrantyClaim savedClaim = warrantyClaimRepository.save(claim);
 
-        // Tự động tạo ServiceHistory khi claim hoàn tất
         createWarrantyServiceHistory(savedClaim);
 
-        // ⭐ CẬP NHẬT WORK LOG - GHI END TIME
         try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            if (authentication != null && authentication.isAuthenticated()) {
-                String username = authentication.getName();
-                User currentUser = userRepository.findByUsername(username).orElse(null);
+            SecurityUtil.getCurrentUsername().ifPresent(username -> {
+                User currentUser = userRepository.findByUsername(username)
+                        .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
 
-                if (currentUser != null) {
-                    // Tìm work log chưa hoàn thành của user này cho claim này
-                    List<WorkLog> workLogs = savedClaim.getWorkLogs();
+                List<WorkLog> workLogs = savedClaim.getWorkLogs();
 
-                    if (workLogs != null && !workLogs.isEmpty()) {
-                        // Lấy work log gần nhất chưa có endTime và của user hiện tại
-                        WorkLog activeWorkLog = workLogs.stream()
-                            .filter(wl -> wl.getEndTime() == null && wl.getUser().getUserId().equals(currentUser.getUserId()))
-                            .findFirst()
-                            .orElse(null);
+                if (workLogs != null && !workLogs.isEmpty()) {
+                    Optional<WorkLog> activeWorkLogOpt = workLogs.stream()
+                        .filter(wl -> wl.getEndTime() == null && wl.getUser().getUserId().equals(currentUser.getUserId()))
+                        .findFirst();
 
-                        if (activeWorkLog != null) {
-                            activeWorkLog.setEndTime(LocalDateTime.now());
-                            String updatedDescription = activeWorkLog.getDescription() + "\n[Completion]: " + completionNote;
-                            activeWorkLog.setDescription(updatedDescription);
-                            workLogRepository.save(activeWorkLog);
+                    if (activeWorkLogOpt.isPresent()) {
+                        WorkLog activeWorkLog = activeWorkLogOpt.get();
+                        activeWorkLog.setEndTime(LocalDateTime.now());
+                        String updatedDescription = activeWorkLog.getDescription() + "\n[Completion]: " + completionNote;
+                        activeWorkLog.setDescription(updatedDescription);
+                        workLogRepository.save(activeWorkLog);
 
-                            long duration = java.time.Duration.between(activeWorkLog.getStartTime(), activeWorkLog.getEndTime()).toMinutes();
-                            logger.info("✅ Work log completed for claim {} by user {} (ID: {}). Duration: {} minutes",
-                                claimId, username, currentUser.getUserId(), duration);
-                        } else {
-                            logger.warn("⚠️ No active work log found for claim {} and user {}", claimId, username);
-                        }
+                        long duration = java.time.Duration.between(activeWorkLog.getStartTime(), activeWorkLog.getEndTime()).toMinutes();
+                        logger.info("Work log completed for claim {} by user {} (ID: {}). Duration: {} minutes",
+                            claimId, username, currentUser.getUserId(), duration);
                     } else {
-                        logger.warn("⚠️ No work logs found for claim {}", claimId);
+                        logger.warn("No active work log found for claim {} and user {}", claimId, username);
                     }
-                } else {
-                    logger.warn("⚠️ User not found for username: {}", username);
                 }
-            }
+            });
         } catch (Exception e) {
-            logger.error("❌ Failed to complete work log for claim {}: {}", claimId, e.getMessage());
-            // Don't fail the whole transaction if work log update fails
+            logger.error("Failed to complete work log for claim {}: {}", claimId, e.getMessage());
         }
 
         return WarrantyClaimMapper.toResponseDTO(savedClaim);
     }
 
-    // Helper method để tạo ServiceHistory khi claim hoàn tất
+    /**
+     * Tạo service history record khi claim hoàn tất.
+     *
+     * @param claim warranty claim đã hoàn tất
+     */
     private void createWarrantyServiceHistory(WarrantyClaim claim) {
-        // Tạo ServiceHistory record
         ServiceHistory serviceHistory = new ServiceHistory();
         serviceHistory.setServiceDate(LocalDate.now());
         serviceHistory.setServiceType("Warranty Claim");
         serviceHistory.setDescription("Warranty service for claim #" + claim.getWarrantyClaimId() + ": " + claim.getDescription());
         serviceHistory.setVehicle(claim.getVehicle());
 
-        // Save ServiceHistory
         ServiceHistory savedServiceHistory = serviceHistoryRepository.save(serviceHistory);
 
-        // Tạo ServiceHistoryDetail để ghi nhận part được bảo hành
         ServiceHistoryDetail detail = new ServiceHistoryDetail();
 
-        // Tạo composite key
         ServiceHistoryDetailId detailId = new ServiceHistoryDetailId();
         detailId.setServiceHistoryId(savedServiceHistory.getServiceHistoryId());
         detailId.setPartId(claim.getInstalledPart().getPart().getPartId());
@@ -410,15 +461,21 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
         detail.setId(detailId);
         detail.setServiceHistory(savedServiceHistory);
         detail.setPart(claim.getInstalledPart().getPart());
-        detail.setQuantity(1); // Bảo hành 1 installed part
+        detail.setQuantity(1);
 
-        // Add detail to serviceHistory
         savedServiceHistory.getServiceHistoryDetails().add(detail);
 
-        // Save again to persist the detail
         serviceHistoryRepository.save(savedServiceHistory);
     }
 
+    /**
+     * Lấy claims theo status với phân trang.
+     *
+     * @param status tên status (SUBMITTED, MANAGER_REVIEW, PROCESSING, COMPLETED, REJECTED)
+     * @param pageable thông tin phân trang
+     * @return PagedResponse chứa danh sách WarrantyClaimResponseDTO
+     * @throws IllegalArgumentException nếu status không hợp lệ
+     */
     @Override
     public PagedResponse<WarrantyClaimResponseDTO> getClaimsByStatus(String status, Pageable pageable) {
         try {
@@ -436,13 +493,18 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                 claimPage.isLast()
             );
         } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Invalid status: " + status);
+            throw new IllegalArgumentException("Invalid status: " + status, e);
         }
     }
 
+    /**
+     * Lấy claims đang chờ technician xử lý (MANAGER_REVIEW hoặc PROCESSING).
+     *
+     * @param pageable thông tin phân trang
+     * @return PagedResponse chứa danh sách WarrantyClaimResponseDTO
+     */
     @Override
     public PagedResponse<WarrantyClaimResponseDTO> getTechPendingClaims(Pageable pageable) {
-        // Lấy claims có status MANAGER_REVIEW hoặc PROCESSING (cần Tech xử lý)
         Page<WarrantyClaim> claimPage = warrantyClaimRepository.findByStatusIn(
             List.of(WarrantyClaimStatus.MANAGER_REVIEW, WarrantyClaimStatus.PROCESSING),
             pageable
@@ -460,30 +522,43 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
         );
     }
 
+    /**
+     * EVM Staff tự assign claim cho mình.
+     *
+     * @param claimId claim ID cần assign
+     * @param username username của EVM Staff
+     * @return WarrantyClaimResponseDTO chứa thông tin claim đã cập nhật
+     * @throws ResourceNotFoundException nếu claim hoặc user không tồn tại
+     */
     @Override
     @Transactional
-    public WarrantyClaimResponseDTO assignClaimToMe(Long claimId, Long userId) {
-        // Find the claim
+    public WarrantyClaimResponseDTO assignClaimToMe(Long claimId, String username) {
         WarrantyClaim claim = warrantyClaimRepository.findById(claimId)
-            .orElseThrow(() -> new RuntimeException("Warranty claim not found with id: " + claimId));
+            .orElseThrow(() -> new ResourceNotFoundException("WarrantyClaim", "id", claimId));
 
-        // Find the user (EVM Staff)
-        User user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+        User user = userRepository.findByUsername(username)
+            .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
 
-        // Assign the claim to the user
         claim.setAssignedTo(user);
 
-        // Save the updated claim
         WarrantyClaim updatedClaim = warrantyClaimRepository.save(claim);
 
-        // Return response DTO
         return WarrantyClaimMapper.toResponseDTO(updatedClaim);
     }
 
+    /**
+     * Lấy danh sách claims được assign cho user hiện tại.
+     *
+     * @param username username của user
+     * @param pageable thông tin phân trang
+     * @return PagedResponse chứa danh sách WarrantyClaimResponseDTO
+     * @throws ResourceNotFoundException nếu user không tồn tại
+     */
     @Override
-    public PagedResponse<WarrantyClaimResponseDTO> getMyAssignedClaims(Long userId, Pageable pageable) {
-        Page<WarrantyClaim> claimPage = warrantyClaimRepository.findByAssignedToUserId(userId, pageable);
+    public PagedResponse<WarrantyClaimResponseDTO> getMyAssignedClaims(String username, Pageable pageable) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+        Page<WarrantyClaim> claimPage = warrantyClaimRepository.findByAssignedToUserId(user.getUserId(), pageable);
         List<WarrantyClaimResponseDTO> responseDTOs = WarrantyClaimMapper.toResponseDTOList(claimPage.getContent());
 
         return new PagedResponse<>(
@@ -498,32 +573,24 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
     }
 
     /**
-     * Customer xem tất cả warranty claims của mình
-     * Lấy thông tin customer từ Security Context, sau đó query claims theo customerId
+     * Customer xem tất cả warranty claims của mình với phân trang.
+     *
+     * @param username username của customer
+     * @param pageable thông tin phân trang
+     * @return PagedResponse chứa danh sách WarrantyClaimResponseDTO
+     * @throws ResourceNotFoundException nếu user hoặc customer profile không tồn tại
      */
     @Override
-    public PagedResponse<WarrantyClaimResponseDTO> getMyWarrantyClaims(Pageable pageable) {
-        // 1. Lấy username từ Security Context
-        String username = com.swp391.warrantymanagement.util.SecurityUtil.getCurrentUsername();
-        if (username == null) {
-            throw new RuntimeException("User not authenticated");
-        }
-
-        // 2. Tìm User từ username
+    public PagedResponse<WarrantyClaimResponseDTO> getMyWarrantyClaims(String username, Pageable pageable) {
         User user = userRepository.findByUsername(username)
-            .orElseThrow(() -> new RuntimeException("User not found: " + username));
+            .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
 
-        // 3. Tìm Customer từ User
-        Customer customer = user.getCustomer();
-        if (customer == null) {
-            throw new RuntimeException("Customer profile not found for user: " + username);
-        }
+        Customer customer = Optional.ofNullable(user.getCustomer())
+                .orElseThrow(() -> new ResourceNotFoundException("Customer Profile", "for user", username));
 
-        // 4. Query warranty claims theo customerId (qua Vehicle -> Customer)
         Page<WarrantyClaim> claimPage = warrantyClaimRepository
             .findByVehicleCustomerCustomerId(customer.getCustomerId(), pageable);
 
-        // 5. Convert sang DTO
         List<WarrantyClaimResponseDTO> responseDTOs = WarrantyClaimMapper.toResponseDTOList(claimPage.getContent());
 
         return new PagedResponse<>(
@@ -538,35 +605,27 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
     }
 
     /**
-     * Customer xem chi tiết 1 warranty claim của mình
-     * Kiểm tra claim có thuộc về customer không trước khi trả về
+     * Customer xem chi tiết warranty claim của mình với ownership validation.
+     *
+     * @param claimId claim ID
+     * @param username username của customer
+     * @return WarrantyClaimResponseDTO chứa thông tin claim
+     * @throws ResourceNotFoundException nếu user, customer profile hoặc claim không tồn tại (hoặc không thuộc về customer)
      */
     @Override
-    public WarrantyClaimResponseDTO getMyWarrantyClaimById(Long claimId) {
-        // 1. Lấy username từ Security Context
-        String username = com.swp391.warrantymanagement.util.SecurityUtil.getCurrentUsername();
-        if (username == null) {
-            throw new RuntimeException("User not authenticated");
-        }
-
-        // 2. Tìm User từ username
+    public WarrantyClaimResponseDTO getMyWarrantyClaimById(Long claimId, String username) {
         User user = userRepository.findByUsername(username)
-            .orElseThrow(() -> new RuntimeException("User not found: " + username));
+            .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
 
-        // 3. Tìm Customer từ User
-        Customer customer = user.getCustomer();
-        if (customer == null) {
-            throw new RuntimeException("Customer profile not found for user: " + username);
-        }
+        Customer customer = Optional.ofNullable(user.getCustomer())
+                .orElseThrow(() -> new ResourceNotFoundException("Customer Profile", "for user", username));
 
-        // 4. Query warranty claim theo claimId VÀ customerId (security check)
         WarrantyClaim claim = warrantyClaimRepository
             .findByWarrantyClaimIdAndVehicleCustomerCustomerId(claimId, customer.getCustomerId())
-            .orElseThrow(() -> new RuntimeException(
-                "Warranty claim not found or you don't have permission to view it. Claim ID: " + claimId
+            .orElseThrow(() -> new ResourceNotFoundException(
+                "WarrantyClaim", "id", claimId
             ));
 
-        // 5. Convert sang DTO và trả về
         return WarrantyClaimMapper.toResponseDTO(claim);
     }
 }

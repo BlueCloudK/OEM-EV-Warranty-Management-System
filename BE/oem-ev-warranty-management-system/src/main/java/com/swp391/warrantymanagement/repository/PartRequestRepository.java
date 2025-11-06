@@ -13,30 +13,31 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Repository for PartRequest entity
+ * Repository để quản lý PartRequest
+ * - Yêu cầu linh kiện từ technician đến EVM
+ * - Tìm theo status, claim, service center, technician
  */
 @Repository
 public interface PartRequestRepository extends JpaRepository<PartRequest, Long> {
-
-    // Tìm tất cả part requests với phân trang
+    // Tìm tất cả request với phân trang
     Page<PartRequest> findAll(Pageable pageable);
 
-    // Tìm part requests theo status
+    // Tìm theo trạng thái (PENDING, APPROVED, REJECTED, SHIPPED, DELIVERED)
     Page<PartRequest> findByStatus(PartRequestStatus status, Pageable pageable);
 
-    // Tìm part requests theo warranty claim
+    // Tìm theo warranty claim
     Page<PartRequest> findByWarrantyClaimWarrantyClaimId(Long warrantyClaimId, Pageable pageable);
 
-    // Tìm part requests theo service center
+    // Tìm theo service center
     Page<PartRequest> findByServiceCenterServiceCenterId(Long serviceCenterId, Pageable pageable);
 
-    // Tìm part requests theo technician (người tạo yêu cầu)
+    // Tìm theo technician (người tạo request)
     Page<PartRequest> findByRequestedByUserId(Long userId, Pageable pageable);
 
-    // Tìm part requests theo faulty part
+    // Tìm theo part bị lỗi
     Page<PartRequest> findByFaultyPartPartId(String partId, Pageable pageable);
 
-    // Tìm part requests đang chờ duyệt (cho EVM_STAFF)
+    // Tìm request đang chờ duyệt (cho EVM_STAFF)
     @Query("SELECT pr FROM PartRequest pr WHERE pr.status = 'PENDING' ORDER BY pr.requestDate ASC")
     Page<PartRequest> findPendingRequests(Pageable pageable);
 

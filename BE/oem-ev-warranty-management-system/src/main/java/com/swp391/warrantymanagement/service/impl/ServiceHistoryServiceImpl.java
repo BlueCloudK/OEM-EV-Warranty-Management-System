@@ -11,14 +11,14 @@ import com.swp391.warrantymanagement.entity.User;
 import com.swp391.warrantymanagement.entity.Vehicle;
 import com.swp391.warrantymanagement.entity.id.ServiceHistoryDetailId;
 import com.swp391.warrantymanagement.mapper.ServiceHistoryMapper;
+import com.swp391.warrantymanagement.exception.ResourceNotFoundException;
 import com.swp391.warrantymanagement.repository.CustomerRepository;
 import com.swp391.warrantymanagement.repository.PartRepository;
 import com.swp391.warrantymanagement.repository.ServiceHistoryRepository;
 import com.swp391.warrantymanagement.repository.UserRepository;
 import com.swp391.warrantymanagement.repository.VehicleRepository;
-import com.swp391.warrantymanagement.service.JwtService;
 import com.swp391.warrantymanagement.service.ServiceHistoryService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -26,28 +26,35 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Optional;
 
+/**
+ * Service quản lý lịch sử bảo dưỡng/sửa chữa xe.
+ * Theo dõi service history và parts đã sử dụng (composite key pattern).
+ */
 @Service
+@RequiredArgsConstructor
 public class ServiceHistoryServiceImpl implements ServiceHistoryService {
-    @Autowired
-    private ServiceHistoryRepository serviceHistoryRepository;
-    @Autowired
-    private PartRepository partRepository;
-    @Autowired
-    private VehicleRepository vehicleRepository;
-    @Autowired
-    private CustomerRepository customerRepository;
-    @Autowired
-    private UserRepository userRepository;
-    @Autowired
-    private JwtService jwtService;
 
+    private final ServiceHistoryRepository serviceHistoryRepository;
+    private final PartRepository partRepository;
+    private final VehicleRepository vehicleRepository;
+    private final CustomerRepository customerRepository;
+    private final UserRepository userRepository;
+
+    /**
+     * Lấy tất cả service histories với pagination và search.
+     *
+     * @param pageable pagination parameters
+     * @param search từ khóa tìm kiếm (theo serviceType)
+     * @return PagedResponse với service histories
+     */
     @Override
     public PagedResponse<ServiceHistoryResponseDTO> getAllServiceHistoriesPage(Pageable pageable, String search) {
         Page<ServiceHistory> serviceHistoryPage;
         if (search != null && !search.trim().isEmpty()) {
-            // Tạm thời sử dụng simple search cho serviceType thôi
             serviceHistoryPage = serviceHistoryRepository.findByServiceTypeContainingIgnoreCase(search, pageable);
         } else {
             serviceHistoryPage = serviceHistoryRepository.findAll(pageable);
@@ -66,33 +73,41 @@ public class ServiceHistoryServiceImpl implements ServiceHistoryService {
         );
     }
 
+    /**
+     * Lấy service history theo ID.
+     *
+     * @param id service history ID
+     * @return ServiceHistoryResponseDTO
+     * @throws ResourceNotFoundException nếu không tìm thấy
+     */
     @Override
     public ServiceHistoryResponseDTO getServiceHistoryById(Long id) {
-        ServiceHistory serviceHistory = serviceHistoryRepository.findById(id).orElse(null);
+        ServiceHistory serviceHistory = serviceHistoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("ServiceHistory", "id", id));
         return ServiceHistoryMapper.toResponseDTO(serviceHistory);
     }
 
+    /**
+     * Tạo service history mới với part sử dụng (composite key pattern).
+     *
+     * @param requestDTO thông tin service history và partId
+     * @return ServiceHistoryResponseDTO
+     * @throws ResourceNotFoundException nếu không tìm thấy part hoặc vehicle
+     */
     @Override
     @Transactional
     public ServiceHistoryResponseDTO createServiceHistory(ServiceHistoryRequestDTO requestDTO) {
-        // Load Part entity từ partId
         Part part = partRepository.findById(requestDTO.getPartId())
-            .orElseThrow(() -> new RuntimeException("Part not found with id: " + requestDTO.getPartId()));
+            .orElseThrow(() -> new ResourceNotFoundException("Part", "id", requestDTO.getPartId()));
 
-        // Load Vehicle entity từ vehicleId
         Vehicle vehicle = vehicleRepository.findById(requestDTO.getVehicleId())
-            .orElseThrow(() -> new RuntimeException("Vehicle not found with id: " + requestDTO.getVehicleId()));
+            .orElseThrow(() -> new ResourceNotFoundException("Vehicle", "id", requestDTO.getVehicleId()));
 
-        // Convert DTO to Entity (không có part nữa)
         ServiceHistory serviceHistory = ServiceHistoryMapper.toEntity(requestDTO, vehicle);
-
-        // Save ServiceHistory entity
         ServiceHistory savedServiceHistory = serviceHistoryRepository.save(serviceHistory);
 
-        // Tạo ServiceHistoryDetail để link part với service history
+        // Tạo ServiceHistoryDetail với composite key
         ServiceHistoryDetail detail = new ServiceHistoryDetail();
-
-        // Tạo composite key
         ServiceHistoryDetailId detailId = new ServiceHistoryDetailId();
         detailId.setServiceHistoryId(savedServiceHistory.getServiceHistoryId());
         detailId.setPartId(part.getPartId());
@@ -100,46 +115,57 @@ public class ServiceHistoryServiceImpl implements ServiceHistoryService {
         detail.setId(detailId);
         detail.setServiceHistory(savedServiceHistory);
         detail.setPart(part);
-        detail.setQuantity(1); // Default quantity
+        detail.setQuantity(1);
 
-        // Add detail to serviceHistory
         savedServiceHistory.getServiceHistoryDetails().add(detail);
-
-        // Save again to persist the detail
         savedServiceHistory = serviceHistoryRepository.save(savedServiceHistory);
 
-        // Convert entity back to response DTO
         return ServiceHistoryMapper.toResponseDTO(savedServiceHistory);
     }
 
+    /**
+     * Cập nhật service history (không update parts).
+     *
+     * @param id service history ID
+     * @param requestDTO thông tin mới
+     * @return ServiceHistoryResponseDTO
+     * @throws ResourceNotFoundException nếu không tìm thấy
+     */
     @Override
     @Transactional
     public ServiceHistoryResponseDTO updateServiceHistory(Long id, ServiceHistoryRequestDTO requestDTO) {
-        ServiceHistory existingServiceHistory = serviceHistoryRepository.findById(id).orElse(null);
-        if (existingServiceHistory == null) {
-            return null;
-        }
+        ServiceHistory existingServiceHistory = serviceHistoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("ServiceHistory", "id", id));
 
-        // Update entity từ DTO (không thay đổi part và vehicle relationships)
         ServiceHistoryMapper.updateEntity(existingServiceHistory, requestDTO);
-
-        // Save updated entity
         ServiceHistory updatedServiceHistory = serviceHistoryRepository.save(existingServiceHistory);
 
-        // Convert entity back to response DTO
         return ServiceHistoryMapper.toResponseDTO(updatedServiceHistory);
     }
 
+    /**
+     * Xóa service history (cascade delete ServiceHistoryDetails).
+     *
+     * @param id service history ID
+     * @throws ResourceNotFoundException nếu không tìm thấy
+     */
     @Override
     @Transactional
-    public boolean deleteServiceHistory(Long id) {
+    public void deleteServiceHistory(Long id) {
         if (!serviceHistoryRepository.existsById(id)) {
-            return false;
+            throw new ResourceNotFoundException("ServiceHistory", "id", id);
         }
+
         serviceHistoryRepository.deleteById(id);
-        return true;
     }
 
+    /**
+     * Lấy service histories theo vehicle ID.
+     *
+     * @param vehicleId vehicle ID
+     * @param pageable pagination parameters
+     * @return PagedResponse với service histories của vehicle
+     */
     @Override
     public PagedResponse<ServiceHistoryResponseDTO> getServiceHistoriesByVehicleId(Long vehicleId, Pageable pageable) {
         Page<ServiceHistory> serviceHistoryPage = serviceHistoryRepository.findByVehicleVehicleId(vehicleId, pageable);
@@ -156,6 +182,13 @@ public class ServiceHistoryServiceImpl implements ServiceHistoryService {
         );
     }
 
+    /**
+     * Lấy service histories theo part ID (through junction table).
+     *
+     * @param partId part ID
+     * @param pageable pagination parameters
+     * @return PagedResponse với service histories sử dụng part
+     */
     @Override
     public PagedResponse<ServiceHistoryResponseDTO> getServiceHistoriesByPartId(String partId, Pageable pageable) {
         Page<ServiceHistory> serviceHistoryPage = serviceHistoryRepository.findByServiceHistoryDetailsPartPartId(partId, pageable);
@@ -172,28 +205,25 @@ public class ServiceHistoryServiceImpl implements ServiceHistoryService {
         );
     }
 
+    /**
+     * Lấy service histories của current user (customer's vehicles).
+     *
+     * @param username username từ JWT
+     * @param pageable pagination parameters
+     * @return PagedResponse với service histories của customer
+     * @throws ResourceNotFoundException nếu không tìm thấy user hoặc customer profile
+     */
     @Override
-    public PagedResponse<ServiceHistoryResponseDTO> getServiceHistoriesByCurrentUser(String authorizationHeader, Pageable pageable) {
-        // Extract token from Authorization header
-        String token = extractTokenFromHeader(authorizationHeader);
-        if (token == null) {
-            throw new RuntimeException("Invalid or missing authorization token");
-        }
-
-        // Get username from token
-        String username = jwtService.extractUsername(token);
+    public PagedResponse<ServiceHistoryResponseDTO> getServiceHistoriesByCurrentUser(String username, Pageable pageable) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
 
-        // Get customer associated with this user
-        Customer customer = customerRepository.findByUser(user);
-        if (customer == null) {
-            throw new RuntimeException("Customer profile not found for user");
-        }
+        Customer customer = Optional.ofNullable(customerRepository.findByUser(user))
+                .orElseThrow(() -> new ResourceNotFoundException("Customer Profile", "for user", username));
 
-        // Get service histories for customer's vehicles
         Page<ServiceHistory> serviceHistoryPage = serviceHistoryRepository.findByVehicleCustomerCustomerId(
             customer.getCustomerId(), pageable);
+
         List<ServiceHistoryResponseDTO> responseDTOs = ServiceHistoryMapper.toResponseDTOList(serviceHistoryPage.getContent());
 
         return new PagedResponse<>(
@@ -207,6 +237,15 @@ public class ServiceHistoryServiceImpl implements ServiceHistoryService {
         );
     }
 
+    /**
+     * Lấy service histories trong khoảng thời gian (date range filter).
+     *
+     * @param startDate ngày bắt đầu (format: yyyy-MM-dd)
+     * @param endDate ngày kết thúc (format: yyyy-MM-dd)
+     * @param pageable pagination parameters
+     * @return PagedResponse với service histories trong date range
+     * @throws IllegalArgumentException nếu date format không hợp lệ
+     */
     @Override
     public PagedResponse<ServiceHistoryResponseDTO> getServiceHistoriesByDateRange(String startDate, String endDate, Pageable pageable) {
         try {
@@ -216,6 +255,7 @@ public class ServiceHistoryServiceImpl implements ServiceHistoryService {
 
             Page<ServiceHistory> serviceHistoryPage = serviceHistoryRepository.findByServiceDateBetween(
                 start, end, pageable);
+
             List<ServiceHistoryResponseDTO> responseDTOs = ServiceHistoryMapper.toResponseDTOList(serviceHistoryPage.getContent());
 
             return new PagedResponse<>(
@@ -227,15 +267,8 @@ public class ServiceHistoryServiceImpl implements ServiceHistoryService {
                 serviceHistoryPage.isFirst(),
                 serviceHistoryPage.isLast()
             );
-        } catch (Exception e) {
-            throw new RuntimeException("Invalid date format. Please use yyyy-MM-dd format.");
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException("Invalid date format. Please use yyyy-MM-dd format.", e);
         }
-    }
-
-    private String extractTokenFromHeader(String authorizationHeader) {
-        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            return authorizationHeader.substring(7);
-        }
-        return null;
     }
 }

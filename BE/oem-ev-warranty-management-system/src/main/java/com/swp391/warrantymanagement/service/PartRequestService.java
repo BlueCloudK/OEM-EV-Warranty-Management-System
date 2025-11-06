@@ -7,33 +7,24 @@ import com.swp391.warrantymanagement.enums.PartRequestStatus;
 import org.springframework.data.domain.Pageable;
 
 /**
- * Service interface cho Part Request operations
+ * Service xử lý business logic cho PartRequest
+ * - Technician yêu cầu part khi sửa claim
+ * - EVM_STAFF duyệt và gửi part
+ * - Workflow: PENDING → APPROVED → SHIPPED → DELIVERED
  */
 public interface PartRequestService {
-
-    // ============= CRUD Operations =============
-
-    /**
-     * Technician tạo yêu cầu linh kiện mới
-     */
+    // Technician tạo yêu cầu part mới
     PartRequestResponseDTO createPartRequest(PartRequestRequestDTO requestDTO, String authorizationHeader);
 
-    /**
-     * Lấy thông tin chi tiết một part request
-     */
+    // Lấy thông tin chi tiết request
     PartRequestResponseDTO getPartRequestById(Long requestId);
 
-    /**
-     * Lấy tất cả part requests (cho ADMIN/EVM_STAFF)
-     */
+    // Lấy tất cả requests (admin/EVM)
     PagedResponse<PartRequestResponseDTO> getAllPartRequests(Pageable pageable);
 
-    /**
-     * Lấy part requests theo status
-     */
+    // Lấy requests theo status (PENDING, APPROVED, SHIPPED, DELIVERED)
     PagedResponse<PartRequestResponseDTO> getPartRequestsByStatus(PartRequestStatus status, Pageable pageable);
 
-    // ============= Status Transitions (EVM_STAFF) =============
 
     /**
      * EVM_STAFF duyệt yêu cầu

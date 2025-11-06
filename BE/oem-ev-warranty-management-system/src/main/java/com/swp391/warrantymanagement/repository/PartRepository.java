@@ -9,25 +9,35 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
- * PartRepository - Data access layer for Part entity
- * Handles CRUD and search operations for standalone parts (NO vehicle associations)
+ * Repository để quản lý Part (catalog linh kiện)
+ * - Tìm theo tên, nhà sản xuất, part number
+ * - Part number là unique identifier
  */
 @Repository
 public interface PartRepository extends JpaRepository<Part, Long> {
-    // ============= Basic Search Methods =============
+    // Tìm theo tên part
     List<Part> findByPartNameContainingIgnoreCase(String partName);
-    List<Part> findByManufacturerContainingIgnoreCase(String manufacturer);
-    Part findByPartNumber(String partNumber);
+    Page<Part> findByPartNameContainingIgnoreCase(String partName, Pageable pageable);
 
-    // ============= Pagination Support Methods =============
+    // Tìm theo nhà sản xuất
+    List<Part> findByManufacturerContainingIgnoreCase(String manufacturer);
+    Page<Part> findByManufacturerContainingIgnoreCase(String manufacturer, Pageable pageable);
+
+    /**
+     * Tìm một Part duy nhất theo partNumber (unique).
+     * REFACTOR: Trả về Optional<Part> thay vì Part.
+     * - Lý do: Đây là cách làm an toàn và hiện đại, giúp tránh NullPointerException ở tầng service.
+     * - Service sẽ phải xử lý trường hợp "không tìm thấy" một cách tường minh.
+     */
+    Optional<Part> findByPartNumber(String partNumber);
+
+    // Tìm kiếm kết hợp tên hoặc nhà sản xuất
     Page<Part> findByPartNameContainingIgnoreCaseOrManufacturerContainingIgnoreCase(
         String partName, String manufacturer, Pageable pageable);
 
-    Page<Part> findByManufacturerContainingIgnoreCase(String manufacturer, Pageable pageable);
-
-    Page<Part> findByPartNameContainingIgnoreCase(String partName, Pageable pageable);
 
     // ============= Custom Query Methods =============
     @Query("SELECT p FROM Part p WHERE " +
@@ -38,4 +48,6 @@ public interface PartRepository extends JpaRepository<Part, Long> {
         @Param("partName") String partName,
         @Param("manufacturer") String manufacturer,
         @Param("partNumber") String partNumber);
+
+    boolean existsByPartNumber(String partNumber);
 }

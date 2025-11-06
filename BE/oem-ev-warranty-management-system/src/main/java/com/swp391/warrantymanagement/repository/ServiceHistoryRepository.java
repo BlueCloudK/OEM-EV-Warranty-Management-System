@@ -10,24 +10,27 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Repository để quản lý ServiceHistory
+ * - Lịch sử bảo dưỡng/sửa chữa xe
+ * - Tìm theo xe, customer, loại dịch vụ, thời gian
+ */
 @Repository
 public interface ServiceHistoryRepository extends JpaRepository<ServiceHistory, Long> {
-    // Spring Boot đã tự động sinh các phương thức CRUD cơ bản với Long ID
-
-    // ============= Basic Search Methods =============
-    // Tìm kiếm theo loại dịch vụ (serviceType)
+    // Tìm theo loại dịch vụ
     List<ServiceHistory> findByServiceTypeContainingIgnoreCase(String serviceType);
-
-    // ============= Pagination Support Methods =============
-    // Tìm kiếm theo loại dịch vụ (serviceType)
     Page<ServiceHistory> findByServiceTypeContainingIgnoreCase(String serviceType, Pageable pageable);
 
-    // Tìm kiếm theo xe, phụ tùng, khách hàng
+    // Tìm theo xe
     Page<ServiceHistory> findByVehicleVehicleId(Long vehicleId, Pageable pageable);
+
+    // Tìm theo part (qua ServiceHistoryDetail)
     Page<ServiceHistory> findByServiceHistoryDetailsPartPartId(String partId, Pageable pageable);
+
+    // Tìm theo customer (qua Vehicle)
     Page<ServiceHistory> findByVehicleCustomerCustomerId(UUID customerId, Pageable pageable);
 
-    // Tìm kiếm theo khoảng thời gian
+    // Tìm theo khoảng thời gian
     Page<ServiceHistory> findByServiceDateBetween(LocalDate startDate, LocalDate endDate, Pageable pageable);
 
 }

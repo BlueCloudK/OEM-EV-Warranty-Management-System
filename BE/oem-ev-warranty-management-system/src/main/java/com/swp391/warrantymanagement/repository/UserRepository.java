@@ -44,5 +44,21 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     // Đếm số lượng users theo role
     long countByRole(Role role);
-}
 
+    /**
+     * Kiểm tra xem có User nào đang được gán một Role cụ thể hay không.
+     * Rất hữu ích để ngăn chặn việc xóa Role đang được sử dụng.
+     * @param role Role cần kiểm tra.
+     * @return true nếu có ít nhất một User đang sử dụng Role này.
+     */
+    boolean existsByRole(Role role);
+
+    /**
+     * Tìm kiếm người dùng theo username và lọc theo role.
+     * @param username Từ khóa tìm kiếm trong username.
+     * @param role Đối tượng Role để lọc.
+     * @param pageable Thông tin phân trang.
+     * @return Một trang các User thỏa mãn điều kiện.
+     */
+    Page<User> findByUsernameContainingIgnoreCaseAndRole(String username, Role role, Pageable pageable);
+}

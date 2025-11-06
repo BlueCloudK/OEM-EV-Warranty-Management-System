@@ -9,77 +9,72 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * ServiceCenterService - Business logic for service center management
+ * Service xử lý business logic cho ServiceCenter
+ * - CRUD: Tạo, đọc, cập nhật, xóa center (chỉ ADMIN)
+ * - Search: Tìm theo tên, địa chỉ
+ * - GPS: Tìm center gần nhất với customer
  */
 public interface ServiceCenterService {
-    /**
-     * Create a new service center (ADMIN only)
-     * @param requestDTO Service center data
-     * @return Created service center
-     */
+    // Tạo service center mới (chỉ ADMIN)
     ServiceCenterResponseDTO createServiceCenter(ServiceCenterRequestDTO requestDTO);
 
-    /**
-     * Get service center by ID
-     * @param serviceCenterId Service center ID
-     * @return Service center details with statistics
-     */
+    // Lấy thông tin center theo ID (kèm statistics)
     ServiceCenterResponseDTO getServiceCenterById(Long serviceCenterId);
 
     /**
-     * Get all service centers (paginated)
-     * @param pageable Pagination parameters
-     * @return Paged list of service centers
+     * Lấy danh sách tất cả service centers với phân trang.
+     * @param pageable Thông tin phân trang
+     * @return PagedResponse chứa danh sách service centers
      */
     PagedResponse<ServiceCenterResponseDTO> getAllServiceCenters(Pageable pageable);
 
     /**
-     * Update service center information (ADMIN only)
-     * @param serviceCenterId Service center ID
-     * @param requestDTO Updated service center data
-     * @return Updated service center
+     * Cập nhật thông tin service center (chỉ ADMIN).
+     * @param serviceCenterId ID của service center
+     * @param requestDTO DTO chứa thông tin cập nhật
+     * @return ServiceCenterResponseDTO đã cập nhật
      */
     ServiceCenterResponseDTO updateServiceCenter(Long serviceCenterId, ServiceCenterRequestDTO requestDTO);
 
     /**
-     * Delete service center (ADMIN only)
-     * @param serviceCenterId Service center ID
+     * Xóa service center (chỉ ADMIN).
+     * @param serviceCenterId ID của service center cần xóa
      */
     void deleteServiceCenter(Long serviceCenterId);
 
     /**
-     * Search service centers by name or address (paginated)
-     * @param search Search keyword
-     * @param pageable Pagination parameters
-     * @return Paged list of matching service centers
+     * Tìm kiếm service centers theo tên hoặc địa chỉ.
+     * @param search Từ khóa tìm kiếm
+     * @param pageable Thông tin phân trang
+     * @return PagedResponse chứa danh sách centers phù hợp
      */
     PagedResponse<ServiceCenterResponseDTO> searchServiceCenters(String search, Pageable pageable);
 
     /**
-     * Find service centers near a location (within radius)
-     * @param latitude Location latitude
-     * @param longitude Location longitude
-     * @param radiusKm Radius in kilometers
-     * @return List of service centers within radius, ordered by distance
+     * Tìm service centers trong bán kính từ vị trí.
+     * @param latitude Vĩ độ của vị trí
+     * @param longitude Kinh độ của vị trí
+     * @param radiusKm Bán kính tìm kiếm (km)
+     * @return Danh sách centers trong bán kính, sắp xếp theo khoảng cách
      */
     List<ServiceCenterResponseDTO> findServiceCentersNearLocation(
             BigDecimal latitude, BigDecimal longitude, double radiusKm);
 
     /**
-     * Get all service centers ordered by distance from a location
-     * @param latitude Location latitude
-     * @param longitude Location longitude
-     * @return List of service centers ordered by distance
+     * Lấy tất cả service centers sắp xếp theo khoảng cách từ vị trí.
+     * @param latitude Vĩ độ của vị trí
+     * @param longitude Kinh độ của vị trí
+     * @return Danh sách tất cả centers sắp xếp theo khoảng cách tăng dần
      */
     List<ServiceCenterResponseDTO> findAllOrderedByDistanceFrom(
             BigDecimal latitude, BigDecimal longitude);
 
     /**
-     * Update service center location (latitude, longitude)
-     * @param serviceCenterId Service center ID
-     * @param latitude New latitude
-     * @param longitude New longitude
-     * @return Updated service center
+     * Cập nhật vị trí GPS của service center.
+     * @param serviceCenterId ID của service center
+     * @param latitude Vĩ độ mới
+     * @param longitude Kinh độ mới
+     * @return ServiceCenterResponseDTO đã cập nhật
      */
     ServiceCenterResponseDTO updateServiceCenterLocation(
             Long serviceCenterId, BigDecimal latitude, BigDecimal longitude);

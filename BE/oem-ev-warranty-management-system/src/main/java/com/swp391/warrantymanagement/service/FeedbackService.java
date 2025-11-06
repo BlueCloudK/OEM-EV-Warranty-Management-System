@@ -9,26 +9,25 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * FeedbackService - Business logic for customer feedback on completed warranty claims
+ * Service xử lý business logic cho Feedback
+ * - Customer đánh giá sau khi claim hoàn thành
+ * - Rating 1-5 sao + comment
+ * - Tính CSAT score, average rating
  */
 public interface FeedbackService {
     /**
-     * Customer creates feedback for a completed warranty claim
-     * @param requestDTO Feedback data (rating, comment, warrantyClaimId)
-     * @param customerId Customer UUID from authentication
-     * @return Created feedback response
+     * Customer tạo feedback cho claim đã hoàn thành.
+     *
+     * @param requestDTO Dữ liệu feedback từ client.
+     * @param username   Username của người dùng đang đăng nhập (lấy từ Security Context).
+     * @return Feedback đã được tạo.
      */
-    FeedbackResponseDTO createFeedback(FeedbackRequestDTO requestDTO, UUID customerId);
+    FeedbackResponseDTO createFeedback(FeedbackRequestDTO requestDTO, String username);
 
-    /**
-     * Get feedback by ID
-     * @param feedbackId Feedback ID
-     * @return Feedback details
-     */
+    // Lấy feedback theo ID
     FeedbackResponseDTO getFeedbackById(Long feedbackId);
 
-    /**
-     * Get feedback for a specific warranty claim
+    /** Lấy feedback của claim cụ thể (1-1 relationship)
      * @param warrantyClaimId Warranty claim ID
      * @return Feedback for the claim (if exists)
      */
@@ -69,17 +68,17 @@ public interface FeedbackService {
      * Update existing feedback (customer can edit their feedback)
      * @param feedbackId Feedback ID
      * @param requestDTO Updated feedback data
-     * @param customerId Customer UUID from authentication
+     * @param username Username của người dùng đang đăng nhập (để xác thực quyền sở hữu).
      * @return Updated feedback
      */
-    FeedbackResponseDTO updateFeedback(Long feedbackId, FeedbackRequestDTO requestDTO, UUID customerId);
+    FeedbackResponseDTO updateFeedback(Long feedbackId, FeedbackRequestDTO requestDTO, String username);
 
     /**
      * Delete feedback
      * @param feedbackId Feedback ID
-     * @param customerId Customer UUID from authentication (for authorization)
+     * @param username Username của người dùng đang đăng nhập (để xác thực quyền sở hữu).
      */
-    void deleteFeedback(Long feedbackId, UUID customerId);
+    void deleteFeedback(Long feedbackId, String username);
 
     /**
      * Get overall average rating across all feedbacks

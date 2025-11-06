@@ -4,6 +4,9 @@ import com.swp391.warrantymanagement.dto.response.UserProfileResponseDTO;
 import com.swp391.warrantymanagement.dto.response.WarrantyClaimResponseDTO;
 import com.swp391.warrantymanagement.entity.Role;
 import com.swp391.warrantymanagement.entity.User;
+import com.swp391.warrantymanagement.exception.DuplicateResourceException;
+import com.swp391.warrantymanagement.exception.ResourceInUseException;
+import com.swp391.warrantymanagement.exception.ResourceNotFoundException;
 import com.swp391.warrantymanagement.mapper.WarrantyClaimMapper;
 import com.swp391.warrantymanagement.repository.RoleRepository;
 import com.swp391.warrantymanagement.repository.TokenRepository;
@@ -28,35 +31,52 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Implementation of UserService
- * Handles all user management business logic
+ * Implementation của UserService - quản lý users trong hệ thống (admin operations).
+ * <p>
+ * <strong>Security features:</strong>
+ * <ul>
+ *     <li>BCrypt password encoding</li>
+ *     <li>Token cleanup on delete</li>
+ *     <li>Unique constraints validation (username, email)</li>
+ *     <li>SecureRandom password generation</li>
+ * </ul>
  */
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class UserServiceImpl implements UserService {
 
+    // SLF4J Logger cho audit trail
     private static final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
 
+    // Repository dependencies
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final TokenRepository tokenRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final PasswordEncoder passwordEncoder; // BCrypt encoder
     private final WarrantyClaimRepository warrantyClaimRepository;
 
+    /**
+     * Lấy danh sách users với phân trang, search và role filter.
+     * <p>
+     * Kết quả luôn được sort theo createdAt DESC (newest first).
+     *
+     * @param pageable Thông tin phân trang (page, size)
+     * @param search Từ khóa tìm kiếm theo username (optional)
+     * @param role Filter theo role name (optional)
+     * @return Page chứa danh sách User
+     */
     @Override
     @Transactional(readOnly = true)
     public Page<User> getAllUsers(Pageable pageable, String search, String role) {
         logger.info("Getting all users with search: {}, role: {}", search, role);
 
-        // Create sort by createdAt DESC
         Pageable sortedPageable = PageRequest.of(
                 pageable.getPageNumber(),
                 pageable.getPageSize(),
                 Sort.by(Sort.Direction.DESC, "createdAt")
         );
 
-        // Apply filters if provided
         if ((search != null && !search.trim().isEmpty()) || (role != null && !role.trim().isEmpty())) {
             return getUsersWithFilter(search, role, sortedPageable);
         }
@@ -64,93 +84,131 @@ public class UserServiceImpl implements UserService {
         return userRepository.findAll(sortedPageable);
     }
 
+    /**
+     * Helper method xử lý filter logic (search và/hoặc role).
+     * <p>
+     * <strong>Note:</strong> Combined filter (search + role) hiện tại chỉ filter theo role.
+     * TODO: Implement combined filter với custom query.
+     */
     private Page<User> getUsersWithFilter(String search, String role, Pageable pageable) {
-        // ✅ FIXED: Implement actual filtering logic
         if (search != null && !search.trim().isEmpty() && role != null && !role.trim().isEmpty()) {
-            // Filter by both search and role
             Role roleEntity = roleRepository.findByRoleName(role.trim())
-                    .orElseThrow(() -> new RuntimeException("Role not found: " + role));
-            // For now, filter by role only - can extend with search later
+                    .orElseThrow(() -> new ResourceNotFoundException("Role", "name", role));
+
+            // TODO: Implement combined filter (search + role)
             return userRepository.findByRole(roleEntity, pageable);
-        } else if (search != null && !search.trim().isEmpty()) {
-            // Filter by search (username contains search term)
+        }
+        else if (search != null && !search.trim().isEmpty()) {
             return userRepository.findByUsernameContainingIgnoreCase(search.trim(), pageable);
-        } else if (role != null && !role.trim().isEmpty()) {
-            // Filter by role only
+        }
+        else if (role != null && !role.trim().isEmpty()) {
             Role roleEntity = roleRepository.findByRoleName(role.trim())
-                    .orElseThrow(() -> new RuntimeException("Role not found: " + role));
+                    .orElseThrow(() -> new ResourceNotFoundException("Role", "name", role));
             return userRepository.findByRole(roleEntity, pageable);
         }
 
         return userRepository.findAll(pageable);
     }
 
+    /**
+     * Lấy thông tin user theo ID.
+     *
+     * @param userId ID của user cần lấy
+     * @return User entity
+     * @throws ResourceNotFoundException nếu không tìm thấy user
+     */
     @Override
     @Transactional(readOnly = true)
     public User getUserById(Long userId) {
         logger.info("Getting user by id: {}", userId);
 
         return userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
     }
 
+    /**
+     * Tìm kiếm user theo username (case-insensitive partial match).
+     * <p>
+     * Kết quả được sort theo username ASC (A-Z).
+     *
+     * @param username Từ khóa tìm kiếm
+     * @param pageable Thông tin phân trang
+     * @return Page chứa danh sách User khớp với username
+     * @throws IllegalArgumentException nếu username trống
+     */
     @Override
     @Transactional(readOnly = true)
     public Page<User> searchByUsername(String username, Pageable pageable) {
         logger.info("Searching users by username: {}", username);
 
         if (username == null || username.trim().isEmpty()) {
-            throw new RuntimeException("Username search parameter cannot be empty");
+            throw new IllegalArgumentException("Username search parameter cannot be empty");
         }
 
-        // Create sort by username ASC
         Pageable sortedPageable = PageRequest.of(
                 pageable.getPageNumber(),
                 pageable.getPageSize(),
                 Sort.by(Sort.Direction.ASC, "username")
         );
 
-        // ✅ FIXED: Search users by username containing the search term
         return userRepository.findByUsernameContainingIgnoreCase(username.trim(), sortedPageable);
     }
 
+    /**
+     * Lấy danh sách user theo role.
+     * <p>
+     * Kết quả được sort theo username ASC (A-Z).
+     *
+     * @param roleName Tên role (vd: "ROLE_ADMIN")
+     * @param pageable Thông tin phân trang
+     * @return Page chứa danh sách User có role tương ứng
+     * @throws IllegalArgumentException nếu roleName trống
+     * @throws ResourceNotFoundException nếu không tìm thấy role
+     */
     @Override
     @Transactional(readOnly = true)
     public Page<User> getUsersByRole(String roleName, Pageable pageable) {
         logger.info("Getting users by role: {}", roleName);
 
         if (roleName == null || roleName.trim().isEmpty()) {
-            throw new RuntimeException("Role name cannot be empty");
+            throw new IllegalArgumentException("Role name cannot be empty");
         }
 
-        // Create sort by username ASC
         Pageable sortedPageable = PageRequest.of(
                 pageable.getPageNumber(),
                 pageable.getPageSize(),
                 Sort.by(Sort.Direction.ASC, "username")
         );
 
-        // ✅ FIXED: Find role by name first, then filter users by that role
         Role role = roleRepository.findByRoleName(roleName.trim())
-                .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
+                .orElseThrow(() -> new ResourceNotFoundException("Role", "name", roleName));
 
-        // Filter users by role
         return userRepository.findByRole(role, sortedPageable);
     }
 
+    /**
+     * Cập nhật thông tin user với partial update support.
+     * <p>
+     * Hỗ trợ dynamic update pattern - chỉ update các fields có trong request.
+     * Validate unique constraints (username, email) trước khi update.
+     *
+     * @param userId        ID của user cần update
+     * @param updateRequest Map chứa các fields cần update (username, email, address)
+     * @return User entity đã được cập nhật
+     * @throws ResourceNotFoundException   nếu user không tồn tại
+     * @throws DuplicateResourceException  nếu username hoặc email đã được sử dụng
+     */
     @Override
     public User updateUser(Long userId, Map<String, Object> updateRequest) {
         logger.info("Updating user: {} with data: {}", userId, updateRequest);
 
         User user = getUserById(userId);
 
-        // Update allowed fields
         if (updateRequest.containsKey("username")) {
             String newUsername = (String) updateRequest.get("username");
             if (newUsername != null && !newUsername.trim().isEmpty()) {
-                // Check if username already exists
                 if (userRepository.existsByUsername(newUsername) && !user.getUsername().equals(newUsername)) {
-                    throw new RuntimeException("Username already exists: " + newUsername);
+                    throw new DuplicateResourceException("User", "username", newUsername);
                 }
                 user.setUsername(newUsername.trim());
             }
@@ -159,9 +217,8 @@ public class UserServiceImpl implements UserService {
         if (updateRequest.containsKey("email")) {
             String newEmail = (String) updateRequest.get("email");
             if (newEmail != null && !newEmail.trim().isEmpty()) {
-                // Check if email already exists
                 if (userRepository.existsByEmail(newEmail) && !user.getEmail().equals(newEmail)) {
-                    throw new RuntimeException("Email already exists: " + newEmail);
+                    throw new DuplicateResourceException("User", "email", newEmail);
                 }
                 user.setEmail(newEmail.trim().toLowerCase());
             }
@@ -177,36 +234,82 @@ public class UserServiceImpl implements UserService {
         return userRepository.save(user);
     }
 
+    /**
+     * Cập nhật role của user.
+     * <p>
+     * <strong>Lưu ý:</strong> Permissions thay đổi ngay lập tức trong database,
+     * nhưng user cần login lại để JWT token được refresh với role mới.
+     *
+     * @param userId    ID của user cần thay đổi role
+     * @param newRoleId ID của role mới
+     * @return User entity với role đã được cập nhật
+     * @throws ResourceNotFoundException nếu user hoặc role không tồn tại
+     */
     @Override
     public User updateUserRole(Long userId, Long newRoleId) {
         logger.info("Updating user role: userId={}, newRoleId={}", userId, newRoleId);
 
         User user = getUserById(userId);
+
         Role newRole = roleRepository.findById(newRoleId)
-                .orElseThrow(() -> new RuntimeException("Role not found with id: " + newRoleId));
+                .orElseThrow(() -> new ResourceNotFoundException("Role", "id", newRoleId));
 
         user.setRole(newRole);
 
         return userRepository.save(user);
     }
 
+    /**
+     * Xóa user khỏi hệ thống.
+     * <p>
+     * Thực hiện các bước:
+     * <ul>
+     * <li>Kiểm tra user có warranty claims được assigned hay không</li>
+     * <li>Xóa tất cả tokens (refresh tokens, reset tokens) của user</li>
+     * <li>Xóa user khỏi database (hard delete)</li>
+     * </ul>
+     * <p>
+     * <strong>Lưu ý:</strong> Hiện tại sử dụng hard delete. Production nên cân nhắc
+     * implement soft delete để giữ audit trail.
+     *
+     * @param userId ID của user cần xóa
+     * @throws ResourceNotFoundException nếu user không tồn tại
+     * @throws ResourceInUseException    nếu user đang có warranty claims được assigned
+     */
     @Override
     public void deleteUser(Long userId) {
         logger.info("Deleting user: {}", userId);
 
         User user = getUserById(userId);
 
-        // Xóa tất cả token liên quan đến user trước khi xóa user
+        if (warrantyClaimRepository.existsByAssignedTo((user))) {
+            throw new ResourceInUseException("Cannot delete user '" + user.getUsername() + "' because they have one or more assigned warranty claims.");
+        }
+
         logger.info("Deleting all tokens for user: {}", userId);
         tokenRepository.deleteByUser(user);
 
-        // Soft delete - you might want to add a 'deleted' flag to User entity
-        // For now, we'll do hard delete but log it as soft delete
         logger.warn("Performing hard delete for user: {} (consider implementing soft delete)", userId);
-
         userRepository.delete(user);
     }
 
+    /**
+     * Reset password cho user.
+     * <p>
+     * Hỗ trợ 2 modes:
+     * <ul>
+     * <li><strong>Manual mode:</strong> Admin cung cấp password mới</li>
+     * <li><strong>Auto-generate mode:</strong> System tự động tạo random password (12 ký tự)</li>
+     * </ul>
+     * <p>
+     * <strong>Security note:</strong> Plain password chỉ được return 1 lần.
+     * Admin cần gửi password cho user qua secure channel và user nên đổi password sau khi login.
+     *
+     * @param userId      ID của user cần reset password
+     * @param newPassword Password mới (có thể null để auto-generate)
+     * @return Plain text password để admin gửi cho user
+     * @throws ResourceNotFoundException nếu user không tồn tại
+     */
     @Override
     public String resetUserPassword(Long userId, String newPassword) {
         logger.info("Resetting password for user: {}", userId);
@@ -217,20 +320,30 @@ public class UserServiceImpl implements UserService {
         if (newPassword != null && !newPassword.trim().isEmpty()) {
             passwordToSet = newPassword.trim();
         } else {
-            // Generate random password
             passwordToSet = generateRandomPassword();
         }
 
-        // Encode password
         String encodedPassword = passwordEncoder.encode(passwordToSet);
-        user.setPassword(encodedPassword);
 
+        user.setPassword(encodedPassword);
         userRepository.save(user);
 
-        // Return the plain password (for admin to share with user)
         return passwordToSet;
     }
 
+    /**
+     * Lấy user statistics cho admin dashboard.
+     * <p>
+     * Thống kê bao gồm:
+     * <ul>
+     * <li><strong>totalUsers:</strong> Tổng số users trong hệ thống</li>
+     * <li><strong>activeUsers/inactiveUsers:</strong> Phân loại users theo trạng thái (hiện tại tất cả = active)</li>
+     * <li><strong>usersByRole:</strong> Số lượng users theo từng role</li>
+     * <li><strong>recentRegistrations:</strong> 10 users đăng ký gần nhất</li>
+     * </ul>
+     *
+     * @return Map chứa các thống kê về users
+     */
     @Override
     @Transactional(readOnly = true)
     public Map<String, Object> getUserStatistics() {
@@ -238,26 +351,21 @@ public class UserServiceImpl implements UserService {
 
         Map<String, Object> statistics = new HashMap<>();
 
-        // Total users
         long totalUsers = userRepository.count();
         statistics.put("totalUsers", totalUsers);
 
-        // For now, set active/inactive as placeholders
-        statistics.put("activeUsers", totalUsers); // All users are active for now
+        statistics.put("activeUsers", totalUsers);
         statistics.put("inactiveUsers", 0);
 
-        // ✅ FIXED: Count users by role properly
         Map<String, Long> usersByRole = new HashMap<>();
         List<Role> allRoles = roleRepository.findAll();
 
         for (Role role : allRoles) {
-            // Count users for each role
             long count = userRepository.countByRole(role);
             usersByRole.put(role.getRoleName(), count);
         }
         statistics.put("usersByRole", usersByRole);
 
-        // Recent registrations (last 10 users)
         Pageable recentPageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<User> recentUsers = userRepository.findAll(recentPageable);
 
@@ -278,53 +386,69 @@ public class UserServiceImpl implements UserService {
         return statistics;
     }
 
+    /**
+     * Lấy complete user profile với thông tin chi tiết và relationships.
+     * <p>
+     * Profile bao gồm:
+     * <ul>
+     * <li><strong>Basic info:</strong> userId, username, email, address, createdAt</li>
+     * <li><strong>Role info:</strong> roleName, roleId</li>
+     * <li><strong>Service Center info:</strong> serviceCenterId, name, address (chỉ cho SC_STAFF)</li>
+     * <li><strong>Assigned claims:</strong> Danh sách warranty claims được assign (cho EVM_STAFF, SC_STAFF)</li>
+     * <li><strong>Work logs:</strong> Tổng số work log entries</li>
+     * </ul>
+     *
+     * @param userId ID của user cần lấy profile
+     * @return UserProfileResponseDTO chứa đầy đủ thông tin user
+     * @throws ResourceNotFoundException nếu user không tồn tại
+     */
     @Override
     @Transactional(readOnly = true)
     public UserProfileResponseDTO getUserFullProfile(Long userId) {
-        // Find user
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
 
-        // Build profile DTO
         UserProfileResponseDTO profile = new UserProfileResponseDTO();
 
-        // Basic user info
         profile.setUserId(user.getUserId());
         profile.setUsername(user.getUsername());
         profile.setEmail(user.getEmail());
         profile.setAddress(user.getAddress());
         profile.setCreatedAt(user.getCreatedAt());
 
-        // Role info
         if (user.getRole() != null) {
             profile.setRoleName(user.getRole().getRoleName());
             profile.setRoleId(user.getRole().getRoleId());
         }
 
-        // Service center info (for staff only)
         if (user.getServiceCenter() != null) {
             profile.setServiceCenterId(user.getServiceCenter().getServiceCenterId());
             profile.setServiceCenterName(user.getServiceCenter().getName());
             profile.setServiceCenterAddress(user.getServiceCenter().getAddress());
         }
 
-        // Assigned claims (for EVM_STAFF)
         List<WarrantyClaimResponseDTO> assignedClaims = warrantyClaimRepository
                 .findByAssignedToUserId(userId, Pageable.unpaged())
                 .getContent().stream()
                 .map(WarrantyClaimMapper::toResponseDTO)
                 .collect(Collectors.toList());
+
         profile.setAssignedClaims(assignedClaims);
         profile.setTotalAssignedClaims(assignedClaims.size());
 
-        // Work logs count
         profile.setTotalWorkLogs(user.getWorkLogs() != null ? user.getWorkLogs().size() : 0);
 
         return profile;
     }
 
     /**
-     * Generate a random password
+     * Generate random password cho password reset.
+     * <p>
+     * Tạo password 12 ký tự với character set bao gồm:
+     * uppercase letters, lowercase letters, digits, và special characters (!@#$%^&*).
+     * Sử dụng SecureRandom để đảm bảo tính cryptographically strong.
+     *
+     * @return Random password string (12 characters)
      */
     private String generateRandomPassword() {
         String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
@@ -336,5 +460,19 @@ public class UserServiceImpl implements UserService {
         }
 
         return password.toString();
+    }
+
+    /**
+     * Tìm user theo username.
+     *
+     * @param username Username cần tìm
+     * @return User entity
+     * @throws ResourceNotFoundException nếu user không tồn tại
+     */
+    @Override
+    public User findByUsername(String username) {
+        logger.info("Finding user by username: {}", username);
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
     }
 }

@@ -13,21 +13,24 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * FeedbackRepository - Data access layer for Feedback entity
+ * Repository để quản lý Feedback
+ * - Đánh giá của customer sau khi hoàn thành claim
+ * - Tìm theo claim, customer, rating
+ * - Tính CSAT score (customer satisfaction)
  */
 @Repository
 public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
-    // Find feedback by warranty claim
+    // Tìm feedback theo claim (1-1 relationship)
     Optional<Feedback> findByWarrantyClaimWarrantyClaimId(Long warrantyClaimId);
 
-    // Find all feedbacks by customer
+    // Tìm tất cả feedback của customer
     List<Feedback> findByCustomerCustomerId(UUID customerId);
     Page<Feedback> findByCustomerCustomerId(UUID customerId, Pageable pageable);
 
-    // Find feedbacks by rating
+    // Tìm theo rating cụ thể (1-5 sao)
     Page<Feedback> findByRating(Integer rating, Pageable pageable);
 
-    // Find feedbacks with rating greater than or equal
+    // Tìm feedback có rating >= threshold (VD: >= 4 sao = satisfied)
     Page<Feedback> findByRatingGreaterThanEqual(Integer rating, Pageable pageable);
 
     // Find feedbacks with rating less than or equal

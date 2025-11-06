@@ -1,5 +1,6 @@
 package com.swp391.warrantymanagement.config;
 
+import com.swp391.warrantymanagement.entity.Role;
 import com.swp391.warrantymanagement.entity.User;
 import com.swp391.warrantymanagement.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -8,6 +9,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.List;
@@ -22,18 +24,22 @@ public class CustomUserDetailsService implements UserDetailsService {
     private final UserRepository userRepository;
 
     @Override
+    @Transactional(readOnly = true) // REFACTOR: Bọc trong transaction để cho phép lazy-loading role
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        // Tìm user theo username (giữ lazy loading)
+        // REFACTOR: Chỉ cần một lần truy vấn DB để lấy cả User và Role (thông qua lazy-loading).
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
-        // Lấy role name riêng để tránh lazy loading issue
-        String roleName = userRepository.findRoleNameByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("Role not found for user: " + username));
+        // Lấy role trực tiếp từ đối tượng User.
+        // Nhờ có @Transactional, JPA có thể fetch role khi cần.
+        Role role = user.getRole();
+        if (role == null) {
+            throw new UsernameNotFoundException("Role not found for user: " + username);
+        }
 
         // Convert authority từ role (single role)
         List<SimpleGrantedAuthority> authorities = Collections.singletonList(
-                new SimpleGrantedAuthority("ROLE_" + roleName)
+                new SimpleGrantedAuthority(role.getRoleName()) // Giả sử roleName đã có prefix "ROLE_"
         );
 
         // Return Spring Security UserDetails
