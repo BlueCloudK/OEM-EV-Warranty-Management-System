@@ -61,10 +61,10 @@ export default function AdminRecallManagement() {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(r =>
         r.recallRequestId?.toString().includes(term) ||
-        r.part?.partName?.toLowerCase().includes(term) ||
-        r.part?.partNumber?.toLowerCase().includes(term) ||
+        r.partName?.toLowerCase().includes(term) ||
+        r.partNumber?.toLowerCase().includes(term) ||
         r.reason?.toLowerCase().includes(term) ||
-        r.createdBy?.fullName?.toLowerCase().includes(term)
+        r.createdByUsername?.toLowerCase().includes(term)
       );
     }
 
@@ -321,8 +321,8 @@ export default function AdminRecallManagement() {
               <S.TableRow key={recall.recallRequestId}>
                 <S.TableCell>#{recall.recallRequestId}</S.TableCell>
                 <S.TableCell>
-                  <div style={{ fontWeight: '500' }}>{recall.part?.partName || 'N/A'}</div>
-                  <small style={{ color: '#7f8c8d' }}>{recall.part?.partNumber || 'N/A'}</small>
+                  <div style={{ fontWeight: '500' }}>{recall.partName || 'N/A'}</div>
+                  <small style={{ color: '#7f8c8d' }}>{recall.partNumber || 'N/A'}</small>
                 </S.TableCell>
                 <S.TableCell>
                   <div style={{ maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -332,7 +332,7 @@ export default function AdminRecallManagement() {
                   </div>
                 </S.TableCell>
                 <S.TableCell>
-                  <div style={{ fontWeight: '500' }}>{recall.createdBy?.fullName || 'N/A'}</div>
+                  <div style={{ fontWeight: '500' }}>{recall.createdByUsername || 'N/A'}</div>
                 </S.TableCell>
                 <S.TableCell>
                   {recall.createdAt ? new Date(recall.createdAt).toLocaleDateString('vi-VN') : "N/A"}
@@ -390,7 +390,7 @@ export default function AdminRecallManagement() {
                 <S.Label>Phụ tùng bị lỗi:</S.Label>
                 <S.Input
                   type="text"
-                  value={`${selectedRecall.part?.partName || 'N/A'} (${selectedRecall.part?.partNumber || 'N/A'})`}
+                  value={`${selectedRecall.partName || 'N/A'} (${selectedRecall.partNumber || 'N/A'})`}
                   disabled
                 />
               </S.FormGroup>
@@ -402,7 +402,7 @@ export default function AdminRecallManagement() {
                 <S.Label>Người tạo yêu cầu:</S.Label>
                 <S.Input
                   type="text"
-                  value={selectedRecall.createdBy?.fullName || "N/A"}
+                  value={selectedRecall.createdByUsername || "N/A"}
                   disabled
                 />
               </S.FormGroup>
@@ -451,7 +451,7 @@ export default function AdminRecallManagement() {
                 <S.Label>Phụ tùng bị lỗi:</S.Label>
                 <S.Input
                   type="text"
-                  value={`${selectedRecall.part?.partName || 'N/A'} (${selectedRecall.part?.partNumber || 'N/A'})`}
+                  value={`${selectedRecall.partName || 'N/A'} (${selectedRecall.partNumber || 'N/A'})`}
                   disabled
                 />
               </S.FormGroup>
@@ -509,7 +509,7 @@ export default function AdminRecallManagement() {
                 </S.DetailItem>
                 <S.DetailItem>
                   <S.DetailLabel>Người tạo:</S.DetailLabel>
-                  <S.DetailValue>{selectedRecall.createdBy?.fullName || "N/A"}</S.DetailValue>
+                  <S.DetailValue>{selectedRecall.createdByUsername || "N/A"}</S.DetailValue>
                 </S.DetailItem>
               </S.DetailSection>
 
@@ -517,15 +517,15 @@ export default function AdminRecallManagement() {
                 <S.SectionTitle>Thông tin Phụ tùng bị lỗi</S.SectionTitle>
                 <S.DetailItem>
                   <S.DetailLabel>Tên phụ tùng:</S.DetailLabel>
-                  <S.DetailValue>{selectedRecall.part?.partName || "N/A"}</S.DetailValue>
+                  <S.DetailValue>{selectedRecall.partName || "N/A"}</S.DetailValue>
                 </S.DetailItem>
                 <S.DetailItem>
                   <S.DetailLabel>Mã phụ tùng:</S.DetailLabel>
-                  <S.DetailValue>{selectedRecall.part?.partNumber || "N/A"}</S.DetailValue>
+                  <S.DetailValue>{selectedRecall.partNumber || "N/A"}</S.DetailValue>
                 </S.DetailItem>
                 <S.DetailItem>
                   <S.DetailLabel>Nhà sản xuất:</S.DetailLabel>
-                  <S.DetailValue>{selectedRecall.part?.manufacturer || "N/A"}</S.DetailValue>
+                  <S.DetailValue>{selectedRecall.manufacturer || "N/A"}</S.DetailValue>
                 </S.DetailItem>
               </S.DetailSection>
 
@@ -541,21 +541,13 @@ export default function AdminRecallManagement() {
                 </S.DetailSection>
               )}
 
-              {selectedRecall.approvedBy && (
+              {selectedRecall.approvedByUsername && (
                 <S.DetailSection>
                   <S.SectionTitle>Người phê duyệt</S.SectionTitle>
                   <S.DetailItem>
                     <S.DetailLabel>Admin:</S.DetailLabel>
-                    <S.DetailValue>{selectedRecall.approvedBy.fullName || "N/A"}</S.DetailValue>
+                    <S.DetailValue>{selectedRecall.approvedByUsername || "N/A"}</S.DetailValue>
                   </S.DetailItem>
-                  {selectedRecall.approvedAt && (
-                    <S.DetailItem>
-                      <S.DetailLabel>Ngày duyệt:</S.DetailLabel>
-                      <S.DetailValue>
-                        {new Date(selectedRecall.approvedAt).toLocaleString('vi-VN')}
-                      </S.DetailValue>
-                    </S.DetailItem>
-                  )}
                 </S.DetailSection>
               )}
 
