@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- Console Appender: Hiển thị INFO và WARN/ERROR -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %logger{36} - %msg%n</pattern>
+        </encoder>
+        <!-- Filter: Chỉ hiển thị INFO trở lên trên console -->
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+    </appender>
+
+    <!-- File Appender: Ghi TẤT CẢ logs bao gồm DEBUG -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/security-debug.log</file>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+        <!-- Rolling Policy: Tạo file mới mỗi ngày hoặc khi đạt 10MB -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>logs/security-debug-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>10MB</maxFileSize>
+            <maxHistory>7</maxHistory>
+            <totalSizeCap>100MB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <!-- Logger riêng cho Security classes: DEBUG level -->
+    <logger name="com.swp391.warrantymanagement.config.JwtAuthenticationFilter" level="DEBUG"/>
+    <logger name="com.swp391.warrantymanagement.util.SecurityUtil" level="DEBUG"/>
+    <logger name="com.swp391.warrantymanagement.config.CustomUserDetailsService" level="DEBUG"/>
+
+    <!-- Logger cho application: INFO level -->
+    <logger name="com.swp391.warrantymanagement" level="INFO"/>
+
+    <!-- Root logger: Gửi logs đến cả console và file -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
+    </root>
+</configuration>

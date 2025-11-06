@@ -38,8 +38,13 @@ public class CustomUserDetailsService implements UserDetailsService {
         }
 
         // Convert authority từ role (single role)
+        // FIX: Tự động thêm prefix "ROLE_" nếu chưa có để tương thích với Spring Security hasRole()
+        String roleName = role.getRoleName();
+        if (!roleName.startsWith("ROLE_")) {
+            roleName = "ROLE_" + roleName;
+        }
         List<SimpleGrantedAuthority> authorities = Collections.singletonList(
-                new SimpleGrantedAuthority(role.getRoleName()) // Giả sử roleName đã có prefix "ROLE_"
+                new SimpleGrantedAuthority(roleName)
         );
 
         // Return Spring Security UserDetails
