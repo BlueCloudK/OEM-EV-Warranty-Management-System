@@ -1,5 +1,17 @@
 import apiClient from "./apiClient";
 
+/**
+ * =================================================================
+ * 📝 Feedback API - Legacy/Unused
+ * =================================================================
+ * ⚠️ WARNING: This file is not currently used in the codebase.
+ * - Consider using customerApi.js for feedback operations instead
+ * - Backend endpoint is /api/feedbacks (plural), not /api/feedback
+ *
+ * If you need this, update endpoints to match backend:
+ * - /api/feedback → /api/feedbacks
+ */
+
 export const feedbackApi = {
   async list(params = {}) {
     const query = new URLSearchParams({
@@ -7,7 +19,8 @@ export const feedbackApi = {
       size: 50,
       ...params,
     }).toString();
-    const data = await apiClient(`/api/feedback?${query}`);
+    // Fixed: Changed /api/feedback to /api/feedbacks to match backend
+    const data = await apiClient(`/api/feedbacks?${query}`);
     return Array.isArray(data?.content)
       ? data.content
       : Array.isArray(data)
@@ -15,18 +28,21 @@ export const feedbackApi = {
       : [];
   },
   async get(id) {
-    const data = await apiClient(`/api/feedback/${id}`);
+    // Fixed: Changed /api/feedback to /api/feedbacks to match backend
+    const data = await apiClient(`/api/feedbacks/${id}`);
     return data;
   },
   async reply(id, payload) {
-    const data = await apiClient(`/api/feedback/${id}/reply`, {
+    // Note: /reply endpoint may not exist on backend, verify first
+    const data = await apiClient(`/api/feedbacks/${id}/reply`, {
       method: "POST",
       body: JSON.stringify(payload),
     });
     return data;
   },
   async updateStatus(id, status) {
-    const data = await apiClient(`/api/feedback/${id}/status`, {
+    // Note: /status endpoint may not exist on backend, verify first
+    const data = await apiClient(`/api/feedbacks/${id}/status`, {
       method: "PATCH",
       body: JSON.stringify(status),
     });
