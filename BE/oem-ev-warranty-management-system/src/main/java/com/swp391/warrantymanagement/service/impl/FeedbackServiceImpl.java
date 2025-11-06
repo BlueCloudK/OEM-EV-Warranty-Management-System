@@ -1,19 +1,16 @@
 package com.swp391.warrantymanagement.service.impl;
 
-import java.util.Optional;
 import com.swp391.warrantymanagement.dto.request.FeedbackRequestDTO;
 import com.swp391.warrantymanagement.dto.response.FeedbackResponseDTO;
 import com.swp391.warrantymanagement.dto.response.PagedResponse;
 import com.swp391.warrantymanagement.entity.Customer;
 import com.swp391.warrantymanagement.entity.Feedback;
-import com.swp391.warrantymanagement.entity.User;
 import com.swp391.warrantymanagement.entity.WarrantyClaim;
 import com.swp391.warrantymanagement.enums.WarrantyClaimStatus;
 import com.swp391.warrantymanagement.exception.ResourceNotFoundException;
 import com.swp391.warrantymanagement.mapper.FeedbackMapper;
 import com.swp391.warrantymanagement.repository.CustomerRepository;
 import com.swp391.warrantymanagement.repository.FeedbackRepository;
-import com.swp391.warrantymanagement.repository.UserRepository;
 import com.swp391.warrantymanagement.repository.WarrantyClaimRepository;
 import com.swp391.warrantymanagement.service.FeedbackService;
 import lombok.RequiredArgsConstructor;
@@ -41,7 +38,6 @@ public class FeedbackServiceImpl implements FeedbackService {
     private final FeedbackRepository feedbackRepository;
     private final WarrantyClaimRepository warrantyClaimRepository;
     private final CustomerRepository customerRepository;
-    private final UserRepository userRepository;
 
     /**
      * Tạo feedback cho warranty claim đã hoàn thành.
@@ -54,33 +50,33 @@ public class FeedbackServiceImpl implements FeedbackService {
      * </ul>
      *
      * @param requestDTO DTO chứa thông tin feedback (warrantyClaimId, rating, comment)
-     * @param username Username của customer đang đăng nhập
+     * @param customerId Customer UUID của người tạo feedback
      * @return FeedbackResponseDTO đã được tạo
-     * @throws ResourceNotFoundException nếu claim, user, hoặc customer không tồn tại
+     * @throws ResourceNotFoundException nếu claim hoặc customer không tồn tại
      * @throws IllegalStateException nếu claim chưa COMPLETED hoặc đã có feedback
      * @throws IllegalArgumentException nếu customer không sở hữu vehicle
      */
     @Override
     @Transactional
-    public FeedbackResponseDTO createFeedback(FeedbackRequestDTO requestDTO, String username) {
+    public FeedbackResponseDTO createFeedback(FeedbackRequestDTO requestDTO, UUID customerId) {
+        // Validate warranty claim exists
         WarrantyClaim warrantyClaim = warrantyClaimRepository.findById(requestDTO.getWarrantyClaimId())
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "WarrantyClaim", "id", requestDTO.getWarrantyClaimId()));
+                        "Warranty claim not found with ID: " + requestDTO.getWarrantyClaimId()));
 
-        // Chỉ feedback cho claim đã hoàn thành
+        // Validate claim is COMPLETED
         if (warrantyClaim.getStatus() != WarrantyClaimStatus.COMPLETED) {
             throw new IllegalStateException(
                     "Cannot create feedback for claim that is not COMPLETED. Current status: " + warrantyClaim.getStatus());
         }
 
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+        // Validate customer exists
+        Customer customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Customer not found with ID: " + customerId));
 
-        Customer customer = Optional.ofNullable(customerRepository.findByUser(user))
-                .orElseThrow(() -> new ResourceNotFoundException("Customer Profile", "for user", username));
-
-        // Authorization: Customer phải sở hữu vehicle của claim
-        if (!warrantyClaim.getVehicle().getCustomer().equals(customer)) {
+        // Validate customer owns the claim (through vehicle)
+        if (!warrantyClaim.getVehicle().getCustomer().getCustomerId().equals(customerId)) {
             throw new IllegalArgumentException(
                     "You are not authorized to provide feedback for this claim");
         }
@@ -257,19 +253,17 @@ public class FeedbackServiceImpl implements FeedbackService {
      */
     @Override
     @Transactional
-    public FeedbackResponseDTO updateFeedback(Long feedbackId, FeedbackRequestDTO requestDTO, String username) {
+    public FeedbackResponseDTO updateFeedback(Long feedbackId, FeedbackRequestDTO requestDTO, UUID customerId) {
         Feedback feedback = feedbackRepository.findById(feedbackId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Feedback not found with ID: " + feedbackId));
 
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
-
-        Customer customer = Optional.ofNullable(customerRepository.findByUser(user))
-                .orElseThrow(() -> new ResourceNotFoundException("Customer Profile", "for user", username));
+        Customer customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Customer not found with ID: " + customerId));
 
         // Authorization: Chỉ customer sở hữu feedback mới được update
-        if (!feedback.getCustomer().equals(customer)) {
+        if (!feedback.getCustomer().getCustomerId().equals(customerId)) {
             throw new IllegalArgumentException(
                     "You are not authorized to update this feedback");
         }
@@ -293,19 +287,17 @@ public class FeedbackServiceImpl implements FeedbackService {
      */
     @Override
     @Transactional
-    public void deleteFeedback(Long feedbackId, String username) {
+    public void deleteFeedback(Long feedbackId, UUID customerId) {
         Feedback feedback = feedbackRepository.findById(feedbackId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Feedback not found with ID: " + feedbackId));
 
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
-
-        Customer customer = Optional.ofNullable(customerRepository.findByUser(user))
-                .orElseThrow(() -> new ResourceNotFoundException("Customer Profile", "for user", username));
+        Customer customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Customer not found with ID: " + customerId));
 
         // Authorization: Chỉ customer sở hữu feedback mới được xóa
-        if (!feedback.getCustomer().equals(customer)) {
+        if (!feedback.getCustomer().getCustomerId().equals(customerId)) {
             throw new IllegalArgumentException(
                     "You are not authorized to delete this feedback");
         }

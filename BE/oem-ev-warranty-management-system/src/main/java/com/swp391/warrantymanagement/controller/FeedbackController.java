@@ -55,14 +55,8 @@ public class FeedbackController {
     @PreAuthorize("hasRole('CUSTOMER')")
     public ResponseEntity<FeedbackResponseDTO> createFeedback(
             @Valid @RequestBody FeedbackRequestDTO requestDTO,
-            @RequestParam(required = false) UUID customerId) { // Giữ lại để tương thích, nhưng không sử dụng
-        // Thiết kế bảo mật: Luôn lấy định danh của người dùng từ một nguồn đáng tin cậy là Security Context,
-        // không bao giờ tin tưởng vào ID do client gửi lên. `SecurityUtil` là một lớp tiện ích
-        // giúp truy cập Security Context một cách an toàn và tập trung.
-        String username = SecurityUtil.getCurrentUsername()
-                .orElseThrow(() -> new AuthenticationRequiredException("Authentication is required to create feedback"));
-
-        FeedbackResponseDTO response = feedbackService.createFeedback(requestDTO, username);
+            @RequestParam UUID customerId) {
+        FeedbackResponseDTO response = feedbackService.createFeedback(requestDTO, customerId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -210,13 +204,8 @@ public class FeedbackController {
     public ResponseEntity<FeedbackResponseDTO> updateFeedback(
             @PathVariable Long id,
             @Valid @RequestBody FeedbackRequestDTO requestDTO,
-            @RequestParam(required = false) UUID customerId) { // Giữ lại để tương thích, nhưng không sử dụng
-        // Thiết kế bảo mật: Lấy username từ Security Context để xác thực quyền sở hữu.
-        // Tầng Service sẽ sử dụng username này để đảm bảo người dùng chỉ có thể sửa đánh giá của chính họ.
-        String username = SecurityUtil.getCurrentUsername()
-                .orElseThrow(() -> new AuthenticationRequiredException("Authentication is required to update feedback"));
-
-        FeedbackResponseDTO response = feedbackService.updateFeedback(id, requestDTO, username);
+            @RequestParam UUID customerId) {
+        FeedbackResponseDTO response = feedbackService.updateFeedback(id, requestDTO, customerId);
         return ResponseEntity.ok(response);
     }
 
@@ -231,17 +220,8 @@ public class FeedbackController {
     @PreAuthorize("hasRole('CUSTOMER') or hasRole('ADMIN')")
     public ResponseEntity<Void> deleteFeedback(
             @PathVariable Long id,
-            @RequestParam(required = false) UUID customerId) { // Giữ lại để tương thích, nhưng không sử dụng
-        // Thiết kế bảo mật: Lấy username từ Security Context để xác thực quyền sở hữu.
-        // Tầng Service sẽ kiểm tra xem người dùng có phải là chủ sở hữu của đánh giá hoặc có phải là ADMIN không.
-        String username = SecurityUtil.getCurrentUsername()
-                .orElseThrow(() -> new AuthenticationRequiredException("Authentication is required to delete feedback"));
-
-        feedbackService.deleteFeedback(id, username);
-
-        // REFACTOR: Thay đổi response để tuân thủ chuẩn RESTful.
-        // Trả về 204 No Content là một best practice cho các thao tác DELETE thành công,
-        // báo cho client biết rằng yêu cầu đã được thực hiện và không có nội dung nào để trả về.
+            @RequestParam UUID customerId) {
+        feedbackService.deleteFeedback(id, customerId);
         return ResponseEntity.noContent().build();
     }
 
