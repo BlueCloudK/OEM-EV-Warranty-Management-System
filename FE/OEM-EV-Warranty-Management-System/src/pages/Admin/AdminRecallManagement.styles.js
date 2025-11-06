@@ -488,3 +488,25 @@ export const DetailValue = styled.div`
   color: #2c3e50;
   font-size: 14px;
 `;
+
+export const InfoBox = styled.div`
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  background: #d4edda;
+  border: 1px solid #28a745;
+  border-radius: 8px;
+  margin-top: 12px;
+
+  svg {
+    color: #28a745;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+
+  div {
+    color: #155724;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+`;
