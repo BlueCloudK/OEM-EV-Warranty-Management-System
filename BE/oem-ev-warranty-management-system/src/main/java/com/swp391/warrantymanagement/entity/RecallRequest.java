@@ -6,13 +6,21 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * Entity đại diện cho một yêu cầu triệu hồi (Recall Request) từ nhà sản xuất (EVM) khi phát hiện lỗi hàng loạt trên các linh kiện.
+ * Entity đại diện cho một chiến dịch triệu hồi (Recall Campaign) từ nhà sản xuất (EVM) khi phát hiện lỗi hàng loạt trên một loại linh kiện.
  * <p>
  *  <strong>Mục đích:</strong>
  *  <ul>
- *   <li>Quản lý quy trình triệu hồi, bắt đầu từ việc phát hiện lỗi hàng loạt cho đến khi khách hàng đưa xe đến trung tâm bảo hành.</li>
- *   <li>Tự động tạo các yêu cầu bảo hành (Warranty Claim) cho các xe bị ảnh hưởng bởi đợt triệu hồi này.</li>
+ *   <li>Quản lý chiến dịch triệu hồi cho một loại Part bị lỗi (ví dụ: Pin Model X có nguy cơ cháy nổ).</li>
+ *   <li>Khi Admin duyệt, hệ thống tự động tìm tất cả các xe bị ảnh hưởng và tạo RecallResponse cho từng xe.</li>
+ *   <li>Mỗi RecallResponse sẽ tự động tạo WarrantyClaim khi khách hàng chấp nhận tham gia.</li>
  *  </ul>
+ *
+ *  <strong>Relationship:</strong>
+ *  <pre>
+ *  RecallRequest (1 chiến dịch cho Part bị lỗi)
+ *     └── RecallResponse[] (danh sách xe bị ảnh hưởng)
+ *            └── WarrantyClaim (từng xe)
+ *  </pre>
  */
 @Entity
 @Table(name = "recall_requests")
@@ -21,7 +29,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true) // Best practice: Chỉ so sánh dựa trên ID
-@ToString(exclude = {"installedPart", "createdBy", "approvedBy", "warrantyClaim"}) // Tránh lỗi đệ quy
+@ToString(exclude = {"part", "createdBy", "approvedBy", "recallResponses"}) // Tránh lỗi đệ quy
 public class RecallRequest {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -30,14 +38,17 @@ public class RecallRequest {
     private Long recallRequestId;
 
     /**
-     * Linh kiện (Part) bị lỗi và cần được triệu hồi.
+     * Loại linh kiện (Part) bị lỗi và cần được triệu hồi.
      * <p>
-     *  <strong>Mối quan hệ N-1:</strong> Nhiều yêu cầu triệu hồi có thể liên quan đến một linh kiện duy nhất.
+     *  <strong>Mối quan hệ N-1:</strong> Nhiều chiến dịch triệu hồi có thể liên quan đến một loại linh kiện.
+     *  <p>
+     *  <strong>Ví dụ:</strong> "Pin Model X v1.2" bị lỗi → Tất cả xe lắp pin này đều bị ảnh hưởng.
+     *  <p>
      *  Sử dụng FetchType.LAZY để tối ưu hiệu năng.
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "installed_part_id", nullable = false)
-    private InstalledPart installedPart;
+    @JoinColumn(name = "part_id", nullable = false)
+    private Part part;
 
     /**
      * Trạng thái hiện tại của yêu cầu triệu hồi (PENDING, APPROVED, REJECTED, COMPLETED).
@@ -102,13 +113,14 @@ public class RecallRequest {
     private LocalDateTime updatedAt;
 
     /**
-     * Yêu cầu bảo hành (Warranty Claim) được tạo tự động từ yêu cầu triệu hồi này.
+     * Danh sách các RecallResponse - mỗi xe bị ảnh hưởng có một response riêng.
      * <p>
-     *  <strong>Mối quan hệ 1-1:</strong> Mỗi yêu cầu triệu hồi tạo ra một yêu cầu bảo hành duy nhất.
-     *  Sử dụng FetchType.LAZY để tối ưu hiệu năng.
+     *  <strong>Mối quan hệ 1-N:</strong> Một chiến dịch triệu hồi có nhiều response (mỗi xe một response).
+     *  <p>
+     *  <strong>Flow:</strong> Khi Admin duyệt RecallRequest, hệ thống tự động tạo RecallResponse cho tất cả xe bị ảnh hưởng.
      */
-    @OneToOne(mappedBy = "recallRequest", fetch = FetchType.LAZY)
-    private WarrantyClaim warrantyClaim;
+    @OneToMany(mappedBy = "recallRequest", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private java.util.List<RecallResponse> recallResponses = new java.util.ArrayList<>();
 
     /**
      * JPA Lifecycle Callback - Tự động thiết lập giá trị cho createdAt và updatedAt khi một đối tượng mới được tạo.

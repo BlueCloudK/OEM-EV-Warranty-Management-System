@@ -37,4 +37,12 @@ public interface InstalledPartRepository extends JpaRepository<InstalledPart, Lo
      * @return true if the part is in use, false otherwise.
      */
     boolean existsByPart_PartId(Long partId);
+
+    /**
+     * Find all installed parts of a specific Part type.
+     * Used for recall campaigns to find all affected vehicles.
+     * @param partId The ID of the Part type.
+     * @return List of all InstalledPart instances using this Part.
+     */
+    List<InstalledPart> findByPart_PartId(Long partId);
 }
