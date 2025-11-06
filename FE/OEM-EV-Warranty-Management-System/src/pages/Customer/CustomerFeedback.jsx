@@ -238,15 +238,11 @@ const CustomerFeedback = () => {
       return;
     }
 
-    if (!customerId) {
-      setError("Không tìm thấy thông tin khách hàng.");
-      return;
-    }
-
     try {
       setError(null);
       setSuccess(null);
-      await customerApi.deleteFeedback(feedbackId, customerId);
+      // Backend tự lấy username từ JWT token, không cần customerId
+      await customerApi.deleteFeedback(feedbackId);
       setSuccess('Xóa phản hồi thành công!');
       await fetchData();
       setTimeout(() => setSuccess(null), 3000);
@@ -256,11 +252,6 @@ const CustomerFeedback = () => {
   };
 
   const handleSubmit = async (formData) => {
-    if (!customerId) {
-      setError("Không tìm thấy thông tin khách hàng.");
-      return;
-    }
-
     try {
       setError(null);
       setSuccess(null);
@@ -274,30 +265,28 @@ const CustomerFeedback = () => {
           feedbackId: selectedFeedback.feedbackId,
           warrantyClaimId,
           rating: formData.rating,
-          comment: formData.comments,
-          customerId
+          comment: formData.comments
         });
 
+        // Backend tự lấy username từ JWT token, không cần customerId
         await customerApi.updateFeedback(selectedFeedback.feedbackId, {
           warrantyClaimId: warrantyClaimId,
           rating: formData.rating,
-          comment: formData.comments, // Backend uses 'comment' not 'comments'
-          customerId: customerId
+          comment: formData.comments // Backend uses 'comment' not 'comments'
         });
         setSuccess('Cập nhật phản hồi thành công!');
       } else {
         console.log("➕ Creating feedback:", {
           warrantyClaimId: formData.warrantyClaimId,
           rating: formData.rating,
-          comment: formData.comments,
-          customerId
+          comment: formData.comments
         });
 
+        // Backend tự lấy username từ JWT token, không cần customerId
         await customerApi.createFeedback({
           warrantyClaimId: parseInt(formData.warrantyClaimId),
           rating: formData.rating,
-          comment: formData.comments, // Backend uses 'comment' not 'comments'
-          customerId: customerId
+          comment: formData.comments // Backend uses 'comment' not 'comments'
         });
         setSuccess('Tạo phản hồi thành công!');
       }
