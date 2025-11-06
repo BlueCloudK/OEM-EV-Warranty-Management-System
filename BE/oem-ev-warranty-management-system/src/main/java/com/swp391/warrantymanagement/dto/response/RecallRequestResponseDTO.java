@@ -18,6 +18,7 @@ public class RecallRequestResponseDTO {
     private Long partId;
     private String partName;
     private String partNumber;
+    private String manufacturer;
 
     // ===== CAMPAIGN INFO =====
     private RecallRequestStatus status;
