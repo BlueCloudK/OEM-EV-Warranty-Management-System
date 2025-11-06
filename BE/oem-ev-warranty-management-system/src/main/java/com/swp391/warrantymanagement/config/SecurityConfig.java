@@ -1,6 +1,7 @@
 package com.swp391.warrantymanagement.config;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -18,6 +19,8 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.http.HttpMethod;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Configuration
@@ -27,6 +30,11 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    // Đọc CORS allowed origins từ environment variable
+    // Ví dụ: CORS_ALLOWED_ORIGINS=https://your-domain.com,https://ngrok-url.app
+    @Value("${cors.allowed-origins:}")
+    private String corsAllowedOrigins;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -121,7 +129,9 @@ public class SecurityConfig {
 
         // IMPORTANT: Không thể dùng wildcard "*" khi setAllowCredentials(true)
         // Phải chỉ định các origins cụ thể để tuân thủ CORS specification
-        configuration.setAllowedOrigins(List.of(
+
+        // Default localhost origins cho development
+        List<String> allowedOrigins = new ArrayList<>(Arrays.asList(
                 "http://localhost:3000",
                 "http://localhost:5173",
                 "http://localhost:8080",
@@ -131,6 +141,21 @@ public class SecurityConfig {
                 "http://127.0.0.1:8080",
                 "http://127.0.0.1:8081"
         ));
+
+        // Thêm các origins từ environment variable (cho production/public URLs)
+        // Cách dùng: Set environment variable CORS_ALLOWED_ORIGINS=https://domain1.com,https://domain2.com
+        // Hoặc trong application.properties: cors.allowed-origins=https://domain1.com,https://domain2.com
+        if (corsAllowedOrigins != null && !corsAllowedOrigins.trim().isEmpty()) {
+            String[] additionalOrigins = corsAllowedOrigins.split(",");
+            for (String origin : additionalOrigins) {
+                String trimmedOrigin = origin.trim();
+                if (!trimmedOrigin.isEmpty() && !allowedOrigins.contains(trimmedOrigin)) {
+                    allowedOrigins.add(trimmedOrigin);
+                }
+            }
+        }
+
+        configuration.setAllowedOrigins(allowedOrigins);
 
         // Cho phép tất cả HTTP methods bao gồm PATCH và OPTIONS
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"));
