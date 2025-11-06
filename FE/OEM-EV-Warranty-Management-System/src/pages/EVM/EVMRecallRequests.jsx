@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { recallRequestsApi } from '../../api/recallRequests';
+import { recallResponsesApi } from '../../api/recallResponses';
 import apiClient from '../../api/apiClient';
 import * as S from './EVMRecallRequests.styles';
 import {
@@ -15,7 +16,8 @@ import {
   FaFilter,
   FaSearch,
   FaTrash,
-  FaSyncAlt
+  FaSyncAlt,
+  FaList
 } from 'react-icons/fa';
 
 const EVMRecallRequests = () => {
@@ -23,9 +25,12 @@ const EVMRecallRequests = () => {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showResponsesModal, setShowResponsesModal] = useState(false);
   const [selectedRecall, setSelectedRecall] = useState(null);
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [searchKeyword, setSearchKeyword] = useState('');
+  const [responses, setResponses] = useState([]);
+  const [loadingResponses, setLoadingResponses] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -145,6 +150,25 @@ const EVMRecallRequests = () => {
     }
   };
 
+  const fetchResponses = async (recallRequestId) => {
+    try {
+      setLoadingResponses(true);
+      const data = await recallResponsesApi.getByCampaign(recallRequestId);
+      setResponses(data || []);
+    } catch (error) {
+      console.error('Error fetching recall responses:', error);
+      alert('Không thể tải danh sách responses');
+    } finally {
+      setLoadingResponses(false);
+    }
+  };
+
+  const openResponsesModal = (recall) => {
+    setSelectedRecall(recall);
+    fetchResponses(recall.recallRequestId);
+    setShowResponsesModal(true);
+  };
+
   const getStatusBadge = (status) => {
     const statusConfig = {
       PENDING_ADMIN_APPROVAL: {
@@ -175,6 +199,17 @@ const EVMRecallRequests = () => {
     };
 
     return statusConfig[status] || statusConfig.PENDING_ADMIN_APPROVAL;
+  };
+
+  const getResponseStatusBadge = (status) => {
+    const statusConfig = {
+      PENDING: { label: 'Chờ xác nhận', icon: <FaClock />, color: '#ffc107' },
+      ACCEPTED: { label: 'Đã chấp nhận', icon: <FaCheckCircle />, color: '#28a745' },
+      DECLINED: { label: 'Đã từ chối', icon: <FaTimesCircle />, color: '#dc3545' },
+      IN_PROGRESS: { label: 'Đang sửa', icon: <FaSpinner />, color: '#17a2b8' },
+      COMPLETED: { label: 'Hoàn thành', icon: <FaCheckCircle />, color: '#20c997' }
+    };
+    return statusConfig[status] || statusConfig.PENDING;
   };
 
   // Filter and search
@@ -548,6 +583,108 @@ const EVMRecallRequests = () => {
 
             <S.ModalFooter>
               <S.Button onClick={() => setShowDetailModal(false)}>Đóng</S.Button>
+              {(selectedRecall.status === 'APPROVED_BY_ADMIN' ||
+                selectedRecall.status === 'WAITING_CUSTOMER_CONFIRM' ||
+                selectedRecall.status === 'COMPLETED') && (
+                <S.Button
+                  primary
+                  onClick={() => {
+                    setShowDetailModal(false);
+                    openResponsesModal(selectedRecall);
+                  }}
+                >
+                  <FaList /> Xem Responses
+                </S.Button>
+              )}
+            </S.ModalFooter>
+          </S.ModalContent>
+        </S.ModalOverlay>
+      )}
+
+      {/* Responses Modal */}
+      {showResponsesModal && selectedRecall && (
+        <S.ModalOverlay onClick={() => setShowResponsesModal(false)}>
+          <S.ModalContent large onClick={(e) => e.stopPropagation()}>
+            <S.ModalHeader>
+              <h2><FaList /> Responses cho Campaign #{selectedRecall.recallRequestId}</h2>
+              <S.CloseButton onClick={() => setShowResponsesModal(false)}>&times;</S.CloseButton>
+            </S.ModalHeader>
+
+            {loadingResponses ? (
+              <S.LoadingContainer style={{ minHeight: '200px' }}>
+                <FaSpinner className="spinner" />
+                <p>Đang tải responses...</p>
+              </S.LoadingContainer>
+            ) : responses.length === 0 ? (
+              <S.EmptyState style={{ margin: '40px' }}>
+                <FaExclamationTriangle size={48} />
+                <p>Chưa có response nào cho campaign này</p>
+              </S.EmptyState>
+            ) : (
+              <div style={{ padding: '24px' }}>
+                <S.InfoBox>
+                  <FaCheckCircle />
+                  <div>
+                    <strong>Tổng quan:</strong> {responses.length} xe bị ảnh hưởng
+                    <ul style={{ margin: '8px 0 0 20px', paddingLeft: '0' }}>
+                      <li>Chờ xác nhận: {responses.filter(r => r.status === 'PENDING').length}</li>
+                      <li>Đã chấp nhận: {responses.filter(r => r.status === 'ACCEPTED').length}</li>
+                      <li>Đã từ chối: {responses.filter(r => r.status === 'DECLINED').length}</li>
+                      <li>Đang sửa: {responses.filter(r => r.status === 'IN_PROGRESS').length}</li>
+                      <li>Hoàn thành: {responses.filter(r => r.status === 'COMPLETED').length}</li>
+                    </ul>
+                  </div>
+                </S.InfoBox>
+
+                <S.Table style={{ marginTop: '20px' }}>
+                  <S.TableHeader>
+                    <S.TableRow>
+                      <S.TableHeaderCell>Response ID</S.TableHeaderCell>
+                      <S.TableHeaderCell>Xe</S.TableHeaderCell>
+                      <S.TableHeaderCell>Khách hàng</S.TableHeaderCell>
+                      <S.TableHeaderCell>Ngày tạo</S.TableHeaderCell>
+                      <S.TableHeaderCell>Trạng thái</S.TableHeaderCell>
+                      <S.TableHeaderCell>Ghi chú KH</S.TableHeaderCell>
+                    </S.TableRow>
+                  </S.TableHeader>
+                  <S.TableBody>
+                    {responses.map((response) => {
+                      const statusBadge = getResponseStatusBadge(response.status);
+                      return (
+                        <S.TableRow key={response.recallResponseId}>
+                          <S.TableCell><strong>#{response.recallResponseId}</strong></S.TableCell>
+                          <S.TableCell>
+                            <div>{response.vehicleModel || 'N/A'}</div>
+                            <small style={{color: '#7f8c8d'}}>{response.vehicleVin || 'N/A'}</small>
+                          </S.TableCell>
+                          <S.TableCell>{response.customerName || 'N/A'}</S.TableCell>
+                          <S.TableCell>{response.createdAt ? new Date(response.createdAt).toLocaleDateString('vi-VN') : 'N/A'}</S.TableCell>
+                          <S.TableCell>
+                            <S.StatusBadge color={statusBadge.color}>
+                              {statusBadge.icon} {statusBadge.label}
+                            </S.StatusBadge>
+                          </S.TableCell>
+                          <S.TableCell>
+                            {response.customerNote ? (
+                              <span title={response.customerNote}>
+                                {response.customerNote.length > 50
+                                  ? response.customerNote.substring(0, 50) + '...'
+                                  : response.customerNote}
+                              </span>
+                            ) : (
+                              <span style={{color: '#95a5a6'}}>Chưa có</span>
+                            )}
+                          </S.TableCell>
+                        </S.TableRow>
+                      );
+                    })}
+                  </S.TableBody>
+                </S.Table>
+              </div>
+            )}
+
+            <S.ModalFooter>
+              <S.Button onClick={() => setShowResponsesModal(false)}>Đóng</S.Button>
             </S.ModalFooter>
           </S.ModalContent>
         </S.ModalOverlay>
