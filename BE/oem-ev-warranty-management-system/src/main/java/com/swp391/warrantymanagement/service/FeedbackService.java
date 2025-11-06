@@ -19,10 +19,10 @@ public interface FeedbackService {
      * Customer tạo feedback cho claim đã hoàn thành.
      *
      * @param requestDTO Dữ liệu feedback từ client.
-     * @param username   Username của người dùng đang đăng nhập (lấy từ Security Context).
+     * @param customerId Customer UUID của người tạo feedback.
      * @return Feedback đã được tạo.
      */
-    FeedbackResponseDTO createFeedback(FeedbackRequestDTO requestDTO, String username);
+    FeedbackResponseDTO createFeedback(FeedbackRequestDTO requestDTO, UUID customerId);
 
     // Lấy feedback theo ID
     FeedbackResponseDTO getFeedbackById(Long feedbackId);
@@ -68,17 +68,17 @@ public interface FeedbackService {
      * Update existing feedback (customer can edit their feedback)
      * @param feedbackId Feedback ID
      * @param requestDTO Updated feedback data
-     * @param username Username của người dùng đang đăng nhập (để xác thực quyền sở hữu).
+     * @param customerId Customer UUID (để xác thực quyền sở hữu).
      * @return Updated feedback
      */
-    FeedbackResponseDTO updateFeedback(Long feedbackId, FeedbackRequestDTO requestDTO, String username);
+    FeedbackResponseDTO updateFeedback(Long feedbackId, FeedbackRequestDTO requestDTO, UUID customerId);
 
     /**
      * Delete feedback
      * @param feedbackId Feedback ID
-     * @param username Username của người dùng đang đăng nhập (để xác thực quyền sở hữu).
+     * @param customerId Customer UUID (để xác thực quyền sở hữu).
      */
-    void deleteFeedback(Long feedbackId, String username);
+    void deleteFeedback(Long feedbackId, UUID customerId);
 
     /**
      * Get overall average rating across all feedbacks
