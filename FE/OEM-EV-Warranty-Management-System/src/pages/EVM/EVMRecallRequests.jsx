@@ -217,8 +217,8 @@ const EVMRecallRequests = () => {
     const matchesStatus = filterStatus === 'ALL' || recall.status === filterStatus;
     const matchesSearch = searchKeyword === '' ||
       recall.recallRequestId?.toString().includes(searchKeyword) ||
-      recall.part?.partName?.toLowerCase().includes(searchKeyword.toLowerCase()) ||
-      recall.part?.partNumber?.toLowerCase().includes(searchKeyword.toLowerCase()) ||
+      recall.partName?.toLowerCase().includes(searchKeyword.toLowerCase()) ||
+      recall.partNumber?.toLowerCase().includes(searchKeyword.toLowerCase()) ||
       recall.reason?.toLowerCase().includes(searchKeyword.toLowerCase());
 
     return matchesStatus && matchesSearch;
@@ -351,8 +351,8 @@ const EVMRecallRequests = () => {
                 <S.TableRow key={recall.recallRequestId}>
                   <S.TableCell><strong>#{recall.recallRequestId}</strong></S.TableCell>
                   <S.TableCell>
-                    <div>{recall.part?.partName || 'N/A'}</div>
-                    <small style={{color: '#7f8c8d'}}>{recall.part?.partNumber || 'N/A'}</small>
+                    <div>{recall.partName || 'N/A'}</div>
+                    <small style={{color: '#7f8c8d'}}>{recall.partNumber || 'N/A'}</small>
                   </S.TableCell>
                   <S.TableCell>
                     <S.ReasonText>{recall.reason?.substring(0, 60)}{recall.reason?.length > 60 ? '...' : ''}</S.ReasonText>
@@ -523,7 +523,7 @@ const EVMRecallRequests = () => {
                 </S.DetailItem>
                 <S.DetailItem>
                   <S.DetailLabel>Người tạo:</S.DetailLabel>
-                  <S.DetailValue>{selectedRecall.createdBy?.fullName || 'N/A'}</S.DetailValue>
+                  <S.DetailValue>{selectedRecall.createdByUsername || 'N/A'}</S.DetailValue>
                 </S.DetailItem>
               </S.DetailSection>
 
@@ -531,11 +531,11 @@ const EVMRecallRequests = () => {
                 <S.SectionTitle>Phụ Tùng Bị Lỗi</S.SectionTitle>
                 <S.DetailItem>
                   <S.DetailLabel>Tên phụ tùng:</S.DetailLabel>
-                  <S.DetailValue>{selectedRecall.part?.partName || 'N/A'}</S.DetailValue>
+                  <S.DetailValue>{selectedRecall.partName || 'N/A'}</S.DetailValue>
                 </S.DetailItem>
                 <S.DetailItem>
                   <S.DetailLabel>Mã phụ tùng:</S.DetailLabel>
-                  <S.DetailValue>{selectedRecall.part?.partNumber || 'N/A'}</S.DetailValue>
+                  <S.DetailValue>{selectedRecall.partNumber || 'N/A'}</S.DetailValue>
                 </S.DetailItem>
                 <S.DetailItem>
                   <S.DetailLabel>Part ID:</S.DetailLabel>
@@ -564,19 +564,13 @@ const EVMRecallRequests = () => {
                 </S.DetailSection>
               )}
 
-              {selectedRecall.approvedBy && (
+              {selectedRecall.approvedByUsername && (
                 <S.DetailSection>
                   <S.SectionTitle>Thông Tin Duyệt</S.SectionTitle>
                   <S.DetailItem>
                     <S.DetailLabel>Người duyệt:</S.DetailLabel>
-                    <S.DetailValue>{selectedRecall.approvedBy.fullName || 'N/A'}</S.DetailValue>
+                    <S.DetailValue>{selectedRecall.approvedByUsername || 'N/A'}</S.DetailValue>
                   </S.DetailItem>
-                  {selectedRecall.approvedAt && (
-                    <S.DetailItem>
-                      <S.DetailLabel>Ngày duyệt:</S.DetailLabel>
-                      <S.DetailValue>{new Date(selectedRecall.approvedAt).toLocaleString('vi-VN')}</S.DetailValue>
-                    </S.DetailItem>
-                  )}
                 </S.DetailSection>
               )}
             </S.DetailGrid>
