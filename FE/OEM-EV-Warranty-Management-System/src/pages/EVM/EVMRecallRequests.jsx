@@ -117,11 +117,6 @@ const EVMRecallRequests = () => {
       return;
     }
 
-    // Confirm before creating campaign
-    if (!confirm(`Bạn có chắc muốn tạo chiến dịch recall cho phụ tùng này?\n\nSẽ ảnh hưởng đến ${affectedVehicles.length} xe.`)) {
-      return;
-    }
-
     try {
       await recallRequestsApi.create({
         partId: targetPartId,
@@ -140,10 +135,6 @@ const EVMRecallRequests = () => {
   };
 
   const handleDeleteRecall = async (recallId) => {
-    if (!confirm('Bạn có chắc muốn xóa chiến dịch recall này không?\n(Chỉ được xóa recall đang chờ duyệt)')) {
-      return;
-    }
-
     try {
       await recallRequestsApi.delete(recallId);
       alert('✅ Xóa chiến dịch recall thành công!');
