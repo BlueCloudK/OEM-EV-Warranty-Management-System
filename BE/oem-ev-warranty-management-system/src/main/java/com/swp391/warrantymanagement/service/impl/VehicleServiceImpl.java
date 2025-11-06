@@ -176,7 +176,7 @@ public class VehicleServiceImpl implements VehicleService {
      */
     @Override
     @Transactional
-    public void deleteVehicle(Long id) {
+    public Boolean deleteVehicle(Long id) {
         Vehicle vehicle = vehicleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Vehicle", "id", id));
 
@@ -185,6 +185,7 @@ public class VehicleServiceImpl implements VehicleService {
         }
 
         vehicleRepository.delete(vehicle);
+        return true;
     }
 
     /**
