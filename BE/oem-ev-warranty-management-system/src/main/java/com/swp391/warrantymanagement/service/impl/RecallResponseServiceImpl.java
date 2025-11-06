@@ -3,6 +3,7 @@ package com.swp391.warrantymanagement.service.impl;
 import com.swp391.warrantymanagement.dto.request.RecallResponseConfirmDTO;
 import com.swp391.warrantymanagement.dto.response.RecallResponseResponseDTO;
 import com.swp391.warrantymanagement.entity.*;
+import com.swp391.warrantymanagement.enums.RecallRequestStatus;
 import com.swp391.warrantymanagement.enums.RecallResponseStatus;
 import com.swp391.warrantymanagement.enums.WarrantyClaimStatus;
 import com.swp391.warrantymanagement.exception.ResourceNotFoundException;
@@ -39,6 +40,7 @@ public class RecallResponseServiceImpl implements RecallResponseService {
     private static final Logger logger = LoggerFactory.getLogger(RecallResponseServiceImpl.class);
 
     private final RecallResponseRepository recallResponseRepository;
+    private final RecallRequestRepository recallRequestRepository;
     private final UserRepository userRepository;
     private final WarrantyClaimRepository warrantyClaimRepository;
     private final InstalledPartRepository installedPartRepository;
@@ -127,7 +129,40 @@ public class RecallResponseServiceImpl implements RecallResponseService {
         RecallResponse updatedResponse = recallResponseRepository.save(response);
         logger.info("Recall response updated: {}", recallResponseId);
 
+        // BƯỚC 7: Check và cập nhật RecallRequest status nếu cần
+        updateRecallRequestStatusIfNeeded(updatedResponse.getRecallRequest());
+
         return RecallResponseMapper.toResponseDTO(updatedResponse);
+    }
+
+    /**
+     * Kiểm tra và cập nhật RecallRequest status sau khi customer confirm RecallResponse.
+     * <p>
+     * Logic:
+     * - Nếu TẤT CẢ RecallResponse đã được respond (không còn PENDING) → RecallRequest = COMPLETED
+     */
+    private void updateRecallRequestStatusIfNeeded(RecallRequest recallRequest) {
+        logger.info("Checking if RecallRequest {} needs status update", recallRequest.getRecallRequestId());
+
+        // Lấy tất cả RecallResponse của RecallRequest này
+        List<RecallResponse> allResponses = recallResponseRepository.findByRecallRequest_RecallRequestId(
+                recallRequest.getRecallRequestId()
+        );
+
+        // Kiểm tra xem còn response nào PENDING không
+        boolean hasAnyPending = allResponses.stream()
+                .anyMatch(r -> r.getStatus() == RecallResponseStatus.PENDING);
+
+        if (!hasAnyPending && !allResponses.isEmpty()) {
+            // Tất cả responses đã được respond → RecallRequest COMPLETED
+            recallRequest.setStatus(RecallRequestStatus.COMPLETED);
+            recallRequestRepository.save(recallRequest);
+            logger.info("✅ RecallRequest {} status updated to COMPLETED (all customers have responded)",
+                    recallRequest.getRecallRequestId());
+        } else {
+            logger.info("RecallRequest {} still has pending responses. Current status: {}",
+                    recallRequest.getRecallRequestId(), recallRequest.getStatus());
+        }
     }
 
     @Override
