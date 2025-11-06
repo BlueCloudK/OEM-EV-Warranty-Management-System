@@ -102,10 +102,16 @@ public class SecurityConfig {
                 // Part Requests - Yêu cầu linh kiện từ Technician đến EVM
                 .requestMatchers("/api/part-requests/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF", "SC_TECHNICIAN")
 
-                // Recall Requests - Yêu cầu recall từ EVM đến khách hàng
+                // Recall Requests - Chiến dịch triệu hồi từ EVM
                 .requestMatchers("/api/recall-requests/my-recalls").hasRole("CUSTOMER")
                 .requestMatchers("/api/recall-requests/admin").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF")
                 .requestMatchers("/api/recall-requests/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF", "CUSTOMER")
+
+                // Recall Responses - Phản hồi triệu hồi của từng xe
+                .requestMatchers("/api/recall-responses/my-responses").hasRole("CUSTOMER")
+                .requestMatchers("/api/recall-responses/*/confirm").hasRole("CUSTOMER")
+                .requestMatchers("/api/recall-responses/campaign/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF")
+                .requestMatchers("/api/recall-responses/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF", "CUSTOMER")
 
                 // SC_TECHNICIAN - Kỹ thuật viên: xem và cập nhật service histories, warranty claims
                 // (Quyền đã được định nghĩa ở trên cùng với SC_STAFF)
@@ -127,35 +133,17 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // IMPORTANT: Không thể dùng wildcard "*" khi setAllowCredentials(true)
-        // Phải chỉ định các origins cụ thể để tuân thủ CORS specification
+        // Cho phép tất cả origins (development mode)
+        // Using allowedOriginPatterns instead of allowedOrigins to support wildcards
+        configuration.setAllowedOriginPatterns(List.of("*"));
 
-        // Default localhost origins cho development
-        List<String> allowedOrigins = new ArrayList<>(Arrays.asList(
-                "http://localhost:3000",
-                "http://localhost:5173",
-                "http://localhost:8080",
-                "http://localhost:8081",
-                "http://127.0.0.1:3000",
-                "http://127.0.0.1:5173",
-                "http://127.0.0.1:8080",
-                "http://127.0.0.1:8081"
-        ));
-
-        // Thêm các origins từ environment variable (cho production/public URLs)
-        // Cách dùng: Set environment variable CORS_ALLOWED_ORIGINS=https://domain1.com,https://domain2.com
-        // Hoặc trong application.properties: cors.allowed-origins=https://domain1.com,https://domain2.com
-        if (corsAllowedOrigins != null && !corsAllowedOrigins.trim().isEmpty()) {
-            String[] additionalOrigins = corsAllowedOrigins.split(",");
-            for (String origin : additionalOrigins) {
-                String trimmedOrigin = origin.trim();
-                if (!trimmedOrigin.isEmpty() && !allowedOrigins.contains(trimmedOrigin)) {
-                    allowedOrigins.add(trimmedOrigin);
-                }
-            }
-        }
-
-        configuration.setAllowedOrigins(allowedOrigins);
+        // Cho phép các origins cụ thể
+//        configuration.setAllowedOrigins(List.of(
+//                "https://8086127e5439.ngrok-free.app",
+//                "http://localhost:3000",
+//                "http://localhost:5173",
+//                "http://localhost:8081"
+//        ));
 
         // Cho phép tất cả HTTP methods bao gồm PATCH và OPTIONS
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"));
