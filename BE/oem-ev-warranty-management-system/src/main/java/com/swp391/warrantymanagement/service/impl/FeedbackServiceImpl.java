@@ -179,6 +179,58 @@ public class FeedbackServiceImpl implements FeedbackService {
     }
 
     /**
+     * Lấy danh sách feedback của customer hiện tại (từ JWT token) với phân trang.
+     * <p>
+     * <strong>Security:</strong> Username được lấy từ JWT token đã được xác thực,
+     * đảm bảo user chỉ có thể xem feedback của chính mình.
+     * <p>
+     * <strong>Auto-create Customer:</strong> Nếu User chưa có Customer record,
+     * hệ thống sẽ tự động tạo với placeholder data.
+     *
+     * @param username Username của customer (từ JWT token)
+     * @param pageable Thông tin phân trang (page, size, sort)
+     * @return PagedResponse chứa danh sách feedback của customer hiện tại
+     * @throws ResourceNotFoundException nếu không tìm thấy user
+     */
+    @Override
+    @Transactional  // Not readOnly because of potential auto-create
+    public PagedResponse<FeedbackResponseDTO> getMyFeedbacks(String username, Pageable pageable) {
+        // Get User from authenticated username
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+
+        // Get or create Customer record
+        Customer customer = Optional.ofNullable(customerRepository.findByUser(user))
+                .orElseGet(() -> {
+                    log.warn("⚠️ Customer record not found for user '{}'. Auto-creating with placeholder data. " +
+                            "User should update their profile.", username);
+
+                    Customer newCustomer = new Customer();
+                    newCustomer.setCustomerId(UUID.randomUUID());
+                    newCustomer.setUser(user);
+                    newCustomer.setName(user.getUsername()); // Fallback
+                    newCustomer.setPhone("PENDING_" + user.getUserId()); // Placeholder
+
+                    return customerRepository.save(newCustomer);
+                });
+
+        // Fetch feedbacks for this customer
+        Page<Feedback> feedbackPage = feedbackRepository.findByCustomerCustomerId(customer.getCustomerId(), pageable);
+
+        return new PagedResponse<>(
+                feedbackPage.getContent().stream()
+                        .map(FeedbackMapper::toResponseDTO)
+                        .toList(),
+                feedbackPage.getNumber(),
+                feedbackPage.getSize(),
+                feedbackPage.getTotalElements(),
+                feedbackPage.getTotalPages(),
+                feedbackPage.isFirst(),
+                feedbackPage.isLast()
+        );
+    }
+
+    /**
      * Lấy tất cả feedback trong hệ thống với phân trang (admin dashboard).
      *
      * @param pageable Thông tin phân trang (page, size, sort)

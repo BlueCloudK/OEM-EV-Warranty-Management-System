@@ -45,6 +45,18 @@ public interface FeedbackService {
     PagedResponse<FeedbackResponseDTO> getFeedbacksByCustomer(UUID customerId, Pageable pageable);
 
     /**
+     * Get all feedbacks of the currently authenticated customer (paginated)
+     * <p>
+     * <strong>Security:</strong> Username được lấy từ JWT token đã được xác thực,
+     * đảm bảo user chỉ có thể xem feedback của chính mình.
+     *
+     * @param username Username của customer (từ JWT token).
+     * @param pageable Pagination parameters
+     * @return Paged list of current customer's feedbacks
+     */
+    PagedResponse<FeedbackResponseDTO> getMyFeedbacks(String username, Pageable pageable);
+
+    /**
      * Get all feedbacks (paginated) - For admin/staff review
      * @param pageable Pagination parameters
      * @return Paged list of all feedbacks

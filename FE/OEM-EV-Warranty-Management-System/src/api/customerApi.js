@@ -76,14 +76,14 @@ export const customerApi = {
 
   /**
    * Lấy danh sách phản hồi của khách hàng đang đăng nhập.
-   * Endpoint: GET /api/feedbacks/by-customer/{customerId}
-   * @param {number} customerId - ID của khách hàng.
-   * @param {object} params - Các tham số truy vấn.
+   * Endpoint: GET /api/feedbacks/my-feedbacks
+   * Security: Backend tự lấy username từ JWT token, không cần customerId
+   * @param {object} params - Các tham số truy vấn (page, size, sortBy, sortDir).
    * @returns {Promise<object>} Dữ liệu phân trang của các phản hồi.
    */
-  getMyFeedbacks: (customerId, params = {}) => {
+  getMyFeedbacks: (params = {}) => {
     const queryParams = new URLSearchParams(params).toString();
-    return apiClient(`/api/feedbacks/by-customer/${customerId}?${queryParams}`);
+    return apiClient(`/api/feedbacks/my-feedbacks?${queryParams}`);
   },
 
   /**

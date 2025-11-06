@@ -120,6 +120,36 @@ public class FeedbackController {
     }
 
     /**
+     * Lấy danh sách các đánh giá của khách hàng đang đăng nhập, hỗ trợ phân trang và sắp xếp.
+     * <p>
+     * <strong>Security:</strong> Username được lấy từ JWT token đã được Spring Security xác thực,
+     * đảm bảo user chỉ có thể xem feedback của chính mình.
+     *
+     * @param page    Số trang.
+     * @param size    Số lượng phần tử trên mỗi trang.
+     * @param sortBy  Trường để sắp xếp.
+     * @param sortDir Hướng sắp xếp (ASC hoặc DESC).
+     * @return {@link ResponseEntity} chứa một {@link PagedResponse} các đánh giá.
+     */
+    @GetMapping("/my-feedbacks")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public ResponseEntity<PagedResponse<FeedbackResponseDTO>> getMyFeedbacks(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDir) {
+
+        String username = SecurityUtil.getCurrentUsername()
+                .orElseThrow(() -> new AuthenticationRequiredException("Authentication is required"));
+
+        Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        PagedResponse<FeedbackResponseDTO> response = feedbackService.getMyFeedbacks(username, pageable);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * Lấy danh sách tất cả các đánh giá trong hệ thống, hỗ trợ phân trang và sắp xếp.
      * Endpoint này dành cho các vai trò quản trị và nhân viên để xem xét.
      *

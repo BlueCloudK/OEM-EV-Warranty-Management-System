@@ -132,7 +132,6 @@ const FeedbackModal = ({ isOpen, onClose, feedback, onSubmit, warrantyClaims }) 
 const CustomerFeedback = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [customerId, setCustomerId] = useState(null);
   const [feedbacks, setFeedbacks] = useState([]);
   const [warrantyClaims, setWarrantyClaims] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -141,62 +140,21 @@ const CustomerFeedback = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedFeedback, setSelectedFeedback] = useState(null);
 
-  // Get customerId from localStorage or fetch from profile API
+  // Load data on component mount
   useEffect(() => {
-    const initializeCustomerId = async () => {
-      try {
-        const storedCustomerId = localStorage.getItem('customerId');
-        if (storedCustomerId) {
-          console.log("✅ CustomerId from localStorage:", storedCustomerId);
-          setCustomerId(storedCustomerId);
-        } else {
-          // Fetch from profile API if not in localStorage
-          console.log("⚠️ CustomerId not in localStorage, fetching from profile API...");
-          const profile = await customerApi.getMyProfile();
-          const fetchedCustomerId = profile?.customerId || profile?.customer?.customerId;
-
-          if (fetchedCustomerId) {
-            console.log("✅ CustomerId from profile API:", fetchedCustomerId);
-            localStorage.setItem('customerId', fetchedCustomerId);
-            setCustomerId(fetchedCustomerId);
-          } else {
-            console.error("❌ CustomerId not found in profile:", profile);
-            setError("Không tìm thấy thông tin khách hàng. Vui lòng đăng nhập lại.");
-            setLoading(false);
-          }
-        }
-      } catch (err) {
-        console.error("❌ Error fetching customerId:", err);
-        setError("Không thể tải thông tin khách hàng. Vui lòng đăng nhập lại.");
-        setLoading(false);
-      }
-    };
-
-    initializeCustomerId();
+    fetchData();
   }, []);
-
-  useEffect(() => {
-    if (customerId) {
-      fetchData();
-    }
-  }, [customerId]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      console.log("Fetching data with customerId:", customerId);
+      console.log("🔄 Fetching feedbacks and claims...");
 
-      if (!customerId) {
-        console.error("No customer ID available");
-        setError("Không tìm thấy thông tin khách hàng. Vui lòng đăng nhập lại.");
-        setLoading(false);
-        return;
-      }
-
+      // Backend tự lấy username từ JWT token, không cần customerId
       const [feedbacksResponse, claimsResponse] = await Promise.all([
-        customerApi.getMyFeedbacks(customerId, { page: 0, size: 100 }),
+        customerApi.getMyFeedbacks({ page: 0, size: 100 }),
         customerApi.getMyWarrantyClaims({ page: 0, size: 100 })
       ]);
 
