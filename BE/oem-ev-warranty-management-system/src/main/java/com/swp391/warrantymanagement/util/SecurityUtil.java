@@ -33,12 +33,15 @@ public final class SecurityUtil {
         // Step 1: Lấy Authentication object từ SecurityContextHolder.
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         // Step 2: Kiểm tra nếu object là null hoặc chưa được xác thực.
-        // FIX: Removed "anonymousUser" check vì có thể gây false positive với JWT authentication.
-        // Check isAuthenticated() là đủ để verify user đã login thành công.
         if (authentication == null || !authentication.isAuthenticated()) {
             return Optional.empty();
         }
-        // Step 3: Trả về Optional chứa Authentication object.
+        // Step 3: Check anonymousUser - Spring Security có thể tạo anonymous authentication
+        // Cần check getName() thay vì getPrincipal() để tránh ClassCastException
+        if ("anonymousUser".equals(authentication.getName())) {
+            return Optional.empty();
+        }
+        // Step 4: Trả về Optional chứa Authentication object.
         return Optional.of(authentication);
     }
 
@@ -73,11 +76,9 @@ public final class SecurityUtil {
      * @return true nếu user có role đó, ngược lại là false.
      */
     public static boolean hasRole(String role) {
-        // Lý do: Logic này linh hoạt, chấp nhận cả tên role có và không có prefix "ROLE_".
+        // FIX: Restore logic from Backup branch - support both "ADMIN" and "ROLE_ADMIN" without forcing uppercase
         Set<String> roles = getCurrentRoles();
-        // Chuẩn hóa input để tránh lỗi.
-        String roleWithPrefix = role.startsWith("ROLE_") ? role : "ROLE_" + role.toUpperCase();
-        return roles.contains(roleWithPrefix);
+        return roles.contains("ROLE_" + role) || roles.contains(role);
     }
 
     /**
