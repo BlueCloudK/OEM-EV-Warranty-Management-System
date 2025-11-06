@@ -101,21 +101,10 @@ const VehicleDetailModal = ({ isOpen, onClose, vehicle }) => {
     try {
       setSubmitLoading(true);
 
-      // Get customer info from profile API
-      const profile = await customerApi.getMyProfile();
-      console.log('Profile data:', profile);
-
-      const customerId = profile?.customerId || profile?.userId;
-
-      if (!customerId) {
-        alert('Không tìm thấy thông tin khách hàng. Vui lòng đăng nhập lại.');
-        return;
-      }
-
+      // Backend tự lấy username từ JWT token, không cần customerId
       await customerApi.createFeedback({
         ...feedbackForm,
-        warrantyClaimId: parseInt(feedbackForm.warrantyClaimId),
-        customerId: customerId
+        warrantyClaimId: parseInt(feedbackForm.warrantyClaimId)
       });
 
       alert('Gửi phản hồi thành công!');
