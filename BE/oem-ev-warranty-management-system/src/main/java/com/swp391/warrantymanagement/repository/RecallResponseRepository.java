@@ -41,7 +41,7 @@ public interface RecallResponseRepository extends JpaRepository<RecallResponse, 
      * @param vehicleId ID của xe
      * @return Danh sách RecallResponse của xe đó
      */
-    List<RecallResponse> findByVehicle_VehicleId(UUID vehicleId);
+    List<RecallResponse> findByVehicle_VehicleId(Long vehicleId);
 
     /**
      * Tìm tất cả RecallResponse của một khách hàng (thông qua vehicle).
