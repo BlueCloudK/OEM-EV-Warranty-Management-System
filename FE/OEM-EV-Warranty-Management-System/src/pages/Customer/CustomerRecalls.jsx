@@ -114,7 +114,8 @@ export default function CustomerRecalls() {
       REJECTED_BY_ADMIN: { color: "#e74c3c", label: "Bị từ chối", icon: <FaTimesCircle /> },
       WAITING_CUSTOMER_CONFIRM: { color: "#3498db", label: "Chờ bạn xác nhận", icon: <FaHourglassHalf /> },
       REJECTED_BY_CUSTOMER: { color: "#95a5a6", label: "Bạn đã từ chối", icon: <FaThumbsDown /> },
-      CLAIM_CREATED: { color: "#27ae60", label: "Đã tạo yêu cầu bảo hành", icon: <FaCheckCircle /> }
+      CLAIM_CREATED: { color: "#27ae60", label: "Đã tạo yêu cầu bảo hành", icon: <FaCheckCircle /> },
+      COMPLETED: { color: "#1a73e8", label: "Đã hoàn thành", icon: <FaCheckCircle /> }
     };
     const config = statusMap[status] || { color: "#7f8c8d", label: status, icon: <FaFileAlt /> };
     return (
@@ -130,7 +131,8 @@ export default function CustomerRecalls() {
       pending: recalls.filter(r => r.status === "PENDING_ADMIN_APPROVAL").length,
       waiting: recalls.filter(r => r.status === "WAITING_CUSTOMER_CONFIRM").length,
       rejected: recalls.filter(r => r.status === "REJECTED_BY_ADMIN" || r.status === "REJECTED_BY_CUSTOMER").length,
-      completed: recalls.filter(r => r.status === "CLAIM_CREATED").length
+      claimCreated: recalls.filter(r => r.status === "CLAIM_CREATED").length,
+      completed: recalls.filter(r => r.status === "COMPLETED").length
     };
   };
 
@@ -190,8 +192,16 @@ export default function CustomerRecalls() {
         <S.StatCard color="#27ae60" onClick={() => setStatusFilter("CLAIM_CREATED")}>
           <S.StatIcon color="#27ae60"><FaCheckCircle /></S.StatIcon>
           <S.StatContent>
+            <S.StatNumber>{stats.claimCreated}</S.StatNumber>
+            <S.StatLabel>Đã tạo yêu cầu BH</S.StatLabel>
+          </S.StatContent>
+        </S.StatCard>
+
+        <S.StatCard color="#1a73e8" onClick={() => setStatusFilter("COMPLETED")}>
+          <S.StatIcon color="#1a73e8"><FaCheckCircle /></S.StatIcon>
+          <S.StatContent>
             <S.StatNumber>{stats.completed}</S.StatNumber>
-            <S.StatLabel>Đã hoàn tất</S.StatLabel>
+            <S.StatLabel>Đã hoàn thành</S.StatLabel>
           </S.StatContent>
         </S.StatCard>
       </S.StatsGrid>
@@ -215,7 +225,8 @@ export default function CustomerRecalls() {
             <option value="WAITING_CUSTOMER_CONFIRM">Chờ xác nhận</option>
             <option value="REJECTED_BY_ADMIN">Bị từ chối (Admin)</option>
             <option value="REJECTED_BY_CUSTOMER">Bạn đã từ chối</option>
-            <option value="CLAIM_CREATED">Đã hoàn tất</option>
+            <option value="CLAIM_CREATED">Đã tạo yêu cầu BH</option>
+            <option value="COMPLETED">Đã hoàn thành</option>
           </S.FilterSelect>
         </S.FilterGroup>
       </S.FilterBar>
