@@ -17,6 +17,7 @@ import com.swp391.warrantymanagement.exception.ResourceNotFoundException;
 import com.swp391.warrantymanagement.service.CustomerService;
 import com.swp391.warrantymanagement.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import com.swp391.warrantymanagement.repository.VehicleRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -34,6 +35,7 @@ import java.util.stream.Collectors;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CustomerServiceImpl implements CustomerService {
 
     private final CustomerRepository customerRepository;
@@ -347,15 +349,26 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public CustomerProfileResponseDTO getCustomerProfileByUsername(String username) {
         // Step 1: Find the user by username.
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
 
-        // Step 2: Find the associated customer profile.
+        // Step 2: Find or create associated customer profile.
         Customer customer = Optional.ofNullable(customerRepository.findByUser(user))
-                .orElseThrow(() -> new ResourceNotFoundException("Customer Profile", "for user", username));
+                .orElseGet(() -> {
+                    log.warn("⚠️ Customer record not found for user '{}'. Auto-creating with placeholder data. " +
+                            "User should complete their profile.", username);
+
+                    Customer newCustomer = new Customer();
+                    newCustomer.setCustomerId(UUID.randomUUID());
+                    newCustomer.setUser(user);
+                    newCustomer.setName(user.getUsername()); // Fallback: use username as name
+                    newCustomer.setPhone("PENDING_" + user.getUserId()); // Placeholder to satisfy unique constraint
+
+                    return customerRepository.save(newCustomer);
+                });
 
         // Step 3: Reuse the existing logic to get the full profile.
         return getCustomerFullProfile(customer.getCustomerId());
