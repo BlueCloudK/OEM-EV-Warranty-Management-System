@@ -31,7 +31,7 @@ public interface VehicleService {
      * Phương thức sẽ ném ra ResourceNotFoundException nếu không tìm thấy ID,
      * hoặc ResourceInUseException nếu xe đang có claim/lịch sử bảo dưỡng.
      */
-    void deleteVehicle(Long id);
+    Boolean deleteVehicle(Long id);
 
     // Lấy danh sách tất cả xe với phân trang
     PagedResponse<VehicleResponseDTO> getAllVehiclesPage(Pageable pageable, String search);
