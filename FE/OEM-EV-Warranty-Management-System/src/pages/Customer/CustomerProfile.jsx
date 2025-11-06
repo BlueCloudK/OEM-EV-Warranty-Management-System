@@ -35,10 +35,27 @@ const CustomerProfile = () => {
       console.log('📋 Customer profile loaded:', response);
 
       setProfile(response);
+
+      // Handle both CustomerProfileResponseDTO and basic user response
+      const name = response.customerName || response.username || response.name || '';
+      const phone = response.customerPhone || response.phone || '';
+      const address = response.address || '';
+
+      console.log('🔍 Mapped values:', { name, phone, address, userId: response.userId });
+      console.log('📌 Available fields:', {
+        customerName: response.customerName,
+        username: response.username,
+        name: response.name,
+        customerPhone: response.customerPhone,
+        phone: response.phone,
+        email: response.email || response.customerEmail,
+        address: response.address
+      });
+
       setFormData({
-        name: response.customerName || '',
-        phone: response.customerPhone || response.phone || '',
-        address: response.address || '',
+        name: name,
+        phone: phone,
+        address: address,
         userId: response.userId
       });
     } catch (err) {
@@ -60,10 +77,14 @@ const CustomerProfile = () => {
     setError(null);
     setSuccess(null);
     // Reset form to original profile data
+    const name = profile.customerName || profile.username || profile.name || '';
+    const phone = profile.customerPhone || profile.phone || '';
+    const address = profile.address || '';
+
     setFormData({
-      name: profile.customerName || '',
-      phone: profile.customerPhone || profile.phone || '',
-      address: profile.address || '',
+      name: name,
+      phone: phone,
+      address: address,
       userId: profile.userId
     });
   };
@@ -178,10 +199,10 @@ const CustomerProfile = () => {
 
         <S.ProfileCard>
           <S.ProfileHeader>
-            <S.Avatar>{getInitials(profile?.customerName)}</S.Avatar>
+            <S.Avatar>{getInitials(profile?.customerName || profile?.username || profile?.name)}</S.Avatar>
             <S.ProfileInfo>
-              <S.ProfileName>{profile?.customerName || 'Khách hàng'}</S.ProfileName>
-              <S.ProfileEmail>{profile?.customerEmail || 'N/A'}</S.ProfileEmail>
+              <S.ProfileName>{profile?.customerName || profile?.username || profile?.name || 'Khách hàng'}</S.ProfileName>
+              <S.ProfileEmail>{profile?.customerEmail || profile?.email || 'N/A'}</S.ProfileEmail>
             </S.ProfileInfo>
           </S.ProfileHeader>
 
@@ -190,11 +211,11 @@ const CustomerProfile = () => {
             <S.InfoGrid>
               <S.InfoItem>
                 <S.InfoLabel><FaUser /> Tên khách hàng</S.InfoLabel>
-                <S.InfoValue>{profile?.customerName || 'N/A'}</S.InfoValue>
+                <S.InfoValue>{profile?.customerName || profile?.username || profile?.name || 'N/A'}</S.InfoValue>
               </S.InfoItem>
               <S.InfoItem>
                 <S.InfoLabel><FaEnvelope /> Email</S.InfoLabel>
-                <S.InfoValue>{profile?.customerEmail || 'N/A'}</S.InfoValue>
+                <S.InfoValue>{profile?.customerEmail || profile?.email || 'N/A'}</S.InfoValue>
               </S.InfoItem>
               <S.InfoItem>
                 <S.InfoLabel><FaPhone /> Số điện thoại</S.InfoLabel>
@@ -234,7 +255,7 @@ const CustomerProfile = () => {
                   <S.Label>Email (chỉ xem)</S.Label>
                   <S.Input
                     type="email"
-                    value={profile?.customerEmail || ''}
+                    value={profile?.customerEmail || profile?.email || ''}
                     disabled
                     style={{ backgroundColor: '#f3f4f6', cursor: 'not-allowed' }}
                   />
