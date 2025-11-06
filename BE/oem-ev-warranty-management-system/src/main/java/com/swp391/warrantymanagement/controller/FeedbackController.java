@@ -47,6 +47,9 @@ public class FeedbackController {
 
     /**
      * Cho phép khách hàng tạo một đánh giá mới cho một yêu cầu bảo hành đã hoàn thành.
+     * <p>
+     * <strong>Security:</strong> Username được lấy từ JWT token đã được Spring Security xác thực,
+     * đảm bảo user chỉ có thể tạo feedback cho chính mình.
      *
      * @param requestDTO DTO chứa nội dung đánh giá (rating, comment) và ID của yêu cầu bảo hành.
      * @return {@link ResponseEntity} chứa thông tin đánh giá đã được tạo với HTTP status 201 Created.
@@ -54,9 +57,10 @@ public class FeedbackController {
     @PostMapping
     @PreAuthorize("hasRole('CUSTOMER')")
     public ResponseEntity<FeedbackResponseDTO> createFeedback(
-            @Valid @RequestBody FeedbackRequestDTO requestDTO,
-            @RequestParam UUID customerId) {
-        FeedbackResponseDTO response = feedbackService.createFeedback(requestDTO, customerId);
+            @Valid @RequestBody FeedbackRequestDTO requestDTO) {
+        String username = SecurityUtil.getCurrentUsername()
+                .orElseThrow(() -> new AuthenticationRequiredException("Authentication is required"));
+        FeedbackResponseDTO response = feedbackService.createFeedback(requestDTO, username);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -194,6 +198,9 @@ public class FeedbackController {
 
     /**
      * Cho phép khách hàng cập nhật một đánh giá đã có của chính họ.
+     * <p>
+     * <strong>Security:</strong> Username được lấy từ JWT token, service layer sẽ verify
+     * ownership để đảm bảo user chỉ có thể update feedback của chính mình.
      *
      * @param id         ID của đánh giá cần cập nhật.
      * @param requestDTO DTO chứa nội dung cập nhật.
@@ -203,25 +210,29 @@ public class FeedbackController {
     @PreAuthorize("hasRole('CUSTOMER')")
     public ResponseEntity<FeedbackResponseDTO> updateFeedback(
             @PathVariable Long id,
-            @Valid @RequestBody FeedbackRequestDTO requestDTO,
-            @RequestParam UUID customerId) {
-        FeedbackResponseDTO response = feedbackService.updateFeedback(id, requestDTO, customerId);
+            @Valid @RequestBody FeedbackRequestDTO requestDTO) {
+        String username = SecurityUtil.getCurrentUsername()
+                .orElseThrow(() -> new AuthenticationRequiredException("Authentication is required"));
+        FeedbackResponseDTO response = feedbackService.updateFeedback(id, requestDTO, username);
         return ResponseEntity.ok(response);
     }
 
     /**
      * Xóa một đánh giá.
-     * Endpoint này cho phép cả khách hàng (xóa đánh giá của mình) và ADMIN (xóa bất kỳ đánh giá nào).
+     * <p>
+     * <strong>Security:</strong> Username được lấy từ JWT token, service layer sẽ verify
+     * ownership để đảm bảo CUSTOMER chỉ có thể xóa feedback của chính mình.
+     * ADMIN có thể xóa bất kỳ feedback nào.
      *
      * @param id ID của đánh giá cần xóa.
      * @return {@link ResponseEntity} với HTTP status 204 No Content nếu xóa thành công.
      */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('CUSTOMER') or hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteFeedback(
-            @PathVariable Long id,
-            @RequestParam UUID customerId) {
-        feedbackService.deleteFeedback(id, customerId);
+    public ResponseEntity<Void> deleteFeedback(@PathVariable Long id) {
+        String username = SecurityUtil.getCurrentUsername()
+                .orElseThrow(() -> new AuthenticationRequiredException("Authentication is required"));
+        feedbackService.deleteFeedback(id, username);
         return ResponseEntity.noContent().build();
     }
 

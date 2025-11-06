@@ -17,12 +17,15 @@ import java.util.UUID;
 public interface FeedbackService {
     /**
      * Customer tạo feedback cho claim đã hoàn thành.
+     * <p>
+     * <strong>Security:</strong> Username được lấy từ JWT token đã được xác thực,
+     * đảm bảo user chỉ có thể tạo feedback cho chính mình.
      *
      * @param requestDTO Dữ liệu feedback từ client.
-     * @param customerId Customer UUID của người tạo feedback.
+     * @param username Username của người tạo feedback (từ JWT token).
      * @return Feedback đã được tạo.
      */
-    FeedbackResponseDTO createFeedback(FeedbackRequestDTO requestDTO, UUID customerId);
+    FeedbackResponseDTO createFeedback(FeedbackRequestDTO requestDTO, String username);
 
     // Lấy feedback theo ID
     FeedbackResponseDTO getFeedbackById(Long feedbackId);
@@ -66,19 +69,27 @@ public interface FeedbackService {
 
     /**
      * Update existing feedback (customer can edit their feedback)
+     * <p>
+     * <strong>Security:</strong> Service layer sẽ verify ownership dựa trên username
+     * để đảm bảo user chỉ có thể update feedback của chính mình.
+     *
      * @param feedbackId Feedback ID
      * @param requestDTO Updated feedback data
-     * @param customerId Customer UUID (để xác thực quyền sở hữu).
+     * @param username Username của người update (từ JWT token).
      * @return Updated feedback
      */
-    FeedbackResponseDTO updateFeedback(Long feedbackId, FeedbackRequestDTO requestDTO, UUID customerId);
+    FeedbackResponseDTO updateFeedback(Long feedbackId, FeedbackRequestDTO requestDTO, String username);
 
     /**
      * Delete feedback
+     * <p>
+     * <strong>Security:</strong> Service layer sẽ verify ownership dựa trên username.
+     * CUSTOMER chỉ có thể xóa feedback của chính mình. ADMIN có thể xóa bất kỳ feedback nào.
+     *
      * @param feedbackId Feedback ID
-     * @param customerId Customer UUID (để xác thực quyền sở hữu).
+     * @param username Username của người xóa (từ JWT token).
      */
-    void deleteFeedback(Long feedbackId, UUID customerId);
+    void deleteFeedback(Long feedbackId, String username);
 
     /**
      * Get overall average rating across all feedbacks
