@@ -4,6 +4,7 @@ import com.swp391.warrantymanagement.dto.request.VehicleRequestDTO;
 import com.swp391.warrantymanagement.dto.response.VehicleResponseDTO;
 import com.swp391.warrantymanagement.dto.response.PagedResponse;
 import com.swp391.warrantymanagement.service.VehicleService;
+import com.swp391.warrantymanagement.util.SecurityUtil;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -120,12 +121,16 @@ public class VehicleController {
     @PreAuthorize("hasRole('CUSTOMER')")
     public ResponseEntity<PagedResponse<VehicleResponseDTO>> getMyVehicles(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestHeader("Authorization") String authorizationHeader) {
+            @RequestParam(defaultValue = "10") int size) {
         logger.info("Get my vehicles request: page={}, size={}", page, size);
         try {
+            // Get username from SecurityContext (already authenticated by JWT filter)
+            String username = SecurityUtil.getCurrentUsername()
+                    .orElseThrow(() -> new RuntimeException("User not authenticated"));
+            logger.info("Current authenticated user: {}", username);
+
             PagedResponse<VehicleResponseDTO> vehiclesPage = vehicleService.getVehiclesByCurrentUser(
-                authorizationHeader, PageRequest.of(page, size));
+                username, PageRequest.of(page, size));
             logger.info("Get my vehicles success, totalElements={}", vehiclesPage.getTotalElements());
             return ResponseEntity.ok(vehiclesPage);
         } catch (RuntimeException e) {
