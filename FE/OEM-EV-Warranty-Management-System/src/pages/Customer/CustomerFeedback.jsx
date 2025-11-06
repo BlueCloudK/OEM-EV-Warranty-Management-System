@@ -34,10 +34,6 @@ const FeedbackModal = ({ isOpen, onClose, feedback, onSubmit, warrantyClaims }) 
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!formData.comments.trim()) {
-      alert('Vui lòng nhập nội dung phản hồi');
-      return;
-    }
     if (!feedback && !formData.warrantyClaimId) {
       alert('Vui lòng chọn yêu cầu bảo hành');
       return;
@@ -107,12 +103,11 @@ const FeedbackModal = ({ isOpen, onClose, feedback, onSubmit, warrantyClaims }) 
             </S.FormGroup>
 
             <S.FormGroup>
-              <S.Label>Nội dung phản hồi *</S.Label>
+              <S.Label>Nội dung phản hồi (tùy chọn)</S.Label>
               <S.TextArea
                 value={formData.comments}
                 onChange={(e) => setFormData({ ...formData, comments: e.target.value })}
-                placeholder="Nhập nội dung phản hồi của bạn..."
-                required
+                placeholder="Nhập nội dung phản hồi của bạn (không bắt buộc)..."
               />
             </S.FormGroup>
           </S.ModalBody>
