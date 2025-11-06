@@ -2,8 +2,10 @@ package com.swp391.warrantymanagement.controller;
 
 import com.swp391.warrantymanagement.dto.response.UserResponseDTO;
 import com.swp391.warrantymanagement.entity.User;
+import com.swp391.warrantymanagement.exception.AuthenticationRequiredException;
 import com.swp391.warrantymanagement.mapper.UserMapper;
 import com.swp391.warrantymanagement.service.UserService;
+import com.swp391.warrantymanagement.util.SecurityUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -250,20 +252,38 @@ public class UserManagementController {
 
     /**
      * Xóa một người dùng.
+     * <p>
+     * <strong>Security:</strong> Admin không thể xóa tài khoản của chính mình để tránh
+     * tình huống hệ thống không còn admin nào.
      *
      * @param userId ID của người dùng cần xóa.
      * @return {@link ResponseEntity} với HTTP status 204 No Content nếu xóa thành công.
+     * @throws IllegalStateException nếu admin cố gắng xóa chính mình.
      */
     @DeleteMapping("/{userId}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long userId) {
         logger.info("DELETE USER REQUEST: {}", userId);
+
+        // Security check: Prevent admin from deleting their own account
+        String currentUsername = SecurityUtil.getCurrentUsername()
+                .orElseThrow(() -> new AuthenticationRequiredException("Authentication is required"));
+        User currentUser = userService.findByUsername(currentUsername);
+
+        if (currentUser.getUserId().equals(userId)) {
+            logger.warn("⚠️ Admin '{}' attempted to delete their own account (userId: {}). Operation denied.",
+                    currentUsername, userId);
+            throw new IllegalStateException("You cannot delete your own account. " +
+                    "Please ask another admin to perform this action if needed.");
+        }
+
+        logger.info("Admin '{}' is deleting user with ID: {}", currentUsername, userId);
 
         // Thiết kế: Tầng Service sẽ chịu trách nhiệm xử lý các ràng buộc trước khi xóa.
         // 1. Nếu không tìm thấy người dùng, ném `ResourceNotFoundException` -> 404 Not Found.
         // 2. Nếu người dùng đang có các tài nguyên liên quan (ví dụ: yêu cầu bảo hành),
         //    ném `ResourceInUseException` -> 409 Conflict.
         userService.deleteUser(userId);
-        logger.info("Delete user successful: {}", userId);
+        logger.info("Delete user successful: {} (deleted by admin: {})", userId, currentUsername);
         // Thiết kế: Trả về 204 No Content là một best practice cho các thao tác DELETE thành công,
         // báo cho client biết rằng yêu cầu đã được thực hiện và không có nội dung nào để trả về.
         return ResponseEntity.noContent().build();
