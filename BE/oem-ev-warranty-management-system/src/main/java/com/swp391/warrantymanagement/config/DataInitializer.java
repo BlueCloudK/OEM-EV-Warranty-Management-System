@@ -4,7 +4,7 @@ import com.swp391.warrantymanagement.entity.Role;
 import com.swp391.warrantymanagement.entity.User;
 import com.swp391.warrantymanagement.repository.RoleRepository;
 import com.swp391.warrantymanagement.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -15,16 +15,13 @@ import org.springframework.stereotype.Component;
  * - Tạo tài khoản Admin mặc định
  */
 @Component
+@RequiredArgsConstructor // REFACTOR: Sử dụng Lombok để tạo constructor, thay thế cho @Autowired
 public class DataInitializer implements CommandLineRunner {
 
-    @Autowired
-    private RoleRepository roleRepository;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    // REFACTOR: Chuyển sang constructor injection, các dependency là final để đảm bảo bất biến.
+    private final RoleRepository roleRepository;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public void run(String... args) throws Exception {
@@ -55,9 +52,10 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void initializeAdminUser() {
-        // Lấy role ADMIN
-        Role adminRole = roleRepository.findById(1L)
-                .orElseThrow(() -> new RuntimeException("Admin role not found"));
+        // REFACTOR: Tìm role bằng tên thay vì ID cứng để đảm bảo an toàn và linh hoạt.
+        Role adminRole = roleRepository.findByRoleName("ADMIN")
+                // REFACTOR: Sử dụng IllegalStateException để báo hiệu lỗi khởi tạo nghiêm trọng.
+                .orElseThrow(() -> new IllegalStateException("Required 'ADMIN' role not found during initialization."));
 
         // Tạo admin user với password đơn giản
         User adminUser = new User();
@@ -103,7 +101,7 @@ public class DataInitializer implements CommandLineRunner {
 
         // Tìm role theo tên
         Role role = roleRepository.findByRoleName(roleName)
-                .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
+                .orElseThrow(() -> new IllegalStateException("Required '" + roleName + "' role not found during initialization."));
 
         // Tạo user mới
         User user = new User();

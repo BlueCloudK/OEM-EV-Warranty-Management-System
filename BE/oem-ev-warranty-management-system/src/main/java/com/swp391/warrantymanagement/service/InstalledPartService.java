@@ -6,19 +6,37 @@ import com.swp391.warrantymanagement.dto.response.PagedResponse;
 import org.springframework.data.domain.Pageable;
 
 /**
- * InstalledPartService - Business logic for InstalledPart management
- * Used by Dealer Staff (SC_STAFF) to install parts on vehicles
+ * Service xử lý business logic cho InstalledPart
+ * - Ghi nhận part được lắp vào xe cụ thể
+ * - Tracking installation date và warranty expiration
+ * - Tìm part sắp hết bảo hành để notification
  */
 public interface InstalledPartService {
-    // ============= CRUD Operations =============
+    // Lấy thông tin installed part theo ID
     InstalledPartResponseDTO getInstalledPartById(Long id);
-    InstalledPartResponseDTO createInstalledPart(InstalledPartRequestDTO requestDTO);
-    InstalledPartResponseDTO updateInstalledPart(Long id, InstalledPartRequestDTO requestDTO);
-    boolean deleteInstalledPart(Long id);
 
-    // ============= Search Operations with Pagination =============
+    // Ghi nhận lắp đặt part mới vào xe (Dealer Staff)
+    InstalledPartResponseDTO createInstalledPart(InstalledPartRequestDTO requestDTO);
+
+    // Cập nhật thông tin installed part
+    InstalledPartResponseDTO updateInstalledPart(Long id, InstalledPartRequestDTO requestDTO);
+
+    /**
+     * Xóa một bản ghi linh kiện đã lắp đặt.
+     * REFACTOR: Thay đổi kiểu trả về từ boolean sang void.
+     * Phương thức sẽ ném ra ResourceNotFoundException nếu không tìm thấy ID.
+     */
+    void deleteInstalledPart(Long id);
+
+    // Lấy danh sách tất cả installed parts
     PagedResponse<InstalledPartResponseDTO> getAllInstalledParts(Pageable pageable);
+
+    // Lấy tất cả part đã lắp trên xe cụ thể
     PagedResponse<InstalledPartResponseDTO> getInstalledPartsByVehicle(Long vehicleId, Pageable pageable);
+
+    // Lấy tất cả lần lắp đặt của part cụ thể (tracking)
     PagedResponse<InstalledPartResponseDTO> getInstalledPartsByPart(Long partId, Pageable pageable);
+
+    // Tìm part sắp hết bảo hành (notification cho customer)
     PagedResponse<InstalledPartResponseDTO> getInstalledPartsWithExpiringWarranty(int daysFromNow, Pageable pageable);
 }

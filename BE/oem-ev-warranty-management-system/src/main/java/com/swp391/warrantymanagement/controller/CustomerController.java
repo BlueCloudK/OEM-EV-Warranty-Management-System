@@ -3,9 +3,11 @@ package com.swp391.warrantymanagement.controller;
 import com.swp391.warrantymanagement.dto.request.CustomerRequestDTO;
 import com.swp391.warrantymanagement.dto.response.CustomerResponseDTO;
 import com.swp391.warrantymanagement.dto.response.PagedResponse;
+import com.swp391.warrantymanagement.exception.AuthenticationRequiredException;
 import com.swp391.warrantymanagement.service.CustomerService;
+import com.swp391.warrantymanagement.util.SecurityUtil;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,15 +19,51 @@ import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.UUID;
 
+/**
+ * Controller chịu trách nhiệm xử lý các yêu cầu HTTP liên quan đến tài nguyên Khách hàng (Customer).
+ * <p>
+ * <strong>Thiết kế "Lean Controller" (Controller Gọn Gàng):</strong>
+ * <ul>
+ *     <li>Controller này tuân thủ nguyên tắc "Lean Controller", chỉ tập trung vào việc:
+ *         <ol>
+ *             <li>Nhận và xác thực (validate) request.</li>
+ *             <li>Điều hướng request đến tầng Service thích hợp để xử lý logic nghiệp vụ.</li>
+ *             <li>Đóng gói kết quả từ Service vào {@link ResponseEntity} và trả về cho client.</li>
+ *         </ol>
+ *     </li>
+ *     <li>Toàn bộ logic nghiệp vụ phức tạp và việc truy cập dữ liệu đều được ủy thác cho tầng Service.</li>
+ *     <li>Việc xử lý lỗi (ví dụ: không tìm thấy tài nguyên, dữ liệu không hợp lệ) được tự động xử lý bởi {@code GlobalExceptionHandler} thông qua các exception được ném ra từ tầng Service.</li>
+ * </ul>
+ */
 @RestController
 @RequestMapping("api/customers")
 @CrossOrigin
+@RequiredArgsConstructor
 public class CustomerController {
     private static final Logger logger = LoggerFactory.getLogger(CustomerController.class);
-    @Autowired
-    private CustomerService customerService;
 
-    // Lấy tất cả customers với pagination (ADMIN/SC_STAFF/EVM_STAFF only)
+    /**
+     * <strong>Constructor Injection:</strong>
+     * <p>
+     * Sử dụng {@code @RequiredArgsConstructor} của Lombok kết hợp với các trường {@code final} để thực hiện Constructor Injection.
+     * Đây là cách được khuyến khích để tiêm phụ thuộc trong Spring vì:
+     * <ul>
+     *     <li><b>Bất biến (Immutability):</b> Các dependency không thể bị thay đổi sau khi đối tượng được tạo.</li>
+     *     <li><b>An toàn (Null-safety):</b> Đảm bảo các dependency bắt buộc phải được cung cấp khi khởi tạo, tránh lỗi {@code NullPointerException}.</li>
+     *     <li><b>Dễ dàng cho việc Test:</b> Rất dễ dàng để tạo một instance của Controller với các đối tượng mock trong Unit Test.</li>
+     * </ul>
+     */
+    private final CustomerService customerService;
+
+    /**
+     * Lấy danh sách tất cả khách hàng, hỗ trợ phân trang và tìm kiếm.
+     * Endpoint này dành cho các vai trò quản trị và nhân viên.
+     *
+     * @param page   Số trang (mặc định là 0).
+     * @param size   Số lượng phần tử trên mỗi trang (mặc định là 10).
+     * @param search Từ khóa tìm kiếm (tên hoặc email của khách hàng).
+     * @return {@link ResponseEntity} chứa một {@link PagedResponse} các khách hàng.
+     */
     @GetMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('EVM_STAFF')")
     public ResponseEntity<PagedResponse<CustomerResponseDTO>> getAllCustomers(
@@ -39,100 +77,152 @@ public class CustomerController {
         return ResponseEntity.ok(customersPage);
     }
 
-    // Lấy customer theo ID (ADMIN/SC_STAFF/EVM_STAFF only)
+    /**
+     * Lấy thông tin chi tiết của một khách hàng dựa trên ID.
+     *
+     * @param id UUID của khách hàng cần lấy thông tin.
+     * @return {@link ResponseEntity} chứa {@link CustomerResponseDTO} nếu tìm thấy.
+     */
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('EVM_STAFF')")
     public ResponseEntity<CustomerResponseDTO> getCustomerById(@PathVariable UUID id) {
         logger.info("Get customer by id: {}", id);
+        // Thiết kế: Controller không cần kiểm tra kết quả trả về có null hay không.
+        // Tầng Service được thiết kế để ném ra `ResourceNotFoundException` nếu không tìm thấy khách hàng.
+        // `GlobalExceptionHandler` sẽ bắt exception này và tự động trả về HTTP status 404 Not Found.
+        // Điều này giúp code ở Controller luôn gọn gàng và chỉ tập trung vào "happy path".
         CustomerResponseDTO customer = customerService.getCustomerById(id);
-        if (customer != null) {
-            logger.info("Customer found: {}", id);
-            return ResponseEntity.ok(customer);
-        }
-        logger.warn("Customer not found: {}", id);
-        return ResponseEntity.notFound().build();
+        logger.info("Customer found: {}", id);
+        return ResponseEntity.ok(customer);
     }
 
-    // Tạo customer mới (ADMIN/SC_STAFF/EVM_STAFF only)
+    /**
+     * Tạo một khách hàng mới. Endpoint này dành cho nhân viên/quản trị viên.
+     * @param requestDTO DTO chứa thông tin của khách hàng mới.
+     * @return {@link ResponseEntity} chứa thông tin khách hàng đã được tạo với HTTP status 201 Created.
+     */
     @PostMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('EVM_STAFF')")
     public ResponseEntity<CustomerResponseDTO> createCustomer(@Valid @RequestBody CustomerRequestDTO requestDTO) {
         logger.info("Create customer request: {}", requestDTO);
+        // Thiết kế: Controller không cần khối try-catch.
+        // Nếu có lỗi nghiệp vụ (ví dụ: userId không tồn tại, số điện thoại đã được sử dụng),
+        // tầng Service sẽ ném ra một exception cụ thể (ví dụ: ResourceNotFoundException, DuplicateResourceException).
+        // GlobalExceptionHandler sẽ bắt các exception này và trả về response lỗi HTTP tương ứng (404, 409,...).
         CustomerResponseDTO responseDTO = customerService.createCustomer(requestDTO);
         logger.info("Customer created: {}", responseDTO.getCustomerId());
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
     }
 
-    // Cập nhật customer (ADMIN/SC_STAFF/EVM_STAFF only)
+    /**
+     * Cập nhật thông tin của một khách hàng. Endpoint này dành cho nhân viên/quản trị viên.
+     * @param id UUID của khách hàng cần cập nhật.
+     * @param requestDTO DTO chứa thông tin cập nhật.
+     * @return {@link ResponseEntity} chứa thông tin khách hàng đã được cập nhật.
+     */
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('EVM_STAFF')")
     public ResponseEntity<CustomerResponseDTO> updateCustomer(@PathVariable UUID id,
                                                               @Valid @RequestBody CustomerRequestDTO requestDTO) {
         logger.info("Update customer request: id={}, data={}", id, requestDTO);
+        // Thiết kế: Tương tự như các endpoint khác, Controller không xử lý logic lỗi.
+        // Nếu ID khách hàng không tồn tại, service sẽ ném ResourceNotFoundException -> 404 Not Found.
+        // Nếu dữ liệu không hợp lệ (ví dụ: số điện thoại mới bị trùng), service sẽ ném exception -> 400/409.
         CustomerResponseDTO updatedCustomer = customerService.updateCustomer(id, requestDTO);
-        if (updatedCustomer != null) {
-            logger.info("Customer updated: {}", id);
-            return ResponseEntity.ok(updatedCustomer);
-        }
-        logger.warn("Customer not found for update: {}", id);
-        return ResponseEntity.notFound().build();
+        logger.info("Customer updated: {}", id);
+        return ResponseEntity.ok(updatedCustomer);
     }
 
-    // Xóa customer (ADMIN only)
+    /**
+     * Xóa một khách hàng. Endpoint này chỉ dành cho ADMIN.
+     * @param id UUID của khách hàng cần xóa.
+     * @return {@link ResponseEntity} với HTTP status 204 No Content nếu xóa thành công.
+     */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteCustomer(@PathVariable UUID id) {
         logger.info("Delete customer request: {}", id);
-        boolean deleted = customerService.deleteCustomer(id);
-        if (deleted) {
-            logger.info("Customer deleted: {}", id);
-            return ResponseEntity.noContent().build();
-        }
-        logger.warn("Customer not found for delete: {}", id);
-        return ResponseEntity.notFound().build();
+        // Thiết kế: Tầng Service sẽ chịu trách nhiệm xử lý các ràng buộc trước khi xóa.
+        // 1. Nếu không tìm thấy khách hàng, ném `ResourceNotFoundException` -> 404 Not Found.
+        // 2. Nếu khách hàng đang có các tài nguyên liên quan (ví dụ: xe, yêu cầu bảo hành),
+        //    ném `ResourceInUseException` -> 409 Conflict.
+        // Controller không cần biết về các logic này, chỉ cần gọi và xử lý trường hợp thành công.
+        customerService.deleteCustomer(id);
+        logger.info("Customer deleted: {}", id);
+        // Thiết kế: Trả về 204 No Content là một best practice cho các thao tác DELETE thành công,
+        // báo cho client biết rằng yêu cầu đã được thực hiện và không có nội dung nào để trả về.
+        return ResponseEntity.noContent().build();
     }
 
-    // Tìm kiếm customer theo tên
+    /**
+     * Tìm kiếm khách hàng theo tên.
+     *
+     * @param name Tên khách hàng cần tìm.
+     * @param page Số trang.
+     * @param size Số lượng phần tử trên trang.
+     * @return {@link ResponseEntity} chứa một {@link PagedResponse} các khách hàng phù hợp.
+     */
     @GetMapping("/search")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('EVM_STAFF')")
     public ResponseEntity<PagedResponse<CustomerResponseDTO>> searchCustomers(
             @RequestParam String name,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         logger.info("Search customers by name: {}, page={}, size={}", name, page, size);
+        // Thiết kế: Controller chỉ chịu trách nhiệm nhận các tham số tìm kiếm và phân trang,
+        // sau đó ủy thác hoàn toàn cho tầng Service để thực hiện logic truy vấn.
+        // Kết quả (kể cả khi không tìm thấy khách hàng nào) sẽ được đóng gói trong PagedResponse.
         PagedResponse<CustomerResponseDTO> customersPage = customerService.searchCustomersByName(
                 name, PageRequest.of(page, size));
         logger.info("Search customers by name success, totalElements={}", customersPage.getTotalElements());
         return ResponseEntity.ok(customersPage);
     }
 
-    // Tìm customer theo email
+    /**
+     * Tìm một khách hàng duy nhất bằng địa chỉ email.
+     *
+     * @param email Email của khách hàng cần tìm.
+     * @return {@link ResponseEntity} chứa thông tin khách hàng nếu tìm thấy.
+     */
     @GetMapping("/by-email")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('EVM_STAFF')")
     public ResponseEntity<CustomerResponseDTO> getCustomerByEmail(@RequestParam String email) {
         logger.info("Get customer by email: {}", email);
+        // Thiết kế "Happy Path": Controller giả định rằng service sẽ trả về dữ liệu hợp lệ.
+        // Nếu không tìm thấy khách hàng với email này, service sẽ ném ResourceNotFoundException,
+        // và GlobalExceptionHandler sẽ xử lý để trả về lỗi 404 Not Found.
         CustomerResponseDTO customer = customerService.getCustomerByEmail(email);
-        if (customer != null) {
-            logger.info("Customer found by email: {}", email);
-            return ResponseEntity.ok(customer);
-        }
-        logger.warn("Customer not found by email: {}", email);
-        return ResponseEntity.notFound().build();
+        logger.info("Customer found by email: {}", email);
+        return ResponseEntity.ok(customer);
     }
 
-    // Tìm customer theo phone
+    /**
+     * Tìm một khách hàng duy nhất bằng số điện thoại.
+     *
+     * @param phone Số điện thoại của khách hàng cần tìm.
+     * @return {@link ResponseEntity} chứa thông tin khách hàng nếu tìm thấy.
+     */
     @GetMapping("/by-phone")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('EVM_STAFF')")
     public ResponseEntity<CustomerResponseDTO> getCustomerByPhone(@RequestParam String phone) {
         logger.info("Get customer by phone: {}", phone);
+        // Tương tự như getCustomerByEmail, việc xử lý trường hợp "không tìm thấy"
+        // được ủy thác hoàn toàn cho tầng Service và GlobalExceptionHandler.
         CustomerResponseDTO customer = customerService.getCustomerByPhone(phone);
-        if (customer != null) {
-            logger.info("Customer found by phone: {}", phone);
-            return ResponseEntity.ok(customer);
-        }
-        logger.warn("Customer not found by phone: {}", phone);
-        return ResponseEntity.notFound().build();
+        logger.info("Customer found by phone: {}", phone);
+        return ResponseEntity.ok(customer);
     }
 
-    // Lấy customers theo userId
+    /**
+     * Lấy danh sách khách hàng được liên kết với một ID người dùng (User ID).
+     *
+     * @param userId ID của người dùng.
+     * @param page   Số trang.
+     * @param size   Số lượng phần tử trên trang.
+     * @return {@link ResponseEntity} chứa một {@link PagedResponse} các khách hàng.
+     */
     @GetMapping("/by-user/{userId}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('EVM_STAFF')")
     public ResponseEntity<PagedResponse<CustomerResponseDTO>> getCustomersByUserId(
             @PathVariable Long userId,
             @RequestParam(defaultValue = "0") int page,
@@ -144,19 +234,27 @@ public class CustomerController {
         return ResponseEntity.ok(customersPage);
     }
 
-    // API cho Customer tự cập nhật profile của mình
+    /**
+     * Endpoint cho phép khách hàng tự cập nhật thông tin cá nhân của mình.
+     *
+     * @param requestDTO DTO chứa các thông tin mà khách hàng được phép thay đổi.
+     * @return {@link ResponseEntity} chứa thông tin profile đã được cập nhật.
+     */
     @PutMapping("/profile")
+    @PreAuthorize("hasRole('CUSTOMER')")
     public ResponseEntity<CustomerResponseDTO> updateCustomerProfile(
-            @Valid @RequestBody CustomerRequestDTO requestDTO,
-            @RequestHeader("Authorization") String authorizationHeader) {
+            @Valid @RequestBody CustomerRequestDTO requestDTO) {
         logger.info("Update customer profile request");
-        try {
-            CustomerResponseDTO updatedCustomer = customerService.updateCustomerProfile(requestDTO, authorizationHeader);
-            logger.info("Customer profile updated: {}", updatedCustomer.getCustomerId());
-            return ResponseEntity.ok(updatedCustomer);
-        } catch (RuntimeException e) {
-            logger.error("Update customer profile failed: {}", e.getMessage());
-            return ResponseEntity.badRequest().build();
-        }
+        // Thiết kế bảo mật: Luôn lấy định danh của người dùng từ một nguồn đáng tin cậy là Security Context,
+        // không bao giờ tin tưởng vào ID do client gửi lên trong request body.
+        // `SecurityUtil` là một lớp tiện ích giúp truy cập Security Context một cách an toàn và tập trung.
+        String username = SecurityUtil.getCurrentUsername()
+                .orElseThrow(() -> new AuthenticationRequiredException("Authentication is required to update profile"));
+
+        // Thiết kế: Tầng Service sẽ nhận `username` và thực hiện các bước xác thực quyền sở hữu
+        // trước khi thực hiện cập nhật, đảm bảo một khách hàng không thể cập nhật thông tin của người khác.
+        CustomerResponseDTO updatedCustomer = customerService.updateCustomerProfile(username, requestDTO);
+        logger.info("Customer profile updated for user {}: {}", username, updatedCustomer.getCustomerId());
+        return ResponseEntity.ok(updatedCustomer);
     }
 }

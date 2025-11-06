@@ -6,12 +6,13 @@ import com.swp391.warrantymanagement.dto.response.PagedResponse;
 import com.swp391.warrantymanagement.entity.User;
 import com.swp391.warrantymanagement.entity.WarrantyClaim;
 import com.swp391.warrantymanagement.entity.WorkLog;
+import com.swp391.warrantymanagement.exception.ResourceNotFoundException;
 import com.swp391.warrantymanagement.mapper.WorkLogMapper;
 import com.swp391.warrantymanagement.repository.UserRepository;
 import com.swp391.warrantymanagement.repository.WarrantyClaimRepository;
 import com.swp391.warrantymanagement.repository.WorkLogRepository;
 import com.swp391.warrantymanagement.service.WorkLogService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -20,23 +21,27 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 /**
- * WorkLogServiceImpl - Implementation of WorkLogService
- * Handles work log management for warranty claim processing
+ * Service quản lý work logs (nhật ký công việc technician).
+ * Theo dõi thời gian và công việc thực hiện cho warranty claims.
  */
 @Service
+@RequiredArgsConstructor
 public class WorkLogServiceImpl implements WorkLogService {
-    @Autowired
-    private WorkLogRepository workLogRepository;
 
-    @Autowired
-    private UserRepository userRepository;
+    private final WorkLogRepository workLogRepository;
+    private final UserRepository userRepository;
+    private final WarrantyClaimRepository warrantyClaimRepository;
 
-    @Autowired
-    private WarrantyClaimRepository warrantyClaimRepository;
-
+    /**
+     * Lấy tất cả work logs với pagination.
+     *
+     * @param pageable pagination parameters
+     * @return PagedResponse với work logs
+     */
     @Override
     public PagedResponse<WorkLogResponseDTO> getAllWorkLogs(Pageable pageable) {
         Page<WorkLog> workLogPage = workLogRepository.findAll(pageable);
+
         List<WorkLogResponseDTO> responseDTOs = WorkLogMapper.toResponseDTOList(
             workLogPage.getContent());
 
@@ -51,82 +56,110 @@ public class WorkLogServiceImpl implements WorkLogService {
         );
     }
 
+    /**
+     * Lấy work log theo ID.
+     *
+     * @param id work log ID
+     * @return WorkLogResponseDTO
+     * @throws ResourceNotFoundException nếu không tìm thấy
+     */
     @Override
     public WorkLogResponseDTO getWorkLogById(Long id) {
-        WorkLog workLog = workLogRepository.findById(id).orElse(null);
+        WorkLog workLog = workLogRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("WorkLog", "id", id));
+
         return WorkLogMapper.toResponseDTO(workLog);
     }
 
+    /**
+     * Tạo work log mới với time validation.
+     *
+     * @param requestDTO thông tin work log
+     * @param username username của technician
+     * @return WorkLogResponseDTO
+     * @throws ResourceNotFoundException nếu không tìm thấy user hoặc claim
+     * @throws IllegalArgumentException nếu endTime trước startTime
+     */
     @Override
     @Transactional
-    public WorkLogResponseDTO createWorkLog(WorkLogRequestDTO requestDTO, Long userId) {
-        // Validate User exists
-        User user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+    public WorkLogResponseDTO createWorkLog(WorkLogRequestDTO requestDTO, String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
 
-        // Validate Warranty Claim exists
         WarrantyClaim warrantyClaim = warrantyClaimRepository.findById(requestDTO.getWarrantyClaimId())
-            .orElseThrow(() -> new RuntimeException("Warranty claim not found with id: " + requestDTO.getWarrantyClaimId()));
+            .orElseThrow(() -> new ResourceNotFoundException("WarrantyClaim", "id", requestDTO.getWarrantyClaimId()));
 
-        // Validate end time is after start time
-        if (requestDTO.getEndTime().isBefore(requestDTO.getStartTime())) {
-            throw new RuntimeException("End time must be after start time");
+        if (requestDTO.getEndTime() != null && requestDTO.getStartTime() != null &&
+            requestDTO.getEndTime().isBefore(requestDTO.getStartTime())) {
+            throw new IllegalArgumentException("End time must be after start time");
         }
 
-        // Convert DTO to Entity
         WorkLog workLog = WorkLogMapper.toEntity(requestDTO, user, warrantyClaim);
-
-        // Save entity
         WorkLog savedWorkLog = workLogRepository.save(workLog);
 
-        // Convert entity back to response DTO
         return WorkLogMapper.toResponseDTO(savedWorkLog);
     }
 
+    /**
+     * Cập nhật work log với time validation.
+     *
+     * @param id work log ID
+     * @param requestDTO thông tin mới
+     * @param username username của technician
+     * @return WorkLogResponseDTO
+     * @throws ResourceNotFoundException nếu không tìm thấy work log, user hoặc claim
+     * @throws IllegalArgumentException nếu endTime trước startTime
+     */
     @Override
     @Transactional
-    public WorkLogResponseDTO updateWorkLog(Long id, WorkLogRequestDTO requestDTO, Long userId) {
-        WorkLog existingWorkLog = workLogRepository.findById(id).orElse(null);
-        if (existingWorkLog == null) {
-            return null;
-        }
+    public WorkLogResponseDTO updateWorkLog(Long id, WorkLogRequestDTO requestDTO, String username) {
+        WorkLog existingWorkLog = workLogRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("WorkLog", "id", id));
 
-        // Validate User exists
-        User user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
 
-        // Validate Warranty Claim exists
         WarrantyClaim warrantyClaim = warrantyClaimRepository.findById(requestDTO.getWarrantyClaimId())
-            .orElseThrow(() -> new RuntimeException("Warranty claim not found with id: " + requestDTO.getWarrantyClaimId()));
+            .orElseThrow(() -> new ResourceNotFoundException("WarrantyClaim", "id", requestDTO.getWarrantyClaimId()));
 
-        // Validate end time is after start time
-        if (requestDTO.getEndTime().isBefore(requestDTO.getStartTime())) {
-            throw new RuntimeException("End time must be after start time");
+        if (requestDTO.getEndTime() != null && requestDTO.getStartTime() != null &&
+            requestDTO.getEndTime().isBefore(requestDTO.getStartTime())) {
+            throw new IllegalArgumentException("End time must be after start time");
         }
 
-        // Update entity from DTO
         WorkLogMapper.updateEntity(existingWorkLog, requestDTO, user, warrantyClaim);
-
-        // Save updated entity
         WorkLog updatedWorkLog = workLogRepository.save(existingWorkLog);
 
-        // Convert entity back to response DTO
         return WorkLogMapper.toResponseDTO(updatedWorkLog);
     }
 
+    /**
+     * Xóa work log.
+     *
+     * @param id work log ID
+     * @throws ResourceNotFoundException nếu không tìm thấy
+     */
     @Override
     @Transactional
-    public boolean deleteWorkLog(Long id) {
+    public void deleteWorkLog(Long id) {
         if (!workLogRepository.existsById(id)) {
-            return false;
+            throw new ResourceNotFoundException("WorkLog", "id", id);
         }
+
         workLogRepository.deleteById(id);
-        return true;
     }
 
+    /**
+     * Lấy work logs theo warranty claim.
+     *
+     * @param claimId warranty claim ID
+     * @param pageable pagination parameters
+     * @return PagedResponse với work logs của claim
+     */
     @Override
     public PagedResponse<WorkLogResponseDTO> getWorkLogsByWarrantyClaim(Long claimId, Pageable pageable) {
         Page<WorkLog> workLogPage = workLogRepository.findByWarrantyClaimWarrantyClaimId(claimId, pageable);
+
         List<WorkLogResponseDTO> responseDTOs = WorkLogMapper.toResponseDTOList(
             workLogPage.getContent());
 
@@ -141,9 +174,17 @@ public class WorkLogServiceImpl implements WorkLogService {
         );
     }
 
+    /**
+     * Lấy work logs theo user (technician).
+     *
+     * @param userId user ID
+     * @param pageable pagination parameters
+     * @return PagedResponse với work logs của technician
+     */
     @Override
     public PagedResponse<WorkLogResponseDTO> getWorkLogsByUser(Long userId, Pageable pageable) {
         Page<WorkLog> workLogPage = workLogRepository.findByUserUserId(userId, pageable);
+
         List<WorkLogResponseDTO> responseDTOs = WorkLogMapper.toResponseDTOList(
             workLogPage.getContent());
 
@@ -156,5 +197,21 @@ public class WorkLogServiceImpl implements WorkLogService {
             workLogPage.isFirst(),
             workLogPage.isLast()
         );
+    }
+
+    /**
+     * Lấy work logs theo username.
+     *
+     * @param username username
+     * @param pageable pagination parameters
+     * @return PagedResponse với work logs của user
+     * @throws ResourceNotFoundException nếu không tìm thấy user
+     */
+    @Override
+    public PagedResponse<WorkLogResponseDTO> getWorkLogsByUsername(String username, Pageable pageable) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+
+        return getWorkLogsByUser(user.getUserId(), pageable);
     }
 }

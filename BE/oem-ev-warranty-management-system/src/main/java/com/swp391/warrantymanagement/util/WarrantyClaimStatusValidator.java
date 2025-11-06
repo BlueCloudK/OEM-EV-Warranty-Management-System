@@ -1,69 +1,94 @@
 package com.swp391.warrantymanagement.util;
 
-import java.util.HashMap;
+import com.swp391.warrantymanagement.enums.WarrantyClaimStatus;
+
+import java.util.Collections;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Utility class for validating warranty claim status transitions
- * Implements business rules for valid status changes
+ * Trình tiện ích xác thực các bước chuyển trạng thái của yêu cầu bảo hành.
+ *
+ * <p>Sử dụng {@link WarrantyClaimStatus} (enum) để đảm bảo an toàn kiểu dữ liệu,
+ * tránh lỗi chính tả và giới hạn trạng thái trong một tập hữu hạn rõ ràng.
+ * Bảng chuyển trạng thái được lưu bằng {@link EnumMap} và được bất biến để an toàn khi truy cập đồng thời.</p>
  */
-public class WarrantyClaimStatusValidator {
+public final class WarrantyClaimStatusValidator {
 
-    // Define valid status transitions
-    private static final Map<String, List<String>> VALID_TRANSITIONS = new HashMap<>();
+    /**
+     * Bảng chuyển trạng thái hợp lệ.
+     *<p>
+     * <p>Key: trạng thái hiện tại. Value: danh sách trạng thái có thể chuyển tới.
+     * Map này là bất biến (unmodifiable) sau khi khởi tạo.</p>
+     */
+    private static final Map<WarrantyClaimStatus, List<WarrantyClaimStatus>> VALID_TRANSITIONS;
+
+    private WarrantyClaimStatusValidator() {
+        // Utility class: ngăn tạo instance
+    }
 
     static {
-        // SUBMITTED can go to MANAGER_REVIEW or REJECTED
-        VALID_TRANSITIONS.put("SUBMITTED", List.of("MANAGER_REVIEW", "REJECTED"));
+        Map<WarrantyClaimStatus, List<WarrantyClaimStatus>> map = new EnumMap<>(WarrantyClaimStatus.class);
 
-        // MANAGER_REVIEW can go to PROCESSING or REJECTED
-        VALID_TRANSITIONS.put("SC_REVIEW", List.of("PROCESSING", "REJECTED"));
+        // SUBMITTED -> MANAGER_REVIEW | REJECTED
+        map.put(WarrantyClaimStatus.SUBMITTED,
+                List.of(WarrantyClaimStatus.MANAGER_REVIEW, WarrantyClaimStatus.REJECTED));
 
-        // PROCESSING can go to COMPLETED or REJECTED
-        VALID_TRANSITIONS.put("PROCESSING", List.of("COMPLETED", "REJECTED"));
+        // MANAGER_REVIEW -> PROCESSING | REJECTED
+        map.put(WarrantyClaimStatus.MANAGER_REVIEW,
+                List.of(WarrantyClaimStatus.PROCESSING, WarrantyClaimStatus.REJECTED));
 
-        // COMPLETED and REJECTED are final states - no transitions allowed
-        VALID_TRANSITIONS.put("COMPLETED", List.of());
-        VALID_TRANSITIONS.put("REJECTED", List.of());
+        // PROCESSING -> COMPLETED | REJECTED
+        map.put(WarrantyClaimStatus.PROCESSING,
+                List.of(WarrantyClaimStatus.COMPLETED, WarrantyClaimStatus.REJECTED));
+
+        // COMPLETED, REJECTED -> (final)
+        map.put(WarrantyClaimStatus.COMPLETED, List.of());
+        map.put(WarrantyClaimStatus.REJECTED, List.of());
+
+        VALID_TRANSITIONS = Collections.unmodifiableMap(map);
     }
 
     /**
-     * Validates if a status transition is allowed
-     * @param fromStatus Current status
-     * @param toStatus Target status
-     * @return true if transition is valid, false otherwise
+     * Kiểm tra một bước chuyển trạng thái có hợp lệ hay không.
+     *
+     * @param fromStatus trạng thái hiện tại
+     * @param toStatus   trạng thái đích
+     * @return true nếu hợp lệ, ngược lại false
      */
-    public static boolean isValidTransition(String fromStatus, String toStatus) {
+    public static boolean isValidTransition(WarrantyClaimStatus fromStatus, WarrantyClaimStatus toStatus) {
         if (fromStatus == null || toStatus == null) {
             return false;
         }
 
-        // Same status is always valid (no change)
+        // Cho phép giữ nguyên trạng thái
         if (fromStatus.equals(toStatus)) {
             return true;
         }
 
-        List<String> allowedTransitions = VALID_TRANSITIONS.get(fromStatus);
+        List<WarrantyClaimStatus> allowedTransitions = VALID_TRANSITIONS.get(fromStatus);
         return allowedTransitions != null && allowedTransitions.contains(toStatus);
     }
 
     /**
-     * Gets allowed next statuses for a given current status
-     * @param currentStatus Current status
-     * @return List of allowed next statuses
+     * Lấy danh sách trạng thái hợp lệ tiếp theo từ một trạng thái hiện tại.
+     *
+     * @param currentStatus trạng thái hiện tại
+     * @return danh sách trạng thái có thể chuyển tới (có thể rỗng, không null)
      */
-    public static List<String> getAllowedNextStatuses(String currentStatus) {
+    public static List<WarrantyClaimStatus> getAllowedNextStatuses(WarrantyClaimStatus currentStatus) {
         return VALID_TRANSITIONS.getOrDefault(currentStatus, List.of());
     }
 
     /**
-     * Validates transition and throws exception if invalid
-     * @param fromStatus Current status
-     * @param toStatus Target status
-     * @throws IllegalStateException if transition is not valid
+     * Xác thực bước chuyển và ném {@link IllegalStateException} nếu không hợp lệ.
+     *
+     * @param fromStatus trạng thái hiện tại
+     * @param toStatus   trạng thái đích
+     * @throws IllegalStateException nếu bước chuyển không hợp lệ
      */
-    public static void validateTransitionOrThrow(String fromStatus, String toStatus) {
+    public static void validateTransitionOrThrow(WarrantyClaimStatus fromStatus, WarrantyClaimStatus toStatus) {
         if (!isValidTransition(fromStatus, toStatus)) {
             throw new IllegalStateException(
                 String.format("Invalid status transition from '%s' to '%s'. Allowed transitions: %s",
@@ -73,12 +98,13 @@ public class WarrantyClaimStatusValidator {
     }
 
     /**
-     * Checks if a status is a final state (no further transitions allowed)
-     * @param status Status to check
-     * @return true if status is final, false otherwise
+     * Kiểm tra một trạng thái có phải trạng thái cuối (không thể chuyển tiếp) hay không.
+     *
+     * @param status trạng thái cần kiểm tra
+     * @return true nếu là trạng thái cuối, ngược lại false
      */
-    public static boolean isFinalStatus(String status) {
-        List<String> allowedTransitions = VALID_TRANSITIONS.get(status);
+    public static boolean isFinalStatus(WarrantyClaimStatus status) {
+        List<WarrantyClaimStatus> allowedTransitions = VALID_TRANSITIONS.get(status);
         return allowedTransitions != null && allowedTransitions.isEmpty();
     }
 }

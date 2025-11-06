@@ -13,21 +13,22 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * ServiceCenterRepository - Data access layer for ServiceCenter entity
+ * Repository để quản lý ServiceCenter
+ * - Tìm center theo tên, phone, địa chỉ
+ * - Lưu GPS coordinates để tìm center gần nhất
  */
 @Repository
 public interface ServiceCenterRepository extends JpaRepository<ServiceCenter, Long> {
-
-    // Find by name (contains, case-insensitive)
+    // Tìm theo tên center
     Page<ServiceCenter> findByNameContainingIgnoreCase(String name, Pageable pageable);
 
-    // Find by phone
+    // Tìm theo số điện thoại (unique)
     Optional<ServiceCenter> findByPhone(String phone);
 
-    // Find by address (contains, case-insensitive)
+    // Tìm theo địa chỉ
     Page<ServiceCenter> findByAddressContainingIgnoreCase(String address, Pageable pageable);
 
-    // Search by name or address
+    // Tìm kiếm kết hợp tên hoặc địa chỉ
     @Query("SELECT sc FROM ServiceCenter sc WHERE " +
            "LOWER(sc.name) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(sc.address) LIKE LOWER(CONCAT('%', :search, '%'))")

@@ -3,48 +3,57 @@ package com.swp391.warrantymanagement.service.impl;
 import com.swp391.warrantymanagement.dto.request.CustomerRequestDTO;
 import com.swp391.warrantymanagement.dto.response.*;
 import com.swp391.warrantymanagement.entity.Customer;
+import com.swp391.warrantymanagement.entity.Role;
 import com.swp391.warrantymanagement.entity.User;
 import com.swp391.warrantymanagement.enums.WarrantyClaimStatus;
 import com.swp391.warrantymanagement.mapper.CustomerMapper;
 import com.swp391.warrantymanagement.mapper.FeedbackMapper;
 import com.swp391.warrantymanagement.mapper.VehicleMapper;
 import com.swp391.warrantymanagement.mapper.WarrantyClaimMapper;
+import com.swp391.warrantymanagement.exception.ResourceInUseException;
 import com.swp391.warrantymanagement.repository.CustomerRepository;
 import com.swp391.warrantymanagement.repository.UserRepository;
+import com.swp391.warrantymanagement.exception.ResourceNotFoundException;
 import com.swp391.warrantymanagement.service.CustomerService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.swp391.warrantymanagement.util.SecurityUtil;
+import lombok.RequiredArgsConstructor;
+import com.swp391.warrantymanagement.repository.VehicleRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.util.Optional;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * Implementation của CustomerService
+ * Xử lý CRUD operations, search, và profile management cho Customer
+ */
 @Service
+@RequiredArgsConstructor
 public class CustomerServiceImpl implements CustomerService {
-    @Autowired
-    private CustomerRepository customerRepository;
-    @Autowired
-    private UserRepository userRepository;
 
+    private final CustomerRepository customerRepository;
+    private final UserRepository userRepository;
+    private final VehicleRepository vehicleRepository;
+
+    /**
+     * Lấy danh sách customers với pagination và search
+     *
+     * @param pageable thông tin phân trang và sorting
+     * @param search từ khóa tìm kiếm theo tên (optional)
+     * @return PagedResponse với danh sách CustomerResponseDTO
+     */
     @Override
     public PagedResponse<CustomerResponseDTO> getAllCustomersPage(Pageable pageable, String search) {
-        // Pageable: Object chứa thông tin phân trang từ request
-        // - page: số trang (0-based), VD: page=0 là trang đầu
-        // - size: số items per page, VD: size=10 là 10 records/trang
-        // - sort: thông tin sắp xếp, VD: sort=name,asc
-        // Frontend gửi: GET /customers?page=0&size=10&sort=name,asc
-
         Page<Customer> customerPage;
 
         if (search != null && !search.trim().isEmpty()) {
-            // Repository tự động áp dụng pagination từ Pageable object
             customerPage = customerRepository.findByNameContainingIgnoreCase(search.trim(), pageable);
         } else {
-            // Spring Data JPA tự động LIMIT và OFFSET dựa trên Pageable
             customerPage = customerRepository.findAll(pageable);
         }
 
@@ -61,114 +70,108 @@ public class CustomerServiceImpl implements CustomerService {
         );
     }
 
+    /**
+     * Lấy customer theo ID
+     *
+     * @param id UUID của customer
+     * @return CustomerResponseDTO
+     * @throws ResourceNotFoundException nếu customer không tồn tại
+     */
     @Override
     public CustomerResponseDTO getCustomerById(UUID id) {
-        Customer customer = customerRepository.findById(id).orElse(null);
+        Customer customer = customerRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer", "id", id));
         return CustomerMapper.toResponseDTO(customer);
     }
 
+    /**
+     * Tạo customer mới (dành cho ADMIN/STAFF)
+     *
+     * @param requestDTO chứa userId, name, phone
+     * @return CustomerResponseDTO
+     * @throws ResourceNotFoundException nếu user không tồn tại
+     * @throws IllegalArgumentException nếu phone đã tồn tại
+     */
     @Override
     @Transactional
     public CustomerResponseDTO createCustomer(CustomerRequestDTO requestDTO) {
-        // Validate User tồn tại và có đầy đủ thông tin đăng ký
-        User user = userRepository.findById(requestDTO.getUserId()).orElse(null);
-        if (user == null) {
-            throw new RuntimeException("User not found with id: " + requestDTO.getUserId());
-        }
+        User user = userRepository.findById(requestDTO.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", requestDTO.getUserId()));
 
-        // Kiểm tra User đã có đầy đủ thông tin đăng ký chưa
-        validateUserRegistrationComplete(user);
-
-        // THAY ĐỔI LOGIC: Chỉ ADMIN hoặc STAFF mới được tạo Customer record cho khách hàng
-        // Kiểm tra role của người ĐANG TẠO Customer (current authenticated user)
-        String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
+        String currentUsername = SecurityUtil.getCurrentUsername()
+                .orElseThrow(() -> new IllegalStateException("Cannot create customer without being authenticated"));
         User currentUser = userRepository.findByUsername(currentUsername)
-            .orElseThrow(() -> new RuntimeException("Current user not found"));
+            .orElseThrow(() -> new ResourceNotFoundException("User", "username", currentUsername));
 
-        String currentUserRole = currentUser.getRole().getRoleName();
-        if (!currentUserRole.equals("ADMIN") && !currentUserRole.equals("SC_STAFF") && !currentUserRole.equals("EVM_STAFF")) {
-            throw new RuntimeException("Only ADMIN or STAFF can create customer records. Customers should update their own profile instead.");
-        }
-
-        // Validate phone không trùng lặp (phone là unique trong Customer entity)
         if (customerRepository.findByPhone(requestDTO.getPhone()).isPresent()) {
-            throw new RuntimeException("Phone number already exists: " + requestDTO.getPhone());
+            throw new IllegalArgumentException("Phone number already exists: " + requestDTO.getPhone());
         }
 
-        // Convert DTO to Entity
         Customer customer = CustomerMapper.toEntity(requestDTO, user);
-
-        // Save entity
         Customer savedCustomer = customerRepository.save(customer);
 
-        // Convert entity back to response DTO
         return CustomerMapper.toResponseDTO(savedCustomer);
     }
 
     /**
-     * Validate User đã hoàn thành đăng ký đầy đủ thông tin
+     * Cập nhật customer
+     *
+     * @param id UUID của customer
+     * @param requestDTO chứa thông tin cập nhật
+     * @return CustomerResponseDTO
+     * @throws ResourceNotFoundException nếu customer hoặc user không tồn tại
+     * @throws IllegalArgumentException nếu phone đã được sử dụng bởi customer khác
      */
-    private void validateUserRegistrationComplete(User user) {
-        if (user.getUsername() == null || user.getUsername().trim().isEmpty()) {
-            throw new RuntimeException("User registration incomplete: username is required");
-        }
-
-        if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
-            throw new RuntimeException("User registration incomplete: email is required");
-        }
-
-        if (user.getAddress() == null || user.getAddress().trim().isEmpty()) {
-            throw new RuntimeException("User registration incomplete: address is required");
-        }
-
-        if (user.getRole() == null) {
-            throw new RuntimeException("User registration incomplete: role is required");
-        }
-
-        if (user.getPassword() == null || user.getPassword().trim().isEmpty()) {
-            throw new RuntimeException("User registration incomplete: password is required");
-        }
-
-        // Kiểm tra User account đã được kích hoạt (nếu có field isActive)
-        // if (!user.isActive()) {
-        //     throw new RuntimeException("User account is not activated");
-        // }
-    }
-
     @Override
     @Transactional
     public CustomerResponseDTO updateCustomer(UUID id, CustomerRequestDTO requestDTO) {
-        Customer existingCustomer = customerRepository.findById(id).orElse(null);
-        if (existingCustomer == null) {
-            return null;
+        Customer existingCustomer = customerRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer", "id", id));
+
+        User user = userRepository.findById(requestDTO.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", requestDTO.getUserId()));
+
+        if (requestDTO.getPhone() != null && !requestDTO.getPhone().equals(existingCustomer.getPhone())) {
+            customerRepository.findByPhone(requestDTO.getPhone()).ifPresent(phoneOwner -> {
+                if (!phoneOwner.getCustomerId().equals(id)) {
+                    throw new IllegalArgumentException("Phone number already exists: " + requestDTO.getPhone());
+                }
+            });
         }
 
-        // Load User entity từ userId
-        User user = userRepository.findById(requestDTO.getUserId()).orElse(null);
-        if (user == null) {
-            throw new RuntimeException("User not found with id: " + requestDTO.getUserId());
-        }
-
-        // Update entity từ DTO
         CustomerMapper.updateEntity(existingCustomer, requestDTO, user);
-
-        // Save updated entity
         Customer updatedCustomer = customerRepository.save(existingCustomer);
 
-        // Convert entity back to response DTO
         return CustomerMapper.toResponseDTO(updatedCustomer);
     }
 
+    /**
+     * Xóa customer (hard delete)
+     *
+     * @param id UUID của customer
+     * @throws ResourceNotFoundException nếu customer không tồn tại
+     * @throws ResourceInUseException nếu customer còn sở hữu vehicles
+     */
     @Override
     @Transactional
-    public boolean deleteCustomer(UUID id) {
-        if (!customerRepository.existsById(id)) {
-            return false;
+    public void deleteCustomer(UUID id) {
+        Customer customer = customerRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer", "id", id));
+
+        if (vehicleRepository.existsByCustomer((customer))) {
+            throw new ResourceInUseException("Cannot delete customer with ID " + id + " because they still own one or more vehicles.");
         }
-        customerRepository.deleteById(id);
-        return true;
+
+        customerRepository.delete(customer);
     }
 
+    /**
+     * Tìm kiếm customers theo tên với pagination
+     *
+     * @param name từ khóa tìm kiếm (case-insensitive)
+     * @param pageable thông tin phân trang
+     * @return PagedResponse với danh sách CustomerResponseDTO
+     */
     @Override
     public PagedResponse<CustomerResponseDTO> searchCustomersByName(String name, Pageable pageable) {
         Page<Customer> customerPage = customerRepository.findByNameContainingIgnoreCase(name, pageable);
@@ -185,25 +188,46 @@ public class CustomerServiceImpl implements CustomerService {
         );
     }
 
+    /**
+     * Tìm customer theo email (trong User entity)
+     *
+     * @param email email của user
+     * @return CustomerResponseDTO
+     * @throws ResourceNotFoundException nếu user hoặc customer profile không tồn tại
+     */
     @Override
     public CustomerResponseDTO getCustomerByEmail(String email) {
-        // Email không còn trong Customer entity, giờ email trong User entity
-        // Cần tìm User theo email, sau đó tìm Customer theo User
-        User user = userRepository.findByEmail(email).orElse(null);
-        if (user == null) {
-            return null;
-        }
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
 
-        Customer customer = customerRepository.findByUser(user);
-        return customer != null ? CustomerMapper.toResponseDTO(customer) : null;
+        Customer customer = Optional.ofNullable(customerRepository.findByUser(user))
+                .orElseThrow(() -> new ResourceNotFoundException("Customer Profile", "for user with email", email));
+
+        return CustomerMapper.toResponseDTO(customer);
     }
 
+    /**
+     * Tìm customer theo phone
+     *
+     * @param phone số điện thoại
+     * @return CustomerResponseDTO
+     * @throws ResourceNotFoundException nếu customer không tồn tại
+     */
     @Override
     public CustomerResponseDTO getCustomerByPhone(String phone) {
-        Customer customer = customerRepository.findByPhone(phone).orElse(null);
-        return customer != null ? CustomerMapper.toResponseDTO(customer) : null;
+        Customer customer = customerRepository.findByPhone(phone)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer", "phone", phone));
+
+        return CustomerMapper.toResponseDTO(customer);
     }
 
+    /**
+     * Lấy danh sách customers theo userId với pagination
+     *
+     * @param userId ID của user
+     * @param pageable thông tin phân trang
+     * @return PagedResponse với danh sách CustomerResponseDTO
+     */
     @Override
     public PagedResponse<CustomerResponseDTO> getCustomersByUserId(Long userId, Pageable pageable) {
         Page<Customer> customerPage = customerRepository.findByUserUserId(userId, pageable);
@@ -220,49 +244,40 @@ public class CustomerServiceImpl implements CustomerService {
         );
     }
 
+    /**
+     * Cập nhật customer profile (dành cho CUSTOMER tự update)
+     *
+     * @param username username từ Security Context
+     * @param requestDTO chứa thông tin cập nhật
+     * @return CustomerResponseDTO
+     * @throws ResourceNotFoundException nếu user hoặc customer profile không tồn tại
+     * @throws IllegalStateException nếu user không có role CUSTOMER
+     * @throws IllegalArgumentException nếu phone đã được sử dụng bởi customer khác
+     */
     @Override
     @Transactional
-    public CustomerResponseDTO updateCustomerProfile(CustomerRequestDTO requestDTO, String authorizationHeader) {
-        // Extract JWT token từ Authorization header
-//        String token = authorizationHeader.replace("Bearer ", "");
+    public CustomerResponseDTO updateCustomerProfile(String username, CustomerRequestDTO requestDTO) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
 
-        // Sử dụng JwtService để extract username từ token
-        // TODO: Inject JwtService để sử dụng
-        // String username = jwtService.extractUsername(token);
-        // User currentUser = userRepository.findByUsername(username);
-
-        // Tạm thời validate bằng userId trong requestDTO
-        User user = userRepository.findById(requestDTO.getUserId()).orElse(null);
-        if (user == null) {
-            throw new RuntimeException("User not found");
+        Role userRole = user.getRole();
+        if (userRole == null || !"ROLE_CUSTOMER".equals(userRole.getRoleName())) {
+            throw new IllegalStateException("Only users with CUSTOMER role can update their profile.");
         }
 
-        // Chỉ cho phép role CUSTOMER cập nhật profile
-        if (!user.getRole().getRoleName().equals("CUSTOMER")) {
-            throw new RuntimeException("Only customers can update their own profile");
+        Customer existingCustomer = Optional.ofNullable(customerRepository.findByUser(user))
+                .orElseThrow(() -> new ResourceNotFoundException("Customer Profile", "for user", username));
+
+        Optional<Customer> phoneOwnerOpt = customerRepository.findByPhone(requestDTO.getPhone());
+        if (phoneOwnerOpt.isPresent() && !phoneOwnerOpt.get().getCustomerId().equals(existingCustomer.getCustomerId())) {
+            throw new IllegalArgumentException("Phone number already exists: " + requestDTO.getPhone());
         }
 
-        // Tìm Customer record của User này
-        Customer existingCustomer = customerRepository.findByUserUserId(user.getUserId(), Pageable.unpaged())
-                .getContent().stream().findFirst().orElse(null);
+        existingCustomer.setName(requestDTO.getName());
+        existingCustomer.setPhone(requestDTO.getPhone());
 
-        if (existingCustomer == null) {
-            throw new RuntimeException("Customer profile not found. Please contact administrator to create your profile.");
-        }
-
-        // Validate phone không trùng với customer khác (trừ chính mình)
-        Customer phoneOwner = customerRepository.findByPhone(requestDTO.getPhone()).orElse(null);
-        if (phoneOwner != null && !phoneOwner.getCustomerId().equals(existingCustomer.getCustomerId())) {
-            throw new RuntimeException("Phone number already exists: " + requestDTO.getPhone());
-        }
-
-        // Update customer profile (name, phone)
-        CustomerMapper.updateEntity(existingCustomer, requestDTO, user);
-
-        // Update address in User entity (address is stored in User, not Customer)
         if (requestDTO.getAddress() != null) {
             user.setAddress(requestDTO.getAddress());
-            userRepository.save(user);
         }
 
         Customer updatedCustomer = customerRepository.save(existingCustomer);
@@ -270,36 +285,39 @@ public class CustomerServiceImpl implements CustomerService {
         return CustomerMapper.toResponseDTO(updatedCustomer);
     }
 
+    /**
+     * Lấy customer profile đầy đủ với vehicles, claims, và feedbacks
+     *
+     * @param customerId UUID của customer
+     * @return CustomerProfileResponseDTO với thông tin đầy đủ
+     * @throws ResourceNotFoundException nếu customer không tồn tại
+     */
     @Override
     @Transactional(readOnly = true)
     public CustomerProfileResponseDTO getCustomerFullProfile(UUID customerId) {
-        // Find customer
         Customer customer = customerRepository.findById(customerId)
-                .orElseThrow(() -> new RuntimeException("Customer not found with ID: " + customerId));
+                .orElseThrow(() -> new ResourceNotFoundException("Customer", "id", customerId));
 
-        // Build profile DTO
         CustomerProfileResponseDTO profile = new CustomerProfileResponseDTO();
 
-        // Basic customer info
+        // Set customer và user info
         profile.setCustomerId(customer.getCustomerId());
         profile.setCustomerName(customer.getName());
-        profile.setCustomerEmail(customer.getUser().getEmail());
         profile.setCustomerPhone(customer.getPhone());
+        profile.setCustomerEmail(customer.getUser().getEmail());
         profile.setAddress(customer.getUser().getAddress());
-
-        // User account info
         profile.setUserId(customer.getUser().getUserId());
         profile.setUsername(customer.getUser().getUsername());
         profile.setAccountCreatedAt(customer.getUser().getCreatedAt());
 
-        // Vehicles
+        // Aggregate vehicles
         List<VehicleResponseDTO> vehicles = customer.getVehicles().stream()
                 .map(VehicleMapper::toResponseDTO)
                 .collect(Collectors.toList());
         profile.setVehicles(vehicles);
         profile.setTotalVehicles(vehicles.size());
 
-        // Warranty claims
+        // Aggregate warranty claims từ vehicles
         List<WarrantyClaimResponseDTO> claims = customer.getVehicles().stream()
                 .flatMap(vehicle -> vehicle.getWarrantyClaims().stream())
                 .map(WarrantyClaimMapper::toResponseDTO)
@@ -307,7 +325,7 @@ public class CustomerServiceImpl implements CustomerService {
         profile.setWarrantyClaims(claims);
         profile.setTotalClaims(claims.size());
 
-        // Count completed and pending claims
+        // Calculate claim statistics
         long completedCount = claims.stream()
                 .filter(claim -> claim.getStatus() == WarrantyClaimStatus.COMPLETED)
                 .count();
@@ -318,7 +336,7 @@ public class CustomerServiceImpl implements CustomerService {
         profile.setCompletedClaims((int) completedCount);
         profile.setPendingClaims((int) pendingCount);
 
-        // Feedbacks
+        // Aggregate feedbacks
         List<FeedbackResponseDTO> feedbacks = customer.getFeedbacks().stream()
                 .map(FeedbackMapper::toResponseDTO)
                 .collect(Collectors.toList());
@@ -326,5 +344,31 @@ public class CustomerServiceImpl implements CustomerService {
         profile.setTotalFeedbacks(feedbacks.size());
 
         return profile;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CustomerProfileResponseDTO getCustomerProfileByUsername(String username) {
+        // Step 1: Find the user by username.
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+
+        // Step 2: Find the associated customer profile.
+        Customer customer = Optional.ofNullable(customerRepository.findByUser(user))
+                .orElseThrow(() -> new ResourceNotFoundException("Customer Profile", "for user", username));
+
+        // Step 3: Reuse the existing logic to get the full profile.
+        return getCustomerFullProfile(customer.getCustomerId());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<CustomerProfileResponseDTO> findCustomerProfileByUsername(String username) {
+        // This method returns an Optional and does not throw an exception if not found.
+        return userRepository.findByUsername(username)
+                .flatMap(user ->
+                        Optional.ofNullable(customerRepository.findByUser(user))
+                                .map(customer -> getCustomerFullProfile(customer.getCustomerId()))
+                );
     }
 }

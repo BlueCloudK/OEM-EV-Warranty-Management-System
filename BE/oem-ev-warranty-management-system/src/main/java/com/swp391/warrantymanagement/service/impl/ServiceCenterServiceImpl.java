@@ -5,6 +5,7 @@ import com.swp391.warrantymanagement.dto.response.PagedResponse;
 import com.swp391.warrantymanagement.dto.response.ServiceCenterResponseDTO;
 import com.swp391.warrantymanagement.entity.ServiceCenter;
 import com.swp391.warrantymanagement.exception.ResourceNotFoundException;
+import com.swp391.warrantymanagement.exception.ResourceInUseException;
 import com.swp391.warrantymanagement.mapper.ServiceCenterMapper;
 import com.swp391.warrantymanagement.repository.FeedbackRepository;
 import com.swp391.warrantymanagement.repository.ServiceCenterRepository;
@@ -20,7 +21,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * ServiceCenterServiceImpl - Implementation of service center business logic
+ * Service quản lý Service Centers (trung tâm bảo hành) với geolocation features.
+ * Hỗ trợ tìm kiếm SC gần customer nhất, auto-assignment, và statistics enrichment.
  */
 @Service
 @RequiredArgsConstructor
@@ -29,21 +31,33 @@ public class ServiceCenterServiceImpl implements ServiceCenterService {
     private final ServiceCenterRepository serviceCenterRepository;
     private final FeedbackRepository feedbackRepository;
 
+    /**
+     * Tạo service center mới.
+     *
+     * @param requestDTO thông tin service center (name, address, phone, latitude, longitude)
+     * @return ServiceCenterResponseDTO với statistics
+     * @throws IllegalArgumentException nếu phone đã tồn tại
+     */
     @Override
     @Transactional
     public ServiceCenterResponseDTO createServiceCenter(ServiceCenterRequestDTO requestDTO) {
-        // Validate phone doesn't exist
         if (serviceCenterRepository.existsByPhone(requestDTO.getPhone())) {
             throw new IllegalArgumentException("Phone number already exists: " + requestDTO.getPhone());
         }
 
-        // Create service center
         ServiceCenter serviceCenter = ServiceCenterMapper.toEntity(requestDTO);
         ServiceCenter savedServiceCenter = serviceCenterRepository.save(serviceCenter);
 
         return enrichWithStatistics(savedServiceCenter);
     }
 
+    /**
+     * Lấy service center theo ID với real-time statistics.
+     *
+     * @param serviceCenterId ID của service center
+     * @return ServiceCenterResponseDTO với statistics (staffCount, claimsCount, activeClaimsCount, averageRating)
+     * @throws ResourceNotFoundException nếu không tìm thấy service center
+     */
     @Override
     @Transactional(readOnly = true)
     public ServiceCenterResponseDTO getServiceCenterById(Long serviceCenterId) {
@@ -54,6 +68,12 @@ public class ServiceCenterServiceImpl implements ServiceCenterService {
         return enrichWithStatistics(serviceCenter);
     }
 
+    /**
+     * Lấy tất cả service centers với pagination và statistics.
+     *
+     * @param pageable pagination parameters (page, size, sort)
+     * @return PagedResponse với service centers và statistics
+     */
     @Override
     @Transactional(readOnly = true)
     public PagedResponse<ServiceCenterResponseDTO> getAllServiceCenters(Pageable pageable) {
@@ -74,51 +94,68 @@ public class ServiceCenterServiceImpl implements ServiceCenterService {
         );
     }
 
+    /**
+     * Cập nhật thông tin service center.
+     *
+     * @param serviceCenterId ID của service center cần update
+     * @param requestDTO thông tin mới (name, address, phone, latitude, longitude)
+     * @return ServiceCenterResponseDTO với updated statistics
+     * @throws ResourceNotFoundException nếu không tìm thấy service center
+     * @throws IllegalArgumentException nếu phone mới đã được SC khác sử dụng
+     */
     @Override
     @Transactional
     public ServiceCenterResponseDTO updateServiceCenter(Long serviceCenterId, ServiceCenterRequestDTO requestDTO) {
-        // Find existing service center
         ServiceCenter serviceCenter = serviceCenterRepository.findById(serviceCenterId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Service center not found with ID: " + serviceCenterId));
 
-        // Validate phone doesn't exist (excluding current service center)
         if (serviceCenterRepository.existsByPhoneAndIdNot(requestDTO.getPhone(), serviceCenterId)) {
             throw new IllegalArgumentException("Phone number already exists: " + requestDTO.getPhone());
         }
 
-        // Update service center
         ServiceCenterMapper.updateEntity(serviceCenter, requestDTO);
         ServiceCenter updatedServiceCenter = serviceCenterRepository.save(serviceCenter);
 
         return enrichWithStatistics(updatedServiceCenter);
     }
 
+    /**
+     * Xóa service center với validation (không xóa nếu có staff hoặc active claims).
+     *
+     * @param serviceCenterId ID của service center cần xóa
+     * @throws ResourceNotFoundException nếu không tìm thấy service center
+     * @throws ResourceInUseException nếu SC có staff assigned hoặc active claims
+     */
     @Override
     @Transactional
     public void deleteServiceCenter(Long serviceCenterId) {
-        // Check if service center exists
         if (!serviceCenterRepository.existsById(serviceCenterId)) {
             throw new ResourceNotFoundException("Service center not found with ID: " + serviceCenterId);
         }
 
-        // Check if service center has staff
         Long staffCount = serviceCenterRepository.countStaffByServiceCenter(serviceCenterId);
         if (staffCount > 0) {
-            throw new IllegalArgumentException(
+            throw new ResourceInUseException(
                     "Cannot delete service center. There are " + staffCount + " staff members assigned to this center.");
         }
 
-        // Check if service center has active claims
         Long activeClaimsCount = serviceCenterRepository.countActiveClaimsByServiceCenter(serviceCenterId);
         if (activeClaimsCount > 0) {
-            throw new IllegalArgumentException(
+            throw new ResourceInUseException(
                     "Cannot delete service center. There are " + activeClaimsCount + " active claims.");
         }
 
         serviceCenterRepository.deleteById(serviceCenterId);
     }
 
+    /**
+     * Tìm kiếm service centers theo name hoặc address (case-insensitive, partial match).
+     *
+     * @param search từ khóa tìm kiếm
+     * @param pageable pagination parameters
+     * @return PagedResponse với matching service centers và statistics
+     */
     @Override
     @Transactional(readOnly = true)
     public PagedResponse<ServiceCenterResponseDTO> searchServiceCenters(String search, Pageable pageable) {
@@ -140,12 +177,20 @@ public class ServiceCenterServiceImpl implements ServiceCenterService {
         );
     }
 
+    /**
+     * Tìm service centers trong bán kính (sử dụng Haversine formula).
+     *
+     * @param latitude vĩ độ GPS
+     * @param longitude kinh độ GPS
+     * @param radiusKm bán kính tìm kiếm (km)
+     * @return List service centers trong bán kính, sorted by distance
+     * @throws IllegalArgumentException nếu GPS coordinates không hợp lệ
+     */
     @Override
     @Transactional(readOnly = true)
     public List<ServiceCenterResponseDTO> findServiceCentersNearLocation(
             BigDecimal latitude, BigDecimal longitude, double radiusKm) {
 
-        // Validate coordinates
         validateCoordinates(latitude, longitude);
 
         List<ServiceCenter> serviceCenters = serviceCenterRepository
@@ -156,12 +201,19 @@ public class ServiceCenterServiceImpl implements ServiceCenterService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Lấy tất cả service centers sorted theo khoảng cách từ vị trí (nearest first).
+     *
+     * @param latitude vĩ độ GPS
+     * @param longitude kinh độ GPS
+     * @return List tất cả service centers sorted by distance với statistics
+     * @throws IllegalArgumentException nếu GPS coordinates không hợp lệ
+     */
     @Override
     @Transactional(readOnly = true)
     public List<ServiceCenterResponseDTO> findAllOrderedByDistanceFrom(
             BigDecimal latitude, BigDecimal longitude) {
 
-        // Validate coordinates
         validateCoordinates(latitude, longitude);
 
         List<Object[]> results = serviceCenterRepository
@@ -170,38 +222,46 @@ public class ServiceCenterServiceImpl implements ServiceCenterService {
         return results.stream()
                 .map(result -> {
                     ServiceCenter sc = (ServiceCenter) result[0];
-                    // Distance is in result[1] if needed in the future
                     return enrichWithStatistics(sc);
                 })
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Cập nhật GPS location của service center.
+     *
+     * @param serviceCenterId ID của service center
+     * @param latitude vĩ độ GPS mới
+     * @param longitude kinh độ GPS mới
+     * @return ServiceCenterResponseDTO với updated location và statistics
+     * @throws IllegalArgumentException nếu GPS coordinates không hợp lệ
+     * @throws ResourceNotFoundException nếu không tìm thấy service center
+     */
     @Override
     @Transactional
     public ServiceCenterResponseDTO updateServiceCenterLocation(
             Long serviceCenterId, BigDecimal latitude, BigDecimal longitude) {
 
-        // Validate coordinates
         validateCoordinates(latitude, longitude);
 
-        // Find service center
         ServiceCenter serviceCenter = serviceCenterRepository.findById(serviceCenterId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Service center not found with ID: " + serviceCenterId));
 
-        // Update location
         serviceCenter.setLatitude(latitude);
         serviceCenter.setLongitude(longitude);
+
         ServiceCenter updatedServiceCenter = serviceCenterRepository.save(serviceCenter);
 
         return enrichWithStatistics(updatedServiceCenter);
     }
 
+    // ============= HELPER METHODS =============
+
     /**
-     * Enrich ServiceCenter entity with statistics
+     * Enrich ServiceCenter entity với real-time statistics (staffCount, claimsCount, activeClaimsCount, averageRating).
      */
     private ServiceCenterResponseDTO enrichWithStatistics(ServiceCenter serviceCenter) {
-        // Get statistics
         Long staffCount = serviceCenterRepository.countStaffByServiceCenter(serviceCenter.getServiceCenterId());
         Long claimsCount = serviceCenterRepository.countClaimsByServiceCenter(serviceCenter.getServiceCenterId());
         Long activeClaimsCount = serviceCenterRepository.countActiveClaimsByServiceCenter(serviceCenter.getServiceCenterId());
@@ -217,13 +277,18 @@ public class ServiceCenterServiceImpl implements ServiceCenterService {
     }
 
     /**
-     * Validate latitude and longitude
+     * Validate GPS coordinates (latitude: -90 to 90, longitude: -180 to 180).
+     *
+     * @throws IllegalArgumentException nếu coordinates nằm ngoài range hợp lệ
      */
     private void validateCoordinates(BigDecimal latitude, BigDecimal longitude) {
-        if (latitude.compareTo(new BigDecimal("-90")) < 0 || latitude.compareTo(new BigDecimal("90")) > 0) {
+        if (latitude.compareTo(new BigDecimal("-90")) < 0 ||
+            latitude.compareTo(new BigDecimal("90")) > 0) {
             throw new IllegalArgumentException("Latitude must be between -90 and 90");
         }
-        if (longitude.compareTo(new BigDecimal("-180")) < 0 || longitude.compareTo(new BigDecimal("180")) > 0) {
+
+        if (longitude.compareTo(new BigDecimal("-180")) < 0 ||
+            longitude.compareTo(new BigDecimal("180")) > 0) {
             throw new IllegalArgumentException("Longitude must be between -180 and 180");
         }
     }

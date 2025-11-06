@@ -17,71 +17,109 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 /**
- * JWT Authentication Filter
- * - Kiểm tra JWT token trong request header
- * - Validate token và set authentication context
+ * Bộ lọc xác thực JWT (JSON Web Token), chịu trách nhiệm xử lý JWT trong mỗi HTTP request.
+ * <p>
+ * <strong>Mục đích:</strong>
+ * <ul>
+ *     <li>Chặn mọi HTTP request trước khi chúng đến được Controller.</li>
+ *     <li>Trích xuất và xác thực JWT token từ header {@code Authorization}.</li>
+ *     <li>Nếu token hợp lệ, thiết lập thông tin xác thực cho request đó trong {@link SecurityContextHolder}.</li>
+ * </ul>
+ * <p>
+ * <strong>Luồng hoạt động:</strong>
+ * <ol>
+ *     <li>Client gửi request với header: {@code Authorization: Bearer <JWT_TOKEN>}.</li>
+ *     <li>Filter trích xuất token.</li>
+ *     <li>{@link JwtService} xác thực token (chữ ký, thời gian hết hạn).</li>
+ *     <li>Nếu hợp lệ, filter tải {@link UserDetails} từ database và thiết lập {@code SecurityContext}.</li>
+ *     <li>Nếu không hợp lệ, filter sẽ bỏ qua và cho request đi tiếp. Các lớp bảo vệ sau (ví dụ: {@code @PreAuthorize}) sẽ từ chối request nếu cần xác thực.</li>
+ * </ol>
+ * <p>
+ * Lớp này kế thừa từ {@link OncePerRequestFilter} để đảm bảo nó chỉ được thực thi một lần cho mỗi request.
  */
-@Component
-@RequiredArgsConstructor
-public class JwtAuthenticationFilter extends OncePerRequestFilter { // đảm bảo filter này chỉ được gọi một lần cho mỗi request
+@Component // Spring component để auto-register vào application context
+@RequiredArgsConstructor // Lombok tự động tạo constructor cho final fields (dependency injection)
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+    /**
+     * Service để xử lý các hoạt động liên quan đến JWT (tạo, xác thực, trích xuất thông tin).
+     */
     private final JwtService jwtService;
+
+    /**
+     * Service của Spring Security để tải thông tin chi tiết của người dùng (bao gồm cả quyền) từ database.
+     */
     private final UserDetailsService userDetailsService;
 
+    /**
+     * Phương thức cốt lõi, được gọi cho mọi HTTP request đi vào hệ thống.
+     * @param request  Đối tượng {@link HttpServletRequest} từ client.
+     * @param response Đối tượng {@link HttpServletResponse} sẽ được trả về.
+     * @param filterChain Chuỗi các filter tiếp theo trong pipeline của Spring Security.
+     * @throws ServletException Nếu có lỗi servlet xảy ra.
+     * @throws IOException Nếu có lỗi I/O xảy ra.
+     */
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
-            FilterChain filterChain // tiếp tục chuỗi filter để xử lý request và trả response sau khi hoàn thành nhiệm vụ của filter này
+            FilterChain filterChain
     ) throws ServletException, IOException {
 
+        // Bước 1: Trích xuất header "Authorization".
         final String authHeader = request.getHeader("Authorization");
         final String jwt;
         final String username;
 
-        // Kiểm tra Authorization header
+        // Bước 2: Bỏ qua nếu header không tồn tại hoặc không đúng định dạng "Bearer ".
+        // Request sẽ đi tiếp và bị từ chối ở các tầng sau nếu endpoint yêu cầu xác thực.
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // Extract JWT token từ header
+        // Bước 3: Trích xuất chuỗi JWT token (bỏ qua "Bearer ").
         jwt = authHeader.substring(7);
 
         try {
-            // Extract username từ JWT token
+            // Bước 4: Trích xuất username từ token.
             username = jwtService.extractUsername(jwt);
 
-            // Nếu có username và chưa được authenticate
+            // Bước 5: Nếu có username và request này chưa được xác thực trước đó.
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-                // Load user details
+                // Bước 6: Tải thông tin chi tiết người dùng (bao gồm cả quyền) từ database.
+                // Việc này đảm bảo thông tin người dùng (ví dụ: quyền, trạng thái bị khóa) luôn được cập nhật.
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
 
-                // Validate JWT token chỉ với token (không cần UserDetails)
+                // Bước 7: Xác thực token (chữ ký, thời gian hết hạn).
                 if (jwtService.isTokenValid(jwt)) {
-                    // Tạo authentication token
+                    // Bước 8: Tạo đối tượng Authentication để Spring Security sử dụng.
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails,
-                            null,
-                            userDetails.getAuthorities()
+                            null, // credentials = null (không cần password sau khi authenticated)
+                            userDetails.getAuthorities() // roles/permissions
                     );
 
-                    // Set authentication details
+                    // Bước 9: Bổ sung các chi tiết của request (ví dụ: IP address) vào đối tượng Authentication.
                     authToken.setDetails(
                             new WebAuthenticationDetailsSource().buildDetails(request)
                     );
 
-                    // Set authentication trong SecurityContext
+                    // Bước 10: Cập nhật SecurityContextHolder với thông tin xác thực mới.
+                    // Từ thời điểm này, request được coi là đã được xác thực.
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             }
         } catch (Exception e) {
-            // Log error và continue filter chain
+            // Bắt và ghi log tất cả các lỗi liên quan đến việc xác thực JWT (ví dụ: token hết hạn, chữ ký sai).
+            // Chúng ta không ném lại exception để filter chain có thể tiếp tục,
+            // cho phép các endpoint công khai vẫn hoạt động.
             logger.error("JWT Authentication failed: " + e.getMessage());
         }
 
-        // Continue filter chain
+        // Bước 11: Chuyển request và response cho filter tiếp theo trong chuỗi.
+        // Đây là bước bắt buộc để request có thể đi đến được Controller.
         filterChain.doFilter(request, response);
     }
 }

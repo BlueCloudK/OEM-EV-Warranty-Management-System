@@ -2,8 +2,9 @@ package com.swp391.warrantymanagement.entity.id;
 
 import jakarta.persistence.Embeddable;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -13,7 +14,8 @@ import java.util.Objects;
 //Đánh dấu class này là có thể nhúng vào một entity khác.
 //Trong ngữ cảnh này class ServiceHistoryDetailId là một Composite Key gồm 2 trường: partId và serviceHistoryId.
 //Class này sẽ được nhúng vào entity ServiceHistoryDetail thông qua @EmbeddedId.
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class ServiceHistoryDetailId implements Serializable {

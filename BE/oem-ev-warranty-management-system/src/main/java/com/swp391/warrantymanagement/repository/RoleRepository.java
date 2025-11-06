@@ -6,9 +6,13 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
+/**
+ * Repository để quản lý Role
+ * - Tìm role theo tên (ROLE_ADMIN, ROLE_CUSTOMER, etc.)
+ * - Dùng cho authentication và phân quyền
+ */
 @Repository
 public interface RoleRepository extends JpaRepository<Role, Long> {
-    // Spring Boot đã tự động sinh các phương thức CRUD cơ bản với Long ID
-    // Này là Query method, tự động sinh câu truy vấn dựa trên tên phương thức
+    // Tìm role theo tên (VD: "ROLE_ADMIN", "ROLE_CUSTOMER")
     Optional<Role> findByRoleName(String roleName);
 }

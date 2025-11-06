@@ -1,9 +1,7 @@
 package com.swp391.warrantymanagement.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
@@ -15,14 +13,18 @@ import java.time.LocalDateTime;
  */
 @Entity // map/ánh xạ class này với bảng trong database
 @Table(name = "tokens") // đặt tên bảng trong database
-@Data // tự động tạo getter, setter, toString, hashCode, equals
+@Getter
+@Setter
 @AllArgsConstructor // tự động tạo constructor với tất cả các tham số
 @NoArgsConstructor // tự động tạo constructor không tham số
+@EqualsAndHashCode(onlyExplicitlyIncluded = true) // Best practice: Chỉ so sánh dựa trên ID
+@ToString(exclude = "user") // Tránh lỗi đệ quy
 public class Token {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "token_id")
+    @EqualsAndHashCode.Include // Chỉ định trường này được dùng để so sánh
     private Long tokenId;
 
     @Column(name = "token", nullable = false, unique = true, length = 500)

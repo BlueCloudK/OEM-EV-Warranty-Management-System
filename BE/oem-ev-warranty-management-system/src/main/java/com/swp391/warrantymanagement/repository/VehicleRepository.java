@@ -1,5 +1,6 @@
 package com.swp391.warrantymanagement.repository;
 
+import com.swp391.warrantymanagement.entity.Customer;
 import com.swp391.warrantymanagement.entity.Vehicle;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -11,34 +12,36 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Repository để quản lý Vehicle
+ * - Tìm xe theo customer, VIN, tên, model
+ * - VIN là unique identifier của xe (như CMND)
+ */
 @Repository
 public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
-    // Spring Boot đã tự động sinh các phương thức CRUD cơ bản với Long ID
-
-    // Derived query methods - Spring tự động tạo queries
+    // Tìm tất cả xe của customer
     List<Vehicle> findByCustomerCustomerId(UUID customerId);
-    // Phương thức với phân trang
     Page<Vehicle> findByCustomerCustomerId(UUID customerId, Pageable pageable);
 
-    // Search methods
+    // Tìm kiếm theo tên xe
     Page<Vehicle> findByVehicleNameContainingIgnoreCase(String vehicleName, Pageable pageable);
 
-    // Search by vehicle model
+    // Tìm kiếm theo model xe
     Page<Vehicle> findByVehicleModelContainingIgnoreCase(String vehicleModel, Pageable pageable);
 
-    // Search methods with pagination
+    // Tìm kiếm kết hợp tên và model
     Page<Vehicle> findByVehicleNameContainingIgnoreCaseOrVehicleModelContainingIgnoreCase(
         String vehicleName, String vehicleModel, Pageable pageable);
 
-    // Combined search methods
     Page<Vehicle> findByVehicleModelContainingIgnoreCaseAndVehicleNameContainingIgnoreCase(
         String vehicleModel, String vehicleName, Pageable pageable);
 
-    // VIN-related methods
+    // Tìm xe theo VIN (Vehicle Identification Number - unique)
     Vehicle findByVehicleVin(String vehicleVin);
-    // Check if a vehicle with the given VIN exists
     boolean existsByVehicleVin(String vehicleVin);
 
     // Warranty expiring methods
     Page<Vehicle> findByVehicleYearLessThanEqual(int year, Pageable pageable);
+
+    boolean existsByCustomer(Customer customer);
 }

@@ -13,20 +13,21 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Repository để quản lý Customer
+ * - Customer ID dùng UUID (bảo mật)
+ * - Tìm theo tên, phone, userId
+ */
 @Repository
-public interface CustomerRepository extends JpaRepository<Customer, UUID> { // JPA Repository interface cần 2 tham số: Entity và kiểu dữ liệu của khóa chính (ID)
-    // Spring Boot đã tự động sinh các phương thức CRUD cơ bản với UUID ID
-
-    // Derived query methods - Spring tự động tạo queries
+public interface CustomerRepository extends JpaRepository<Customer, UUID> {
+    // Tìm customer theo tên (hỗ trợ tìm kiếm không phân biệt hoa thường)
     List<Customer> findByNameContainingIgnoreCase(String name);
-
-    // Thêm method hỗ trợ pagination cho search
     Page<Customer> findByNameContainingIgnoreCase(String name, Pageable pageable);
 
-    // Tìm customer theo phone (unique trong Customer entity)
+    // Tìm customer theo số điện thoại (unique)
     Optional<Customer> findByPhone(String phone);
 
-    // Tìm customers theo userId với pagination
+    // Tìm customer theo userId (1-1 relationship với User)
     Page<Customer> findByUserUserId(Long userId, Pageable pageable);
 
     // Kiểm tra User đã có Customer record chưa (1 User chỉ có 1 Customer)
