@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAdminWarrantyClaims } from '../../hooks/useAdminWarrantyClaims';
+import RefreshIndicator from '../../components/RefreshIndicator';
 import * as S from './AdminWarrantyClaimsManagement.styles';
 import { FaClipboardCheck, FaSpinner, FaCheck, FaTimes, FaTrash, FaSyncAlt } from 'react-icons/fa';
 
@@ -47,7 +48,8 @@ const AdminWarrantyClaimsManagement = () => {
   const {
     claims, loading, error, pagination, filterStatus,
     handleFilterChange, handleApprove, handleReject, handleDelete, handlePageChange, refreshClaims,
-    confirmDialog
+    confirmDialog,
+    lastUpdated, autoRefreshing, getTimeAgo
   } = useAdminWarrantyClaims();
 
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -63,12 +65,22 @@ const AdminWarrantyClaimsManagement = () => {
     return await handleReject(selectedClaim.warrantyClaimId, reason);
   };
 
+  const isPollingActive = claims.some(c => c.status === 'SUBMITTED' || c.status === 'MANAGER_REVIEW');
+
   return (
     <S.PageContainer>
       <S.Header style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <S.HeaderTitle style={{ fontSize: '28px', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '12px', margin: 0 }}>
-          <FaClipboardCheck /> Duyệt Yêu cầu Bảo hành (Admin)
-        </S.HeaderTitle>
+        <div>
+          <S.HeaderTitle style={{ fontSize: '28px', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '12px', margin: 0 }}>
+            <FaClipboardCheck /> Duyệt Yêu cầu Bảo hành (Admin)
+          </S.HeaderTitle>
+          <RefreshIndicator
+            lastUpdated={lastUpdated}
+            autoRefreshing={autoRefreshing}
+            getTimeAgo={getTimeAgo}
+            isPollingActive={isPollingActive}
+          />
+        </div>
         <S.FilterContainer style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <S.Select value={filterStatus} onChange={(e) => handleFilterChange(e.target.value)}>
             <option value="all">Tất cả</option>

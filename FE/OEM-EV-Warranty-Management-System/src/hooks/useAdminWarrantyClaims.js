@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { dataApi } from '../api/dataApi';
 import { useConfirm } from './useConfirm.jsx';
+import { useSmartRefresh } from './useSmartRefresh';
 
 export const useAdminWarrantyClaims = () => {
   const { showConfirm, confirmDialog } = useConfirm();
@@ -10,9 +11,11 @@ export const useAdminWarrantyClaims = () => {
   const [pagination, setPagination] = useState({ currentPage: 0, pageSize: 10, totalPages: 0, totalElements: 0 });
   const [filterStatus, setFilterStatus] = useState('all');
 
-  const fetchClaims = useCallback(async () => {
+  const fetchClaims = useCallback(async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) {
+        setLoading(true);
+      }
       setError(null);
 
       const params = {
@@ -35,11 +38,25 @@ export const useAdminWarrantyClaims = () => {
       }
     } catch (err) {
       console.error("Error fetching claims:", err);
-      setError("Không thể tải danh sách yêu cầu bảo hành.");
+      if (!silent) {
+        setError("Không thể tải danh sách yêu cầu bảo hành.");
+      }
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   }, [pagination.currentPage, pagination.pageSize, filterStatus]);
+
+  // Smart refresh: poll when there are claims waiting for admin action
+  const { lastUpdated, autoRefreshing, getTimeAgo } = useSmartRefresh(fetchClaims, {
+    shouldPoll: () => claims.some(c =>
+      c.status === 'SUBMITTED' || c.status === 'MANAGER_REVIEW'
+    ),
+    pollingInterval: 30000, // 30 seconds
+    enablePolling: true,
+    enableVisibilityRefresh: true,
+  });
 
   useEffect(() => {
     fetchClaims();
@@ -169,6 +186,10 @@ export const useAdminWarrantyClaims = () => {
     handlePageChange,
     refreshClaims: fetchClaims,
     confirmDialog,
+    // Smart refresh props
+    lastUpdated,
+    autoRefreshing,
+    getTimeAgo,
   };
 };
 
