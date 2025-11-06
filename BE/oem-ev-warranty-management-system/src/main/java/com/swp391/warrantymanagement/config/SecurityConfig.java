@@ -119,17 +119,18 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Cho phép tất cả origins (development mode)
-        // Using allowedOriginPatterns instead of allowedOrigins to support wildcards
-        configuration.setAllowedOriginPatterns(List.of("*"));
-
-        // Cho phép các origins cụ thể
-//        configuration.setAllowedOrigins(List.of(
-//                "https://8086127e5439.ngrok-free.app",
-//                "http://localhost:3000",
-//                "http://localhost:5173",
-//                "http://localhost:8081"
-//        ));
+        // IMPORTANT: Không thể dùng wildcard "*" khi setAllowCredentials(true)
+        // Phải chỉ định các origins cụ thể để tuân thủ CORS specification
+        configuration.setAllowedOrigins(List.of(
+                "http://localhost:3000",
+                "http://localhost:5173",
+                "http://localhost:8080",
+                "http://localhost:8081",
+                "http://127.0.0.1:3000",
+                "http://127.0.0.1:5173",
+                "http://127.0.0.1:8080",
+                "http://127.0.0.1:8081"
+        ));
 
         // Cho phép tất cả HTTP methods bao gồm PATCH và OPTIONS
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"));
