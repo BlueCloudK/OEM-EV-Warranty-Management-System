@@ -80,6 +80,14 @@ const CustomerProfile = () => {
       setError('Số điện thoại không được để trống');
       return;
     }
+    if (!formData.address.trim()) {
+      setError('Địa chỉ không được để trống');
+      return;
+    }
+    if (formData.address.trim().length < 10) {
+      setError('Địa chỉ phải có ít nhất 10 ký tự');
+      return;
+    }
 
     try {
       setLoading(true);
@@ -194,7 +202,7 @@ const CustomerProfile = () => {
               </S.InfoItem>
               <S.InfoItem>
                 <S.InfoLabel><FaMapMarkerAlt /> Địa chỉ</S.InfoLabel>
-                <S.InfoValue>{profile?.address || 'Chưa cập nhật'}</S.InfoValue>
+                <S.InfoValue>{profile?.address || 'Chưa cập nhật (cần ít nhất 10 ký tự)'}</S.InfoValue>
               </S.InfoItem>
             </S.InfoGrid>
 
@@ -247,14 +255,15 @@ const CustomerProfile = () => {
                 </S.FormGroup>
 
                 <S.FormGroup $fullWidth>
-                  <S.Label>Địa chỉ</S.Label>
+                  <S.Label>Địa chỉ *</S.Label>
                   <S.TextArea
                     name="address"
                     value={formData.address}
                     onChange={handleChange}
-                    placeholder="Nhập địa chỉ của bạn"
+                    placeholder="Nhập địa chỉ của bạn (tối thiểu 10 ký tự)"
+                    required
                   />
-                  <S.HelperText>Địa chỉ chi tiết để liên hệ và gửi thông báo</S.HelperText>
+                  <S.HelperText>Địa chỉ chi tiết để liên hệ và gửi thông báo (tối thiểu 10 ký tự)</S.HelperText>
                 </S.FormGroup>
               </S.FormGrid>
 
