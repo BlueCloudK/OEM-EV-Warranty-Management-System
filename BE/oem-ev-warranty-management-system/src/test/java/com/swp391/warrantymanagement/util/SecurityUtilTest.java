@@ -13,12 +13,14 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Unit tests for SecurityUtil class
+ * Updated to work with Optional return types after refactoring
  */
 @DisplayName("SecurityUtil Tests")
 class SecurityUtilTest {
@@ -46,21 +48,21 @@ class SecurityUtilTest {
         securityContext.setAuthentication(authentication);
 
         // Act
-        Authentication result = SecurityUtil.getCurrentAuthentication();
+        Optional<Authentication> result = SecurityUtil.getCurrentAuthentication();
 
         // Assert
-        assertThat(result).isNotNull();
-        assertThat(result.getName()).isEqualTo("testuser");
+        assertThat(result).isPresent();
+        assertThat(result.get().getName()).isEqualTo("testuser");
     }
 
     @Test
-    @DisplayName("Should return null when no authentication")
-    void getCurrentAuthentication_NoAuth_ReturnsNull() {
+    @DisplayName("Should return empty Optional when no authentication")
+    void getCurrentAuthentication_NoAuth_ReturnsEmpty() {
         // Act
-        Authentication result = SecurityUtil.getCurrentAuthentication();
+        Optional<Authentication> result = SecurityUtil.getCurrentAuthentication();
 
         // Assert
-        assertThat(result).isNull();
+        assertThat(result).isEmpty();
     }
 
     @Test
@@ -73,15 +75,16 @@ class SecurityUtilTest {
         securityContext.setAuthentication(authentication);
 
         // Act
-        String username = SecurityUtil.getCurrentUsername();
+        Optional<String> username = SecurityUtil.getCurrentUsername();
 
         // Assert
-        assertThat(username).isEqualTo("john.doe");
+        assertThat(username).isPresent();
+        assertThat(username.get()).isEqualTo("john.doe");
     }
 
     @Test
-    @DisplayName("Should return null when not authenticated")
-    void getCurrentUsername_NotAuthenticated_ReturnsNull() {
+    @DisplayName("Should return empty Optional when not authenticated")
+    void getCurrentUsername_NotAuthenticated_ReturnsEmpty() {
         // Arrange
         Authentication authentication = new UsernamePasswordAuthenticationToken(
                 "testuser", "password", List.of()
@@ -90,20 +93,20 @@ class SecurityUtilTest {
         securityContext.setAuthentication(authentication);
 
         // Act
-        String username = SecurityUtil.getCurrentUsername();
+        Optional<String> username = SecurityUtil.getCurrentUsername();
 
         // Assert
-        assertThat(username).isNull();
+        assertThat(username).isEmpty();
     }
 
     @Test
-    @DisplayName("Should return null when authentication is null")
-    void getCurrentUsername_NullAuth_ReturnsNull() {
+    @DisplayName("Should return empty Optional when authentication is null")
+    void getCurrentUsername_NullAuth_ReturnsEmpty() {
         // Act
-        String username = SecurityUtil.getCurrentUsername();
+        Optional<String> username = SecurityUtil.getCurrentUsername();
 
         // Assert
-        assertThat(username).isNull();
+        assertThat(username).isEmpty();
     }
 
     @Test
@@ -199,37 +202,37 @@ class SecurityUtilTest {
         securityContext.setAuthentication(authentication);
 
         // Act
-        UserDetails result = SecurityUtil.getCurrentUserDetails();
+        Optional<UserDetails> result = SecurityUtil.getCurrentUserDetails();
 
         // Assert
-        assertThat(result).isNotNull();
-        assertThat(result.getUsername()).isEqualTo("testuser");
+        assertThat(result).isPresent();
+        assertThat(result.get().getUsername()).isEqualTo("testuser");
     }
 
     @Test
-    @DisplayName("Should return null when principal is not UserDetails")
-    void getCurrentUserDetails_NotUserDetails_ReturnsNull() {
+    @DisplayName("Should return empty Optional when principal is not UserDetails")
+    void getCurrentUserDetails_NotUserDetails_ReturnsEmpty() {
         // Arrange
         Authentication authentication = new UsernamePasswordAuthenticationToken(
-                "stringprincipal", "password", List.of()
+                "stringprincipal", "password", List.of(new SimpleGrantedAuthority("ROLE_USER"))
         );
         securityContext.setAuthentication(authentication);
 
         // Act
-        UserDetails result = SecurityUtil.getCurrentUserDetails();
+        Optional<UserDetails> result = SecurityUtil.getCurrentUserDetails();
 
         // Assert
-        assertThat(result).isNull();
+        assertThat(result).isEmpty();
     }
 
     @Test
-    @DisplayName("Should return null when authentication is null")
-    void getCurrentUserDetails_NullAuth_ReturnsNull() {
+    @DisplayName("Should return empty Optional when authentication is null")
+    void getCurrentUserDetails_NullAuth_ReturnsEmpty() {
         // Act
-        UserDetails result = SecurityUtil.getCurrentUserDetails();
+        Optional<UserDetails> result = SecurityUtil.getCurrentUserDetails();
 
         // Assert
-        assertThat(result).isNull();
+        assertThat(result).isEmpty();
     }
 
     @Test
@@ -266,19 +269,26 @@ class SecurityUtilTest {
     }
 
     @Test
-    @DisplayName("Should return false when user is anonymousUser")
-    void isAuthenticated_AnonymousUser_ReturnsFalse() {
+    @DisplayName("Should return true for anonymousUser when authenticated")
+    void isAuthenticated_AnonymousUser_ButAuthenticated_ReturnsTrue() {
+        // Note: After refactoring, we removed the anonymousUser check from SecurityUtil
+        // because it was causing false positives with JWT authentication.
+        // Now we only check isAuthenticated() flag.
+        // If principal is "anonymousUser" but isAuthenticated() = true, we trust that.
+
         // Arrange
         Authentication authentication = new UsernamePasswordAuthenticationToken(
                 "anonymousUser", "password", List.of(new SimpleGrantedAuthority("ROLE_ANONYMOUS"))
         );
+        // Key: authentication is marked as authenticated
         securityContext.setAuthentication(authentication);
 
         // Act
         boolean result = SecurityUtil.isAuthenticated();
 
         // Assert
-        assertThat(result).isFalse();
+        // After fix: If isAuthenticated() = true, we return true
+        assertThat(result).isTrue();
     }
 
     @Test
@@ -291,4 +301,3 @@ class SecurityUtilTest {
         assertThat(result).isFalse();
     }
 }
-

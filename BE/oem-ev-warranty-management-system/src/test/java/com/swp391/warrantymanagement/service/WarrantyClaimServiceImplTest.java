@@ -1291,7 +1291,7 @@ class WarrantyClaimServiceImplTest {
             // Mock SecurityUtil via SecurityContext
             try (var mockedStatic = mockStatic(com.swp391.warrantymanagement.util.SecurityUtil.class)) {
                 mockedStatic.when(com.swp391.warrantymanagement.util.SecurityUtil::getCurrentUsername)
-                    .thenReturn("customer1");
+                    .thenReturn(Optional.of("customer1"));
 
                 when(userRepository.findByUsername("customer1")).thenReturn(Optional.of(user));
                 when(warrantyClaimRepository.findByVehicleCustomerCustomerId(customerId, pageable)).thenReturn(claimPage);
@@ -1313,7 +1313,7 @@ class WarrantyClaimServiceImplTest {
 
             try (var mockedStatic = mockStatic(com.swp391.warrantymanagement.util.SecurityUtil.class)) {
                 mockedStatic.when(com.swp391.warrantymanagement.util.SecurityUtil::getCurrentUsername)
-                    .thenReturn(null);
+                    .thenReturn(Optional.empty());
 
                 // Act & Assert
                 RuntimeException exception = assertThrows(RuntimeException.class,
@@ -1330,7 +1330,7 @@ class WarrantyClaimServiceImplTest {
 
             try (var mockedStatic = mockStatic(com.swp391.warrantymanagement.util.SecurityUtil.class)) {
                 mockedStatic.when(com.swp391.warrantymanagement.util.SecurityUtil::getCurrentUsername)
-                    .thenReturn("unknown");
+                    .thenReturn(Optional.of("unknown"));
 
                 when(userRepository.findByUsername("unknown")).thenReturn(Optional.empty());
 
@@ -1354,7 +1354,7 @@ class WarrantyClaimServiceImplTest {
 
             try (var mockedStatic = mockStatic(com.swp391.warrantymanagement.util.SecurityUtil.class)) {
                 mockedStatic.when(com.swp391.warrantymanagement.util.SecurityUtil::getCurrentUsername)
-                    .thenReturn("customer1");
+                    .thenReturn(Optional.of("customer1"));
 
                 when(userRepository.findByUsername("customer1")).thenReturn(Optional.of(user));
 
@@ -1385,7 +1385,7 @@ class WarrantyClaimServiceImplTest {
 
             try (var mockedStatic = mockStatic(com.swp391.warrantymanagement.util.SecurityUtil.class)) {
                 mockedStatic.when(com.swp391.warrantymanagement.util.SecurityUtil::getCurrentUsername)
-                    .thenReturn("customer1");
+                    .thenReturn(Optional.of("customer1"));
 
                 when(userRepository.findByUsername("customer1")).thenReturn(Optional.of(user));
                 when(warrantyClaimRepository.findByWarrantyClaimIdAndVehicleCustomerCustomerId(1L, customerId))
@@ -1406,7 +1406,7 @@ class WarrantyClaimServiceImplTest {
             // Arrange
             try (var mockedStatic = mockStatic(com.swp391.warrantymanagement.util.SecurityUtil.class)) {
                 mockedStatic.when(com.swp391.warrantymanagement.util.SecurityUtil::getCurrentUsername)
-                    .thenReturn(null);
+                    .thenReturn(Optional.empty());
 
                 // Act & Assert
                 RuntimeException exception = assertThrows(RuntimeException.class,
@@ -1421,7 +1421,7 @@ class WarrantyClaimServiceImplTest {
             // Arrange
             try (var mockedStatic = mockStatic(com.swp391.warrantymanagement.util.SecurityUtil.class)) {
                 mockedStatic.when(com.swp391.warrantymanagement.util.SecurityUtil::getCurrentUsername)
-                    .thenReturn("unknown");
+                    .thenReturn(Optional.of("unknown"));
 
                 when(userRepository.findByUsername("unknown")).thenReturn(Optional.empty());
 
@@ -1443,7 +1443,7 @@ class WarrantyClaimServiceImplTest {
 
             try (var mockedStatic = mockStatic(com.swp391.warrantymanagement.util.SecurityUtil.class)) {
                 mockedStatic.when(com.swp391.warrantymanagement.util.SecurityUtil::getCurrentUsername)
-                    .thenReturn("customer1");
+                    .thenReturn(Optional.of("customer1"));
 
                 when(userRepository.findByUsername("customer1")).thenReturn(Optional.of(user));
 
@@ -1469,7 +1469,7 @@ class WarrantyClaimServiceImplTest {
 
             try (var mockedStatic = mockStatic(com.swp391.warrantymanagement.util.SecurityUtil.class)) {
                 mockedStatic.when(com.swp391.warrantymanagement.util.SecurityUtil::getCurrentUsername)
-                    .thenReturn("customer1");
+                    .thenReturn(Optional.of("customer1"));
 
                 when(userRepository.findByUsername("customer1")).thenReturn(Optional.of(user));
                 when(warrantyClaimRepository.findByWarrantyClaimIdAndVehicleCustomerCustomerId(999L, customerId))
