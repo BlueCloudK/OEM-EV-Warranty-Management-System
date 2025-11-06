@@ -176,8 +176,8 @@ public class UserInfoController {
         logger.info("User {} has role: {}", currentUsername, roleName);
 
         // Dựa vào vai trò để quyết định loại profile sẽ trả về.
-        // FIX: So sánh role với "ROLE_CUSTOMER" theo chuẩn Spring Security.
-        if ("ROLE_CUSTOMER".equals(roleName)) {
+        // FIX: So sánh role với "ROLE_CUSTOMER" hoặc "CUSTOMER" (database có thể lưu không có prefix).
+        if ("ROLE_CUSTOMER".equals(roleName) || "CUSTOMER".equals(roleName)) {
             // REFACTOR: Lấy customer profile thông qua service.
             // Thiết kế: Tầng Service sẽ chịu trách nhiệm tìm User, sau đó tìm Customer profile tương ứng.
             // Nếu không tìm thấy, service sẽ ném ResourceNotFoundException -> 404 Not Found.
