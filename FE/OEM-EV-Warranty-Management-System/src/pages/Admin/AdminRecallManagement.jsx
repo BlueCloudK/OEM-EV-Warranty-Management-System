@@ -3,9 +3,10 @@ import * as S from "./AdminRecallManagement.styles";
 import {
   FaExclamationTriangle, FaCheckCircle, FaTimesCircle, FaClock,
   FaHourglassHalf, FaUserCheck, FaFileAlt, FaSearch, FaFilter,
-  FaSpinner, FaEye
+  FaSpinner, FaEye, FaList
 } from "react-icons/fa";
 import { recallRequestsApi } from "../../api/recallRequests";
+import { recallResponsesApi } from "../../api/recallResponses";
 
 export default function AdminRecallManagement() {
   const [recalls, setRecalls] = useState([]);
@@ -17,11 +18,15 @@ export default function AdminRecallManagement() {
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showResponsesModal, setShowResponsesModal] = useState(false);
   const [selectedRecall, setSelectedRecall] = useState(null);
 
   const [adminNote, setAdminNote] = useState("");
   const [rejectReason, setRejectReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const [responses, setResponses] = useState([]);
+  const [loadingResponses, setLoadingResponses] = useState(false);
 
   useEffect(() => {
     fetchRecalls();
@@ -130,6 +135,26 @@ export default function AdminRecallManagement() {
     setShowDetailModal(true);
   };
 
+  const fetchResponses = async (recallRequestId) => {
+    try {
+      setLoadingResponses(true);
+      const data = await recallResponsesApi.getByCampaign(recallRequestId);
+      console.log('📋 Recall Responses loaded:', data);
+      setResponses(data || []);
+    } catch (error) {
+      console.error('Error fetching recall responses:', error);
+      alert('Không thể tải danh sách responses');
+    } finally {
+      setLoadingResponses(false);
+    }
+  };
+
+  const openResponsesModal = (recall) => {
+    setSelectedRecall(recall);
+    fetchResponses(recall.recallRequestId);
+    setShowResponsesModal(true);
+  };
+
   const getStatusBadge = (status) => {
     // RecallRequest statuses (campaign-level)
     const statusMap = {
@@ -137,6 +162,23 @@ export default function AdminRecallManagement() {
       APPROVED_BY_ADMIN: { color: "#27ae60", label: "Admin đã duyệt", icon: <FaCheckCircle /> },
       REJECTED_BY_ADMIN: { color: "#e74c3c", label: "Admin từ chối", icon: <FaTimesCircle /> },
       WAITING_CUSTOMER_CONFIRM: { color: "#3498db", label: "Chờ khách hàng", icon: <FaHourglassHalf /> },
+      COMPLETED: { color: "#1a73e8", label: "Hoàn thành", icon: <FaCheckCircle /> }
+    };
+    const config = statusMap[status] || { color: "#7f8c8d", label: status, icon: <FaFileAlt /> };
+    return (
+      <S.StatusBadge color={config.color}>
+        {config.icon} {config.label}
+      </S.StatusBadge>
+    );
+  };
+
+  const getResponseStatusBadge = (status) => {
+    // RecallResponse statuses (individual-level)
+    const statusMap = {
+      PENDING: { color: "#3498db", label: "Chờ xác nhận", icon: <FaClock /> },
+      ACCEPTED: { color: "#27ae60", label: "Đã chấp nhận", icon: <FaCheckCircle /> },
+      DECLINED: { color: "#e74c3c", label: "Đã từ chối", icon: <FaTimesCircle /> },
+      IN_PROGRESS: { color: "#f39c12", label: "Đang sửa chữa", icon: <FaSpinner /> },
       COMPLETED: { color: "#1a73e8", label: "Hoàn thành", icon: <FaCheckCircle /> }
     };
     const config = statusMap[status] || { color: "#7f8c8d", label: status, icon: <FaFileAlt /> };
@@ -525,7 +567,100 @@ export default function AdminRecallManagement() {
               )}
             </S.DetailGrid>
             <S.ModalFooter>
+              {(selectedRecall.status === 'APPROVED_BY_ADMIN' ||
+                selectedRecall.status === 'WAITING_CUSTOMER_CONFIRM' ||
+                selectedRecall.status === 'COMPLETED') && (
+                <S.Button
+                  primary
+                  onClick={() => {
+                    setShowDetailModal(false);
+                    openResponsesModal(selectedRecall);
+                  }}
+                >
+                  <FaList /> Xem Responses ({responses.length || '?'})
+                </S.Button>
+              )}
               <S.Button onClick={() => setShowDetailModal(false)}>Đóng</S.Button>
+            </S.ModalFooter>
+          </S.ModalContent>
+        </S.ModalOverlay>
+      )}
+
+      {/* Responses Modal */}
+      {showResponsesModal && selectedRecall && (
+        <S.ModalOverlay onClick={() => setShowResponsesModal(false)}>
+          <S.ModalContent large onClick={(e) => e.stopPropagation()}>
+            <S.ModalHeader>
+              <h2><FaList /> Responses cho Campaign #{selectedRecall.recallRequestId}</h2>
+              <S.CloseButton onClick={() => setShowResponsesModal(false)}>&times;</S.CloseButton>
+            </S.ModalHeader>
+
+            {loadingResponses ? (
+              <S.LoadingContainer style={{ minHeight: '200px' }}>
+                <FaSpinner className="spinner" />
+                <p>Đang tải responses...</p>
+              </S.LoadingContainer>
+            ) : responses.length === 0 ? (
+              <S.EmptyState style={{ margin: '40px' }}>
+                <FaExclamationTriangle size={48} />
+                <p>Chưa có response nào cho campaign này</p>
+              </S.EmptyState>
+            ) : (
+              <div style={{ padding: '24px' }}>
+                <S.InfoBox>
+                  <FaCheckCircle />
+                  <div>
+                    <strong>Tổng quan:</strong> {responses.length} xe bị ảnh hưởng
+                    <ul style={{ margin: '8px 0 0 20px', paddingLeft: '0' }}>
+                      <li>Chờ xác nhận: {responses.filter(r => r.status === 'PENDING').length}</li>
+                      <li>Đã chấp nhận: {responses.filter(r => r.status === 'ACCEPTED').length}</li>
+                      <li>Đã từ chối: {responses.filter(r => r.status === 'DECLINED').length}</li>
+                      <li>Đang sửa: {responses.filter(r => r.status === 'IN_PROGRESS').length}</li>
+                      <li>Hoàn thành: {responses.filter(r => r.status === 'COMPLETED').length}</li>
+                    </ul>
+                  </div>
+                </S.InfoBox>
+
+                <S.Table style={{ marginTop: '20px' }}>
+                  <S.TableHeader>
+                    <tr>
+                      <S.TableHeaderCell>ID</S.TableHeaderCell>
+                      <S.TableHeaderCell>Xe</S.TableHeaderCell>
+                      <S.TableHeaderCell>Khách hàng</S.TableHeaderCell>
+                      <S.TableHeaderCell>Ngày tạo</S.TableHeaderCell>
+                      <S.TableHeaderCell>Trạng thái</S.TableHeaderCell>
+                      <S.TableHeaderCell>Ghi chú</S.TableHeaderCell>
+                    </tr>
+                  </S.TableHeader>
+                  <S.TableBody>
+                    {responses.map((response) => (
+                      <S.TableRow key={response.recallResponseId}>
+                        <S.TableCell>#{response.recallResponseId}</S.TableCell>
+                        <S.TableCell>
+                          <div>{response.vehicle?.vehicleModel || 'N/A'}</div>
+                          <small>{response.vehicle?.vehicleVin || 'N/A'}</small>
+                        </S.TableCell>
+                        <S.TableCell>
+                          {response.vehicle?.customer?.user?.fullName || 'N/A'}
+                        </S.TableCell>
+                        <S.TableCell>
+                          {response.createdAt ? new Date(response.createdAt).toLocaleDateString('vi-VN') : 'N/A'}
+                        </S.TableCell>
+                        <S.TableCell>
+                          {getResponseStatusBadge(response.status)}
+                        </S.TableCell>
+                        <S.TableCell>
+                          {response.customerNote || '-'}
+                        </S.TableCell>
+                      </S.TableRow>
+                    ))}
+                  </S.TableBody>
+                </S.Table>
+              </div>
+            )}
+
+            <S.ModalFooter>
+              <S.Button onClick={() => setShowResponsesModal(false)}>Đóng</S.Button>
             </S.ModalFooter>
           </S.ModalContent>
         </S.ModalOverlay>
