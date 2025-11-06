@@ -28,6 +28,9 @@ export default function AdminRecallManagement() {
   const [responses, setResponses] = useState([]);
   const [loadingResponses, setLoadingResponses] = useState(false);
 
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [autoRefreshing, setAutoRefreshing] = useState(false);
+
   useEffect(() => {
     fetchRecalls();
   }, []);
@@ -36,17 +39,60 @@ export default function AdminRecallManagement() {
     applyFilters();
   }, [recalls, searchTerm, statusFilter]);
 
-  const fetchRecalls = async () => {
+  // Auto-refresh when user returns to tab
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && lastUpdated) {
+        const timeSinceUpdate = Date.now() - lastUpdated.getTime();
+        // Refresh if more than 30s since last update
+        if (timeSinceUpdate > 30000) {
+          console.log('🔄 Auto-refreshing (tab became visible)');
+          fetchRecalls(true);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [lastUpdated]);
+
+  // Smart polling: auto-refresh every 30s when there are pending items
+  useEffect(() => {
+    const hasPendingItems = recalls.some(r =>
+      r.status === 'PENDING_ADMIN_APPROVAL' ||
+      r.status === 'WAITING_CUSTOMER_CONFIRM'
+    );
+
+    if (hasPendingItems) {
+      console.log('⏰ Smart polling enabled (pending items detected)');
+      const interval = setInterval(() => {
+        console.log('🔄 Auto-refreshing (smart polling)');
+        fetchRecalls(true);
+      }, 30000); // 30 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [recalls]);
+
+  const fetchRecalls = async (silent = false) => {
     try {
-      setLoading(true);
+      if (silent) {
+        setAutoRefreshing(true);
+      } else {
+        setLoading(true);
+      }
       const response = await recallRequestsApi.getAllForAdmin();
       console.log('📋 Recall Requests loaded:', response);
       setRecalls(response?.content || response || []);
+      setLastUpdated(new Date());
     } catch (error) {
       console.error("Error fetching recalls:", error);
-      alert("Không thể tải danh sách yêu cầu recall");
+      if (!silent) {
+        alert("Không thể tải danh sách yêu cầu recall");
+      }
     } finally {
       setLoading(false);
+      setAutoRefreshing(false);
     }
   };
 
@@ -211,13 +257,35 @@ export default function AdminRecallManagement() {
     );
   }
 
+  const getTimeAgo = (date) => {
+    if (!date) return '';
+    const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+    if (seconds < 60) return 'vừa xong';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes} phút trước`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} giờ trước`;
+    return date.toLocaleDateString('vi-VN');
+  };
+
   return (
     <S.Container>
       <S.Header>
-        <h1>
-          <FaExclamationTriangle /> Quản lý Yêu cầu Recall
-        </h1>
-        <p>Phê duyệt hoặc từ chối yêu cầu recall từ EVM Staff</p>
+        <div>
+          <h1>
+            <FaExclamationTriangle /> Quản lý Yêu cầu Recall
+          </h1>
+          <p>Phê duyệt hoặc từ chối yêu cầu recall từ EVM Staff</p>
+          {lastUpdated && (
+            <small style={{ color: '#7f8c8d', display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+              {autoRefreshing && <FaSpinner className="spinner" style={{ fontSize: '12px' }} />}
+              Cập nhật: {getTimeAgo(lastUpdated)}
+              {recalls.some(r => r.status === 'PENDING_ADMIN_APPROVAL' || r.status === 'WAITING_CUSTOMER_CONFIRM') && (
+                <span style={{ color: '#27ae60' }}>• Auto-refresh đang bật</span>
+              )}
+            </small>
+          )}
+        </div>
       </S.Header>
 
       <S.StatsGrid>
