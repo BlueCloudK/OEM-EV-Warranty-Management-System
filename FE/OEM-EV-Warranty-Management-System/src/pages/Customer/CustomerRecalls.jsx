@@ -5,46 +5,48 @@ import {
   FaHourglassHalf, FaFileAlt, FaSearch, FaFilter, FaSpinner, FaEye,
   FaThumbsUp, FaThumbsDown
 } from "react-icons/fa";
-import apiClient from "../../api/apiClient";
+import { recallResponsesApi } from "../../api/recallResponses";
 
 export default function CustomerRecalls() {
-  const [recalls, setRecalls] = useState([]);
-  const [filteredRecalls, setFilteredRecalls] = useState([]);
+  const [recallResponses, setRecallResponses] = useState([]);
+  const [filteredResponses, setFilteredResponses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
-  const [selectedRecall, setSelectedRecall] = useState(null);
+  const [selectedResponse, setSelectedResponse] = useState(null);
 
   const [customerNote, setCustomerNote] = useState("");
   const [acceptRecall, setAcceptRecall] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    fetchRecalls();
+    fetchRecallResponses();
   }, []);
 
   useEffect(() => {
     applyFilters();
-  }, [recalls, searchTerm, statusFilter]);
+  }, [recallResponses, searchTerm, statusFilter]);
 
-  const fetchRecalls = async () => {
+  const fetchRecallResponses = async () => {
     try {
       setLoading(true);
-      const response = await apiClient('/api/recall-requests/my-recalls');
-      setRecalls(response || []);
+      // NEW FLOW: Fetch RecallResponses instead of RecallRequests
+      const response = await recallResponsesApi.getMyResponses();
+      console.log("📋 Recall Responses loaded:", response);
+      setRecallResponses(response?.content || response || []);
     } catch (error) {
-      console.error("Error fetching recalls:", error);
-      alert("Không thể tải danh sách yêu cầu recall");
+      console.error("Error fetching recall responses:", error);
+      alert("Không thể tải danh sách thông báo recall");
     } finally {
       setLoading(false);
     }
   };
 
   const applyFilters = () => {
-    let filtered = [...recalls];
+    let filtered = [...recallResponses];
 
     if (statusFilter !== "ALL") {
       filtered = filtered.filter(r => r.status === statusFilter);
@@ -53,41 +55,39 @@ export default function CustomerRecalls() {
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(r =>
-        r.recallRequestId?.toString().includes(term) ||
-        r.installedPart?.part?.partName?.toLowerCase().includes(term) ||
-        r.installedPart?.vehicle?.vin?.toLowerCase().includes(term) ||
-        r.reason?.toLowerCase().includes(term)
+        r.recallResponseId?.toString().includes(term) ||
+        r.recallRequest?.part?.partName?.toLowerCase().includes(term) ||
+        r.vehicle?.vehicleVin?.toLowerCase().includes(term) ||
+        r.recallRequest?.reason?.toLowerCase().includes(term)
       );
     }
 
-    setFilteredRecalls(filtered);
+    setFilteredResponses(filtered);
   };
 
   const handleConfirmRecall = async (e) => {
     e.preventDefault();
-    if (!selectedRecall) return;
+    if (!selectedResponse) return;
 
     try {
       setSubmitting(true);
-      await apiClient(`/api/recall-requests/${selectedRecall.recallRequestId}/customer-confirm`, {
-        method: 'PATCH',
-        body: JSON.stringify({
-          accepted: acceptRecall,
-          customerNote: customerNote.trim() || null
-        })
+      // NEW FLOW: Confirm via RecallResponse API
+      await recallResponsesApi.confirm(selectedResponse.recallResponseId, {
+        accepted: acceptRecall,
+        customerNote: customerNote.trim() || null
       });
 
       if (acceptRecall) {
-        alert("Bạn đã chấp nhận yêu cầu recall. Hệ thống sẽ tự động tạo yêu cầu bảo hành cho bạn.");
+        alert("✅ Bạn đã chấp nhận yêu cầu recall. Vui lòng liên hệ trung tâm bảo hành để được hỗ trợ.");
       } else {
-        alert("Bạn đã từ chối yêu cầu recall.");
+        alert("❌ Bạn đã từ chối yêu cầu recall.");
       }
 
       setShowConfirmModal(false);
       setCustomerNote("");
       setAcceptRecall(true);
-      setSelectedRecall(null);
-      fetchRecalls();
+      setSelectedResponse(null);
+      fetchRecallResponses();
     } catch (error) {
       console.error("Error confirming recall:", error);
       alert(error.message || "Không thể xác nhận yêu cầu recall");
@@ -96,25 +96,25 @@ export default function CustomerRecalls() {
     }
   };
 
-  const openConfirmModal = (recall) => {
-    setSelectedRecall(recall);
+  const openConfirmModal = (response) => {
+    setSelectedResponse(response);
     setCustomerNote("");
     setAcceptRecall(true);
     setShowConfirmModal(true);
   };
 
-  const openDetailModal = (recall) => {
-    setSelectedRecall(recall);
+  const openDetailModal = (response) => {
+    setSelectedResponse(response);
     setShowDetailModal(true);
   };
 
   const getStatusBadge = (status) => {
+    // RecallResponse statuses: PENDING, ACCEPTED, DECLINED, IN_PROGRESS, COMPLETED
     const statusMap = {
-      PENDING_ADMIN_APPROVAL: { color: "#f39c12", label: "Đang chờ phê duyệt", icon: <FaClock /> },
-      REJECTED_BY_ADMIN: { color: "#e74c3c", label: "Bị từ chối", icon: <FaTimesCircle /> },
-      WAITING_CUSTOMER_CONFIRM: { color: "#3498db", label: "Chờ bạn xác nhận", icon: <FaHourglassHalf /> },
-      REJECTED_BY_CUSTOMER: { color: "#95a5a6", label: "Bạn đã từ chối", icon: <FaThumbsDown /> },
-      CLAIM_CREATED: { color: "#27ae60", label: "Đã tạo yêu cầu bảo hành", icon: <FaCheckCircle /> },
+      PENDING: { color: "#3498db", label: "Chờ bạn xác nhận", icon: <FaHourglassHalf /> },
+      ACCEPTED: { color: "#27ae60", label: "Đã chấp nhận", icon: <FaCheckCircle /> },
+      DECLINED: { color: "#e74c3c", label: "Bạn đã từ chối", icon: <FaThumbsDown /> },
+      IN_PROGRESS: { color: "#f39c12", label: "Đang sửa chữa", icon: <FaClock /> },
       COMPLETED: { color: "#1a73e8", label: "Đã hoàn thành", icon: <FaCheckCircle /> }
     };
     const config = statusMap[status] || { color: "#7f8c8d", label: status, icon: <FaFileAlt /> };
@@ -127,12 +127,12 @@ export default function CustomerRecalls() {
 
   const getStatistics = () => {
     return {
-      total: recalls.length,
-      pending: recalls.filter(r => r.status === "PENDING_ADMIN_APPROVAL").length,
-      waiting: recalls.filter(r => r.status === "WAITING_CUSTOMER_CONFIRM").length,
-      rejected: recalls.filter(r => r.status === "REJECTED_BY_ADMIN" || r.status === "REJECTED_BY_CUSTOMER").length,
-      claimCreated: recalls.filter(r => r.status === "CLAIM_CREATED").length,
-      completed: recalls.filter(r => r.status === "COMPLETED").length
+      total: recallResponses.length,
+      pending: recallResponses.filter(r => r.status === "PENDING").length,
+      accepted: recallResponses.filter(r => r.status === "ACCEPTED").length,
+      declined: recallResponses.filter(r => r.status === "DECLINED").length,
+      inProgress: recallResponses.filter(r => r.status === "IN_PROGRESS").length,
+      completed: recallResponses.filter(r => r.status === "COMPLETED").length
     };
   };
 
@@ -165,35 +165,35 @@ export default function CustomerRecalls() {
           </S.StatContent>
         </S.StatCard>
 
-        <S.StatCard color="#f39c12" onClick={() => setStatusFilter("PENDING_ADMIN_APPROVAL")}>
-          <S.StatIcon color="#f39c12"><FaClock /></S.StatIcon>
-          <S.StatContent>
-            <S.StatNumber>{stats.pending}</S.StatNumber>
-            <S.StatLabel>Đang chờ duyệt</S.StatLabel>
-          </S.StatContent>
-        </S.StatCard>
-
-        <S.StatCard color="#3498db" onClick={() => setStatusFilter("WAITING_CUSTOMER_CONFIRM")}>
+        <S.StatCard color="#3498db" onClick={() => setStatusFilter("PENDING")}>
           <S.StatIcon color="#3498db"><FaHourglassHalf /></S.StatIcon>
           <S.StatContent>
-            <S.StatNumber>{stats.waiting}</S.StatNumber>
+            <S.StatNumber>{stats.pending}</S.StatNumber>
             <S.StatLabel>Chờ bạn xác nhận</S.StatLabel>
           </S.StatContent>
         </S.StatCard>
 
-        <S.StatCard color="#e74c3c">
-          <S.StatIcon color="#e74c3c"><FaTimesCircle /></S.StatIcon>
+        <S.StatCard color="#27ae60" onClick={() => setStatusFilter("ACCEPTED")}>
+          <S.StatIcon color="#27ae60"><FaCheckCircle /></S.StatIcon>
           <S.StatContent>
-            <S.StatNumber>{stats.rejected}</S.StatNumber>
-            <S.StatLabel>Bị từ chối</S.StatLabel>
+            <S.StatNumber>{stats.accepted}</S.StatNumber>
+            <S.StatLabel>Đã chấp nhận</S.StatLabel>
           </S.StatContent>
         </S.StatCard>
 
-        <S.StatCard color="#27ae60" onClick={() => setStatusFilter("CLAIM_CREATED")}>
-          <S.StatIcon color="#27ae60"><FaCheckCircle /></S.StatIcon>
+        <S.StatCard color="#e74c3c" onClick={() => setStatusFilter("DECLINED")}>
+          <S.StatIcon color="#e74c3c"><FaThumbsDown /></S.StatIcon>
           <S.StatContent>
-            <S.StatNumber>{stats.claimCreated}</S.StatNumber>
-            <S.StatLabel>Đã tạo yêu cầu BH</S.StatLabel>
+            <S.StatNumber>{stats.declined}</S.StatNumber>
+            <S.StatLabel>Đã từ chối</S.StatLabel>
+          </S.StatContent>
+        </S.StatCard>
+
+        <S.StatCard color="#f39c12" onClick={() => setStatusFilter("IN_PROGRESS")}>
+          <S.StatIcon color="#f39c12"><FaClock /></S.StatIcon>
+          <S.StatContent>
+            <S.StatNumber>{stats.inProgress}</S.StatNumber>
+            <S.StatLabel>Đang sửa chữa</S.StatLabel>
           </S.StatContent>
         </S.StatCard>
 
@@ -221,21 +221,20 @@ export default function CustomerRecalls() {
           <S.FilterLabel><FaFilter /> Trạng thái:</S.FilterLabel>
           <S.FilterSelect value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="ALL">Tất cả</option>
-            <option value="PENDING_ADMIN_APPROVAL">Đang chờ duyệt</option>
-            <option value="WAITING_CUSTOMER_CONFIRM">Chờ xác nhận</option>
-            <option value="REJECTED_BY_ADMIN">Bị từ chối (Admin)</option>
-            <option value="REJECTED_BY_CUSTOMER">Bạn đã từ chối</option>
-            <option value="CLAIM_CREATED">Đã tạo yêu cầu BH</option>
+            <option value="PENDING">Chờ xác nhận</option>
+            <option value="ACCEPTED">Đã chấp nhận</option>
+            <option value="DECLINED">Đã từ chối</option>
+            <option value="IN_PROGRESS">Đang sửa chữa</option>
             <option value="COMPLETED">Đã hoàn thành</option>
           </S.FilterSelect>
         </S.FilterGroup>
       </S.FilterBar>
 
       <S.ResultsInfo>
-        Hiển thị <strong>{filteredRecalls.length}</strong> / <strong>{recalls.length}</strong> thông báo
+        Hiển thị <strong>{filteredResponses.length}</strong> / <strong>{recallResponses.length}</strong> thông báo
       </S.ResultsInfo>
 
-      {filteredRecalls.length === 0 ? (
+      {filteredResponses.length === 0 ? (
         <S.EmptyState>
           <FaExclamationTriangle size={64} />
           <p>Không có thông báo recall nào</p>
@@ -254,37 +253,37 @@ export default function CustomerRecalls() {
             </tr>
           </S.TableHeader>
           <S.TableBody>
-            {filteredRecalls.map((recall) => (
-              <S.TableRow key={recall.recallRequestId}>
-                <S.TableCell>#{recall.recallRequestId}</S.TableCell>
+            {filteredResponses.map((response) => (
+              <S.TableRow key={response.recallResponseId}>
+                <S.TableCell>#{response.recallResponseId}</S.TableCell>
                 <S.TableCell>
-                  <div>{recall.installedPart?.vehicle?.model}</div>
-                  <small>{recall.installedPart?.vehicle?.vin}</small>
+                  <div>{response.vehicle?.vehicleModel || 'N/A'}</div>
+                  <small>{response.vehicle?.vehicleVin || 'N/A'}</small>
                 </S.TableCell>
                 <S.TableCell>
-                  <div>{recall.installedPart?.part?.partName}</div>
-                  <small>{recall.installedPart?.part?.partNumber}</small>
+                  <div>{response.recallRequest?.part?.partName || 'N/A'}</div>
+                  <small>{response.recallRequest?.part?.partNumber || 'N/A'}</small>
                 </S.TableCell>
                 <S.TableCell>
-                  {recall.reason?.length > 60
-                    ? recall.reason.substring(0, 60) + "..."
-                    : recall.reason}
+                  {response.recallRequest?.reason?.length > 60
+                    ? response.recallRequest.reason.substring(0, 60) + "..."
+                    : response.recallRequest?.reason || 'N/A'}
                 </S.TableCell>
                 <S.TableCell>
-                  {recall.createdAt ? new Date(recall.createdAt).toLocaleDateString('vi-VN') : "N/A"}
+                  {response.createdAt ? new Date(response.createdAt).toLocaleDateString('vi-VN') : "N/A"}
                 </S.TableCell>
                 <S.TableCell>
-                  {getStatusBadge(recall.status)}
+                  {getStatusBadge(response.status)}
                 </S.TableCell>
                 <S.TableCell>
                   <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                    <S.ActionButton onClick={() => openDetailModal(recall)}>
+                    <S.ActionButton onClick={() => openDetailModal(response)}>
                       <FaEye /> Chi tiết
                     </S.ActionButton>
-                    {recall.status === "WAITING_CUSTOMER_CONFIRM" && (
+                    {response.status === "PENDING" && (
                       <S.ActionButton
                         style={{ background: "#27ae60" }}
-                        onClick={() => openConfirmModal(recall)}
+                        onClick={() => openConfirmModal(response)}
                       >
                         <FaThumbsUp /> Xác nhận
                       </S.ActionButton>
@@ -298,7 +297,7 @@ export default function CustomerRecalls() {
       )}
 
       {/* Confirm Modal */}
-      {showConfirmModal && selectedRecall && (
+      {showConfirmModal && selectedResponse && (
         <S.ModalOverlay onClick={() => !submitting && setShowConfirmModal(false)}>
           <S.ModalContent onClick={(e) => e.stopPropagation()}>
             <S.ModalHeader>
@@ -307,14 +306,14 @@ export default function CustomerRecalls() {
             </S.ModalHeader>
             <S.Form onSubmit={handleConfirmRecall}>
               <S.FormGroup>
-                <S.Label>Recall ID:</S.Label>
-                <S.Input type="text" value={`#${selectedRecall.recallRequestId}`} disabled />
+                <S.Label>Recall Response ID:</S.Label>
+                <S.Input type="text" value={`#${selectedResponse.recallResponseId}`} disabled />
               </S.FormGroup>
               <S.FormGroup>
                 <S.Label>Xe:</S.Label>
                 <S.Input
                   type="text"
-                  value={`${selectedRecall.installedPart?.vehicle?.model} (${selectedRecall.installedPart?.vehicle?.vin})`}
+                  value={`${selectedResponse.vehicle?.vehicleModel || 'N/A'} (${selectedResponse.vehicle?.vehicleVin || 'N/A'})`}
                   disabled
                 />
               </S.FormGroup>
@@ -322,18 +321,18 @@ export default function CustomerRecalls() {
                 <S.Label>Phụ tùng cần thay:</S.Label>
                 <S.Input
                   type="text"
-                  value={`${selectedRecall.installedPart?.part?.partName} (${selectedRecall.installedPart?.part?.partNumber})`}
+                  value={`${selectedResponse.recallRequest?.part?.partName || 'N/A'} (${selectedResponse.recallRequest?.part?.partNumber || 'N/A'})`}
                   disabled
                 />
               </S.FormGroup>
               <S.FormGroup>
                 <S.Label>Lý do recall:</S.Label>
-                <S.TextArea value={selectedRecall.reason} disabled />
+                <S.TextArea value={selectedResponse.recallRequest?.reason || 'N/A'} disabled />
               </S.FormGroup>
-              {selectedRecall.adminNote && (
+              {selectedResponse.recallRequest?.adminNote && (
                 <S.FormGroup>
                   <S.Label>Ghi chú từ Admin:</S.Label>
-                  <S.TextArea value={selectedRecall.adminNote} disabled />
+                  <S.TextArea value={selectedResponse.recallRequest.adminNote} disabled />
                 </S.FormGroup>
               )}
 
@@ -409,33 +408,33 @@ export default function CustomerRecalls() {
       )}
 
       {/* Detail Modal */}
-      {showDetailModal && selectedRecall && (
+      {showDetailModal && selectedResponse && (
         <S.ModalOverlay onClick={() => setShowDetailModal(false)}>
           <S.ModalContent large onClick={(e) => e.stopPropagation()}>
             <S.ModalHeader>
-              <h2><FaEye /> Chi tiết Recall #{selectedRecall.recallRequestId}</h2>
+              <h2><FaEye /> Chi tiết Recall Response #{selectedResponse.recallResponseId}</h2>
               <S.CloseButton onClick={() => setShowDetailModal(false)}>&times;</S.CloseButton>
             </S.ModalHeader>
             <S.DetailGrid>
               <S.DetailSection>
-                <S.SectionTitle>Thông tin Recall</S.SectionTitle>
+                <S.SectionTitle>Thông tin Recall Response</S.SectionTitle>
                 <S.DetailItem>
-                  <S.DetailLabel>Recall ID:</S.DetailLabel>
-                  <S.DetailValue>#{selectedRecall.recallRequestId}</S.DetailValue>
+                  <S.DetailLabel>Response ID:</S.DetailLabel>
+                  <S.DetailValue>#{selectedResponse.recallResponseId}</S.DetailValue>
                 </S.DetailItem>
                 <S.DetailItem>
                   <S.DetailLabel>Trạng thái:</S.DetailLabel>
-                  <S.DetailValue>{getStatusBadge(selectedRecall.status)}</S.DetailValue>
+                  <S.DetailValue>{getStatusBadge(selectedResponse.status)}</S.DetailValue>
                 </S.DetailItem>
                 <S.DetailItem>
                   <S.DetailLabel>Ngày tạo:</S.DetailLabel>
                   <S.DetailValue>
-                    {selectedRecall.createdAt ? new Date(selectedRecall.createdAt).toLocaleString('vi-VN') : "N/A"}
+                    {selectedResponse.createdAt ? new Date(selectedResponse.createdAt).toLocaleString('vi-VN') : "N/A"}
                   </S.DetailValue>
                 </S.DetailItem>
                 <S.DetailItem>
-                  <S.DetailLabel>Người tạo yêu cầu:</S.DetailLabel>
-                  <S.DetailValue>{selectedRecall.createdBy?.fullName || "N/A"}</S.DetailValue>
+                  <S.DetailLabel>Chiến dịch Recall:</S.DetailLabel>
+                  <S.DetailValue>#{selectedResponse.recallRequest?.recallRequestId || "N/A"}</S.DetailValue>
                 </S.DetailItem>
               </S.DetailSection>
 
@@ -443,15 +442,15 @@ export default function CustomerRecalls() {
                 <S.SectionTitle>Thông tin Xe</S.SectionTitle>
                 <S.DetailItem>
                   <S.DetailLabel>Xe:</S.DetailLabel>
-                  <S.DetailValue>{selectedRecall.installedPart?.vehicle?.model || "N/A"}</S.DetailValue>
+                  <S.DetailValue>{selectedResponse.vehicle?.vehicleModel || "N/A"}</S.DetailValue>
                 </S.DetailItem>
                 <S.DetailItem>
                   <S.DetailLabel>VIN:</S.DetailLabel>
-                  <S.DetailValue>{selectedRecall.installedPart?.vehicle?.vin || "N/A"}</S.DetailValue>
+                  <S.DetailValue>{selectedResponse.vehicle?.vehicleVin || "N/A"}</S.DetailValue>
                 </S.DetailItem>
                 <S.DetailItem>
                   <S.DetailLabel>Năm sản xuất:</S.DetailLabel>
-                  <S.DetailValue>{selectedRecall.installedPart?.vehicle?.year || "N/A"}</S.DetailValue>
+                  <S.DetailValue>{selectedResponse.vehicle?.year || "N/A"}</S.DetailValue>
                 </S.DetailItem>
               </S.DetailSection>
 
@@ -459,47 +458,39 @@ export default function CustomerRecalls() {
                 <S.SectionTitle>Thông tin Phụ tùng cần thay</S.SectionTitle>
                 <S.DetailItem>
                   <S.DetailLabel>Tên phụ tùng:</S.DetailLabel>
-                  <S.DetailValue>{selectedRecall.installedPart?.part?.partName || "N/A"}</S.DetailValue>
+                  <S.DetailValue>{selectedResponse.recallRequest?.part?.partName || "N/A"}</S.DetailValue>
                 </S.DetailItem>
                 <S.DetailItem>
                   <S.DetailLabel>Mã phụ tùng:</S.DetailLabel>
-                  <S.DetailValue>{selectedRecall.installedPart?.part?.partNumber || "N/A"}</S.DetailValue>
-                </S.DetailItem>
-                <S.DetailItem>
-                  <S.DetailLabel>Ngày lắp đặt:</S.DetailLabel>
-                  <S.DetailValue>
-                    {selectedRecall.installedPart?.installationDate
-                      ? new Date(selectedRecall.installedPart.installationDate).toLocaleDateString('vi-VN')
-                      : "N/A"}
-                  </S.DetailValue>
+                  <S.DetailValue>{selectedResponse.recallRequest?.part?.partNumber || "N/A"}</S.DetailValue>
                 </S.DetailItem>
               </S.DetailSection>
 
               <S.DetailSection fullWidth>
                 <S.SectionTitle>Lý do Recall</S.SectionTitle>
-                <S.DetailValue>{selectedRecall.reason || "N/A"}</S.DetailValue>
+                <S.DetailValue>{selectedResponse.recallRequest?.reason || "N/A"}</S.DetailValue>
               </S.DetailSection>
 
-              {selectedRecall.adminNote && (
+              {selectedResponse.recallRequest?.adminNote && (
                 <S.DetailSection fullWidth>
                   <S.SectionTitle>Ghi chú từ Admin</S.SectionTitle>
-                  <S.DetailValue>{selectedRecall.adminNote}</S.DetailValue>
+                  <S.DetailValue>{selectedResponse.recallRequest.adminNote}</S.DetailValue>
                 </S.DetailSection>
               )}
 
-              {selectedRecall.customerNote && (
+              {selectedResponse.customerNote && (
                 <S.DetailSection fullWidth>
                   <S.SectionTitle>Phản hồi của bạn</S.SectionTitle>
-                  <S.DetailValue>{selectedRecall.customerNote}</S.DetailValue>
+                  <S.DetailValue>{selectedResponse.customerNote}</S.DetailValue>
                 </S.DetailSection>
               )}
 
-              {selectedRecall.warrantyClaim && (
+              {selectedResponse.warrantyClaim && (
                 <S.DetailSection fullWidth>
                   <S.SectionTitle>Yêu cầu Bảo hành đã tạo</S.SectionTitle>
                   <S.DetailItem>
                     <S.DetailLabel>Warranty Claim ID:</S.DetailLabel>
-                    <S.DetailValue>#{selectedRecall.warrantyClaim.warrantyClaimId}</S.DetailValue>
+                    <S.DetailValue>#{selectedResponse.warrantyClaim.warrantyClaimId}</S.DetailValue>
                   </S.DetailItem>
                   <S.InfoBox>
                     <FaCheckCircle />
@@ -511,12 +502,12 @@ export default function CustomerRecalls() {
               )}
             </S.DetailGrid>
             <S.ModalFooter>
-              {selectedRecall.status === "WAITING_CUSTOMER_CONFIRM" && (
+              {selectedResponse.status === "PENDING" && (
                 <S.Button
                   primary
                   onClick={() => {
                     setShowDetailModal(false);
-                    openConfirmModal(selectedRecall);
+                    openConfirmModal(selectedResponse);
                   }}
                 >
                   <FaThumbsUp /> Xác nhận ngay
