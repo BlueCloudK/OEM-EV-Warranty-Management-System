@@ -90,7 +90,7 @@ public class RecallRequestServiceImpl implements RecallRequestService {
         RecallRequest recall = new RecallRequest();
         recall.setPart(part); // Link to part type (ví dụ: "Pin Model X v1.2")
         recall.setReason(dto.getReason()); // Lý do triệu hồi (safety/quality issue)
-        recall.setStatus(RecallRequestStatus.PENDING_ADMIN_APPROVAL); // Chờ Admin duyệt
+        recall.setStatus(RecallRequestStatus.PENDING); // Chờ Admin duyệt
 
         // BƯỚC 4: Set metadata
         recall.setCreatedBy(createdBy); // Track WHO created recall campaign
@@ -176,12 +176,12 @@ public class RecallRequestServiceImpl implements RecallRequestService {
 
         // BƯỚC 3: Validate state transition - STATE MACHINE ENFORCEMENT
         // Thiết kế: Kiểm tra trạng thái hiện tại là một bước cực kỳ quan trọng để đảm bảo tính toàn vẹn của quy trình.
-        if (recall.getStatus() != RecallRequestStatus.PENDING_ADMIN_APPROVAL) {
-            throw new IllegalStateException("Can only approve recall requests with status PENDING_ADMIN_APPROVAL. Current status: " + recall.getStatus());
+        if (recall.getStatus() != RecallRequestStatus.PENDING) {
+            throw new IllegalStateException("Can only approve recall requests with status PENDING. Current status: " + recall.getStatus());
         }
 
         // BƯỚC 4-5: Update status và metadata
-        recall.setStatus(RecallRequestStatus.WAITING_CUSTOMER_CONFIRM); // Next state
+        recall.setStatus(RecallRequestStatus.APPROVED); // Next state - Admin đã duyệt
         recall.setAdminNote(adminNote); // Optional explanation
         recall.setApprovedBy(approvedBy); // Track WHO approved
         recall.setUpdatedAt(LocalDateTime.now());
@@ -254,12 +254,12 @@ public class RecallRequestServiceImpl implements RecallRequestService {
 
         // BƯỚC 3: Validate state transition
         // Thiết kế: Tương tự như approve, việc kiểm tra trạng thái là bắt buộc.
-        if (recall.getStatus() != RecallRequestStatus.PENDING_ADMIN_APPROVAL) {
-            throw new IllegalStateException("Can only reject recall requests with status PENDING_ADMIN_APPROVAL. Current status: " + recall.getStatus());
+        if (recall.getStatus() != RecallRequestStatus.PENDING) {
+            throw new IllegalStateException("Can only reject recall requests with status PENDING. Current status: " + recall.getStatus());
         }
 
-        // BƯỚC 4-5: Update status - REJECTED_BY_ADMIN là final state
-        recall.setStatus(RecallRequestStatus.REJECTED_BY_ADMIN);
+        // BƯỚC 4-5: Update status - REJECTED là final state
+        recall.setStatus(RecallRequestStatus.REJECTED);
         recall.setAdminNote(adminNote); // REQUIRED - explain why reject
         recall.setApprovedBy(rejectedBy); // Track WHO rejected
         recall.setUpdatedAt(LocalDateTime.now());

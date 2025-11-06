@@ -1,16 +1,22 @@
 package com.swp391.warrantymanagement.enums;
 
 /**
- * RecallRequestStatus - Trạng thái yêu cầu recall từ EVM đến khách hàng
+ * RecallRequestStatus - Trạng thái của chiến dịch triệu hồi (Recall Campaign)
+ * <p>
+ * <strong>Flow trạng thái:</strong>
+ * <pre>
+ * PENDING (EVM_STAFF vừa tạo)
+ *    ├─→ APPROVED (Admin đã duyệt, tự động tạo RecallResponse cho customers bị ảnh hưởng)
+ *    │      └─→ COMPLETED (Tất cả RecallResponse đã xử lý xong)
+ *    │
+ *    └─→ REJECTED (Admin từ chối)
+ * </pre>
  */
 public enum RecallRequestStatus {
-    PENDING_ADMIN_APPROVAL("Chờ Admin duyệt"),           // EVM vừa tạo recall request
-    REJECTED_BY_ADMIN("Admin đã từ chối"),               // Admin từ chối recall request
-    APPROVED_BY_ADMIN("Admin đã duyệt"),                 // Admin duyệt (không dùng - deprecated)
-    WAITING_CUSTOMER_CONFIRM("Chờ khách hàng xác nhận"), // Admin đã duyệt, chờ customer
-    REJECTED_BY_CUSTOMER("Khách hàng từ chối"),          // Customer từ chối recall
-    ACCEPTED_BY_CUSTOMER("Khách hàng chấp nhận"),        // Customer chấp nhận (không dùng - deprecated)
-    CLAIM_CREATED("Đã tạo yêu cầu bảo hành");            // Đã tự động tạo warranty claim
+    PENDING("Chờ Admin duyệt"),           // EVM_STAFF vừa tạo recall request
+    APPROVED("Admin đã duyệt"),           // Admin duyệt, đã tạo RecallResponse cho customers
+    REJECTED("Admin đã từ chối"),         // Admin từ chối recall request
+    COMPLETED("Đã hoàn thành");           // Tất cả RecallResponse đã xử lý xong
 
     private final String vietnameseName;
 
@@ -22,5 +28,3 @@ public enum RecallRequestStatus {
         return vietnameseName;
     }
 }
-
-
