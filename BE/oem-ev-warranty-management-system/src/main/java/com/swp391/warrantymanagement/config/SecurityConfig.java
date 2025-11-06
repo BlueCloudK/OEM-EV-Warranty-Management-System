@@ -109,7 +109,7 @@ public class SecurityConfig {
 
                 // Recall Responses - Phản hồi triệu hồi của từng xe
                 .requestMatchers("/api/recall-responses/my-responses").hasRole("CUSTOMER")
-                .requestMatchers("/api/recall-responses/*/confirm").hasRole("CUSTOMER")
+                .requestMatchers(HttpMethod.PATCH, "/api/recall-responses/*/confirm").hasRole("CUSTOMER")
                 .requestMatchers("/api/recall-responses/campaign/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF")
                 .requestMatchers("/api/recall-responses/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF", "CUSTOMER")
 
