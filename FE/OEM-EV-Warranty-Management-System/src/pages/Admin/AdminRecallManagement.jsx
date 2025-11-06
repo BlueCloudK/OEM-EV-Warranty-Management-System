@@ -138,7 +138,8 @@ export default function AdminRecallManagement() {
       REJECTED_BY_ADMIN: { color: "#e74c3c", label: "Admin từ chối" },
       WAITING_CUSTOMER_CONFIRM: { color: "#3498db", label: "Chờ khách hàng" },
       REJECTED_BY_CUSTOMER: { color: "#95a5a6", label: "Khách từ chối" },
-      CLAIM_CREATED: { color: "#27ae60", label: "Đã tạo claim" }
+      CLAIM_CREATED: { color: "#27ae60", label: "Đã tạo claim" },
+      COMPLETED: { color: "#1a73e8", label: "Hoàn thành" }
     };
     const config = statusMap[status] || { color: "#7f8c8d", label: status };
     return <S.StatusBadge color={config.color}>{config.label}</S.StatusBadge>;
@@ -151,7 +152,8 @@ export default function AdminRecallManagement() {
       approved: recalls.filter(r => r.status === "WAITING_CUSTOMER_CONFIRM").length,
       rejected: recalls.filter(r => r.status === "REJECTED_BY_ADMIN").length,
       customerRejected: recalls.filter(r => r.status === "REJECTED_BY_CUSTOMER").length,
-      claimCreated: recalls.filter(r => r.status === "CLAIM_CREATED").length
+      claimCreated: recalls.filter(r => r.status === "CLAIM_CREATED").length,
+      completed: recalls.filter(r => r.status === "COMPLETED").length
     };
   };
 
@@ -223,6 +225,14 @@ export default function AdminRecallManagement() {
             <S.StatLabel>Đã tạo claim</S.StatLabel>
           </S.StatContent>
         </S.StatCard>
+
+        <S.StatCard color="#1a73e8" onClick={() => setStatusFilter("COMPLETED")}>
+          <S.StatIcon color="#1a73e8"><FaCheckCircle /></S.StatIcon>
+          <S.StatContent>
+            <S.StatNumber>{stats.completed}</S.StatNumber>
+            <S.StatLabel>Đã hoàn thành</S.StatLabel>
+          </S.StatContent>
+        </S.StatCard>
       </S.StatsGrid>
 
       <S.FilterBar>
@@ -245,6 +255,7 @@ export default function AdminRecallManagement() {
             <option value="REJECTED_BY_ADMIN">Admin từ chối</option>
             <option value="REJECTED_BY_CUSTOMER">Khách từ chối</option>
             <option value="CLAIM_CREATED">Đã tạo claim</option>
+            <option value="COMPLETED">Đã hoàn thành</option>
           </S.FilterSelect>
         </S.FilterGroup>
       </S.FilterBar>
