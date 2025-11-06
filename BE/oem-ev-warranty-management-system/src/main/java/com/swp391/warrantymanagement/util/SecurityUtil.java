@@ -4,6 +4,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Set;
 import java.util.Optional;
@@ -15,6 +17,8 @@ import java.util.stream.Collectors;
  * - Sử dụng Optional để tránh NullPointerException.
  */
 public final class SecurityUtil {
+
+    private static final Logger logger = LoggerFactory.getLogger(SecurityUtil.class);
 
     /**
      * Private constructor để ngăn không cho class này được khởi tạo.
@@ -32,16 +36,32 @@ public final class SecurityUtil {
     public static Optional<Authentication> getCurrentAuthentication() {
         // Step 1: Lấy Authentication object từ SecurityContextHolder.
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        // DEBUG: Log authentication state
+        logger.info("🔍 DEBUG getCurrentAuthentication:");
+        logger.info("  - authentication: {}", authentication);
+        logger.info("  - authentication == null: {}", authentication == null);
+
+        if (authentication != null) {
+            logger.info("  - isAuthenticated(): {}", authentication.isAuthenticated());
+            logger.info("  - getName(): {}", authentication.getName());
+            logger.info("  - getPrincipal(): {}", authentication.getPrincipal());
+            logger.info("  - getAuthorities(): {}", authentication.getAuthorities());
+        }
+
         // Step 2: Kiểm tra nếu object là null hoặc chưa được xác thực.
         if (authentication == null || !authentication.isAuthenticated()) {
+            logger.warn("  ❌ FAILED: authentication is null or not authenticated");
             return Optional.empty();
         }
         // Step 3: Check anonymousUser - Spring Security có thể tạo anonymous authentication
         // Cần check getName() thay vì getPrincipal() để tránh ClassCastException
         if ("anonymousUser".equals(authentication.getName())) {
+            logger.warn("  ❌ FAILED: user is anonymousUser");
             return Optional.empty();
         }
         // Step 4: Trả về Optional chứa Authentication object.
+        logger.info("  ✅ SUCCESS: returning authentication for user: {}", authentication.getName());
         return Optional.of(authentication);
     }
 
@@ -78,7 +98,16 @@ public final class SecurityUtil {
     public static boolean hasRole(String role) {
         // FIX: Restore logic from Backup branch - support both "ADMIN" and "ROLE_ADMIN" without forcing uppercase
         Set<String> roles = getCurrentRoles();
-        return roles.contains("ROLE_" + role) || roles.contains(role);
+        boolean hasRole = roles.contains("ROLE_" + role) || roles.contains(role);
+
+        // DEBUG: Log role checking
+        logger.info("🔍 DEBUG hasRole:");
+        logger.info("  - Checking role: {}", role);
+        logger.info("  - Available roles: {}", roles);
+        logger.info("  - Checking for: 'ROLE_{}' or '{}'", role, role);
+        logger.info("  - Result: {}", hasRole ? "✅ HAS ROLE" : "❌ DOES NOT HAVE ROLE");
+
+        return hasRole;
     }
 
     /**

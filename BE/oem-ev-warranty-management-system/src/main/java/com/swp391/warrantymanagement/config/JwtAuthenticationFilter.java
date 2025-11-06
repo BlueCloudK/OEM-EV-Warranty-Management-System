@@ -71,19 +71,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String jwt;
         final String username;
 
+        // DEBUG: Log request info
+        logger.info("🔍 DEBUG JwtAuthenticationFilter for: {} {}", request.getMethod(), request.getRequestURI());
+        logger.info("  - Authorization header: {}", authHeader != null ? "Bearer ***" : "NULL");
+
         // Bước 2: Bỏ qua nếu header không tồn tại hoặc không đúng định dạng "Bearer ".
         // Request sẽ đi tiếp và bị từ chối ở các tầng sau nếu endpoint yêu cầu xác thực.
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            logger.warn("  ❌ No valid Authorization header, skipping JWT authentication");
             filterChain.doFilter(request, response);
             return;
         }
 
         // Bước 3: Trích xuất chuỗi JWT token (bỏ qua "Bearer ").
         jwt = authHeader.substring(7);
+        logger.info("  - JWT token extracted (length: {})", jwt.length());
 
         try {
             // Bước 4: Trích xuất username từ token.
             username = jwtService.extractUsername(jwt);
+            logger.info("  - Extracted username: {}", username);
 
             // Bước 5: Nếu có username và request này chưa được xác thực trước đó.
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
@@ -91,9 +98,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 // Bước 6: Tải thông tin chi tiết người dùng (bao gồm cả quyền) từ database.
                 // Việc này đảm bảo thông tin người dùng (ví dụ: quyền, trạng thái bị khóa) luôn được cập nhật.
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
+                logger.info("  - Loaded UserDetails: username={}, authorities={}",
+                    userDetails.getUsername(), userDetails.getAuthorities());
 
                 // Bước 7: Xác thực token (chữ ký, thời gian hết hạn).
-                if (jwtService.isTokenValid(jwt)) {
+                boolean isValid = jwtService.isTokenValid(jwt);
+                logger.info("  - Token valid: {}", isValid);
+
+                if (isValid) {
                     // Bước 8: Tạo đối tượng Authentication để Spring Security sử dụng.
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails,
@@ -109,13 +121,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     // Bước 10: Cập nhật SecurityContextHolder với thông tin xác thực mới.
                     // Từ thời điểm này, request được coi là đã được xác thực.
                     SecurityContextHolder.getContext().setAuthentication(authToken);
+                    logger.info("  ✅ Authentication set successfully for user: {}", username);
+                } else {
+                    logger.warn("  ❌ Token is invalid");
+                }
+            } else {
+                if (username == null) {
+                    logger.warn("  ❌ Username is null from token");
+                }
+                if (SecurityContextHolder.getContext().getAuthentication() != null) {
+                    logger.info("  ⚠️ Authentication already exists in SecurityContext");
                 }
             }
         } catch (Exception e) {
             // Bắt và ghi log tất cả các lỗi liên quan đến việc xác thực JWT (ví dụ: token hết hạn, chữ ký sai).
             // Chúng ta không ném lại exception để filter chain có thể tiếp tục,
             // cho phép các endpoint công khai vẫn hoạt động.
-            logger.error("JWT Authentication failed: " + e.getMessage());
+            logger.error("  ❌ JWT Authentication failed: " + e.getMessage(), e);
         }
 
         // Bước 11: Chuyển request và response cho filter tiếp theo trong chuỗi.
