@@ -1,6 +1,6 @@
 # 🚗 OEM EV Warranty Management System
 
-Hệ thống quản lý bảo hành xe điện toàn diện dành cho nhà sản xuất, trung tâm dịch vụ và khách hàng.
+A comprehensive electric vehicle warranty management system for manufacturers, service centers, and customers.
 
 [![Java](https://img.shields.io/badge/Java-21-orange.svg)](https://openjdk.java.net/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.6-brightgreen.svg)](https://spring.io/projects/spring-boot)
@@ -8,107 +8,107 @@ Hệ thống quản lý bảo hành xe điện toàn diện dành cho nhà sản
 [![MySQL](https://img.shields.io/badge/MySQL-8.0-blue.svg)](https://www.mysql.com/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
 
-## 📋 Mục lục
+## 📋 Table of Contents
 
-- [Giới thiệu](#-giới-thiệu)
-- [Tính năng chính](#-tính-năng-chính)
-- [Công nghệ sử dụng](#-công-nghệ-sử-dụng)
-- [Kiến trúc hệ thống](#-kiến-trúc-hệ-thống)
-- [Yêu cầu hệ thống](#-yêu-cầu-hệ-thống)
-- [Cài đặt và chạy](#-cài-đặt-và-chạy)
-- [Cấu trúc dự án](#-cấu-trúc-dự-án)
+- [Introduction](#-introduction)
+- [Key Features](#-key-features)
+- [Technology Stack](#-technology-stack)
+- [System Architecture](#-system-architecture)
+- [System Requirements](#-system-requirements)
+- [Installation & Setup](#-installation--setup)
+- [Project Structure](#-project-structure)
 - [API Documentation](#-api-documentation)
-- [Vai trò người dùng](#-vai-trò-người-dùng)
-- [Bảo mật](#-bảo-mật)
-- [Tài liệu](#-tài-liệu)
+- [User Roles](#-user-roles)
+- [Security](#-security)
+- [Documentation](#-documentation)
 
-## 🎯 Giới thiệu
+## 🎯 Introduction
 
-**OEM EV Warranty Management System** là một hệ thống quản lý bảo hành xe điện toàn diện, được thiết kế để tối ưu hóa quy trình bảo hành từ khách hàng, trung tâm dịch vụ đến nhà sản xuất. Hệ thống hỗ trợ quản lý yêu cầu bảo hành, theo dõi lịch sử dịch vụ, quản lý phụ tùng, và xử lý các chiến dịch triệu hồi.
+**OEM EV Warranty Management System** is a comprehensive electric vehicle warranty management platform designed to optimize warranty processes from customers, service centers to manufacturers. The system supports warranty claim management, service history tracking, parts management, and recall campaign processing.
 
-### Đặc điểm nổi bật
+### Key Highlights
 
-- ✅ **Đa vai trò**: Hỗ trợ 5+ vai trò người dùng với quyền truy cập phân cấp
-- ✅ **Quy trình tự động**: Tự động hóa quy trình xử lý yêu cầu bảo hành
-- ✅ **Theo dõi thời gian thực**: Cập nhật trạng thái yêu cầu bảo hành ngay lập tức
-- ✅ **Quản lý triệu hồi**: Hệ thống triệu hồi xe tích hợp với thông báo khách hàng
-- ✅ **Phân tích & Báo cáo**: Dashboard phân tích với biểu đồ và metrics
-- ✅ **Bảo mật cao**: Xác thực JWT với cơ chế refresh token
+- ✅ **Multi-role Support**: 5+ user roles with hierarchical access control
+- ✅ **Automated Workflow**: Automated warranty claim processing workflow
+- ✅ **Real-time Tracking**: Instant warranty claim status updates
+- ✅ **Recall Management**: Integrated vehicle recall system with customer notifications
+- ✅ **Analytics & Reporting**: Analytics dashboard with charts and metrics
+- ✅ **High Security**: JWT authentication with refresh token mechanism
 
-## 🚀 Tính năng chính
+## 🚀 Key Features
 
-### 🔧 Quản lý Bảo hành
-- Tạo và theo dõi yêu cầu bảo hành
-- Quy trình duyệt/từ chối tự động
-- Cập nhật trạng thái theo thời gian thực
-- Lưu trữ chứng từ và hình ảnh
+### 🔧 Warranty Management
+- Create and track warranty claims
+- Automated approval/rejection workflow
+- Real-time status updates
+- Document and image storage
 
-### 🚙 Quản lý Xe
-- Đăng ký xe qua mã VIN
-- Theo dõi lịch sử bảo hành và bảo dưỡng
-- Quản lý thông tin xe chi tiết
+### 🚙 Vehicle Management
+- Vehicle registration via VIN
+- Warranty and maintenance history tracking
+- Detailed vehicle information management
 
-### 🔩 Quản lý Phụ tùng
-- Danh mục phụ tùng đầy đủ
-- Yêu cầu và theo dõi phụ tùng
-- Lịch sử lắp đặt phụ tùng
+### 🔩 Parts Management
+- Comprehensive parts catalog
+- Parts request and tracking
+- Parts installation history
 
-### 🏢 Quản lý Trung tâm Dịch vụ
-- Quản lý thông tin trung tâm dịch vụ
-- Tích hợp bản đồ tìm kiếm trung tâm gần nhất
-- Đánh giá và phản hồi từ khách hàng
+### 🏢 Service Center Management
+- Service center information management
+- Map integration for finding nearest centers
+- Customer ratings and feedback
 
-### 📢 Quản lý Triệu hồi
-- Tạo chiến dịch triệu hồi
-- Thông báo tự động đến khách hàng
-- Theo dõi phản hồi và xử lý triệu hồi
+### 📢 Recall Management
+- Create recall campaigns
+- Automated customer notifications
+- Response tracking and recall processing
 
-### 📊 Phân tích & Báo cáo
-- Dashboard tổng quan theo vai trò
-- Biểu đồ và thống kê chi tiết
-- Báo cáo hiệu suất trung tâm dịch vụ
+### 📊 Analytics & Reporting
+- Role-based overview dashboards
+- Detailed charts and statistics
+- Service center performance reports
 
-### 💬 Quản lý Phản hồi
-- Thu thập đánh giá từ khách hàng
-- Phân tích mức độ hài lòng
-- Cải thiện chất lượng dịch vụ
+### 💬 Feedback Management
+- Collect customer ratings
+- Satisfaction analysis
+- Service quality improvement
 
-## 🛠️ Công nghệ sử dụng
+## 🛠️ Technology Stack
 
 ### Backend
-| Công nghệ | Phiên bản | Mục đích |
+| Technology | Version | Purpose |
 |-----------|-----------|----------|
-| **Java** | 21 | Ngôn ngữ lập trình chính |
-| **Spring Boot** | 3.5.6 | Framework REST API |
-| **Spring Security** | Latest | Bảo mật và xác thực |
-| **Hibernate/JPA** | Latest | ORM cho database |
-| **MySQL** | 8.0 | Cơ sở dữ liệu quan hệ |
-| **JWT (jjwt)** | 0.13.0 | Xác thực token |
-| **Springdoc OpenAPI** | 2.8.13 | Tài liệu API (Swagger) |
-| **Maven** | 3.9.11 | Quản lý dependencies |
+| **Java** | 21 | Primary programming language |
+| **Spring Boot** | 3.5.6 | REST API framework |
+| **Spring Security** | Latest | Security and authentication |
+| **Hibernate/JPA** | Latest | Database ORM |
+| **MySQL** | 8.0 | Relational database |
+| **JWT (jjwt)** | 0.13.0 | Token authentication |
+| **Springdoc OpenAPI** | 2.8.13 | API documentation (Swagger) |
+| **Maven** | 3.9.11 | Dependency management |
 | **JUnit 5** | Latest | Unit testing |
 | **JaCoCo** | Latest | Test coverage |
 
 ### Frontend
-| Công nghệ | Phiên bản | Mục đích |
+| Technology | Version | Purpose |
 |-----------|-----------|----------|
 | **React** | 19.1.1 | UI framework |
-| **Vite** | 7.1.2 | Build tool với HMR |
+| **Vite** | 7.1.2 | Build tool with HMR |
 | **React Router** | 7.9.1 | Client-side routing |
 | **Styled Components** | 6.1.19 | CSS-in-JS styling |
-| **Recharts** | 3.3.0 | Biểu đồ và visualization |
-| **React Icons** | 5.5.0 | Thư viện icon |
-| **jwt-decode** | 4.0.0 | Xử lý JWT token |
+| **Recharts** | 3.3.0 | Charts and visualization |
+| **React Icons** | 5.5.0 | Icon library |
+| **jwt-decode** | 4.0.0 | JWT token handling |
 | **Node.js** | 22+ | Runtime environment |
 
 ### DevOps
 - **Docker** & **Docker Compose**: Container orchestration
-- **Nginx**: Web server cho frontend
+- **Nginx**: Web server for frontend
 - **Git**: Version control
 
-## 🏗️ Kiến trúc hệ thống
+## 🏗️ System Architecture
 
-### Kiến trúc phân lớp (Layered Architecture)
+### Layered Architecture
 
 ```
 ┌─────────────────────────────────────────┐
@@ -142,7 +142,7 @@ Hệ thống quản lý bảo hành xe điện toàn diện dành cho nhà sản
 └─────────────────────────────────────────┘
 ```
 
-### Mô hình triển khai Docker
+### Docker Deployment Model
 
 ```
 ┌────────────────────────────────────────────────┐
@@ -157,26 +157,26 @@ Hệ thống quản lý bảo hành xe điện toàn diện dành cho nhà sản
 └────────────────────────────────────────────────┘
 ```
 
-## 💻 Yêu cầu hệ thống
+## 💻 System Requirements
 
-### Yêu cầu tối thiểu
+### Minimum Requirements
 
-- **JDK**: 21 hoặc mới hơn
-- **Maven**: 3.9.11 hoặc mới hơn
-- **Node.js**: 22 hoặc mới hơn
-- **MySQL**: 8.0 hoặc mới hơn
-- **Docker**: Latest (cho triển khai container)
+- **JDK**: 21 or higher
+- **Maven**: 3.9.11 or higher
+- **Node.js**: 22 or higher
+- **MySQL**: 8.0 or higher
+- **Docker**: Latest (for container deployment)
 - **Docker Compose**: Latest
 
-### Cấu hình khuyến nghị
+### Recommended Configuration
 
-- **RAM**: 4GB trở lên
-- **CPU**: 2 cores trở lên
-- **Disk**: 10GB dung lượng trống
+- **RAM**: 4GB or more
+- **CPU**: 2 cores or more
+- **Disk**: 10GB free space
 
-## 📦 Cài đặt và chạy
+## 📦 Installation & Setup
 
-### Phương án 1: Sử dụng Docker Compose (Khuyến nghị)
+### Option 1: Using Docker Compose (Recommended)
 
 #### 1. Clone repository
 
@@ -185,9 +185,9 @@ git clone https://github.com/your-username/OEM-EV-Warranty-Management-System.git
 cd OEM-EV-Warranty-Management-System
 ```
 
-#### 2. Tạo file `.env`
+#### 2. Create `.env` file
 
-Tạo file `.env` trong thư mục gốc với nội dung:
+Create `.env` file in root directory with the following content:
 
 ```env
 # MySQL Configuration
@@ -201,56 +201,56 @@ DB_PASSWORD=your_secure_password_here
 JWT_SECRET_KEY=your_jwt_secret_key_at_least_32_characters_long_for_security
 ```
 
-#### 3. Khởi chạy Docker Compose
+#### 3. Launch Docker Compose
 
 ```bash
 docker-compose up --build
 ```
 
-#### 4. Truy cập hệ thống
+#### 4. Access the system
 
 - **Frontend**: http://localhost:3000
 - **Backend API**: http://localhost:8080
 - **Swagger UI**: http://localhost:8080/swagger-ui.html
 
-### Phương án 2: Chạy Local Development
+### Option 2: Local Development
 
 #### Backend
 
 ```bash
-# Di chuyển vào thư mục backend
+# Navigate to backend directory
 cd BE/oem-ev-warranty-management-system
 
-# Tạo file .env hoặc cấu hình application.properties
-# với thông tin database và JWT secret
+# Create .env file or configure application.properties
+# with database information and JWT secret
 
 # Build project
 mvn clean install
 
-# Chạy Spring Boot
+# Run Spring Boot
 mvn spring-boot:run
 ```
 
-Backend sẽ chạy tại: http://localhost:8080
+Backend will run at: http://localhost:8080
 
 #### Frontend
 
 ```bash
-# Mở terminal mới, di chuyển vào thư mục frontend
+# Open new terminal, navigate to frontend directory
 cd FE/OEM-EV-Warranty-Management-System
 
-# Cài đặt dependencies
+# Install dependencies
 npm install
 
-# Chạy development server
+# Run development server
 npm run dev
 ```
 
-Frontend sẽ chạy tại: http://localhost:5173 (hoặc cổng mà Vite chỉ định)
+Frontend will run at: http://localhost:5173 (or port specified by Vite)
 
 #### MySQL Database
 
-Đảm bảo MySQL đang chạy và tạo database:
+Ensure MySQL is running and create database:
 
 ```sql
 CREATE DATABASE warranty_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -259,7 +259,7 @@ GRANT ALL PRIVILEGES ON warranty_db.* TO 'warranty_user'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
-## 📁 Cấu trúc dự án
+## 📁 Project Structure
 
 ```
 OEM-EV-Warranty-Management-System/
@@ -313,7 +313,7 @@ OEM-EV-Warranty-Management-System/
 │           ├── App.jsx                          # Main routing
 │           └── main.jsx                         # Entry point
 │
-├── Requirements/                                # Tài liệu yêu cầu
+├── Requirements/                                # Requirements documentation
 │   ├── use-case-analysis-table.md              # 26 use cases
 │   ├── Physical ERD.png                         # Database schema
 │   ├── Context Diagram.drawio.png               # System context
@@ -329,38 +329,38 @@ OEM-EV-Warranty-Management-System/
 
 ### Swagger UI
 
-Truy cập tài liệu API tương tác tại:
+Access interactive API documentation at:
 ```
 http://localhost:8080/swagger-ui.html
 ```
 
 ### API Endpoints
 
-Hệ thống cung cấp 15+ controllers với 100+ endpoints:
+The system provides 15+ controllers with 100+ endpoints:
 
-| Controller | Chức năng chính |
+| Controller | Main Functions |
 |-----------|-----------------|
-| **AuthController** | Login, logout, refresh token, đăng ký, reset password |
-| **CustomerController** | Quản lý hồ sơ khách hàng, xe, lịch sử bảo hành |
-| **VehicleController** | Đăng ký xe, tra cứu VIN, quản lý thông tin xe |
-| **WarrantyClaimController** | Tạo/quản lý yêu cầu bảo hành, cập nhật trạng thái |
-| **PartController** | Quản lý danh mục phụ tùng |
-| **PartRequestController** | Yêu cầu và theo dõi phụ tùng |
-| **ServiceCenterController** | Quản lý trung tâm dịch vụ, đánh giá |
-| **RecallRequestController** | Tạo/quản lý chiến dịch triệu hồi |
-| **WorkLogController** | Theo dõi công việc kỹ thuật viên |
-| **FeedbackController** | Quản lý phản hồi và đánh giá |
-| **AdminController** | Quản lý người dùng và hệ thống |
+| **AuthController** | Login, logout, refresh token, registration, password reset |
+| **CustomerController** | Customer profile management, vehicles, warranty history |
+| **VehicleController** | Vehicle registration, VIN lookup, vehicle information management |
+| **WarrantyClaimController** | Create/manage warranty claims, status updates |
+| **PartController** | Parts catalog management |
+| **PartRequestController** | Parts request and tracking |
+| **ServiceCenterController** | Service center management, ratings |
+| **RecallRequestController** | Create/manage recall campaigns |
+| **WorkLogController** | Technician work tracking |
+| **FeedbackController** | Feedback and ratings management |
+| **AdminController** | User and system management |
 
 ### Authentication
 
-Tất cả API (trừ public endpoints) yêu cầu JWT token:
+All APIs (except public endpoints) require JWT token:
 
 ```bash
 Authorization: Bearer <your_jwt_token>
 ```
 
-### Ví dụ API Call
+### API Call Example
 
 ```bash
 # Login
@@ -368,133 +368,133 @@ curl -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username": "user@example.com", "password": "password"}'
 
-# Get warranty claims (cần token)
+# Get warranty claims (requires token)
 curl -X GET http://localhost:8080/api/warranty-claims \
   -H "Authorization: Bearer <token>"
 ```
 
-## 👥 Vai trò người dùng
+## 👥 User Roles
 
-### 1. CUSTOMER (Khách hàng)
-**Quyền truy cập:**
-- Xem thông tin xe và bảo hành của mình
-- Xem lịch sử dịch vụ
-- Gửi phản hồi và đánh giá
-- Phản hồi thông báo triệu hồi
-- Tìm kiếm trung tâm dịch vụ
+### 1. CUSTOMER
+**Access Permissions:**
+- View own vehicle and warranty information
+- View service history
+- Submit feedback and ratings
+- Respond to recall notifications
+- Find service centers
 
-**Dashboard:** 7 trang chức năng
+**Dashboard:** 7 functional pages
 
-### 2. SC_STAFF (Nhân viên Trung tâm Dịch vụ)
-**Quyền truy cập:**
-- Đăng ký xe mới
-- Tạo yêu cầu bảo hành
-- Quản lý thông tin khách hàng
-- Xem phản hồi khách hàng
-- Quản lý lịch sử dịch vụ
+### 2. SC_STAFF (Service Center Staff)
+**Access Permissions:**
+- Register new vehicles
+- Create warranty claims
+- Manage customer information
+- View customer feedback
+- Manage service history
 
-**Dashboard:** 5 trang chức năng
+**Dashboard:** 5 functional pages
 
-### 3. SC_TECHNICIAN (Kỹ thuật viên)
-**Quyền truy cập:**
-- Xem công việc được giao
-- Tạo work log
-- Yêu cầu phụ tùng
-- Tra cứu xe và phụ tùng
-- Quản lý lịch sử dịch vụ
+### 3. SC_TECHNICIAN (Technician)
+**Access Permissions:**
+- View assigned work
+- Create work logs
+- Request parts
+- Lookup vehicles and parts
+- Manage service history
 
-**Dashboard:** 8 trang chức năng
+**Dashboard:** 8 functional pages
 
-### 4. EVM_STAFF (Nhân viên Nhà sản xuất)
-**Quyền truy cập:**
-- Quản lý danh mục phụ tùng
-- Duyệt yêu cầu phụ tùng
-- Tạo chiến dịch triệu hồi
-- Xem work logs và phản hồi
-- Phân tích dữ liệu bảo hành
+### 4. EVM_STAFF (Manufacturer Staff)
+**Access Permissions:**
+- Manage parts catalog
+- Approve parts requests
+- Create recall campaigns
+- View work logs and feedback
+- Analyze warranty data
 
-**Dashboard:** 8 trang chức năng
+**Dashboard:** 8 functional pages
 
-### 5. ADMIN (Quản trị viên)
-**Quyền truy cập:**
-- Toàn quyền quản lý hệ thống
-- Quản lý người dùng và phân quyền
-- Quản lý tất cả dữ liệu
-- Cấu hình hệ thống
-- Báo cáo và phân tích
+### 5. ADMIN (Administrator)
+**Access Permissions:**
+- Full system management
+- User and permission management
+- Manage all data
+- System configuration
+- Reports and analytics
 
-**Dashboard:** 11 trang chức năng
+**Dashboard:** 11 functional pages
 
-## 🔒 Bảo mật
+## 🔒 Security
 
 ### JWT Authentication
 
-- **Access Token**: Thời gian sống 15-60 phút
-- **Refresh Token**: Thời gian sống 7-30 ngày
-- **Encryption**: Secret key tối thiểu 32 ký tự
+- **Access Token**: Lifetime 15-60 minutes
+- **Refresh Token**: Lifetime 7-30 days
+- **Encryption**: Secret key minimum 32 characters
 
 ### RBAC (Role-Based Access Control)
 
-- Phân quyền dựa trên vai trò
-- Endpoints được bảo vệ bởi annotations
-- Kiểm tra quyền truy cập tại Security Layer
+- Role-based permissions
+- Endpoints protected by annotations
+- Access control at Security Layer
 
 ### Security Best Practices
 
-- Password hashing với BCrypt
-- CORS configuration cho production
+- Password hashing with BCrypt
+- CORS configuration for production
 - Input validation
 - SQL injection prevention (JPA Prepared Statements)
 - XSS protection
 
-### Cấu hình CORS
+### CORS Configuration
 
 ```java
-// Cho phép frontend truy cập từ các domain được cấu hình
+// Allow frontend access from configured domains
 allowedOrigins: http://localhost:3000, http://localhost:5173
 ```
 
-## 📖 Tài liệu
+## 📖 Documentation
 
-### Tài liệu Backend (BE/docs/)
+### Backend Documentation (BE/docs/)
 
-- **API_DOCUMENTATION.md**: Tài liệu API đầy đủ
-- **SYSTEM_ARCHITECTURE_EXPLANATION.md**: Giải thích kiến trúc hệ thống
-- **DATA_FLOW_SCENARIOS.md**: Kịch bản luồng dữ liệu
-- **SECURITY_GUIDE.md**: Hướng dẫn bảo mật
-- **CORS_CONFIGURATION.md**: Cấu hình CORS
+- **API_DOCUMENTATION.md**: Complete API documentation
+- **SYSTEM_ARCHITECTURE_EXPLANATION.md**: System architecture explanation
+- **DATA_FLOW_SCENARIOS.md**: Data flow scenarios
+- **SECURITY_GUIDE.md**: Security guide
+- **CORS_CONFIGURATION.md**: CORS configuration
 
-### Tài liệu Yêu cầu (Requirements/)
+### Requirements Documentation (Requirements/)
 
-- **use-case-analysis-table.md**: Bảng phân tích 26 use cases
-- **Physical ERD.png**: Sơ đồ ERD database
-- **Context Diagram.drawio.png**: Sơ đồ ngữ cảnh hệ thống
-- **Use Case Diagram.jpg**: Sơ đồ use case
-- **Feature List.docx**: Danh sách tính năng chi tiết
+- **use-case-analysis-table.md**: 26 use cases analysis
+- **Physical ERD.png**: Database ERD diagram
+- **Context Diagram.drawio.png**: System context diagram
+- **Use Case Diagram.jpg**: Use case diagram
+- **Feature List.docx**: Detailed feature list
 
-## 🔄 Quy trình nghiệp vụ chính
+## 🔄 Main Business Workflows
 
-### 1. Quy trình Yêu cầu Bảo hành
-
-```
-Khách hàng thông báo SC → SC Staff tạo yêu cầu →
-Hệ thống xác thực bảo hành → Admin duyệt →
-Kỹ thuật viên sửa chữa → Khách hàng phản hồi → Hoàn tất
-```
-
-### 2. Quy trình Triệu hồi
+### 1. Warranty Claim Process
 
 ```
-EVM Staff tạo chiến dịch triệu hồi → Admin duyệt →
-Hệ thống thông báo khách hàng → Khách hàng chấp nhận/từ chối →
-SC Staff tạo yêu cầu bảo hành → Kỹ thuật viên xử lý → Hoàn tất
+Customer notifies SC → SC Staff creates claim →
+System validates warranty → Admin approves →
+Technician repairs → Customer provides feedback → Complete
 ```
 
-### 3. Quy trình Yêu cầu Phụ tùng
+### 2. Recall Process
 
 ```
-Kỹ thuật viên yêu cầu phụ tùng → EVM Staff duyệt →
-Phụ tùng được cấp → Lắp đặt → Cập nhật lịch sử
+EVM Staff creates recall campaign → Admin approves →
+System notifies customers → Customer accepts/declines →
+SC Staff creates warranty claim → Technician processes → Complete
+```
+
+### 3. Parts Request Process
+
+```
+Technician requests parts → EVM Staff approves →
+Parts allocated → Installation → History updated
 ```
 
 ## 🧪 Testing
@@ -546,36 +546,36 @@ npm run build
 ### Docker Production
 
 ```bash
-# Build và chạy tất cả services
+# Build and run all services
 docker-compose up -d --build
 
-# Kiểm tra logs
+# Check logs
 docker-compose logs -f
 
-# Dừng services
+# Stop services
 docker-compose down
 ```
 
 ## 🛠️ Troubleshooting
 
-### Lỗi kết nối Database
+### Database Connection Error
 
-- Kiểm tra MySQL đang chạy
-- Xác nhận thông tin trong `.env` chính xác
-- Kiểm tra port 3308 (hoặc 3306) không bị chiếm dụng
+- Verify MySQL is running
+- Confirm `.env` information is correct
+- Check port 3308 (or 3306) is not occupied
 
-### Lỗi JWT Token
+### JWT Token Error
 
-- Đảm bảo `JWT_SECRET_KEY` trong `.env` đủ dài (≥32 ký tự)
-- Kiểm tra token chưa hết hạn
-- Refresh token nếu access token hết hạn
+- Ensure `JWT_SECRET_KEY` in `.env` is long enough (≥32 characters)
+- Verify token has not expired
+- Refresh token if access token expired
 
-### Lỗi CORS
+### CORS Error
 
-- Kiểm tra cấu hình CORS trong backend
-- Đảm bảo frontend URL trong danh sách `allowedOrigins`
+- Check CORS configuration in backend
+- Ensure frontend URL is in `allowedOrigins` list
 
-### Port bị chiếm dụng
+### Port Already in Use
 
 ```bash
 # Linux/Mac
@@ -589,41 +589,41 @@ kill -9 <PID>
 ## 📝 Changelog
 
 ### Version 1.0.0 (Current)
-- ✅ Hệ thống quản lý bảo hành hoàn chỉnh
-- ✅ 5 vai trò người dùng với dashboard riêng
-- ✅ JWT authentication với refresh token
-- ✅ Quản lý triệu hồi tích hợp
+- ✅ Complete warranty management system
+- ✅ 5 user roles with dedicated dashboards
+- ✅ JWT authentication with refresh token
+- ✅ Integrated recall management
 - ✅ Smart refresh system
 - ✅ Service center mapping
 - ✅ Docker containerization
-- ✅ API documentation với Swagger
+- ✅ API documentation with Swagger
 
-## 🤝 Đóng góp
+## 🤝 Contributing
 
-Chúng tôi hoan nghênh mọi đóng góp! Vui lòng:
+We welcome all contributions! Please:
 
-1. Fork repository
-2. Tạo branch mới (`git checkout -b feature/AmazingFeature`)
-3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to branch (`git push origin feature/AmazingFeature`)
-5. Mở Pull Request
+1. Fork the repository
+2. Create a new branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
 ## 📄 License
 
-Dự án này được cấp phép theo [MIT License](LICENSE).
+This project is licensed under the [MIT License](LICENSE).
 
 ## 👨‍💻 Team
 
-Được phát triển bởi nhóm SWP391.
+Developed by SWP391 Team.
 
-## 📧 Liên hệ
+## 📧 Contact
 
-Nếu có câu hỏi hoặc góp ý, vui lòng:
-- Tạo [Issue](https://github.com/your-username/OEM-EV-Warranty-Management-System/issues)
+For questions or feedback, please:
+- Create an [Issue](https://github.com/your-username/OEM-EV-Warranty-Management-System/issues)
 - Email: your-email@example.com
 
 ---
 
-⭐ **Star repo này nếu bạn thấy hữu ích!**
+⭐ **Star this repo if you find it useful!**
 
 Made with ❤️ by SWP391 Team
