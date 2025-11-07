@@ -148,12 +148,12 @@ A comprehensive electric vehicle warranty management system for manufacturers, s
 ┌────────────────────────────────────────────────┐
 │              Docker Network (app-network)      │
 │                                                │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────┐│
-│  │  Frontend    │  │   Backend    │  │ MySQL││
-│  │  (React +    │◄─┤ (Spring Boot)│◄─┤  8.0 ││
-│  │   Nginx)     │  │   Java 21    │  │      ││
-│  │  Port: 3000  │  │  Port: 8080  │  │ 3308 ││
-│  └──────────────┘  └──────────────┘  └──────┘│
+│  ┌──────────────┐  ┌──────────────┐  ┌──────┐  │
+│  │  Frontend    │  │   Backend    │  │ MySQL│  │
+│  │  (React +    │◄─┤ (Spring Boot)│◄─┤  8.0 │  │
+│  │   Nginx)     │  │   Java 21    │  │      │  │
+│  │  Port: 3000  │  │  Port: 8080  │  │ 3308 │  │
+│  └──────────────┘  └──────────────┘  └──────┘  │
 └────────────────────────────────────────────────┘
 ```
 
@@ -620,7 +620,7 @@ Developed by SWP391 Team.
 
 For questions or feedback, please:
 - Create an [Issue](https://github.com/your-username/OEM-EV-Warranty-Management-System/issues)
-- Email: your-email@example.com
+- Email: thanhkiennk@gmail.com
 
 ---
 
