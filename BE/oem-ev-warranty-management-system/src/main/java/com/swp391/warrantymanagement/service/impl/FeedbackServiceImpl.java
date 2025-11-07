@@ -1,6 +1,5 @@
 package com.swp391.warrantymanagement.service.impl;
 
-import java.util.Optional;
 import com.swp391.warrantymanagement.dto.request.FeedbackRequestDTO;
 import com.swp391.warrantymanagement.dto.response.FeedbackResponseDTO;
 import com.swp391.warrantymanagement.dto.response.PagedResponse;
@@ -17,11 +16,13 @@ import com.swp391.warrantymanagement.repository.UserRepository;
 import com.swp391.warrantymanagement.repository.WarrantyClaimRepository;
 import com.swp391.warrantymanagement.service.FeedbackService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -32,10 +33,13 @@ import java.util.UUID;
  *     <li>Chỉ feedback cho claim có status = COMPLETED</li>
  *     <li>Verify ownership: Customer phải sở hữu vehicle của claim</li>
  *     <li>One-to-one: Mỗi claim chỉ có một feedback (tránh spam)</li>
+ *     <li>Security: Username từ JWT token, không trust client-provided customerId</li>
+ *     <li>Auto-create Customer: Tự động tạo Customer record nếu User chưa có</li>
  * </ul>
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class FeedbackServiceImpl implements FeedbackService {
 
     private final FeedbackRepository feedbackRepository;
@@ -51,36 +55,51 @@ public class FeedbackServiceImpl implements FeedbackService {
      *     <li>Claim phải có status = COMPLETED</li>
      *     <li>Customer phải sở hữu vehicle của claim (authorization check qua WarrantyClaim → Vehicle → Customer)</li>
      *     <li>Mỗi claim chỉ có một feedback (one-to-one constraint)</li>
+     *     <li>Security: Username được lấy từ JWT token, auto-create Customer nếu chưa có</li>
      * </ul>
      *
      * @param requestDTO DTO chứa thông tin feedback (warrantyClaimId, rating, comment)
-     * @param username Username của customer đang đăng nhập
+     * @param username Username của người tạo feedback (từ JWT token đã xác thực)
      * @return FeedbackResponseDTO đã được tạo
-     * @throws ResourceNotFoundException nếu claim, user, hoặc customer không tồn tại
+     * @throws ResourceNotFoundException nếu claim hoặc user không tồn tại
      * @throws IllegalStateException nếu claim chưa COMPLETED hoặc đã có feedback
      * @throws IllegalArgumentException nếu customer không sở hữu vehicle
      */
     @Override
     @Transactional
     public FeedbackResponseDTO createFeedback(FeedbackRequestDTO requestDTO, String username) {
+        // Validate warranty claim exists
         WarrantyClaim warrantyClaim = warrantyClaimRepository.findById(requestDTO.getWarrantyClaimId())
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "WarrantyClaim", "id", requestDTO.getWarrantyClaimId()));
+                        "Warranty claim not found with ID: " + requestDTO.getWarrantyClaimId()));
 
-        // Chỉ feedback cho claim đã hoàn thành
+        // Validate claim is COMPLETED
         if (warrantyClaim.getStatus() != WarrantyClaimStatus.COMPLETED) {
             throw new IllegalStateException(
                     "Cannot create feedback for claim that is not COMPLETED. Current status: " + warrantyClaim.getStatus());
         }
 
+        // Get User from authenticated username
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
 
+        // Get or create Customer record
         Customer customer = Optional.ofNullable(customerRepository.findByUser(user))
-                .orElseThrow(() -> new ResourceNotFoundException("Customer Profile", "for user", username));
+                .orElseGet(() -> {
+                    log.warn("⚠️ Customer record not found for user '{}'. Auto-creating with placeholder data. " +
+                            "User should update their profile.", username);
 
-        // Authorization: Customer phải sở hữu vehicle của claim
-        if (!warrantyClaim.getVehicle().getCustomer().equals(customer)) {
+                    Customer newCustomer = new Customer();
+                    newCustomer.setCustomerId(UUID.randomUUID());
+                    newCustomer.setUser(user);
+                    newCustomer.setName(user.getUsername()); // Fallback: use username as name
+                    newCustomer.setPhone("PENDING_" + user.getUserId()); // Placeholder to satisfy unique constraint
+
+                    return customerRepository.save(newCustomer);
+                });
+
+        // Validate customer owns the claim (through vehicle)
+        if (!warrantyClaim.getVehicle().getCustomer().getCustomerId().equals(customer.getCustomerId())) {
             throw new IllegalArgumentException(
                     "You are not authorized to provide feedback for this claim");
         }
@@ -145,6 +164,58 @@ public class FeedbackServiceImpl implements FeedbackService {
         }
 
         Page<Feedback> feedbackPage = feedbackRepository.findByCustomerCustomerId(customerId, pageable);
+
+        return new PagedResponse<>(
+                feedbackPage.getContent().stream()
+                        .map(FeedbackMapper::toResponseDTO)
+                        .toList(),
+                feedbackPage.getNumber(),
+                feedbackPage.getSize(),
+                feedbackPage.getTotalElements(),
+                feedbackPage.getTotalPages(),
+                feedbackPage.isFirst(),
+                feedbackPage.isLast()
+        );
+    }
+
+    /**
+     * Lấy danh sách feedback của customer hiện tại (từ JWT token) với phân trang.
+     * <p>
+     * <strong>Security:</strong> Username được lấy từ JWT token đã được xác thực,
+     * đảm bảo user chỉ có thể xem feedback của chính mình.
+     * <p>
+     * <strong>Auto-create Customer:</strong> Nếu User chưa có Customer record,
+     * hệ thống sẽ tự động tạo với placeholder data.
+     *
+     * @param username Username của customer (từ JWT token)
+     * @param pageable Thông tin phân trang (page, size, sort)
+     * @return PagedResponse chứa danh sách feedback của customer hiện tại
+     * @throws ResourceNotFoundException nếu không tìm thấy user
+     */
+    @Override
+    @Transactional  // Not readOnly because of potential auto-create
+    public PagedResponse<FeedbackResponseDTO> getMyFeedbacks(String username, Pageable pageable) {
+        // Get User from authenticated username
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+
+        // Get or create Customer record
+        Customer customer = Optional.ofNullable(customerRepository.findByUser(user))
+                .orElseGet(() -> {
+                    log.warn("⚠️ Customer record not found for user '{}'. Auto-creating with placeholder data. " +
+                            "User should update their profile.", username);
+
+                    Customer newCustomer = new Customer();
+                    newCustomer.setCustomerId(UUID.randomUUID());
+                    newCustomer.setUser(user);
+                    newCustomer.setName(user.getUsername()); // Fallback
+                    newCustomer.setPhone("PENDING_" + user.getUserId()); // Placeholder
+
+                    return customerRepository.save(newCustomer);
+                });
+
+        // Fetch feedbacks for this customer
+        Page<Feedback> feedbackPage = feedbackRepository.findByCustomerCustomerId(customer.getCustomerId(), pageable);
 
         return new PagedResponse<>(
                 feedbackPage.getContent().stream()
@@ -247,10 +318,11 @@ public class FeedbackServiceImpl implements FeedbackService {
      * <p>
      * <strong>Authorization:</strong> Chỉ customer sở hữu feedback mới có quyền cập nhật.
      * warrantyClaimId không thể thay đổi (immutable).
+     * <strong>Security:</strong> Username được lấy từ JWT token, verify ownership qua username → customer.
      *
      * @param feedbackId ID của feedback cần update
      * @param requestDTO DTO chứa thông tin cập nhật (rating, comment)
-     * @param username Username của customer đang đăng nhập
+     * @param username Username của customer đang đăng nhập (từ JWT token)
      * @return FeedbackResponseDTO đã cập nhật
      * @throws ResourceNotFoundException nếu không tìm thấy feedback, user, hoặc customer
      * @throws IllegalArgumentException nếu customer không sở hữu feedback
@@ -262,14 +334,16 @@ public class FeedbackServiceImpl implements FeedbackService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Feedback not found with ID: " + feedbackId));
 
+        // Get User from authenticated username
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
 
         Customer customer = Optional.ofNullable(customerRepository.findByUser(user))
-                .orElseThrow(() -> new ResourceNotFoundException("Customer Profile", "for user", username));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Customer Profile", "for user", username));
 
         // Authorization: Chỉ customer sở hữu feedback mới được update
-        if (!feedback.getCustomer().equals(customer)) {
+        if (!feedback.getCustomer().getCustomerId().equals(customer.getCustomerId())) {
             throw new IllegalArgumentException(
                     "You are not authorized to update this feedback");
         }
@@ -285,9 +359,11 @@ public class FeedbackServiceImpl implements FeedbackService {
      * <p>
      * <strong>Authorization:</strong> Chỉ customer sở hữu feedback mới có quyền xóa.
      * <strong>Delete strategy:</strong> Hard delete (xóa vĩnh viễn khỏi DB).
+     * <strong>Security:</strong> Username được lấy từ JWT token, verify ownership qua username → customer.
+     * <strong>Note:</strong> ADMIN có thể xóa bất kỳ feedback nào (được kiểm tra ở controller layer với @PreAuthorize).
      *
      * @param feedbackId ID của feedback cần xóa
-     * @param username Username của customer đang đăng nhập
+     * @param username Username của người xóa (từ JWT token)
      * @throws ResourceNotFoundException nếu không tìm thấy feedback, user, hoặc customer
      * @throws IllegalArgumentException nếu customer không sở hữu feedback
      */
@@ -298,16 +374,24 @@ public class FeedbackServiceImpl implements FeedbackService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Feedback not found with ID: " + feedbackId));
 
+        // Get User from authenticated username
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
 
-        Customer customer = Optional.ofNullable(customerRepository.findByUser(user))
-                .orElseThrow(() -> new ResourceNotFoundException("Customer Profile", "for user", username));
+        // Check if user has ADMIN role (can delete any feedback)
+        boolean isAdmin = user.getRole().getRoleName().equals("ADMIN");
 
-        // Authorization: Chỉ customer sở hữu feedback mới được xóa
-        if (!feedback.getCustomer().equals(customer)) {
-            throw new IllegalArgumentException(
-                    "You are not authorized to delete this feedback");
+        if (!isAdmin) {
+            // For CUSTOMER: verify ownership
+            Customer customer = Optional.ofNullable(customerRepository.findByUser(user))
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Customer Profile", "for user", username));
+
+            // Authorization: Chỉ customer sở hữu feedback mới được xóa
+            if (!feedback.getCustomer().getCustomerId().equals(customer.getCustomerId())) {
+                throw new IllegalArgumentException(
+                        "You are not authorized to delete this feedback");
+            }
         }
 
         feedbackRepository.delete(feedback);

@@ -181,12 +181,12 @@ public class RecallRequestServiceImpl implements RecallRequestService {
         }
 
         // BƯỚC 4-5: Update status và metadata
-        recall.setStatus(RecallRequestStatus.WAITING_CUSTOMER_CONFIRM); // Next state
+        recall.setStatus(RecallRequestStatus.APPROVED_BY_ADMIN); // Admin đã duyệt
         recall.setAdminNote(adminNote); // Optional explanation
         recall.setApprovedBy(approvedBy); // Track WHO approved
         recall.setUpdatedAt(LocalDateTime.now());
 
-        // BƯỚC 6: Save RecallRequest
+        // BƯỚC 6: Save RecallRequest với status APPROVED
         RecallRequest updatedRecall = recallRequestRepository.save(recall);
         logger.info("Recall campaign approved: {} - Finding affected vehicles...", recallRequestId);
 
@@ -203,6 +203,7 @@ public class RecallRequestServiceImpl implements RecallRequestService {
                 affectedVehicles.size(), recallRequestId);
 
         // Tạo RecallResponse cho mỗi xe bị ảnh hưởng
+        int createdResponsesCount = 0;
         for (Vehicle vehicle : affectedVehicles) {
             // Kiểm tra xem xe này đã có response cho campaign này chưa (tránh duplicate)
             Optional<RecallResponse> existingResponse = recallResponseRepository
@@ -217,11 +218,21 @@ public class RecallRequestServiceImpl implements RecallRequestService {
                 response.setCreatedAt(LocalDateTime.now());
 
                 recallResponseRepository.save(response);
+                createdResponsesCount++;
                 logger.info("Created RecallResponse for vehicle VIN: {}", vehicle.getVehicleVin());
             }
         }
 
-        // BƯỚC 8: TODO - Send notification to affected customers
+        // BƯỚC 8: Chuyển RecallRequest sang WAITING_CUSTOMER_CONFIRM nếu có RecallResponse được tạo
+        if (createdResponsesCount > 0 || !affectedVehicles.isEmpty()) {
+            updatedRecall.setStatus(RecallRequestStatus.WAITING_CUSTOMER_CONFIRM);
+            updatedRecall = recallRequestRepository.save(updatedRecall);
+            logger.info("RecallRequest status changed to WAITING_CUSTOMER_CONFIRM. " +
+                    "Created {} RecallResponses for {} affected vehicles.",
+                    createdResponsesCount, affectedVehicles.size());
+        }
+
+        // BƯỚC 9: TODO - Send notification to affected customers
         // notificationService.sendRecallNotifications(affectedVehicles);
         // Email/SMS: "URGENT: Safety recall for your vehicle"
 

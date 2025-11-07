@@ -34,10 +34,6 @@ const FeedbackModal = ({ isOpen, onClose, feedback, onSubmit, warrantyClaims }) 
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!formData.comments.trim()) {
-      alert('Vui lòng nhập nội dung phản hồi');
-      return;
-    }
     if (!feedback && !formData.warrantyClaimId) {
       alert('Vui lòng chọn yêu cầu bảo hành');
       return;
@@ -107,12 +103,11 @@ const FeedbackModal = ({ isOpen, onClose, feedback, onSubmit, warrantyClaims }) 
             </S.FormGroup>
 
             <S.FormGroup>
-              <S.Label>Nội dung phản hồi *</S.Label>
+              <S.Label>Nội dung phản hồi (tùy chọn)</S.Label>
               <S.TextArea
                 value={formData.comments}
                 onChange={(e) => setFormData({ ...formData, comments: e.target.value })}
-                placeholder="Nhập nội dung phản hồi của bạn..."
-                required
+                placeholder="Nhập nội dung phản hồi của bạn (không bắt buộc)..."
               />
             </S.FormGroup>
           </S.ModalBody>
@@ -132,7 +127,6 @@ const FeedbackModal = ({ isOpen, onClose, feedback, onSubmit, warrantyClaims }) 
 const CustomerFeedback = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [customerId, setCustomerId] = useState(null);
   const [feedbacks, setFeedbacks] = useState([]);
   const [warrantyClaims, setWarrantyClaims] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -141,40 +135,21 @@ const CustomerFeedback = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedFeedback, setSelectedFeedback] = useState(null);
 
-  // Get customerId from localStorage or token
+  // Load data on component mount
   useEffect(() => {
-    const storedCustomerId = localStorage.getItem('customerId');
-    if (storedCustomerId) {
-      setCustomerId(storedCustomerId);
-    } else {
-      // If not in localStorage, show error
-      setError("Không tìm thấy thông tin khách hàng. Vui lòng đăng nhập lại.");
-      setLoading(false);
-    }
+    fetchData();
   }, []);
-
-  useEffect(() => {
-    if (customerId) {
-      fetchData();
-    }
-  }, [customerId]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      console.log("Fetching data with customerId:", customerId);
+      console.log("🔄 Fetching feedbacks and claims...");
 
-      if (!customerId) {
-        console.error("No customer ID available");
-        setError("Không tìm thấy thông tin khách hàng. Vui lòng đăng nhập lại.");
-        setLoading(false);
-        return;
-      }
-
+      // Backend tự lấy username từ JWT token, không cần customerId
       const [feedbacksResponse, claimsResponse] = await Promise.all([
-        customerApi.getMyFeedbacks(customerId, { page: 0, size: 100 }),
+        customerApi.getMyFeedbacks({ page: 0, size: 100 }),
         customerApi.getMyWarrantyClaims({ page: 0, size: 100 })
       ]);
 
@@ -238,15 +213,11 @@ const CustomerFeedback = () => {
       return;
     }
 
-    if (!customerId) {
-      setError("Không tìm thấy thông tin khách hàng.");
-      return;
-    }
-
     try {
       setError(null);
       setSuccess(null);
-      await customerApi.deleteFeedback(feedbackId, customerId);
+      // Backend tự lấy username từ JWT token, không cần customerId
+      await customerApi.deleteFeedback(feedbackId);
       setSuccess('Xóa phản hồi thành công!');
       await fetchData();
       setTimeout(() => setSuccess(null), 3000);
@@ -256,11 +227,6 @@ const CustomerFeedback = () => {
   };
 
   const handleSubmit = async (formData) => {
-    if (!customerId) {
-      setError("Không tìm thấy thông tin khách hàng.");
-      return;
-    }
-
     try {
       setError(null);
       setSuccess(null);
@@ -274,30 +240,28 @@ const CustomerFeedback = () => {
           feedbackId: selectedFeedback.feedbackId,
           warrantyClaimId,
           rating: formData.rating,
-          comment: formData.comments,
-          customerId
+          comment: formData.comments
         });
 
+        // Backend tự lấy username từ JWT token, không cần customerId
         await customerApi.updateFeedback(selectedFeedback.feedbackId, {
           warrantyClaimId: warrantyClaimId,
           rating: formData.rating,
-          comment: formData.comments, // Backend uses 'comment' not 'comments'
-          customerId: customerId
+          comment: formData.comments // Backend uses 'comment' not 'comments'
         });
         setSuccess('Cập nhật phản hồi thành công!');
       } else {
         console.log("➕ Creating feedback:", {
           warrantyClaimId: formData.warrantyClaimId,
           rating: formData.rating,
-          comment: formData.comments,
-          customerId
+          comment: formData.comments
         });
 
+        // Backend tự lấy username từ JWT token, không cần customerId
         await customerApi.createFeedback({
           warrantyClaimId: parseInt(formData.warrantyClaimId),
           rating: formData.rating,
-          comment: formData.comments, // Backend uses 'comment' not 'comments'
-          customerId: customerId
+          comment: formData.comments // Backend uses 'comment' not 'comments'
         });
         setSuccess('Tạo phản hồi thành công!');
       }

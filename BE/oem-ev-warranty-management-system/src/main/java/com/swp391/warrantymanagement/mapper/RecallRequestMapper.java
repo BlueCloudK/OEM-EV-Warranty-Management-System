@@ -20,6 +20,7 @@ public class RecallRequestMapper {
             dto.setPartId(part.getPartId());
             dto.setPartName(part.getPartName());
             dto.setPartNumber(part.getPartNumber());
+            dto.setManufacturer(part.getManufacturer());
         }
 
         // Note: RecallRequest không còn chứa thông tin về vehicle/customer cụ thể
