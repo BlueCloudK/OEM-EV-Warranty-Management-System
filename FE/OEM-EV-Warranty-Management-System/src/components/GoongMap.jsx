@@ -36,8 +36,8 @@ const MapPlaceholder = styled.div`
  * - apiKey: Goong API Key (nếu không truyền sẽ dùng key mặc định)
  */
 const GoongMap = ({
-  latitude = 21.0285,
-  longitude = 105.8542,
+  latitude = 10.76,
+  longitude = 106.66,
   height = '400px',
   onLocationChange = null,
   editable = false,

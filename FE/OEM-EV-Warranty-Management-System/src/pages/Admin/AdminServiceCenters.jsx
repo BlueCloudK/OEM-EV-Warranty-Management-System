@@ -91,8 +91,8 @@ const AdminServiceCenters = () => {
       address: '',
       phone: '',
       openingHours: '8:00 - 17:00',
-      latitude: '21.0285', // Hà Nội - giá trị mặc định
-      longitude: '105.8542'
+      latitude: '10.76', // Tp Hồ Chí Mình - giá trị mặc định
+      longitude: '106.66'
     });
     setShowModal(true);
   };
@@ -344,7 +344,7 @@ const AdminServiceCenters = () => {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
-                  placeholder="VD: Trung tâm bảo hành Hà Nội"
+                  placeholder="VD: Trung tâm bảo hành Tp Hồ Chí Mình"
                 />
               </S.FormGroup>
 
@@ -355,7 +355,7 @@ const AdminServiceCenters = () => {
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   required
-                  placeholder="VD: 123 Nguyễn Trãi, Thanh Xuân, Hà Nội"
+                  placeholder="VD: 123 Nguyễn Trãi, Thanh Xuân, Tp Hồ Chí Mình"
                 />
               </S.FormGroup>
 
@@ -390,7 +390,7 @@ const AdminServiceCenters = () => {
                     value={formData.latitude}
                     onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
                     required
-                    placeholder="VD: 21.0285"
+                    placeholder="VD: 10.76"
                   />
                 </S.FormGroup>
 
@@ -402,7 +402,7 @@ const AdminServiceCenters = () => {
                     value={formData.longitude}
                     onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
                     required
-                    placeholder="VD: 105.8542"
+                    placeholder="VD: 106.66"
                   />
                 </S.FormGroup>
               </S.FormRow>
@@ -416,8 +416,8 @@ const AdminServiceCenters = () => {
                   💡 Click vào bản đồ hoặc kéo marker để chọn vị trí. Tọa độ sẽ tự động cập nhật.
                 </p>
                 <GoongMap
-                  latitude={parseFloat(formData.latitude) || 21.0285}
-                  longitude={parseFloat(formData.longitude) || 105.8542}
+                  latitude={parseFloat(formData.latitude) || 10.76}
+                  longitude={parseFloat(formData.longitude) || 106.66}
                   height="350px"
                   editable={true}
                   onLocationChange={({ latitude, longitude }) => {
