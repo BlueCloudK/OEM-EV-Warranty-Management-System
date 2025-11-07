@@ -627,3 +627,8 @@ For questions or feedback, please:
 ⭐ **Star this repo if you find it useful!**
 
 Made with ❤️ by SWP391 Team
+
+---
+
+This project is developed for demo and educational purposes. Do not use in production without thorough review.
+
