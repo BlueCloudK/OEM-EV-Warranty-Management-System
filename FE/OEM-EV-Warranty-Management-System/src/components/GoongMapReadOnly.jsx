@@ -42,8 +42,8 @@ const MapPlaceholder = styled.div`
  * - showMarker: Hiển thị marker/pin (default: true)
  */
 const GoongMapReadOnly = ({
-  latitude = 21.0285,
-  longitude = 105.8542,
+  latitude = 10.76,
+  longitude = 106.66,
   locations = [],
   selectedLocation = null, // New prop
   height = '400px',
