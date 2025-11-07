@@ -76,25 +76,27 @@ export const customerApi = {
 
   /**
    * Lấy danh sách phản hồi của khách hàng đang đăng nhập.
-   * Endpoint: GET /api/feedbacks/by-customer/{customerId}
-   * @param {number} customerId - ID của khách hàng.
-   * @param {object} params - Các tham số truy vấn.
+   * Endpoint: GET /api/feedbacks/my-feedbacks
+   * Security: Backend tự lấy username từ JWT token, không cần customerId
+   * @param {object} params - Các tham số truy vấn (page, size, sortBy, sortDir).
    * @returns {Promise<object>} Dữ liệu phân trang của các phản hồi.
    */
-  getMyFeedbacks: (customerId, params = {}) => {
+  getMyFeedbacks: (params = {}) => {
     const queryParams = new URLSearchParams(params).toString();
-    return apiClient(`/api/feedbacks/by-customer/${customerId}?${queryParams}`);
+    return apiClient(`/api/feedbacks/my-feedbacks?${queryParams}`);
   },
 
   /**
    * Tạo phản hồi mới.
-   * Endpoint: POST /api/feedbacks?customerId={customerId}
-   * @param {object} feedbackData - Dữ liệu phản hồi (warrantyClaimId, rating, comments, customerId).
+   * Endpoint: POST /api/feedbacks
+   * Security: Backend tự lấy username từ JWT token, không cần customerId
+   * @param {object} feedbackData - Dữ liệu phản hồi (warrantyClaimId, rating, comment).
    * @returns {Promise<object>} Phản hồi đã tạo.
    */
   createFeedback: (feedbackData) => {
+    // Remove customerId if present (backend doesn't need it)
     const { customerId, ...data } = feedbackData;
-    return apiClient(`/api/feedbacks?customerId=${customerId}`, {
+    return apiClient('/api/feedbacks', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -112,14 +114,16 @@ export const customerApi = {
 
   /**
    * Cập nhật phản hồi.
-   * Endpoint: PUT /api/feedbacks/{id}?customerId={customerId}
+   * Endpoint: PUT /api/feedbacks/{id}
+   * Security: Backend tự lấy username từ JWT token và verify ownership
    * @param {number} id - ID của phản hồi.
-   * @param {object} feedbackData - Dữ liệu phản hồi cần cập nhật (bao gồm customerId).
+   * @param {object} feedbackData - Dữ liệu phản hồi cần cập nhật (warrantyClaimId, rating, comment).
    * @returns {Promise<object>} Phản hồi đã cập nhật.
    */
   updateFeedback: (id, feedbackData) => {
+    // Remove customerId if present (backend doesn't need it)
     const { customerId, ...data } = feedbackData;
-    return apiClient(`/api/feedbacks/${id}?customerId=${customerId}`, {
+    return apiClient(`/api/feedbacks/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -127,13 +131,13 @@ export const customerApi = {
 
   /**
    * Xóa phản hồi.
-   * Endpoint: DELETE /api/feedbacks/{id}?customerId={customerId}
+   * Endpoint: DELETE /api/feedbacks/{id}
+   * Security: Backend tự lấy username từ JWT token và verify ownership
    * @param {number} id - ID của phản hồi.
-   * @param {string} customerId - ID của khách hàng.
    * @returns {Promise<void>}
    */
-  deleteFeedback: (id, customerId) => {
-    return apiClient(`/api/feedbacks/${id}?customerId=${customerId}`, {
+  deleteFeedback: (id) => {
+    return apiClient(`/api/feedbacks/${id}`, {
       method: 'DELETE',
     });
   },

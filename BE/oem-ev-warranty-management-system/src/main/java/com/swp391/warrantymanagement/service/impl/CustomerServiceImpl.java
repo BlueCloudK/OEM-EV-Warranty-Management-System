@@ -17,6 +17,7 @@ import com.swp391.warrantymanagement.exception.ResourceNotFoundException;
 import com.swp391.warrantymanagement.service.CustomerService;
 import com.swp391.warrantymanagement.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import com.swp391.warrantymanagement.repository.VehicleRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -34,6 +35,7 @@ import java.util.stream.Collectors;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CustomerServiceImpl implements CustomerService {
 
     private final CustomerRepository customerRepository;
@@ -347,18 +349,42 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public CustomerProfileResponseDTO getCustomerProfileByUsername(String username) {
+        log.info("🔍 getCustomerProfileByUsername called for username: {}", username);
+
         // Step 1: Find the user by username.
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+        log.info("✅ Found user: userId={}, username={}, email={}", user.getUserId(), user.getUsername(), user.getEmail());
 
-        // Step 2: Find the associated customer profile.
+        // Step 2: Find or create associated customer profile.
         Customer customer = Optional.ofNullable(customerRepository.findByUser(user))
-                .orElseThrow(() -> new ResourceNotFoundException("Customer Profile", "for user", username));
+                .orElseGet(() -> {
+                    log.warn("⚠️ Customer record not found for user '{}'. Auto-creating with placeholder data. " +
+                            "User should complete their profile.", username);
+
+                    Customer newCustomer = new Customer();
+                    newCustomer.setCustomerId(UUID.randomUUID());
+                    newCustomer.setUser(user);
+                    newCustomer.setName(user.getUsername()); // Fallback: use username as name
+                    newCustomer.setPhone("PENDING_" + user.getUserId()); // Placeholder to satisfy unique constraint
+
+                    Customer saved = customerRepository.save(newCustomer);
+                    log.info("✅ Auto-created Customer: customerId={}, name={}, phone={}",
+                            saved.getCustomerId(), saved.getName(), saved.getPhone());
+                    return saved;
+                });
+
+        log.info("✅ Found/Created customer: customerId={}, name={}, phone={}",
+                customer.getCustomerId(), customer.getName(), customer.getPhone());
 
         // Step 3: Reuse the existing logic to get the full profile.
-        return getCustomerFullProfile(customer.getCustomerId());
+        CustomerProfileResponseDTO profile = getCustomerFullProfile(customer.getCustomerId());
+        log.info("✅ Returning CustomerProfileResponseDTO: customerId={}, customerName={}, customerPhone={}, customerEmail={}",
+                profile.getCustomerId(), profile.getCustomerName(), profile.getCustomerPhone(), profile.getCustomerEmail());
+
+        return profile;
     }
 
     @Override

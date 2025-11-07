@@ -17,9 +17,12 @@ import java.util.UUID;
 public interface FeedbackService {
     /**
      * Customer tạo feedback cho claim đã hoàn thành.
+     * <p>
+     * <strong>Security:</strong> Username được lấy từ JWT token đã được xác thực,
+     * đảm bảo user chỉ có thể tạo feedback cho chính mình.
      *
      * @param requestDTO Dữ liệu feedback từ client.
-     * @param username   Username của người dùng đang đăng nhập (lấy từ Security Context).
+     * @param username Username của người tạo feedback (từ JWT token).
      * @return Feedback đã được tạo.
      */
     FeedbackResponseDTO createFeedback(FeedbackRequestDTO requestDTO, String username);
@@ -40,6 +43,18 @@ public interface FeedbackService {
      * @return Paged list of customer's feedbacks
      */
     PagedResponse<FeedbackResponseDTO> getFeedbacksByCustomer(UUID customerId, Pageable pageable);
+
+    /**
+     * Get all feedbacks of the currently authenticated customer (paginated)
+     * <p>
+     * <strong>Security:</strong> Username được lấy từ JWT token đã được xác thực,
+     * đảm bảo user chỉ có thể xem feedback của chính mình.
+     *
+     * @param username Username của customer (từ JWT token).
+     * @param pageable Pagination parameters
+     * @return Paged list of current customer's feedbacks
+     */
+    PagedResponse<FeedbackResponseDTO> getMyFeedbacks(String username, Pageable pageable);
 
     /**
      * Get all feedbacks (paginated) - For admin/staff review
@@ -66,17 +81,25 @@ public interface FeedbackService {
 
     /**
      * Update existing feedback (customer can edit their feedback)
+     * <p>
+     * <strong>Security:</strong> Service layer sẽ verify ownership dựa trên username
+     * để đảm bảo user chỉ có thể update feedback của chính mình.
+     *
      * @param feedbackId Feedback ID
      * @param requestDTO Updated feedback data
-     * @param username Username của người dùng đang đăng nhập (để xác thực quyền sở hữu).
+     * @param username Username của người update (từ JWT token).
      * @return Updated feedback
      */
     FeedbackResponseDTO updateFeedback(Long feedbackId, FeedbackRequestDTO requestDTO, String username);
 
     /**
      * Delete feedback
+     * <p>
+     * <strong>Security:</strong> Service layer sẽ verify ownership dựa trên username.
+     * CUSTOMER chỉ có thể xóa feedback của chính mình. ADMIN có thể xóa bất kỳ feedback nào.
+     *
      * @param feedbackId Feedback ID
-     * @param username Username của người dùng đang đăng nhập (để xác thực quyền sở hữu).
+     * @param username Username của người xóa (từ JWT token).
      */
     void deleteFeedback(Long feedbackId, String username);
 
