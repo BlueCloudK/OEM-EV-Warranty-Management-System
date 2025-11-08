@@ -30,7 +30,7 @@ public final class WarrantyClaimMapper {
 
         // Paid warranty fields
         entity.setIsPaidWarranty(requestDTO.getIsPaidWarranty() != null ? requestDTO.getIsPaidWarranty() : false);
-        entity.setEstimatedRepairCost(requestDTO.getEstimatedRepairCost());
+        // estimatedRepairCost không lưu vào DB - chỉ dùng để tính warrantyFee
         entity.setWarrantyFee(requestDTO.getWarrantyFee());
         entity.setPaidWarrantyNote(requestDTO.getPaidWarrantyNote());
 
@@ -87,7 +87,7 @@ public final class WarrantyClaimMapper {
 
         // Paid warranty fields
         responseDTO.setIsPaidWarranty(entity.getIsPaidWarranty() != null ? entity.getIsPaidWarranty() : false);
-        responseDTO.setEstimatedRepairCost(entity.getEstimatedRepairCost());
+        // estimatedRepairCost không lưu trong Entity - để null ở response
         responseDTO.setWarrantyFee(entity.getWarrantyFee());
         responseDTO.setPaidWarrantyNote(entity.getPaidWarrantyNote());
 
