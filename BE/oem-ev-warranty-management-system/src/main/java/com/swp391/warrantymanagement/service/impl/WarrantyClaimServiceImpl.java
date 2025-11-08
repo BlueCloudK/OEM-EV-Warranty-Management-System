@@ -370,11 +370,23 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
     private boolean isValidStatusTransition(WarrantyClaimStatus current, WarrantyClaimStatus target) {
         switch (current) {
             case SUBMITTED:
+                // Free warranty: SUBMITTED → MANAGER_REVIEW
                 return target == WarrantyClaimStatus.MANAGER_REVIEW || target == WarrantyClaimStatus.REJECTED;
+
+            case PENDING_PAYMENT:
+                // Paid warranty: chờ thanh toán → đã xác nhận thanh toán
+                return target == WarrantyClaimStatus.PAYMENT_CONFIRMED || target == WarrantyClaimStatus.REJECTED;
+
+            case PAYMENT_CONFIRMED:
+                // Paid warranty: đã thanh toán → chuyển sang manager review
+                return target == WarrantyClaimStatus.MANAGER_REVIEW || target == WarrantyClaimStatus.REJECTED;
+
             case MANAGER_REVIEW:
                 return target == WarrantyClaimStatus.PROCESSING || target == WarrantyClaimStatus.REJECTED;
+
             case PROCESSING:
                 return target == WarrantyClaimStatus.COMPLETED || target == WarrantyClaimStatus.REJECTED;
+
             default:
                 return false;
         }
