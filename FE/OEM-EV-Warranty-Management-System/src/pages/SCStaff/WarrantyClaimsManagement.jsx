@@ -55,7 +55,7 @@ const CloseButton = styled.button`
 `;
 
 // Simplified vehicle selection modal for new claims
-const VehicleSelectionModal = ({ isOpen, onClose, vehicles, installedParts, onVehicleSelect, onInstalledPartSelect, fetchInstalledPartsForVehicle }) => {
+const VehicleSelectionModal = ({ isOpen, onClose, vehicles, installedParts, onSelect, fetchInstalledPartsForVehicle }) => {
   const [selectedVehicleId, setSelectedVehicleId] = useState('');
   const [selectedInstalledPartId, setSelectedInstalledPartId] = useState('');
 
@@ -70,8 +70,8 @@ const VehicleSelectionModal = ({ isOpen, onClose, vehicles, installedParts, onVe
 
   const handleNext = () => {
     if (selectedVehicleId && selectedInstalledPartId) {
-      onVehicleSelect(selectedVehicleId);
-      onInstalledPartSelect(selectedInstalledPartId);
+      // Pass both IDs at once to avoid async state update issues
+      onSelect(selectedVehicleId, selectedInstalledPartId);
       onClose();
     } else {
       alert('Vui lòng chọn xe và linh kiện');
@@ -145,11 +145,9 @@ const WarrantyClaimsManagement = () => {
     setShowVehicleSelection(true);
   };
 
-  const handleVehicleSelected = (vehicleId) => {
+  const handleVehicleAndPartSelected = (vehicleId, installedPartId) => {
+    // Set both IDs at once
     setSelectedVehicleId(vehicleId);
-  };
-
-  const handleInstalledPartSelected = (installedPartId) => {
     setSelectedInstalledPartId(installedPartId);
     setShowVehicleSelection(false);
     setShowWarrantyForm(true);
@@ -239,7 +237,7 @@ const WarrantyClaimsManagement = () => {
                     <S.Td>{claim.status}</S.Td>
                     <S.Td>{new Date(claim.claimDate).toLocaleDateString()}</S.Td>
                     <S.Td>
-                      <S.Button small onClick={() => navigate(`/scstaff/warranty-claims/${claim.warrantyClaimId}`)}>
+                      <S.Button $small onClick={() => navigate(`/scstaff/warranty-claims/${claim.warrantyClaimId}`)}>
                         <FaEye /> Xem
                       </S.Button>
                     </S.Td>
@@ -261,8 +259,7 @@ const WarrantyClaimsManagement = () => {
           }}
           vehicles={vehicles}
           installedParts={installedParts}
-          onVehicleSelect={handleVehicleSelected}
-          onInstalledPartSelect={handleInstalledPartSelected}
+          onSelect={handleVehicleAndPartSelected}
           fetchInstalledPartsForVehicle={fetchInstalledPartsForVehicle}
         />
 
