@@ -41,20 +41,20 @@ INSERT INTO users (username, email, password, address, created_at, role_id, serv
 
 -- EVM_STAFF (2 users)
 INSERT INTO users (username, email, password, address, created_at, role_id, service_center_id) VALUES
-('evmstaff1', 'evmstaff1@vinfast.vn', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', N'Tòa nhà VinFast, Hà Nội', '2024-01-01 08:00:00', 2, NULL),
-('evmstaff2', 'evmstaff2@vinfast.vn', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', N'Tòa nhà VinFast, TP.HCM', '2024-01-01 08:00:00', 2, NULL);
+('evmstaff1', 'evmstaff1@vinfast.vn', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', N'Tòa nhà VinFast, Hà Nội', '2024-01-01 08:00:00', 4, NULL),
+('evmstaff2', 'evmstaff2@vinfast.vn', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', N'Tòa nhà VinFast, TP.HCM', '2024-01-01 08:00:00', 4, NULL);
 
 -- SC_STAFF (3 users - one per service center)
 INSERT INTO users (username, email, password, address, created_at, role_id, service_center_id) VALUES
-('scstaff_hn', 'scstaff.hn@vinfast.vn', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', N'Hà Nội', '2024-01-01 08:00:00', 3, 1),
-('scstaff_hcm', 'scstaff.hcm@vinfast.vn', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', N'TP.HCM', '2024-01-01 08:00:00', 3, 2),
-('scstaff_dn', 'scstaff.dn@vinfast.vn', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', N'Đà Nẵng', '2024-01-01 08:00:00', 3, 3);
+('scstaff_hn', 'scstaff.hn@vinfast.vn', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', N'Hà Nội', '2024-01-01 08:00:00', 2, 1),
+('scstaff_hcm', 'scstaff.hcm@vinfast.vn', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', N'TP.HCM', '2024-01-01 08:00:00', 2, 2),
+('scstaff_dn', 'scstaff.dn@vinfast.vn', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', N'Đà Nẵng', '2024-01-01 08:00:00', 2, 3);
 
 -- SC_TECHNICIAN (3 users - one per service center)
 INSERT INTO users (username, email, password, address, created_at, role_id, service_center_id) VALUES
-('tech_hn', 'tech.hn@vinfast.vn', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', N'Hà Nội', '2024-01-01 08:00:00', 4, 1),
-('tech_hcm', 'tech.hcm@vinfast.vn', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', N'TP.HCM', '2024-01-01 08:00:00', 4, 2),
-('tech_dn', 'tech.dn@vinfast.vn', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', N'Đà Nẵng', '2024-01-01 08:00:00', 4, 3);
+('tech_hn', 'tech.hn@vinfast.vn', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', N'Hà Nội', '2024-01-01 08:00:00', 3, 1),
+('tech_hcm', 'tech.hcm@vinfast.vn', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', N'TP.HCM', '2024-01-01 08:00:00', 3, 2),
+('tech_dn', 'tech.dn@vinfast.vn', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', N'Đà Nẵng', '2024-01-01 08:00:00', 3, 3);
 
 -- CUSTOMER (5 users)
 INSERT INTO users (username, email, password, address, created_at, role_id, service_center_id) VALUES
