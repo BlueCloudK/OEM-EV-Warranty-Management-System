@@ -244,10 +244,14 @@ const PaidWarrantyClaimForm = ({ vehicleId, installedPartId, onSuccess, onCancel
                     name="estimatedRepairCost"
                     value={formData.estimatedRepairCost}
                     onChange={handleChange}
-                    min="0"
+                    min="100000"
+                    max="1000000000"
                     step="100000"
                     placeholder="Ví dụ: 5000000"
                   />
+                  <small style={{ color: '#666', marginTop: '4px', display: 'block' }}>
+                    Nhập chi phí sửa chữa để tính phí bảo hành tự động
+                  </small>
                 </FormGroup>
 
                 <FormGroup>
@@ -257,27 +261,13 @@ const PaidWarrantyClaimForm = ({ vehicleId, installedPartId, onSuccess, onCancel
                     id="warrantyFee"
                     name="warrantyFee"
                     value={formData.warrantyFee}
-                    onChange={handleChange}
                     required={formData.isPaidWarranty}
-                    min="0"
-                    step="1000"
                     readOnly
+                    style={{ background: '#f5f5f5', cursor: 'not-allowed' }}
                   />
                   <small style={{ color: '#666', marginTop: '4px', display: 'block' }}>
-                    Phí được tính tự động dựa trên grace period
+                    Phí được tính tự động: 20%-50% của chi phí sửa chữa tùy theo số ngày quá hạn
                   </small>
-                </FormGroup>
-
-                <FormGroup>
-                  <Label htmlFor="paidWarrantyNote">Ghi chú về phí</Label>
-                  <Textarea
-                    id="paidWarrantyNote"
-                    name="paidWarrantyNote"
-                    value={formData.paidWarrantyNote}
-                    onChange={handleChange}
-                    rows={3}
-                    placeholder="Thêm ghi chú về phí bảo hành (không bắt buộc)"
-                  />
                 </FormGroup>
 
                 <PaymentNotice>
