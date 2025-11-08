@@ -470,23 +470,6 @@ const FormActions = styled.div`
   border-top: 2px solid #e0e0e0;
 `;
 
-const CancelButton = styled.button`
-  padding: 12px 32px;
-  border: 2px solid #ddd;
-  background: white;
-  color: #666;
-  border-radius: 6px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-
-  &:hover {
-    border-color: #999;
-    color: #333;
-  }
-`;
-
 const SubmitButton = styled.button`
   padding: 12px 32px;
   border: none;
