@@ -47,9 +47,13 @@ const PaidWarrantyClaimForm = ({ vehicleId, installedPartId, onSuccess, onCancel
       paidWarrantyNote: info.feeNote || '',
     }));
 
-    // Move to step 2
+    // Move to step 2 if warranty is valid OR can provide paid warranty
     if (info.isValidForFreeWarranty || info.canProvidePaidWarranty) {
       setStep(2);
+      setError(null); // Clear any previous errors
+    } else {
+      // Warranty expired and cannot provide paid warranty
+      setError('Xe/linh kiện đã hết hạn bảo hành và vượt quá thời gian cho phép bảo hành tính phí. Không thể tạo yêu cầu bảo hành.');
     }
   };
 
@@ -138,6 +142,15 @@ const PaidWarrantyClaimForm = ({ vehicleId, installedPartId, onSuccess, onCancel
             onWarrantyChecked={handleWarrantyChecked}
             autoCheck={true}
           />
+
+          {/* Show cancel button if warranty check shows cannot provide warranty */}
+          {warrantyInfo && !warrantyInfo.isValidForFreeWarranty && !warrantyInfo.canProvidePaidWarranty && (
+            <ButtonGroup>
+              <CancelButton type="button" onClick={onCancel}>
+                Đóng
+              </CancelButton>
+            </ButtonGroup>
+          )}
         </StepSection>
       )}
 
@@ -493,6 +506,34 @@ const SubmitButton = styled.button`
   &:disabled {
     background: #ccc;
     cursor: not-allowed;
+  }
+`;
+
+const ButtonGroup = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+`;
+
+const CancelButton = styled.button`
+  padding: 12px 32px;
+  border: 2px solid #f44336;
+  background: white;
+  color: #f44336;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+
+  &:hover {
+    background: #f44336;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
   }
 `;
 
