@@ -177,11 +177,12 @@ const InstallPartFormModal = ({ isOpen, onClose, onSubmit, vehicle, parts }) => 
 
   useEffect(() => {
     if (isOpen) {
-      setFormData({ 
-        vehicleId: vehicle?.vehicleId, 
-        partId: '', 
-        installationDate: new Date().toISOString().slice(0, 10), 
-        warrantyExpirationDate: '' 
+      setFormData({
+        vehicleId: vehicle?.vehicleId,
+        partId: '',
+        installationDate: new Date().toISOString().slice(0, 10),
+        warrantyExpirationDate: '',
+        mileageAtInstallation: vehicle?.mileage || 0
       });
       setErrors({});
     }
@@ -214,7 +215,8 @@ const InstallPartFormModal = ({ isOpen, onClose, onSubmit, vehicle, parts }) => 
       vehicleId: parseInt(formData.vehicleId, 10),
       partId: parseInt(formData.partId, 10), // Part ID phải là Long
       installationDate: formData.installationDate,
-      warrantyExpirationDate: formData.warrantyExpirationDate
+      warrantyExpirationDate: formData.warrantyExpirationDate,
+      mileageAtInstallation: parseInt(formData.mileageAtInstallation, 10) || 0
     };
     const { success, message } = await onSubmit(payload);
     if (success) {
@@ -249,6 +251,22 @@ const InstallPartFormModal = ({ isOpen, onClose, onSubmit, vehicle, parts }) => 
             <S.Label>Ngày hết hạn bảo hành *</S.Label>
             <S.Input name="warrantyExpirationDate" type="date" value={formData.warrantyExpirationDate || ''} onChange={handleInputChange} required hasError={!!errors.warrantyExpirationDate} />
             {errors.warrantyExpirationDate && <S.ErrorText>{errors.warrantyExpirationDate}</S.ErrorText>}
+          </S.FormGroup>
+          <S.FormGroup>
+            <S.Label>Số km tại thời điểm lắp đặt *</S.Label>
+            <S.Input
+              name="mileageAtInstallation"
+              type="number"
+              min="0"
+              value={formData.mileageAtInstallation || 0}
+              onChange={handleInputChange}
+              required
+              hasError={!!errors.mileageAtInstallation}
+            />
+            <small style={{ color: '#666', fontSize: '0.85rem' }}>
+              Số km hiện tại của xe: {vehicle?.mileage?.toLocaleString() || 'N/A'} km
+            </small>
+            {errors.mileageAtInstallation && <S.ErrorText>{errors.mileageAtInstallation}</S.ErrorText>}
           </S.FormGroup>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
             <S.Button type="button" onClick={onClose}>Hủy</S.Button>

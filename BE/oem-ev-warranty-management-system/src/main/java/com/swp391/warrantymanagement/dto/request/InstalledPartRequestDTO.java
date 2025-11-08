@@ -27,4 +27,12 @@ public class InstalledPartRequestDTO {
     @NotNull(message = "Warranty expiration date is required")
     @Future(message = "Warranty expiration date must be in the future")
     private LocalDate warrantyExpirationDate;
+
+    /**
+     * Số km của xe tại thời điểm lắp đặt linh kiện.
+     * Dùng để tính toán warranty dựa trên mileage cho extended warranty parts.
+     */
+    @NotNull(message = "Mileage at installation is required")
+    @PositiveOrZero(message = "Mileage must be zero or positive")
+    private Integer mileageAtInstallation;
 }
