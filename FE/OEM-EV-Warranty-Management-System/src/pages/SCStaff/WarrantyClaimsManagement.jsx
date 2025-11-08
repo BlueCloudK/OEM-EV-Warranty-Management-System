@@ -85,6 +85,102 @@ const ClaimDetailModal = ({ isOpen, onClose, claim }) => {
   );
 };
 
+// Edit Claim Modal
+const EditClaimModal = ({ isOpen, onClose, claim, onUpdate }) => {
+  const [description, setDescription] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (claim) {
+      setDescription(claim.description || '');
+    }
+  }, [claim]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!description || description.trim().length < 10) {
+      setError('Mô tả phải có ít nhất 10 ký tự');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`http://localhost:8080/api/warranty-claims/${claim.warrantyClaimId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          vehicleId: claim.vehicleId,
+          installedPartId: claim.installedPartId,
+          description: description.trim()
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Không thể cập nhật yêu cầu bảo hành');
+      }
+
+      alert('Đã cập nhật yêu cầu bảo hành thành công!');
+      onUpdate();
+      onClose();
+    } catch (err) {
+      console.error('Error updating claim:', err);
+      setError(err.message || 'Có lỗi xảy ra khi cập nhật yêu cầu');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isOpen || !claim) return null;
+
+  return (
+    <S.ModalOverlay onClick={onClose}>
+      <S.ModalContent onClick={(e) => e.stopPropagation()}>
+        <h2>Chỉnh sửa Yêu cầu Bảo hành #{claim.warrantyClaimId}</h2>
+        {error && <div style={{ color: '#f44336', marginTop: '10px', padding: '10px', background: '#ffebee', borderRadius: '4px' }}>{error}</div>}
+        <form onSubmit={handleSubmit}>
+          <S.FormGroup style={{ marginTop: '20px' }}>
+            <S.Label>Khách hàng</S.Label>
+            <S.Input type="text" value={claim.customerName || 'N/A'} disabled />
+          </S.FormGroup>
+          <S.FormGroup>
+            <S.Label>Xe (VIN)</S.Label>
+            <S.Input type="text" value={claim.vehicleVin || 'N/A'} disabled />
+          </S.FormGroup>
+          <S.FormGroup>
+            <S.Label>Linh kiện</S.Label>
+            <S.Input type="text" value={claim.partName || 'N/A'} disabled />
+          </S.FormGroup>
+          <S.FormGroup>
+            <S.Label>Mô tả lỗi *</S.Label>
+            <S.TextArea
+              rows={5}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Mô tả chi tiết về vấn đề cần bảo hành (tối thiểu 10 ký tự)"
+              required
+            />
+          </S.FormGroup>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px' }}>
+            <S.Button type="button" onClick={onClose} disabled={loading}>Hủy</S.Button>
+            <S.Button primary type="submit" disabled={loading}>
+              {loading ? 'Đang lưu...' : 'Lưu thay đổi'}
+            </S.Button>
+          </div>
+        </form>
+      </S.ModalContent>
+    </S.ModalOverlay>
+  );
+};
+
 // Simplified vehicle selection modal for new claims
 const VehicleSelectionModal = ({ isOpen, onClose, vehicles, installedParts, onSelect, fetchInstalledPartsForVehicle }) => {
   const [selectedVehicleId, setSelectedVehicleId] = useState('');
@@ -175,6 +271,8 @@ const WarrantyClaimsManagement = () => {
   const [selectedInstalledPartId, setSelectedInstalledPartId] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedClaim, setSelectedClaim] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingClaim, setEditingClaim] = useState(null);
 
   // Debug state changes
   useEffect(() => {
@@ -234,6 +332,21 @@ const WarrantyClaimsManagement = () => {
   const handleCloseDetailModal = () => {
     setShowDetailModal(false);
     setSelectedClaim(null);
+  };
+
+  const handleEditClaim = (claim) => {
+    console.log('[WarrantyClaimsManagement] Edit claim:', claim);
+    setEditingClaim(claim);
+    setShowEditModal(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+    setEditingClaim(null);
+  };
+
+  const handleEditSuccess = async () => {
+    await fetchClaims();
   };
 
   const handleConfirmPayment = async (claimId) => {
@@ -370,7 +483,7 @@ const WarrantyClaimsManagement = () => {
                         )}
                         {(claim.status === 'SUBMITTED' || claim.status === 'PENDING_PAYMENT') && (
                           <>
-                            <S.Button $small style={{ background: '#2196f3' }} onClick={() => handleViewClaim(claim)}>
+                            <S.Button $small style={{ background: '#2196f3' }} onClick={() => handleEditClaim(claim)}>
                               <FaEdit /> Sửa
                             </S.Button>
                             <S.Button $small style={{ background: '#f44336' }} onClick={() => handleDeleteClaim(claim.warrantyClaimId)}>
@@ -430,6 +543,14 @@ const WarrantyClaimsManagement = () => {
           isOpen={showDetailModal}
           onClose={handleCloseDetailModal}
           claim={selectedClaim}
+        />
+
+        {/* Edit Claim Modal */}
+        <EditClaimModal
+          isOpen={showEditModal}
+          onClose={handleCloseEditModal}
+          claim={editingClaim}
+          onUpdate={handleEditSuccess}
         />
       </S.ContentWrapper>
     </S.PageContainer>
