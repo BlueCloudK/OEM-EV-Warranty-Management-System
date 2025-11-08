@@ -66,7 +66,7 @@ const WarrantyChecker = ({ vehicleId, installedPartId, onWarrantyChecked, autoCh
       handleCheckWarranty();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoCheck]); // Only run once when autoCheck changes
+  }, [autoCheck, vehicleId, installedPartId]); // Re-run when IDs change
 
   // Tính phí bảo hành
   const handleCalculateFee = async () => {
