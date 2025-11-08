@@ -18,6 +18,8 @@ import { FaCheckCircle, FaExclamationTriangle, FaMoneyBillWave } from 'react-ico
  * 3. Customer đồng ý → Tạo claim với isPaidWarranty=true
  */
 const PaidWarrantyClaimForm = ({ vehicleId, installedPartId, onSuccess, onCancel }) => {
+  console.log('[PaidWarrantyClaimForm] Component mounted with:', { vehicleId, installedPartId });
+
   const [formData, setFormData] = useState({
     vehicleId: vehicleId || '',
     installedPartId: installedPartId || '',
@@ -35,6 +37,7 @@ const PaidWarrantyClaimForm = ({ vehicleId, installedPartId, onSuccess, onCancel
 
   // Update form khi warranty info được kiểm tra
   const handleWarrantyChecked = (info) => {
+    console.log('[PaidWarrantyClaimForm] handleWarrantyChecked called with:', info);
     setWarrantyInfo(info);
 
     // Auto-fill form
@@ -49,10 +52,12 @@ const PaidWarrantyClaimForm = ({ vehicleId, installedPartId, onSuccess, onCancel
 
     // Move to step 2 if warranty is valid OR can provide paid warranty
     if (info.isValidForFreeWarranty || info.canProvidePaidWarranty) {
+      console.log('[PaidWarrantyClaimForm] Moving to step 2');
       setStep(2);
       setError(null); // Clear any previous errors
     } else {
       // Warranty expired and cannot provide paid warranty
+      console.log('[PaidWarrantyClaimForm] Cannot provide warranty - staying at step 1');
       setError('Xe/linh kiện đã hết hạn bảo hành và vượt quá thời gian cho phép bảo hành tính phí. Không thể tạo yêu cầu bảo hành.');
     }
   };
