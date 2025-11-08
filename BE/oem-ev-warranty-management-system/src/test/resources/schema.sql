@@ -72,13 +72,24 @@ CREATE TABLE parts (
     part_name NVARCHAR(100) NOT NULL,
     part_number VARCHAR(50) NOT NULL UNIQUE,
     manufacturer NVARCHAR(100) NOT NULL,
-    price DECIMAL(10, 2) NOT NULL
+    price DECIMAL(10, 2) NOT NULL,
+    -- Hierarchy warranty configuration (Option 2)
+    has_extended_warranty BOOLEAN NOT NULL DEFAULT FALSE,
+    default_warranty_months INT,
+    default_warranty_mileage INT,
+    grace_period_days INT,
+    paid_warranty_fee_percentage_min DECIMAL(5, 2),
+    paid_warranty_fee_percentage_max DECIMAL(5, 2)
 );
 
 CREATE TABLE installed_parts (
     installed_part_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     installation_date DATE NOT NULL,
     warranty_expiration_date DATE NOT NULL,
+    -- Hierarchy warranty tracking
+    mileage_at_installation INT NOT NULL,
+    warranty_period_months INT,
+    warranty_mileage_limit INT,
     part_id BIGINT NOT NULL,
     vehicle_id BIGINT NOT NULL,
     FOREIGN KEY (part_id) REFERENCES parts(part_id),
@@ -117,6 +128,7 @@ CREATE TABLE warranty_claims (
     is_paid_warranty BOOLEAN NOT NULL DEFAULT FALSE,
     warranty_fee DECIMAL(10, 2),
     paid_warranty_note NVARCHAR(500),
+    mileage_at_claim INT,
     FOREIGN KEY (installed_part_id) REFERENCES installed_parts(installed_part_id),
     FOREIGN KEY (vehicle_id) REFERENCES vehicles(vehicle_id),
     FOREIGN KEY (service_center_id) REFERENCES service_centers(service_center_id),

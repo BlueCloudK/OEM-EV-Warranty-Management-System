@@ -205,4 +205,15 @@ public class WarrantyClaim {
      */
     @Column(name = "paid_warranty_note", length = 500, columnDefinition = "nvarchar(500)")
     private String paidWarrantyNote;
+
+    /**
+     * Số km của xe tại thời điểm tạo claim.
+     * <p>
+     * <strong>Mục đích:</strong> Lưu snapshot km để audit và reporting.
+     * <p>
+     * <strong>Use case:</strong> "Claim được tạo khi xe có 45,000 km" - Quan trọng để
+     * xác minh tính hợp lệ của claim sau này.
+     */
+    @Column(name = "mileage_at_claim")
+    private Integer mileageAtClaim;
 }
