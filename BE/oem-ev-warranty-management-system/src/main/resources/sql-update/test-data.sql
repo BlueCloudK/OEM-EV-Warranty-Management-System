@@ -164,25 +164,25 @@ INSERT INTO installed_parts (installation_date, warranty_expiration_date, mileag
 --          service_center_id, assigned_to_user_id, recall_response_id, warranty_status,
 --          is_paid_warranty, warranty_fee, paid_warranty_note, mileage_at_claim
 
--- Claim 1: Free warranty (RESOLVED)
+-- Claim 1: Free warranty (COMPLETED)
 INSERT INTO warranty_claims (claim_date, status, resolution_date, description, installed_part_id, vehicle_id, service_center_id, assigned_to_user_id, recall_response_id, warranty_status, is_paid_warranty, warranty_fee, paid_warranty_note, mileage_at_claim) VALUES
-('2024-08-10 09:30:00', 'RESOLVED', '2024-08-12 15:00:00', N'Màn hình cảm ứng bị đơ, không phản hồi', 4, 1, 1, 7, NULL, 'VALID', FALSE, NULL, NULL, 14000);
+('2024-08-10 09:30:00', 'COMPLETED', '2024-08-12 15:00:00', N'Màn hình cảm ứng bị đơ, không phản hồi', 4, 1, 1, 7, NULL, 'VALID', FALSE, NULL, NULL, 14000);
 
--- Claim 2: Free warranty (IN_PROGRESS)
+-- Claim 2: Free warranty (PROCESSING)
 INSERT INTO warranty_claims (claim_date, status, resolution_date, description, installed_part_id, vehicle_id, service_center_id, assigned_to_user_id, recall_response_id, warranty_status, is_paid_warranty, warranty_fee, paid_warranty_note, mileage_at_claim) VALUES
-('2024-10-20 10:15:00', 'IN_PROGRESS', NULL, N'Camera 360 bị mờ, không rõ hình ảnh', 8, 2, 2, 8, NULL, 'VALID', FALSE, NULL, NULL, 8200);
+('2024-10-20 10:15:00', 'PROCESSING', NULL, N'Camera 360 bị mờ, không rõ hình ảnh', 8, 2, 2, 8, NULL, 'VALID', FALSE, NULL, NULL, 8200);
 
--- Claim 3: Paid warranty (RESOLVED) - Expired by date
+-- Claim 3: Paid warranty (COMPLETED) - Expired by date
 INSERT INTO warranty_claims (claim_date, status, resolution_date, description, installed_part_id, vehicle_id, service_center_id, assigned_to_user_id, recall_response_id, warranty_status, is_paid_warranty, warranty_fee, paid_warranty_note, mileage_at_claim) VALUES
-('2024-11-01 14:20:00', 'RESOLVED', '2024-11-03 16:30:00', N'Pin sụt dung lượng nhanh', 1, 1, 1, 7, NULL, 'EXPIRED_DATE', TRUE, 15000000.00, N'Quá hạn bảo hành 5 tháng, phí bảo hành 30% chi phí sửa chữa (50 triệu)', 15200);
+('2024-11-01 14:20:00', 'COMPLETED', '2024-11-03 16:30:00', N'Pin sụt dung lượng nhanh', 1, 1, 1, 7, NULL, 'EXPIRED_DATE', TRUE, 15000000.00, N'Quá hạn bảo hành 5 tháng, phí bảo hành 30% chi phí sửa chữa (50 triệu)', 15200);
 
 -- Claim 4: Submitted (SUBMITTED)
 INSERT INTO warranty_claims (claim_date, status, resolution_date, description, installed_part_id, vehicle_id, service_center_id, assigned_to_user_id, recall_response_id, warranty_status, is_paid_warranty, warranty_fee, paid_warranty_note, mileage_at_claim) VALUES
 ('2024-11-05 11:00:00', 'SUBMITTED', NULL, N'Động cơ phát ra tiếng ồn bất thường', 6, 2, 2, NULL, NULL, 'VALID', FALSE, NULL, NULL, 8500);
 
--- Claim 5: Approved (APPROVED)
+-- Claim 5: Manager Review (MANAGER_REVIEW)
 INSERT INTO warranty_claims (claim_date, status, resolution_date, description, installed_part_id, vehicle_id, service_center_id, assigned_to_user_id, recall_response_id, warranty_status, is_paid_warranty, warranty_fee, paid_warranty_note, mileage_at_claim) VALUES
-('2024-11-06 09:45:00', 'APPROVED', NULL, N'Hệ thống BMS báo lỗi code E204', 3, 1, 1, 7, NULL, 'VALID', FALSE, NULL, NULL, 15000);
+('2024-11-06 09:45:00', 'MANAGER_REVIEW', NULL, N'Hệ thống BMS báo lỗi code E204', 3, 1, 1, 7, NULL, 'VALID', FALSE, NULL, NULL, 15000);
 
 -- =====================================================
 -- 9. RECALL REQUESTS
@@ -193,15 +193,15 @@ INSERT INTO warranty_claims (claim_date, status, resolution_date, description, i
 
 -- Recall 1: Approved recall for Battery 60kWh
 INSERT INTO recall_requests (part_id, status, reason, admin_note, customer_note, created_by, approved_by, created_at, updated_at) VALUES
-(1, 'APPROVED', N'Phát hiện lỗi hàng loạt trên pin 60kWh sản xuất từ tháng 6-8/2023. Pin có nguy cơ quá nhiệt trong điều kiện sạc nhanh liên tục. Cần thay thế module quản lý nhiệt.', N'Đã xác nhận lỗi qua phòng lab. Triệu hồi ngay tất cả xe bị ảnh hưởng.', NULL, 2, 1, '2024-10-01 08:00:00', '2024-10-01 10:00:00');
+(1, 'APPROVED_BY_ADMIN', N'Phát hiện lỗi hàng loạt trên pin 60kWh sản xuất từ tháng 6-8/2023. Pin có nguy cơ quá nhiệt trong điều kiện sạc nhanh liên tục. Cần thay thế module quản lý nhiệt.', N'Đã xác nhận lỗi qua phòng lab. Triệu hồi ngay tất cả xe bị ảnh hưởng.', NULL, 2, 1, '2024-10-01 08:00:00', '2024-10-01 10:00:00');
 
 -- Recall 2: Pending recall for Inverter
 INSERT INTO recall_requests (part_id, status, reason, admin_note, customer_note, created_by, approved_by, created_at, updated_at) VALUES
-(11, 'PENDING', N'Nhận được báo cáo từ 15 khách hàng về hiện tượng mất điện đột ngột. Nghi ngờ lỗi firmware của inverter phiên bản v1.2.3.', NULL, NULL, 3, NULL, '2024-11-01 14:30:00', '2024-11-01 14:30:00');
+(11, 'PENDING_ADMIN_APPROVAL', N'Nhận được báo cáo từ 15 khách hàng về hiện tượng mất điện đột ngột. Nghi ngờ lỗi firmware của inverter phiên bản v1.2.3.', NULL, NULL, 3, NULL, '2024-11-01 14:30:00', '2024-11-01 14:30:00');
 
 -- Recall 3: Rejected recall
 INSERT INTO recall_requests (part_id, status, reason, admin_note, customer_note, created_by, approved_by, created_at, updated_at) VALUES
-(8, 'REJECTED', N'Đèn LED trước bị mờ sau 6 tháng sử dụng', N'Sau kiểm tra, đây là hiện tượng bình thường do khách hàng sử dụng trong môi trường bụi bặm. Không phải lỗi sản xuất hàng loạt.', NULL, 2, 1, '2024-09-15 09:00:00', '2024-09-16 11:00:00');
+(8, 'REJECTED_BY_ADMIN', N'Đèn LED trước bị mờ sau 6 tháng sử dụng', N'Sau kiểm tra, đây là hiện tượng bình thường do khách hàng sử dụng trong môi trường bụi bặm. Không phải lỗi sản xuất hàng loạt.', NULL, 2, 1, '2024-09-15 09:00:00', '2024-09-16 11:00:00');
 
 -- =====================================================
 -- 10. RECALL RESPONSES
