@@ -24,6 +24,7 @@ const WarrantyChecker = ({ vehicleId, installedPartId, onWarrantyChecked, autoCh
 
   // Kiểm tra bảo hành
   const handleCheckWarranty = async () => {
+    console.log('[WarrantyChecker] handleCheckWarranty called with:', { vehicleId, installedPartId });
     setLoading(true);
     setError(null);
     setWarrantyInfo(null);
@@ -33,18 +34,22 @@ const WarrantyChecker = ({ vehicleId, installedPartId, onWarrantyChecked, autoCh
       let response;
       if (installedPartId) {
         // Kiểm tra bảo hành linh kiện
+        console.log('[WarrantyChecker] Validating installed part warranty:', installedPartId);
         response = await warrantyValidationApi.validateInstalledPartWarranty(installedPartId);
       } else if (vehicleId) {
         // Kiểm tra bảo hành xe
+        console.log('[WarrantyChecker] Validating vehicle warranty:', vehicleId);
         response = await warrantyValidationApi.validateVehicleWarranty(vehicleId);
       } else {
         throw new Error('Vui lòng cung cấp vehicleId hoặc installedPartId');
       }
 
+      console.log('[WarrantyChecker] Warranty validation response:', response);
       setWarrantyInfo(response);
 
       // Callback để parent component biết
       if (onWarrantyChecked) {
+        console.log('[WarrantyChecker] Calling onWarrantyChecked callback');
         onWarrantyChecked(response);
       }
 
@@ -54,7 +59,7 @@ const WarrantyChecker = ({ vehicleId, installedPartId, onWarrantyChecked, autoCh
       }
     } catch (err) {
       setError(err.message || 'Lỗi khi kiểm tra bảo hành');
-      console.error('Warranty check error:', err);
+      console.error('[WarrantyChecker] Warranty check error:', err);
     } finally {
       setLoading(false);
     }
@@ -62,7 +67,9 @@ const WarrantyChecker = ({ vehicleId, installedPartId, onWarrantyChecked, autoCh
 
   // Auto check warranty on mount if autoCheck is true
   useEffect(() => {
+    console.log('[WarrantyChecker] useEffect triggered:', { autoCheck, vehicleId, installedPartId });
     if (autoCheck && (vehicleId || installedPartId)) {
+      console.log('[WarrantyChecker] Auto-checking warranty...');
       handleCheckWarranty();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
