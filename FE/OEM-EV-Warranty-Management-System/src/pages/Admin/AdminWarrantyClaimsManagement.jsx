@@ -146,7 +146,7 @@ const AdminWarrantyClaimsManagement = () => {
       )}
 
       {/* Pagination Controls */}
-      {pagination.totalPages > 1 && (
+      {pagination && !error && (
         <S.PaginationContainer>
           <S.Button
             $small
