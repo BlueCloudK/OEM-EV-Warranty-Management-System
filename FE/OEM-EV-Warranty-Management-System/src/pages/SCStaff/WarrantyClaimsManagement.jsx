@@ -264,7 +264,7 @@ const WarrantyClaimsManagement = () => {
         />
 
         {/* Paid Warranty Claim Form Modal */}
-        {showWarrantyForm && (
+        {showWarrantyForm && selectedVehicleId && selectedInstalledPartId && (
           <ModalOverlay>
             <ModalWrapper>
               <CloseButton onClick={handleClaimCancel}>×</CloseButton>
