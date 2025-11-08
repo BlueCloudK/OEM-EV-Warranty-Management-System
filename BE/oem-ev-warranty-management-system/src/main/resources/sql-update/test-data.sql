@@ -98,10 +98,10 @@ INSERT INTO vehicles (vehicle_name, vehicle_model, vehicle_year, vehicle_vin, pu
 --          paid_warranty_fee_percentage_min, paid_warranty_fee_percentage_max
 INSERT INTO parts (part_name, part_number, manufacturer, price, has_extended_warranty, default_warranty_months, default_warranty_mileage, grace_period_days, paid_warranty_fee_percentage_min, paid_warranty_fee_percentage_max) VALUES
 -- Critical parts with extended warranty
-(N'Pin Lithium-ion 60kWh', 'BAT-VF5-60KWH-V1', 'VinFast', 250000000.00, TRUE, 96, 192000, 365, 0.20, 0.50),
-(N'Động cơ điện 150kW', 'MTR-VF8-150KW-V1', 'VinFast', 180000000.00, TRUE, 48, 100000, 180, 0.25, 0.60),
-(N'Pin Lithium-ion 87kWh', 'BAT-VF8-87KWH-V1', 'VinFast', 320000000.00, TRUE, 96, 192000, 365, 0.20, 0.50),
-(N'Động cơ điện 300kW', 'MTR-VF9-300KW-V1', 'VinFast', 280000000.00, TRUE, 48, 100000, 180, 0.25, 0.60),
+(N'Pin Lithium-ion 60kWh', 'BAT-VF5-60KWH-V1', 'VinFast', 85000000.00, TRUE, 96, 192000, 365, 0.20, 0.50),
+(N'Động cơ điện 150kW', 'MTR-VF8-150KW-V1', 'VinFast', 65000000.00, TRUE, 48, 100000, 180, 0.25, 0.60),
+(N'Pin Lithium-ion 87kWh', 'BAT-VF8-87KWH-V1', 'VinFast', 95000000.00, TRUE, 96, 192000, 365, 0.20, 0.50),
+(N'Động cơ điện 300kW', 'MTR-VF9-300KW-V1', 'VinFast', 78000000.00, TRUE, 48, 100000, 180, 0.25, 0.60),
 (N'Hệ thống BMS (Battery Management)', 'BMS-VF-001', 'VinFast', 45000000.00, TRUE, 36, 80000, 90, 0.30, 0.70),
 
 -- Regular parts (no extended warranty - follow vehicle warranty)
@@ -112,7 +112,7 @@ INSERT INTO parts (part_name, part_number, manufacturer, price, has_extended_war
 (N'Ghế da cao cấp (bộ)', 'SEAT-LEATHER-SET', 'VinFast', 25000000.00, FALSE, NULL, NULL, NULL, NULL, NULL),
 
 -- Additional critical parts
-(N'Inverter điện tử', 'INV-VF-001', 'VinFast', 65000000.00, TRUE, 36, 80000, 90, 0.30, 0.70),
+(N'Inverter điện tử', 'INV-VF-001', 'VinFast', 48000000.00, TRUE, 36, 80000, 90, 0.30, 0.70),
 (N'Bộ sạc nhanh DC', 'CHG-DC-FAST-V1', 'VinFast', 35000000.00, TRUE, 24, 50000, 60, 0.35, 0.75),
 (N'Hệ thống treo khí nén', 'SUS-AIR-V1', 'VinFast', 55000000.00, TRUE, 36, 80000, 90, 0.30, 0.70),
 (N'Hệ thống phanh ABS', 'BRK-ABS-V1', 'VinFast', 28000000.00, TRUE, 24, 60000, 60, 0.35, 0.75);
