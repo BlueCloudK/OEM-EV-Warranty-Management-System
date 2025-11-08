@@ -3,7 +3,7 @@
 -- =====================================================
 -- This file contains comprehensive test data for all entities
 -- Generated based on JPA entity definitions
--- All passwords are: 123456 (BCrypt hashed)
+-- All passwords are: password (BCrypt hashed)
 -- =====================================================
 
 -- =====================================================
@@ -11,12 +11,12 @@
 -- =====================================================
 -- Table: roles
 -- Columns: role_id, role_name
-INSERT INTO roles (role_name) VALUES
-('ROLE_ADMIN'),
-('ROLE_EVM_STAFF'),
-('ROLE_SC_STAFF'),
-('ROLE_SC_TECHNICIAN'),
-('ROLE_CUSTOMER');
+# INSERT INTO roles (role_name) VALUES
+# ('ADMIN'),
+# ('EVM_STAFF'),
+# ('SC_STAFF'),
+# ('SC_TECHNICIAN'),
+# ('CUSTOMER');
 
 -- =====================================================
 -- 2. SERVICE CENTERS
@@ -33,7 +33,7 @@ INSERT INTO service_centers (name, address, phone, opening_hours, latitude, long
 -- =====================================================
 -- Table: users
 -- Columns: username, email, password, address, created_at, role_id, service_center_id
--- Password for all users: 123456 (BCrypt hashed for Spring Security 3.5.6)
+-- Password for all users: password (BCrypt hashed for Spring Security 3.5.6)
 
 -- ADMIN (1 user)
 INSERT INTO users (username, email, password, address, created_at, role_id, service_center_id) VALUES
