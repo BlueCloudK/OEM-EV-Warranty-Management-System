@@ -127,12 +127,21 @@ const WarrantyChecker = ({ vehicleId, installedPartId, onWarrantyChecked, autoCh
 
   return (
     <Container>
-      <Header>
-        <h3>Kiểm Tra Bảo Hành</h3>
-        <CheckButton onClick={handleCheckWarranty} disabled={loading}>
-          {loading ? 'Đang kiểm tra...' : 'Kiểm Tra Ngay'}
-        </CheckButton>
-      </Header>
+      {!autoCheck && (
+        <Header>
+          <h3>Kiểm Tra Bảo Hành</h3>
+          <CheckButton onClick={handleCheckWarranty} disabled={loading}>
+            {loading ? 'Đang kiểm tra...' : 'Kiểm Tra Ngay'}
+          </CheckButton>
+        </Header>
+      )}
+
+      {autoCheck && loading && (
+        <LoadingState>
+          <h3>Đang kiểm tra bảo hành tự động...</h3>
+          <p>Vui lòng đợi trong giây lát</p>
+        </LoadingState>
+      )}
 
       {error && <ErrorMessage>{error}</ErrorMessage>}
 
@@ -516,6 +525,26 @@ const CannotProvideWarranty = styled.div`
     display: block;
     margin-top: 8px;
     color: #d32f2f;
+  }
+`;
+
+const LoadingState = styled.div`
+  text-align: center;
+  padding: 40px 20px;
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  border-radius: 8px;
+  margin-bottom: 20px;
+
+  h3 {
+    margin: 0 0 8px 0;
+    color: #1976d2;
+    font-size: 1.3rem;
+  }
+
+  p {
+    margin: 0;
+    color: #555;
+    font-size: 1rem;
   }
 `;
 
