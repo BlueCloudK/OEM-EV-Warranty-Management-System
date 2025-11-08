@@ -25,18 +25,18 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        // Khởi tạo roles nếu chưa có
-        if (roleRepository.count() == 0) {
-            initializeRoles();
-        }
-
-        // Khởi tạo admin nếu chưa có user admin
-        if (userRepository.findByUsername("admin").isEmpty()) {
-            initializeAdminUser();
-        }
-
-        // Khởi tạo các tài khoản mẫu cho testing
-        initializeSampleUsers();
+//        // Khởi tạo roles nếu chưa có
+//        if (roleRepository.count() == 0) {
+//            initializeRoles();
+//        }
+//
+//        // Khởi tạo admin nếu chưa có user admin
+//        if (userRepository.findByUsername("admin").isEmpty()) {
+//            initializeAdminUser();
+//        }
+//
+//        // Khởi tạo các tài khoản mẫu cho testing
+//        initializeSampleUsers();
     }
 
     private void initializeRoles() {
