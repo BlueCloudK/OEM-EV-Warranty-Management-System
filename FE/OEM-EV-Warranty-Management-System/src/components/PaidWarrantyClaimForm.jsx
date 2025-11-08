@@ -69,6 +69,33 @@ const PaidWarrantyClaimForm = ({ vehicleId, installedPartId, onSuccess, onCancel
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
+
+    // Auto-calculate warranty fee when estimatedRepairCost changes
+    if (name === 'estimatedRepairCost' && value && parseFloat(value) > 0) {
+      calculateFeeFromRepairCost(parseFloat(value));
+    }
+  };
+
+  // Calculate warranty fee from repair cost
+  const calculateFeeFromRepairCost = async (repairCost) => {
+    if (!warrantyInfo || !formData.installedPartId) return;
+
+    try {
+      const response = await warrantyValidationApi.calculatePaidWarrantyFeeForPart(
+        formData.installedPartId,
+        repairCost
+      );
+
+      if (response && response.estimatedWarrantyFee) {
+        setFormData(prev => ({
+          ...prev,
+          warrantyFee: response.estimatedWarrantyFee,
+          paidWarrantyNote: response.feeNote || ''
+        }));
+      }
+    } catch (err) {
+      console.error('Error calculating warranty fee:', err);
+    }
   };
 
   // Validate form
@@ -219,7 +246,7 @@ const PaidWarrantyClaimForm = ({ vehicleId, installedPartId, onSuccess, onCancel
                     onChange={handleChange}
                     min="0"
                     step="100000"
-                    readOnly
+                    placeholder="Ví dụ: 5000000"
                   />
                 </FormGroup>
 
@@ -234,7 +261,11 @@ const PaidWarrantyClaimForm = ({ vehicleId, installedPartId, onSuccess, onCancel
                     required={formData.isPaidWarranty}
                     min="0"
                     step="1000"
+                    readOnly
                   />
+                  <small style={{ color: '#666', marginTop: '4px', display: 'block' }}>
+                    Phí được tính tự động dựa trên grace period
+                  </small>
                 </FormGroup>
 
                 <FormGroup>
@@ -245,7 +276,7 @@ const PaidWarrantyClaimForm = ({ vehicleId, installedPartId, onSuccess, onCancel
                     value={formData.paidWarrantyNote}
                     onChange={handleChange}
                     rows={3}
-                    readOnly
+                    placeholder="Thêm ghi chú về phí bảo hành (không bắt buộc)"
                   />
                 </FormGroup>
 
