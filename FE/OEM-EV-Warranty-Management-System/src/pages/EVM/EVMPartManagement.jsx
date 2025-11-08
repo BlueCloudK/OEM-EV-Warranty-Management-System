@@ -396,7 +396,7 @@ const EVMPartManagement = () => {
         )}
 
         {/* Pagination Controls */}
-        {pagination.totalPages > 1 && (
+        {pagination && !error && (
           <S.PaginationContainer>
             <S.Button
               $small
