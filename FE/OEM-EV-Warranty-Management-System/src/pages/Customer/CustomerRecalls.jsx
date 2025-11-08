@@ -36,7 +36,25 @@ export default function CustomerRecalls() {
       // NEW FLOW: Fetch RecallResponses instead of RecallRequests
       const response = await recallResponsesApi.getMyResponses();
       console.log("📋 Recall Responses loaded:", response);
-      setRecallResponses(response?.content || response || []);
+      console.log("📋 First response sample:", response?.content?.[0] || response?.[0]);
+
+      const data = response?.content || response || [];
+
+      // Debug: Check structure of first item
+      if (data.length > 0) {
+        console.log("📋 First item structure:", {
+          recallResponseId: data[0].recallResponseId,
+          status: data[0].status,
+          vehicle: data[0].vehicle,
+          vehicleId: data[0].vehicleId,
+          recallRequest: data[0].recallRequest,
+          recallRequestId: data[0].recallRequestId,
+          hasVehicle: !!data[0].vehicle,
+          hasRecallRequest: !!data[0].recallRequest,
+        });
+      }
+
+      setRecallResponses(data);
     } catch (error) {
       console.error("Error fetching recall responses:", error);
       alert("Không thể tải danh sách thông báo recall");
@@ -253,88 +271,104 @@ export default function CustomerRecalls() {
             </tr>
           </S.TableHeader>
           <S.TableBody>
-            {filteredResponses.map((response) => (
-              <S.TableRow key={response.recallResponseId}>
-                <S.TableCell>#{response.recallResponseId}</S.TableCell>
-                <S.TableCell>
-                  <div>{response.vehicle?.vehicleModel || 'N/A'}</div>
-                  <small>{response.vehicle?.vehicleVin || 'N/A'}</small>
-                </S.TableCell>
-                <S.TableCell>
-                  <div>{response.recallRequest?.part?.partName || 'N/A'}</div>
-                  <small>{response.recallRequest?.part?.partNumber || 'N/A'}</small>
-                </S.TableCell>
-                <S.TableCell>
-                  {response.recallRequest?.reason?.length > 60
-                    ? response.recallRequest.reason.substring(0, 60) + "..."
-                    : response.recallRequest?.reason || 'N/A'}
-                </S.TableCell>
-                <S.TableCell>
-                  {response.createdAt ? new Date(response.createdAt).toLocaleDateString('vi-VN') : "N/A"}
-                </S.TableCell>
-                <S.TableCell>
-                  {getStatusBadge(response.status)}
-                </S.TableCell>
-                <S.TableCell>
-                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                    <S.ActionButton onClick={() => openDetailModal(response)}>
-                      <FaEye /> Chi tiết
-                    </S.ActionButton>
-                    {response.status === "PENDING" && (
-                      <S.ActionButton
-                        style={{ background: "#27ae60" }}
-                        onClick={() => openConfirmModal(response)}
-                      >
-                        <FaThumbsUp /> Xác nhận
+            {filteredResponses.map((response) => {
+              // Safe data extraction with fallbacks
+              const vehicleModel = response.vehicle?.vehicleModel || response.vehicleName || 'Xe không xác định';
+              const vehicleVin = response.vehicle?.vehicleVin || response.vehicleVin || 'VIN không có';
+              const partName = response.recallRequest?.part?.partName || response.partName || 'Phụ tùng không xác định';
+              const partNumber = response.recallRequest?.part?.partNumber || response.partNumber || 'Mã không có';
+              const reason = response.recallRequest?.reason || response.reason || 'Chưa có thông tin lý do';
+
+              return (
+                <S.TableRow key={response.recallResponseId}>
+                  <S.TableCell>#{response.recallResponseId}</S.TableCell>
+                  <S.TableCell>
+                    <div>{vehicleModel}</div>
+                    <small>{vehicleVin}</small>
+                  </S.TableCell>
+                  <S.TableCell>
+                    <div>{partName}</div>
+                    <small>{partNumber}</small>
+                  </S.TableCell>
+                  <S.TableCell>
+                    {reason.length > 60 ? reason.substring(0, 60) + "..." : reason}
+                  </S.TableCell>
+                  <S.TableCell>
+                    {response.createdAt ? new Date(response.createdAt).toLocaleDateString('vi-VN') : "N/A"}
+                  </S.TableCell>
+                  <S.TableCell>
+                    {getStatusBadge(response.status)}
+                  </S.TableCell>
+                  <S.TableCell>
+                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                      <S.ActionButton onClick={() => openDetailModal(response)}>
+                        <FaEye /> Chi tiết
                       </S.ActionButton>
-                    )}
-                  </div>
-                </S.TableCell>
-              </S.TableRow>
-            ))}
+                      {response.status === "PENDING" && (
+                        <S.ActionButton
+                          style={{ background: "#27ae60" }}
+                          onClick={() => openConfirmModal(response)}
+                        >
+                          <FaThumbsUp /> Xác nhận
+                        </S.ActionButton>
+                      )}
+                    </div>
+                  </S.TableCell>
+                </S.TableRow>
+              );
+            })}
           </S.TableBody>
         </S.Table>
       )}
 
       {/* Confirm Modal */}
-      {showConfirmModal && selectedResponse && (
-        <S.ModalOverlay onClick={() => !submitting && setShowConfirmModal(false)}>
-          <S.ModalContent onClick={(e) => e.stopPropagation()}>
-            <S.ModalHeader>
-              <h2><FaThumbsUp /> Xác nhận Recall</h2>
-              <S.CloseButton onClick={() => !submitting && setShowConfirmModal(false)}>&times;</S.CloseButton>
-            </S.ModalHeader>
-            <S.Form onSubmit={handleConfirmRecall}>
-              <S.FormGroup>
-                <S.Label>Recall Response ID:</S.Label>
-                <S.Input type="text" value={`#${selectedResponse.recallResponseId}`} disabled />
-              </S.FormGroup>
-              <S.FormGroup>
-                <S.Label>Xe:</S.Label>
-                <S.Input
-                  type="text"
-                  value={`${selectedResponse.vehicle?.vehicleModel || 'N/A'} (${selectedResponse.vehicle?.vehicleVin || 'N/A'})`}
-                  disabled
-                />
-              </S.FormGroup>
-              <S.FormGroup>
-                <S.Label>Phụ tùng cần thay:</S.Label>
-                <S.Input
-                  type="text"
-                  value={`${selectedResponse.recallRequest?.part?.partName || 'N/A'} (${selectedResponse.recallRequest?.part?.partNumber || 'N/A'})`}
-                  disabled
-                />
-              </S.FormGroup>
-              <S.FormGroup>
-                <S.Label>Lý do recall:</S.Label>
-                <S.TextArea value={selectedResponse.recallRequest?.reason || 'N/A'} disabled />
-              </S.FormGroup>
-              {selectedResponse.recallRequest?.adminNote && (
+      {showConfirmModal && selectedResponse && (() => {
+        // Safe data extraction
+        const vehicleModel = selectedResponse.vehicle?.vehicleModel || selectedResponse.vehicleName || 'Xe không xác định';
+        const vehicleVin = selectedResponse.vehicle?.vehicleVin || selectedResponse.vehicleVin || 'VIN không có';
+        const partName = selectedResponse.recallRequest?.part?.partName || selectedResponse.partName || 'Phụ tùng không xác định';
+        const partNumber = selectedResponse.recallRequest?.part?.partNumber || selectedResponse.partNumber || 'Mã không có';
+        const reason = selectedResponse.recallRequest?.reason || selectedResponse.reason || 'Chưa có thông tin lý do';
+        const adminNote = selectedResponse.recallRequest?.adminNote || selectedResponse.adminNote;
+
+        return (
+          <S.ModalOverlay onClick={() => !submitting && setShowConfirmModal(false)}>
+            <S.ModalContent onClick={(e) => e.stopPropagation()}>
+              <S.ModalHeader>
+                <h2><FaThumbsUp /> Xác nhận Recall</h2>
+                <S.CloseButton onClick={() => !submitting && setShowConfirmModal(false)}>&times;</S.CloseButton>
+              </S.ModalHeader>
+              <S.Form onSubmit={handleConfirmRecall}>
                 <S.FormGroup>
-                  <S.Label>Ghi chú từ Admin:</S.Label>
-                  <S.TextArea value={selectedResponse.recallRequest.adminNote} disabled />
+                  <S.Label>Recall Response ID:</S.Label>
+                  <S.Input type="text" value={`#${selectedResponse.recallResponseId}`} disabled />
                 </S.FormGroup>
-              )}
+                <S.FormGroup>
+                  <S.Label>Xe:</S.Label>
+                  <S.Input
+                    type="text"
+                    value={`${vehicleModel} (${vehicleVin})`}
+                    disabled
+                  />
+                </S.FormGroup>
+                <S.FormGroup>
+                  <S.Label>Phụ tùng cần thay:</S.Label>
+                  <S.Input
+                    type="text"
+                    value={`${partName} (${partNumber})`}
+                    disabled
+                  />
+                </S.FormGroup>
+                <S.FormGroup>
+                  <S.Label>Lý do recall:</S.Label>
+                  <S.TextArea value={reason} disabled />
+                </S.FormGroup>
+                {adminNote && (
+                  <S.FormGroup>
+                    <S.Label>Ghi chú từ Admin:</S.Label>
+                    <S.TextArea value={adminNote} disabled />
+                  </S.FormGroup>
+                )}
 
               <S.FormGroup>
                 <S.Label>Quyết định của bạn: *</S.Label>
@@ -405,101 +439,115 @@ export default function CustomerRecalls() {
             </S.Form>
           </S.ModalContent>
         </S.ModalOverlay>
-      )}
+        );
+      })()}
 
       {/* Detail Modal */}
-      {showDetailModal && selectedResponse && (
-        <S.ModalOverlay onClick={() => setShowDetailModal(false)}>
-          <S.ModalContent large onClick={(e) => e.stopPropagation()}>
-            <S.ModalHeader>
-              <h2><FaEye /> Chi tiết Recall Response #{selectedResponse.recallResponseId}</h2>
-              <S.CloseButton onClick={() => setShowDetailModal(false)}>&times;</S.CloseButton>
-            </S.ModalHeader>
-            <S.DetailGrid>
-              <S.DetailSection>
-                <S.SectionTitle>Thông tin Recall Response</S.SectionTitle>
-                <S.DetailItem>
-                  <S.DetailLabel>Response ID:</S.DetailLabel>
-                  <S.DetailValue>#{selectedResponse.recallResponseId}</S.DetailValue>
-                </S.DetailItem>
-                <S.DetailItem>
-                  <S.DetailLabel>Trạng thái:</S.DetailLabel>
-                  <S.DetailValue>{getStatusBadge(selectedResponse.status)}</S.DetailValue>
-                </S.DetailItem>
-                <S.DetailItem>
-                  <S.DetailLabel>Ngày tạo:</S.DetailLabel>
-                  <S.DetailValue>
-                    {selectedResponse.createdAt ? new Date(selectedResponse.createdAt).toLocaleString('vi-VN') : "N/A"}
-                  </S.DetailValue>
-                </S.DetailItem>
-                <S.DetailItem>
-                  <S.DetailLabel>Chiến dịch Recall:</S.DetailLabel>
-                  <S.DetailValue>#{selectedResponse.recallRequest?.recallRequestId || "N/A"}</S.DetailValue>
-                </S.DetailItem>
-              </S.DetailSection>
+      {showDetailModal && selectedResponse && (() => {
+        // Safe data extraction
+        const vehicleModel = selectedResponse.vehicle?.vehicleModel || selectedResponse.vehicleName || 'Xe không xác định';
+        const vehicleVin = selectedResponse.vehicle?.vehicleVin || selectedResponse.vehicleVin || 'VIN không có';
+        const vehicleYear = selectedResponse.vehicle?.year || selectedResponse.year || 'N/A';
+        const partName = selectedResponse.recallRequest?.part?.partName || selectedResponse.partName || 'Phụ tùng không xác định';
+        const partNumber = selectedResponse.recallRequest?.part?.partNumber || selectedResponse.partNumber || 'Mã không có';
+        const reason = selectedResponse.recallRequest?.reason || selectedResponse.reason || 'Chưa có thông tin lý do';
+        const adminNote = selectedResponse.recallRequest?.adminNote || selectedResponse.adminNote;
+        const recallRequestId = selectedResponse.recallRequest?.recallRequestId || selectedResponse.recallRequestId;
 
-              <S.DetailSection>
-                <S.SectionTitle>Thông tin Xe</S.SectionTitle>
-                <S.DetailItem>
-                  <S.DetailLabel>Xe:</S.DetailLabel>
-                  <S.DetailValue>{selectedResponse.vehicle?.vehicleModel || "N/A"}</S.DetailValue>
-                </S.DetailItem>
-                <S.DetailItem>
-                  <S.DetailLabel>VIN:</S.DetailLabel>
-                  <S.DetailValue>{selectedResponse.vehicle?.vehicleVin || "N/A"}</S.DetailValue>
-                </S.DetailItem>
-                <S.DetailItem>
-                  <S.DetailLabel>Năm sản xuất:</S.DetailLabel>
-                  <S.DetailValue>{selectedResponse.vehicle?.year || "N/A"}</S.DetailValue>
-                </S.DetailItem>
-              </S.DetailSection>
-
-              <S.DetailSection fullWidth>
-                <S.SectionTitle>Thông tin Phụ tùng cần thay</S.SectionTitle>
-                <S.DetailItem>
-                  <S.DetailLabel>Tên phụ tùng:</S.DetailLabel>
-                  <S.DetailValue>{selectedResponse.recallRequest?.part?.partName || "N/A"}</S.DetailValue>
-                </S.DetailItem>
-                <S.DetailItem>
-                  <S.DetailLabel>Mã phụ tùng:</S.DetailLabel>
-                  <S.DetailValue>{selectedResponse.recallRequest?.part?.partNumber || "N/A"}</S.DetailValue>
-                </S.DetailItem>
-              </S.DetailSection>
-
-              <S.DetailSection fullWidth>
-                <S.SectionTitle>Lý do Recall</S.SectionTitle>
-                <S.DetailValue>{selectedResponse.recallRequest?.reason || "N/A"}</S.DetailValue>
-              </S.DetailSection>
-
-              {selectedResponse.recallRequest?.adminNote && (
-                <S.DetailSection fullWidth>
-                  <S.SectionTitle>Ghi chú từ Admin</S.SectionTitle>
-                  <S.DetailValue>{selectedResponse.recallRequest.adminNote}</S.DetailValue>
-                </S.DetailSection>
-              )}
-
-              {selectedResponse.customerNote && (
-                <S.DetailSection fullWidth>
-                  <S.SectionTitle>Phản hồi của bạn</S.SectionTitle>
-                  <S.DetailValue>{selectedResponse.customerNote}</S.DetailValue>
-                </S.DetailSection>
-              )}
-
-              {selectedResponse.warrantyClaim && (
-                <S.DetailSection fullWidth>
-                  <S.SectionTitle>Yêu cầu Bảo hành đã tạo</S.SectionTitle>
+        return (
+          <S.ModalOverlay onClick={() => setShowDetailModal(false)}>
+            <S.ModalContent large onClick={(e) => e.stopPropagation()}>
+              <S.ModalHeader>
+                <h2><FaEye /> Chi tiết Recall Response #{selectedResponse.recallResponseId}</h2>
+                <S.CloseButton onClick={() => setShowDetailModal(false)}>&times;</S.CloseButton>
+              </S.ModalHeader>
+              <S.DetailGrid>
+                <S.DetailSection>
+                  <S.SectionTitle>Thông tin Recall Response</S.SectionTitle>
                   <S.DetailItem>
-                    <S.DetailLabel>Warranty Claim ID:</S.DetailLabel>
-                    <S.DetailValue>#{selectedResponse.warrantyClaim.warrantyClaimId}</S.DetailValue>
+                    <S.DetailLabel>Response ID:</S.DetailLabel>
+                    <S.DetailValue>#{selectedResponse.recallResponseId}</S.DetailValue>
                   </S.DetailItem>
-                  <S.InfoBox>
-                    <FaCheckCircle />
-                    <div>
-                      Yêu cầu bảo hành đã được tự động tạo và đang được xử lý. Bạn có thể xem chi tiết tại trang "Lịch sử Bảo hành".
-                    </div>
-                  </S.InfoBox>
+                  <S.DetailItem>
+                    <S.DetailLabel>Trạng thái:</S.DetailLabel>
+                    <S.DetailValue>{getStatusBadge(selectedResponse.status)}</S.DetailValue>
+                  </S.DetailItem>
+                  <S.DetailItem>
+                    <S.DetailLabel>Ngày tạo:</S.DetailLabel>
+                    <S.DetailValue>
+                      {selectedResponse.createdAt ? new Date(selectedResponse.createdAt).toLocaleString('vi-VN') : "N/A"}
+                    </S.DetailValue>
+                  </S.DetailItem>
+                  {recallRequestId && (
+                    <S.DetailItem>
+                      <S.DetailLabel>Chiến dịch Recall:</S.DetailLabel>
+                      <S.DetailValue>#{recallRequestId}</S.DetailValue>
+                    </S.DetailItem>
+                  )}
                 </S.DetailSection>
-              )}
+
+                <S.DetailSection>
+                  <S.SectionTitle>Thông tin Xe</S.SectionTitle>
+                  <S.DetailItem>
+                    <S.DetailLabel>Xe:</S.DetailLabel>
+                    <S.DetailValue>{vehicleModel}</S.DetailValue>
+                  </S.DetailItem>
+                  <S.DetailItem>
+                    <S.DetailLabel>VIN:</S.DetailLabel>
+                    <S.DetailValue>{vehicleVin}</S.DetailValue>
+                  </S.DetailItem>
+                  <S.DetailItem>
+                    <S.DetailLabel>Năm sản xuất:</S.DetailLabel>
+                    <S.DetailValue>{vehicleYear}</S.DetailValue>
+                  </S.DetailItem>
+                </S.DetailSection>
+
+                <S.DetailSection fullWidth>
+                  <S.SectionTitle>Thông tin Phụ tùng cần thay</S.SectionTitle>
+                  <S.DetailItem>
+                    <S.DetailLabel>Tên phụ tùng:</S.DetailLabel>
+                    <S.DetailValue>{partName}</S.DetailValue>
+                  </S.DetailItem>
+                  <S.DetailItem>
+                    <S.DetailLabel>Mã phụ tùng:</S.DetailLabel>
+                    <S.DetailValue>{partNumber}</S.DetailValue>
+                  </S.DetailItem>
+                </S.DetailSection>
+
+                <S.DetailSection fullWidth>
+                  <S.SectionTitle>Lý do Recall</S.SectionTitle>
+                  <S.DetailValue>{reason}</S.DetailValue>
+                </S.DetailSection>
+
+                {adminNote && (
+                  <S.DetailSection fullWidth>
+                    <S.SectionTitle>Ghi chú từ Admin</S.SectionTitle>
+                    <S.DetailValue>{adminNote}</S.DetailValue>
+                  </S.DetailSection>
+                )}
+
+                {selectedResponse.customerNote && (
+                  <S.DetailSection fullWidth>
+                    <S.SectionTitle>Phản hồi của bạn</S.SectionTitle>
+                    <S.DetailValue>{selectedResponse.customerNote}</S.DetailValue>
+                  </S.DetailSection>
+                )}
+
+                {selectedResponse.warrantyClaim && (
+                  <S.DetailSection fullWidth>
+                    <S.SectionTitle>Yêu cầu Bảo hành đã tạo</S.SectionTitle>
+                    <S.DetailItem>
+                      <S.DetailLabel>Warranty Claim ID:</S.DetailLabel>
+                      <S.DetailValue>#{selectedResponse.warrantyClaim.warrantyClaimId}</S.DetailValue>
+                    </S.DetailItem>
+                    <S.InfoBox>
+                      <FaCheckCircle />
+                      <div>
+                        Yêu cầu bảo hành đã được tự động tạo và đang được xử lý. Bạn có thể xem chi tiết tại trang "Lịch sử Bảo hành".
+                      </div>
+                    </S.InfoBox>
+                  </S.DetailSection>
+                )}
             </S.DetailGrid>
             <S.ModalFooter>
               {selectedResponse.status === "PENDING" && (
@@ -517,7 +565,8 @@ export default function CustomerRecalls() {
             </S.ModalFooter>
           </S.ModalContent>
         </S.ModalOverlay>
-      )}
+        );
+      })()}
     </S.Container>
   );
 }
