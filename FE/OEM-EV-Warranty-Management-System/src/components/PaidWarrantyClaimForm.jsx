@@ -18,7 +18,7 @@ import { FaCheckCircle, FaExclamationTriangle, FaMoneyBillWave } from 'react-ico
  * 3. Customer đồng ý → Tạo claim với isPaidWarranty=true
  */
 const PaidWarrantyClaimForm = ({ vehicleId, installedPartId, onSuccess, onCancel }) => {
-  console.log('[PaidWarrantyClaimForm] Component mounted with:', { vehicleId, installedPartId });
+  console.log('[PaidWarrantyClaimForm] Component rendered with:', { vehicleId, installedPartId });
 
   const [formData, setFormData] = useState({
     vehicleId: vehicleId || '',
