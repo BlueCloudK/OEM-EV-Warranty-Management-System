@@ -34,3 +34,4 @@ build/
 
 ### DOTENV ###
 .env
+/logs/
