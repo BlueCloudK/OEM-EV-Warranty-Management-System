@@ -1,8 +1,27 @@
-# Quy Trình Nghiệp Vụ Bảo Hành (Warranty Business Rules)
+# Quy Trình Nghiệp Vụ Bảo Hành (Warranty Business Rules - OPTION 2: HIERARCHY WARRANTY)
 
 ## Tổng Quan
 
-Hệ thống quản lý bảo hành OEM EV đã được mở rộng để hỗ trợ **kiểm tra tính hợp lệ của bảo hành** và **bảo hành tính phí** cho các trường hợp xe/linh kiện đã hết hạn bảo hành.
+Hệ thống quản lý bảo hành OEM EV sử dụng **Hierarchy Warranty Model** (Mô hình bảo hành phân cấp):
+
+### 🎯 Hierarchy Warranty Logic
+
+**1. Extended Warranty Parts** (Linh kiện có bảo hành mở rộng)
+- **Áp dụng cho**: Linh kiện QUAN TRỌNG có warranty riêng
+- **Ví dụ**: Battery (8 năm/192,000 km), Motor (4 năm/80,000 km)
+- **Logic**: Kiểm tra **part-level warranty** (theo warrantyExpirationDate và mileage since installation)
+
+**2. Standard Parts** (Linh kiện tiêu chuẩn)
+- **Áp dụng cho**: Linh kiện THƯỜNG không có warranty riêng
+- **Ví dụ**: Đèn, nội thất, hệ thống giải trí
+- **Logic**: Kiểm tra **vehicle-level warranty** (theo vehicle.warrantyEndDate và vehicle.mileage)
+
+### ✨ Lợi Ích của Hierarchy Model
+
+1. **Linh hoạt**: Hỗ trợ cả xe truyền thống và xe điện
+2. **Chính xác**: Mỗi loại linh kiện có warranty policy riêng
+3. **Dễ mở rộng**: Thêm part type mới chỉ cần config trong Part entity
+4. **Minh bạch**: Customer hiểu rõ "Pin hết bảo hành" vs "xe hết bảo hành"
 
 ## Các Trạng Thái Bảo Hành
 

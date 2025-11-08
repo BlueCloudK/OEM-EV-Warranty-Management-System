@@ -2,6 +2,7 @@ package com.swp391.warrantymanagement.service.impl;
 
 import com.swp391.warrantymanagement.dto.response.WarrantyValidationResponseDTO;
 import com.swp391.warrantymanagement.entity.InstalledPart;
+import com.swp391.warrantymanagement.entity.Part;
 import com.swp391.warrantymanagement.entity.Vehicle;
 import com.swp391.warrantymanagement.enums.WarrantyStatus;
 import com.swp391.warrantymanagement.exception.ResourceNotFoundException;
@@ -13,18 +14,26 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
 /**
- * Service implementation cho nghiệp vụ kiểm tra bảo hành.
+ * Service implementation cho nghiệp vụ kiểm tra bảo hành (OPTION 2: HIERARCHY WARRANTY).
+ * <p>
+ * <strong>Hierarchy Warranty Logic:</strong>
+ * <ul>
+ *     <li><strong>Extended Warranty Parts</strong> (hasExtendedWarranty = true):
+ *         Linh kiện QUAN TRỌNG (Battery, Motor) → Kiểm tra part-level warranty</li>
+ *     <li><strong>Standard Parts</strong> (hasExtendedWarranty = false):
+ *         Linh kiện THƯỜNG (Đèn, nội thất) → Kiểm tra vehicle-level warranty</li>
+ * </ul>
  * <p>
  * <strong>Business rules quan trọng:</strong>
  * <ul>
- *     <li>Bảo hành hợp lệ khi: Chưa quá warrantyEndDate VÀ chưa vượt giới hạn km</li>
- *     <li>Grace period: 30 ngày sau khi hết hạn vẫn có thể bảo hành tính phí</li>
- *     <li>Phí bảo hành = % của chi phí sửa chữa, tăng theo thời gian quá hạn</li>
- *     <li>Giới hạn km mặc định: 100,000 km (có thể configure theo model xe)</li>
+ *     <li>Part warranty: Kiểm tra warrantyExpirationDate VÀ mileage since installation</li>
+ *     <li>Vehicle warranty: Kiểm tra vehicle.warrantyEndDate VÀ vehicle.mileage</li>
+ *     <li>Grace period & fee: Sử dụng config từ Part entity (linh kiện đắt = period dài, phí thấp)</li>
  * </ul>
  */
 @Service
@@ -35,32 +44,13 @@ public class WarrantyValidationServiceImpl implements WarrantyValidationService 
     private final VehicleRepository vehicleRepository;
     private final InstalledPartRepository installedPartRepository;
 
-    // ========== CONSTANTS - Business Rules Configuration ==========
+    // ========== FALLBACK CONSTANTS (khi Part không có config) ==========
 
-    /**
-     * Giới hạn km mặc định cho bảo hành xe điện EV
-     */
-    private static final int DEFAULT_MILEAGE_LIMIT = 100_000;
-
-    /**
-     * Grace period (ngày) sau khi hết hạn vẫn có thể bảo hành tính phí
-     */
-    private static final int GRACE_PERIOD_DAYS = 180; // 6 tháng
-
-    /**
-     * Phần trăm phí bảo hành tối thiểu (của chi phí sửa chữa)
-     */
-    private static final BigDecimal MIN_FEE_PERCENTAGE = new BigDecimal("0.20"); // 20%
-
-    /**
-     * Phần trăm phí bảo hành tối đa
-     */
-    private static final BigDecimal MAX_FEE_PERCENTAGE = new BigDecimal("0.50"); // 50%
-
-    /**
-     * Phí bảo hành cơ bản tối thiểu (VNĐ)
-     */
-    private static final BigDecimal BASE_FEE = new BigDecimal("500000"); // 500,000 VNĐ
+    private static final int DEFAULT_VEHICLE_MILEAGE_LIMIT = 100_000;
+    private static final int DEFAULT_GRACE_PERIOD_DAYS = 180;
+    private static final BigDecimal DEFAULT_MIN_FEE_PERCENTAGE = new BigDecimal("0.20");
+    private static final BigDecimal DEFAULT_MAX_FEE_PERCENTAGE = new BigDecimal("0.50");
+    private static final BigDecimal BASE_FEE = new BigDecimal("500000");
 
     // ========== PUBLIC METHODS ==========
 
@@ -69,7 +59,7 @@ public class WarrantyValidationServiceImpl implements WarrantyValidationService 
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy xe với ID: " + vehicleId));
 
-        return buildWarrantyValidationResponse(vehicle, null);
+        return buildVehicleWarrantyValidationResponse(vehicle);
     }
 
     @Override
@@ -77,8 +67,7 @@ public class WarrantyValidationServiceImpl implements WarrantyValidationService 
         InstalledPart installedPart = installedPartRepository.findById(installedPartId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy linh kiện với ID: " + installedPartId));
 
-        Vehicle vehicle = installedPart.getVehicle();
-        return buildWarrantyValidationResponse(vehicle, installedPart);
+        return buildPartWarrantyValidationResponse(installedPart);
     }
 
     @Override
@@ -86,7 +75,7 @@ public class WarrantyValidationServiceImpl implements WarrantyValidationService 
         Vehicle vehicle = vehicleRepository.findByVehicleVin(vehicleVin)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy xe với VIN: " + vehicleVin));
 
-        return buildWarrantyValidationResponse(vehicle, null);
+        return buildVehicleWarrantyValidationResponse(vehicle);
     }
 
     @Override
@@ -94,13 +83,14 @@ public class WarrantyValidationServiceImpl implements WarrantyValidationService 
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy xe với ID: " + vehicleId));
 
-        WarrantyValidationResponseDTO response = buildWarrantyValidationResponse(vehicle, null);
+        WarrantyValidationResponseDTO response = buildVehicleWarrantyValidationResponse(vehicle);
 
-        // Chỉ tính phí nếu hết hạn nhưng còn trong grace period
         if (response.getCanProvidePaidWarranty()) {
             BigDecimal fee = calculateWarrantyFee(
                     response.getDaysRemaining(),
-                    response.getMileageRemaining(),
+                    DEFAULT_GRACE_PERIOD_DAYS,
+                    DEFAULT_MIN_FEE_PERCENTAGE,
+                    DEFAULT_MAX_FEE_PERCENTAGE,
                     estimatedRepairCost
             );
             response.setEstimatedWarrantyFee(fee);
@@ -115,91 +105,113 @@ public class WarrantyValidationServiceImpl implements WarrantyValidationService 
         InstalledPart installedPart = installedPartRepository.findById(installedPartId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy linh kiện với ID: " + installedPartId));
 
-        Vehicle vehicle = installedPart.getVehicle();
-        WarrantyValidationResponseDTO response = buildWarrantyValidationResponse(vehicle, installedPart);
+        WarrantyValidationResponseDTO response = buildPartWarrantyValidationResponse(installedPart);
 
-        // Tính phí nếu có thể bảo hành tính phí
         if (response.getCanProvidePaidWarranty()) {
-            BigDecimal fee = calculateWarrantyFee(
-                    response.getPartDaysRemaining() != null ? response.getPartDaysRemaining() : response.getDaysRemaining(),
-                    response.getMileageRemaining(),
-                    estimatedRepairCost
-            );
+            Part part = installedPart.getPart();
+
+            // Sử dụng config từ Part (nếu có), fallback về default
+            int gracePeriod = part.getGracePeriodDays() != null ? part.getGracePeriodDays() : DEFAULT_GRACE_PERIOD_DAYS;
+            BigDecimal minFee = part.getPaidWarrantyFeePercentageMin() != null ? part.getPaidWarrantyFeePercentageMin() : DEFAULT_MIN_FEE_PERCENTAGE;
+            BigDecimal maxFee = part.getPaidWarrantyFeePercentageMax() != null ? part.getPaidWarrantyFeePercentageMax() : DEFAULT_MAX_FEE_PERCENTAGE;
+
+            Long daysRemaining = response.getPartDaysRemaining() != null ? response.getPartDaysRemaining() : response.getDaysRemaining();
+
+            BigDecimal fee = calculateWarrantyFee(daysRemaining, gracePeriod, minFee, maxFee, estimatedRepairCost);
             response.setEstimatedWarrantyFee(fee);
-            response.setFeeNote(buildFeeNote(
-                    response.getPartDaysRemaining() != null ? response.getPartDaysRemaining() : response.getDaysRemaining(),
-                    response.getMileageRemaining(),
-                    fee
-            ));
+            response.setFeeNote(buildFeeNote(daysRemaining, response.getMileageRemaining(), fee));
         }
 
         return response;
     }
 
-    // ========== PRIVATE HELPER METHODS ==========
+    // ========== HIERARCHY LOGIC: PART WARRANTY VALIDATION ==========
 
     /**
-     * Xây dựng response đầy đủ cho warranty validation
+     * Kiểm tra bảo hành theo Part (HIERARCHY: Extended Warranty Parts).
+     * <p>
+     * Áp dụng khi: {@code part.hasExtendedWarranty = true}
      */
-    private WarrantyValidationResponseDTO buildWarrantyValidationResponse(Vehicle vehicle, InstalledPart installedPart) {
+    private WarrantyValidationResponseDTO buildPartWarrantyValidationResponse(InstalledPart installedPart) {
+        Part part = installedPart.getPart();
+        Vehicle vehicle = installedPart.getVehicle();
         LocalDate today = LocalDate.now();
 
-        // Tính toán thông tin bảo hành của xe
-        long daysRemaining = ChronoUnit.DAYS.between(today, vehicle.getWarrantyEndDate());
-        int mileageRemaining = DEFAULT_MILEAGE_LIMIT - vehicle.getMileage();
+        // Kiểm tra xem part có extended warranty không
+        if (part.getHasExtendedWarranty() != null && part.getHasExtendedWarranty()) {
+            // Extended warranty part → Kiểm tra part-level warranty
+            return buildExtendedPartWarrantyResponse(installedPart, today);
+        } else {
+            // Standard part → Kiểm tra vehicle-level warranty
+            return buildVehicleWarrantyValidationResponse(vehicle);
+        }
+    }
 
-        // Xác định trạng thái bảo hành
-        WarrantyStatus warrantyStatus = determineWarrantyStatus(
-                vehicle.getWarrantyEndDate(),
-                vehicle.getMileage(),
-                installedPart != null ? installedPart.getWarrantyExpirationDate() : null
+    /**
+     * Build response cho Extended Warranty Part.
+     */
+    private WarrantyValidationResponseDTO buildExtendedPartWarrantyResponse(InstalledPart installedPart, LocalDate today) {
+        Part part = installedPart.getPart();
+        Vehicle vehicle = installedPart.getVehicle();
+
+        // Tính km kể từ khi lắp đặt
+        int currentMileage = vehicle.getMileage();
+        int mileageAtInstallation = installedPart.getMileageAtInstallation() != null ? installedPart.getMileageAtInstallation() : 0;
+        int mileageSinceInstallation = currentMileage - mileageAtInstallation;
+
+        // Lấy warranty limit từ installedPart (hoặc fallback về part default)
+        Integer warrantyMileageLimit = installedPart.getWarrantyMileageLimit() != null
+                ? installedPart.getWarrantyMileageLimit()
+                : part.getDefaultWarrantyMileage();
+
+        // Tính ngày còn lại
+        LocalDate warrantyExpirationDate = installedPart.getWarrantyExpirationDate();
+        long daysRemaining = ChronoUnit.DAYS.between(today, warrantyExpirationDate);
+
+        // Tính km còn lại
+        Integer mileageRemaining = warrantyMileageLimit != null ? warrantyMileageLimit - mileageSinceInstallation : null;
+
+        // Xác định warranty status
+        WarrantyStatus status = determinePartWarrantyStatus(
+                today,
+                warrantyExpirationDate,
+                mileageSinceInstallation,
+                warrantyMileageLimit
         );
 
-        // Build response
-        WarrantyValidationResponseDTO response = WarrantyValidationResponseDTO.builder()
-                .warrantyStatus(warrantyStatus)
-                .statusDescription(warrantyStatus.getDescription())
-                .isValidForFreeWarranty(warrantyStatus.isValid())
-                .canProvidePaidWarranty(canProvidePaidWarranty(warrantyStatus, daysRemaining))
-                .warrantyStartDate(vehicle.getWarrantyStartDate())
-                .warrantyEndDate(vehicle.getWarrantyEndDate())
+        // Grace period
+        int gracePeriod = part.getGracePeriodDays() != null ? part.getGracePeriodDays() : DEFAULT_GRACE_PERIOD_DAYS;
+        boolean canProvidePaidWarranty = canProvidePaidWarranty(status, daysRemaining, gracePeriod);
+
+        return WarrantyValidationResponseDTO.builder()
+                .warrantyStatus(status)
+                .statusDescription(status.getDescription())
+                .isValidForFreeWarranty(status.isValid())
+                .canProvidePaidWarranty(canProvidePaidWarranty)
+                .warrantyStartDate(installedPart.getInstallationDate())
+                .warrantyEndDate(warrantyExpirationDate)
                 .daysRemaining(daysRemaining)
-                .currentMileage(vehicle.getMileage())
-                .mileageLimit(DEFAULT_MILEAGE_LIMIT)
+                .currentMileage(currentMileage)
+                .mileageLimit(warrantyMileageLimit)
                 .mileageRemaining(mileageRemaining)
+                .installedPartId(installedPart.getInstalledPartId())
+                .partName(part.getPartName())
+                .partWarrantyExpirationDate(warrantyExpirationDate)
+                .partDaysRemaining(daysRemaining)
                 .vehicleId(vehicle.getVehicleId())
                 .vehicleVin(vehicle.getVehicleVin())
                 .vehicleName(vehicle.getVehicleName())
-                .expirationReasons(buildExpirationReasons(warrantyStatus, daysRemaining, mileageRemaining))
+                .expirationReasons(buildExpirationReasons(status, daysRemaining, mileageRemaining))
                 .build();
-
-        // Thêm thông tin linh kiện nếu có
-        if (installedPart != null) {
-            LocalDate partExpirationDate = installedPart.getWarrantyExpirationDate();
-            long partDaysRemaining = ChronoUnit.DAYS.between(today, partExpirationDate);
-
-            response.setInstalledPartId(installedPart.getInstalledPartId());
-            response.setPartName(installedPart.getPart().getPartName());
-            response.setPartWarrantyExpirationDate(partExpirationDate);
-            response.setPartDaysRemaining(partDaysRemaining);
-        }
-
-        return response;
     }
 
     /**
-     * Xác định trạng thái bảo hành dựa trên ngày và km
+     * Xác định warranty status cho Part (extended warranty).
      */
-    private WarrantyStatus determineWarrantyStatus(LocalDate warrantyEndDate, Integer currentMileage, LocalDate partExpirationDate) {
-        LocalDate today = LocalDate.now();
-
-        // Kiểm tra bảo hành linh kiện trước (nếu có)
-        if (partExpirationDate != null && today.isAfter(partExpirationDate)) {
-            return WarrantyStatus.PART_WARRANTY_EXPIRED;
-        }
-
-        boolean dateExpired = today.isAfter(warrantyEndDate);
-        boolean mileageExpired = currentMileage > DEFAULT_MILEAGE_LIMIT;
+    private WarrantyStatus determinePartWarrantyStatus(LocalDate today, LocalDate expirationDate,
+                                                       int mileageSinceInstallation, Integer mileageLimit) {
+        boolean dateExpired = today.isAfter(expirationDate);
+        boolean mileageExpired = mileageLimit != null && mileageSinceInstallation > mileageLimit;
 
         if (!dateExpired && !mileageExpired) {
             return WarrantyStatus.VALID;
@@ -212,58 +224,108 @@ public class WarrantyValidationServiceImpl implements WarrantyValidationService 
         }
     }
 
-    /**
-     * Kiểm tra xem có thể cung cấp bảo hành tính phí hay không
-     * <p>
-     * Business rule: Chỉ cho phép bảo hành tính phí trong grace period (180 ngày)
-     */
-    private boolean canProvidePaidWarranty(WarrantyStatus status, long daysRemaining) {
-        if (status == WarrantyStatus.VALID) {
-            return false; // Còn bảo hành miễn phí thì không cần tính phí
-        }
+    // ========== HIERARCHY LOGIC: VEHICLE WARRANTY VALIDATION ==========
 
-        // Cho phép bảo hành tính phí nếu:
-        // - Hết hạn không quá GRACE_PERIOD_DAYS
-        long daysExpired = Math.abs(daysRemaining);
-        return daysExpired <= GRACE_PERIOD_DAYS;
+    /**
+     * Kiểm tra bảo hành theo Vehicle (HIERARCHY: Standard Parts).
+     * <p>
+     * Áp dụng khi: {@code part.hasExtendedWarranty = false} hoặc kiểm tra vehicle-level
+     */
+    private WarrantyValidationResponseDTO buildVehicleWarrantyValidationResponse(Vehicle vehicle) {
+        LocalDate today = LocalDate.now();
+
+        long daysRemaining = ChronoUnit.DAYS.between(today, vehicle.getWarrantyEndDate());
+        int mileageRemaining = DEFAULT_VEHICLE_MILEAGE_LIMIT - vehicle.getMileage();
+
+        WarrantyStatus status = determineVehicleWarrantyStatus(
+                today,
+                vehicle.getWarrantyEndDate(),
+                vehicle.getMileage(),
+                DEFAULT_VEHICLE_MILEAGE_LIMIT
+        );
+
+        boolean canProvidePaidWarranty = canProvidePaidWarranty(status, daysRemaining, DEFAULT_GRACE_PERIOD_DAYS);
+
+        return WarrantyValidationResponseDTO.builder()
+                .warrantyStatus(status)
+                .statusDescription(status.getDescription())
+                .isValidForFreeWarranty(status.isValid())
+                .canProvidePaidWarranty(canProvidePaidWarranty)
+                .warrantyStartDate(vehicle.getWarrantyStartDate())
+                .warrantyEndDate(vehicle.getWarrantyEndDate())
+                .daysRemaining(daysRemaining)
+                .currentMileage(vehicle.getMileage())
+                .mileageLimit(DEFAULT_VEHICLE_MILEAGE_LIMIT)
+                .mileageRemaining(mileageRemaining)
+                .vehicleId(vehicle.getVehicleId())
+                .vehicleVin(vehicle.getVehicleVin())
+                .vehicleName(vehicle.getVehicleName())
+                .expirationReasons(buildExpirationReasons(status, daysRemaining, mileageRemaining))
+                .build();
     }
 
     /**
-     * Tính phí bảo hành dựa trên thời gian quá hạn và chi phí sửa chữa
-     * <p>
-     * <strong>Công thức:</strong>
-     * <ul>
-     *     <li>Phí = MAX(BASE_FEE, estimatedRepairCost * feePercentage)</li>
-     *     <li>feePercentage tăng tuyến tính từ MIN_FEE_PERCENTAGE đến MAX_FEE_PERCENTAGE</li>
-     *     <li>theo thời gian quá hạn (0 ngày → MIN%, GRACE_PERIOD_DAYS → MAX%)</li>
-     * </ul>
+     * Xác định warranty status cho Vehicle.
      */
-    private BigDecimal calculateWarrantyFee(Long daysRemaining, Integer mileageRemaining, BigDecimal estimatedRepairCost) {
+    private WarrantyStatus determineVehicleWarrantyStatus(LocalDate today, LocalDate warrantyEndDate,
+                                                          int currentMileage, int mileageLimit) {
+        boolean dateExpired = today.isAfter(warrantyEndDate);
+        boolean mileageExpired = currentMileage > mileageLimit;
+
+        if (!dateExpired && !mileageExpired) {
+            return WarrantyStatus.VALID;
+        } else if (dateExpired && mileageExpired) {
+            return WarrantyStatus.EXPIRED_BOTH;
+        } else if (dateExpired) {
+            return WarrantyStatus.EXPIRED_DATE;
+        } else {
+            return WarrantyStatus.EXPIRED_MILEAGE;
+        }
+    }
+
+    // ========== COMMON HELPER METHODS ==========
+
+    /**
+     * Kiểm tra xem có thể cung cấp bảo hành tính phí hay không.
+     */
+    private boolean canProvidePaidWarranty(WarrantyStatus status, long daysRemaining, int gracePeriodDays) {
+        if (status == WarrantyStatus.VALID) {
+            return false; // Còn bảo hành miễn phí
+        }
+
+        long daysExpired = Math.abs(daysRemaining);
+        return daysExpired <= gracePeriodDays;
+    }
+
+    /**
+     * Tính phí bảo hành.
+     * <p>
+     * Phí tăng tuyến tính từ minFee% đến maxFee% theo thời gian quá hạn.
+     */
+    private BigDecimal calculateWarrantyFee(Long daysRemaining, int gracePeriodDays,
+                                           BigDecimal minFeePercentage, BigDecimal maxFeePercentage,
+                                           BigDecimal estimatedRepairCost) {
         if (estimatedRepairCost == null || estimatedRepairCost.compareTo(BigDecimal.ZERO) <= 0) {
             return BASE_FEE;
         }
 
-        // Tính số ngày đã quá hạn
         long daysExpired = Math.abs(daysRemaining);
 
         // Tính phần trăm phí dựa trên thời gian quá hạn
-        // Càng quá hạn lâu, phí càng cao
         BigDecimal progressRatio = BigDecimal.valueOf(daysExpired)
-                .divide(BigDecimal.valueOf(GRACE_PERIOD_DAYS), 4, BigDecimal.ROUND_HALF_UP);
+                .divide(BigDecimal.valueOf(gracePeriodDays), 4, RoundingMode.HALF_UP);
 
-        BigDecimal feePercentage = MIN_FEE_PERCENTAGE.add(
-                MAX_FEE_PERCENTAGE.subtract(MIN_FEE_PERCENTAGE).multiply(progressRatio)
+        BigDecimal feePercentage = minFeePercentage.add(
+                maxFeePercentage.subtract(minFeePercentage).multiply(progressRatio)
         );
 
-        // Tính phí
         BigDecimal calculatedFee = estimatedRepairCost.multiply(feePercentage);
 
-        // Đảm bảo phí không thấp hơn BASE_FEE
         return calculatedFee.max(BASE_FEE);
     }
 
     /**
-     * Xây dựng ghi chú về phí bảo hành
+     * Xây dựng ghi chú về phí bảo hành.
      */
     private String buildFeeNote(Long daysRemaining, Integer mileageRemaining, BigDecimal fee) {
         long daysExpired = Math.abs(daysRemaining);
@@ -275,7 +337,7 @@ public class WarrantyValidationServiceImpl implements WarrantyValidationService 
         if (daysRemaining < 0) {
             note.append("Quá hạn bảo hành ").append(daysExpired).append(" ngày. ");
         }
-        if (mileageRemaining < 0) {
+        if (mileageRemaining != null && mileageRemaining < 0) {
             note.append("Vượt giới hạn km ").append(Math.abs(mileageRemaining)).append(" km. ");
         }
 
@@ -286,9 +348,9 @@ public class WarrantyValidationServiceImpl implements WarrantyValidationService 
     }
 
     /**
-     * Xây dựng lý do hết hạn bảo hành
+     * Xây dựng lý do hết hạn bảo hành.
      */
-    private String buildExpirationReasons(WarrantyStatus status, long daysRemaining, int mileageRemaining) {
+    private String buildExpirationReasons(WarrantyStatus status, long daysRemaining, Integer mileageRemaining) {
         if (status == WarrantyStatus.VALID) {
             return "Bảo hành còn hiệu lực";
         }
@@ -302,16 +364,21 @@ public class WarrantyValidationServiceImpl implements WarrantyValidationService 
                         .append(" ngày)");
                 break;
             case EXPIRED_MILEAGE:
-                reasons.append("Hết hạn bảo hành theo số km (vượt ")
-                        .append(Math.abs(mileageRemaining))
-                        .append(" km)");
+                if (mileageRemaining != null) {
+                    reasons.append("Hết hạn bảo hành theo số km (vượt ")
+                            .append(Math.abs(mileageRemaining))
+                            .append(" km)");
+                }
                 break;
             case EXPIRED_BOTH:
                 reasons.append("Hết hạn bảo hành theo cả thời gian (quá ")
                         .append(Math.abs(daysRemaining))
-                        .append(" ngày) và số km (vượt ")
-                        .append(Math.abs(mileageRemaining))
-                        .append(" km)");
+                        .append(" ngày)");
+                if (mileageRemaining != null) {
+                    reasons.append(" và số km (vượt ")
+                            .append(Math.abs(mileageRemaining))
+                            .append(" km)");
+                }
                 break;
             case PART_WARRANTY_EXPIRED:
                 reasons.append("Linh kiện đã hết hạn bảo hành");
@@ -322,7 +389,7 @@ public class WarrantyValidationServiceImpl implements WarrantyValidationService 
     }
 
     /**
-     * Format số tiền theo chuẩn Việt Nam
+     * Format số tiền theo chuẩn Việt Nam.
      */
     private String formatCurrency(BigDecimal amount) {
         return String.format("%,.0f", amount);
