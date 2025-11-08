@@ -25,14 +25,23 @@ public final class WarrantyClaimMapper {
         entity.setDescription(requestDTO.getDescription());
         entity.setInstalledPart(installedPart);
         entity.setVehicle(vehicle);
-        entity.setStatus(WarrantyClaimStatus.SUBMITTED); // Business rule: luôn bắt đầu với SUBMITTED
         entity.setClaimDate(LocalDateTime.now());
 
         // Paid warranty fields
-        entity.setIsPaidWarranty(requestDTO.getIsPaidWarranty() != null ? requestDTO.getIsPaidWarranty() : false);
+        boolean isPaidWarranty = requestDTO.getIsPaidWarranty() != null ? requestDTO.getIsPaidWarranty() : false;
+        entity.setIsPaidWarranty(isPaidWarranty);
         // estimatedRepairCost không lưu vào DB - chỉ dùng để tính warrantyFee
         entity.setWarrantyFee(requestDTO.getWarrantyFee());
         entity.setPaidWarrantyNote(requestDTO.getPaidWarrantyNote());
+
+        // Business rule: Set initial status based on warranty type
+        // Paid warranty: SUBMITTED → PENDING_PAYMENT → PAYMENT_CONFIRMED → MANAGER_REVIEW → PROCESSING → COMPLETED
+        // Free warranty: SUBMITTED → MANAGER_REVIEW → PROCESSING → COMPLETED
+        if (isPaidWarranty) {
+            entity.setStatus(WarrantyClaimStatus.PENDING_PAYMENT);
+        } else {
+            entity.setStatus(WarrantyClaimStatus.SUBMITTED);
+        }
 
         return entity;
     }
