@@ -50,6 +50,9 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
 
     private static final Logger logger = LoggerFactory.getLogger(WarrantyClaimServiceImpl.class);
 
+    // Default grace period nếu Part không có config riêng (giống WarrantyValidationServiceImpl)
+    private static final int DEFAULT_GRACE_PERIOD_DAYS = 180;
+
     private final WarrantyClaimRepository warrantyClaimRepository;
     private final InstalledPartRepository installedPartRepository;
     private final PartRepository partRepository;
@@ -130,33 +133,27 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
             // Warranty đã hết hạn - kiểm tra grace period
             long daysExpired = ChronoUnit.DAYS.between(expirationDate, today);
 
-            // Lấy grace period từ Part (nếu có)
+            // Lấy grace period từ Part (nếu có), fallback về default
             Part part = installedPart.getPart();
-            Integer gracePeriodDays = null;
-            if (part != null && part.getGracePeriodDays() != null) {
-                gracePeriodDays = part.getGracePeriodDays();
-            }
+            int gracePeriodDays = part != null && part.getGracePeriodDays() != null
+                ? part.getGracePeriodDays()
+                : DEFAULT_GRACE_PERIOD_DAYS;
 
             // Nếu còn trong grace period VÀ là paid warranty claim → Cho phép
-            if (gracePeriodDays != null && daysExpired <= gracePeriodDays) {
+            if (daysExpired <= gracePeriodDays) {
                 if (requestDTO.getIsPaidWarranty() != null && requestDTO.getIsPaidWarranty()) {
                     // Valid paid warranty claim trong grace period
-                    logger.info("Creating paid warranty claim in grace period: installedPartId={}, daysExpired={}, gracePeriod={}",
-                        requestDTO.getInstalledPartId(), daysExpired, gracePeriodDays);
+                    logger.info("Creating paid warranty claim in grace period: installedPartId={}, daysExpired={}, gracePeriod={}, usingDefault={}",
+                        requestDTO.getInstalledPartId(), daysExpired, gracePeriodDays, (part == null || part.getGracePeriodDays() == null));
                 } else {
                     // Hết hạn nhưng không phải paid warranty
                     throw new IllegalArgumentException("Warranty expired on " + expirationDate +
                         ". To create a claim, use paid warranty option (isPaidWarranty=true).");
                 }
             } else {
-                // Quá grace period hoặc không có grace period
-                if (gracePeriodDays != null) {
-                    throw new IllegalArgumentException("Warranty expired on " + expirationDate +
-                        " and grace period of " + gracePeriodDays + " days has passed. Cannot create claim.");
-                } else {
-                    throw new IllegalArgumentException("Warranty expired on " + expirationDate +
-                        " and no grace period configured. Cannot create claim.");
-                }
+                // Quá grace period
+                throw new IllegalArgumentException("Warranty expired on " + expirationDate +
+                    " and grace period of " + gracePeriodDays + " days has passed. Cannot create claim.");
             }
         }
 
@@ -210,19 +207,18 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                 // Warranty đã hết hạn - kiểm tra grace period
                 long daysExpired = ChronoUnit.DAYS.between(expirationDate, today);
 
-                // Lấy grace period từ Part (nếu có)
+                // Lấy grace period từ Part (nếu có), fallback về default
                 Part part = installedPart.getPart();
-                Integer gracePeriodDays = null;
-                if (part != null && part.getGracePeriodDays() != null) {
-                    gracePeriodDays = part.getGracePeriodDays();
-                }
+                int gracePeriodDays = part != null && part.getGracePeriodDays() != null
+                    ? part.getGracePeriodDays()
+                    : DEFAULT_GRACE_PERIOD_DAYS;
 
                 // Nếu còn trong grace period VÀ là paid warranty claim → Cho phép
-                if (gracePeriodDays != null && daysExpired <= gracePeriodDays) {
+                if (daysExpired <= gracePeriodDays) {
                     if (claim.getIsPaidWarranty() != null && claim.getIsPaidWarranty()) {
                         // Valid paid warranty claim trong grace period
-                        logger.info("Updating claim to expired part with paid warranty: claimId={}, installedPartId={}, daysExpired={}",
-                            id, requestDTO.getInstalledPartId(), daysExpired);
+                        logger.info("Updating claim to expired part with paid warranty: claimId={}, installedPartId={}, daysExpired={}, gracePeriod={}, usingDefault={}",
+                            id, requestDTO.getInstalledPartId(), daysExpired, gracePeriodDays, (part == null || part.getGracePeriodDays() == null));
                     } else {
                         // Hết hạn nhưng claim không phải paid warranty
                         throw new IllegalArgumentException("Warranty expired on " + expirationDate +
@@ -230,13 +226,8 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                     }
                 } else {
                     // Quá grace period
-                    if (gracePeriodDays != null) {
-                        throw new IllegalArgumentException("Warranty expired on " + expirationDate +
-                            " and grace period of " + gracePeriodDays + " days has passed.");
-                    } else {
-                        throw new IllegalArgumentException("Warranty expired on " + expirationDate +
-                            " and no grace period configured.");
-                    }
+                    throw new IllegalArgumentException("Warranty expired on " + expirationDate +
+                        " and grace period of " + gracePeriodDays + " days has passed.");
                 }
             }
 
@@ -376,33 +367,27 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
             // Warranty đã hết hạn - kiểm tra grace period
             long daysExpired = ChronoUnit.DAYS.between(expirationDate, today);
 
-            // Lấy grace period từ Part (nếu có)
+            // Lấy grace period từ Part (nếu có), fallback về default
             Part part = installedPart.getPart();
-            Integer gracePeriodDays = null;
-            if (part != null && part.getGracePeriodDays() != null) {
-                gracePeriodDays = part.getGracePeriodDays();
-            }
+            int gracePeriodDays = part != null && part.getGracePeriodDays() != null
+                ? part.getGracePeriodDays()
+                : DEFAULT_GRACE_PERIOD_DAYS;
 
             // Nếu còn trong grace period VÀ là paid warranty claim → Cho phép
-            if (gracePeriodDays != null && daysExpired <= gracePeriodDays) {
+            if (daysExpired <= gracePeriodDays) {
                 if (requestDTO.getIsPaidWarranty() != null && requestDTO.getIsPaidWarranty()) {
                     // Valid paid warranty claim trong grace period
-                    logger.info("SC_STAFF creating paid warranty claim in grace period: installedPartId={}, daysExpired={}, gracePeriod={}",
-                        requestDTO.getInstalledPartId(), daysExpired, gracePeriodDays);
+                    logger.info("SC_STAFF creating paid warranty claim in grace period: installedPartId={}, daysExpired={}, gracePeriod={}, usingDefault={}",
+                        requestDTO.getInstalledPartId(), daysExpired, gracePeriodDays, (part == null || part.getGracePeriodDays() == null));
                 } else {
                     // Hết hạn nhưng không phải paid warranty
                     throw new IllegalArgumentException("Warranty expired on " + expirationDate +
                         ". To create a claim, use paid warranty option (isPaidWarranty=true).");
                 }
             } else {
-                // Quá grace period hoặc không có grace period
-                if (gracePeriodDays != null) {
-                    throw new IllegalArgumentException("Warranty expired on " + expirationDate +
-                        " and grace period of " + gracePeriodDays + " days has passed. Cannot create claim.");
-                } else {
-                    throw new IllegalArgumentException("Warranty expired on " + expirationDate +
-                        " and no grace period configured. Cannot create claim.");
-                }
+                // Quá grace period
+                throw new IllegalArgumentException("Warranty expired on " + expirationDate +
+                    " and grace period of " + gracePeriodDays + " days has passed. Cannot create claim.");
             }
         }
 
