@@ -153,7 +153,7 @@ public class VehicleServiceImpl implements VehicleService {
         Customer customer = customerRepository.findById(UUID.fromString(requestDTO.getCustomerId()))
                 .orElseThrow(() -> new ResourceNotFoundException("Customer", "id", requestDTO.getCustomerId()));
 
-        Optional<Vehicle> existingVinVehicleOpt = Optional.ofNullable(vehicleRepository.findByVehicleVin(requestDTO.getVehicleVin()));
+        Optional<Vehicle> existingVinVehicleOpt = vehicleRepository.findByVehicleVin(requestDTO.getVehicleVin());
         existingVinVehicleOpt.ifPresent(existingVinVehicle -> {
             if (!existingVinVehicle.getVehicleId().equals(id)) {
                 throw new DuplicateResourceException("Vehicle", "VIN", requestDTO.getVehicleVin());
@@ -240,7 +240,7 @@ public class VehicleServiceImpl implements VehicleService {
      */
     @Override
     public VehicleResponseDTO getVehicleByVin(String vin) {
-        Vehicle vehicle = Optional.ofNullable(vehicleRepository.findByVehicleVin(vin))
+        Vehicle vehicle = vehicleRepository.findByVehicleVin(vin)
                 .orElseThrow(() -> new ResourceNotFoundException("Vehicle", "VIN", vin));
 
         return VehicleMapper.toResponseDTO(vehicle);
