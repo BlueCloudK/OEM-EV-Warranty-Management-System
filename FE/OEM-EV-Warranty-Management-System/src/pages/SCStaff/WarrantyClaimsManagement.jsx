@@ -103,7 +103,8 @@ const VehicleSelectionModal = ({ isOpen, onClose, vehicles, installedParts, onSe
     if (selectedVehicleId && selectedInstalledPartId) {
       // Pass both IDs at once to avoid async state update issues
       onSelect(selectedVehicleId, selectedInstalledPartId);
-      onClose();
+      // Don't call onClose() here - let parent handle closing modal
+      // to avoid resetting selectedVehicleId/selectedInstalledPartId to null
     } else {
       alert('Vui lòng chọn xe và linh kiện');
     }
@@ -190,12 +191,13 @@ const WarrantyClaimsManagement = () => {
 
   const handleVehicleAndPartSelected = (vehicleId, installedPartId) => {
     console.log('[WarrantyClaimsManagement] handleVehicleAndPartSelected called with:', { vehicleId, installedPartId });
+    console.log('[WarrantyClaimsManagement] Setting state...');
     // Set both IDs at once
     setSelectedVehicleId(vehicleId);
     setSelectedInstalledPartId(installedPartId);
     setShowVehicleSelection(false);
     setShowWarrantyForm(true);
-    console.log('[WarrantyClaimsManagement] State updated - showWarrantyForm:', true);
+    console.log('[WarrantyClaimsManagement] setState calls completed - next render will have updated state');
   };
 
   const handleClaimSuccess = async (response) => {
@@ -321,19 +323,27 @@ const WarrantyClaimsManagement = () => {
         />
 
         {/* Paid Warranty Claim Form Modal */}
-        {showWarrantyForm && selectedVehicleId && selectedInstalledPartId && (
-          <ModalOverlay>
-            <ModalWrapper>
-              <CloseButton onClick={handleClaimCancel}>×</CloseButton>
-              <PaidWarrantyClaimForm
-                vehicleId={selectedVehicleId}
-                installedPartId={selectedInstalledPartId}
-                onSuccess={handleClaimSuccess}
-                onCancel={handleClaimCancel}
-              />
-            </ModalWrapper>
-          </ModalOverlay>
-        )}
+        {(() => {
+          console.log('[WarrantyClaimsManagement] Render check - Form modal conditions:', {
+            showWarrantyForm,
+            selectedVehicleId,
+            selectedInstalledPartId,
+            shouldRender: showWarrantyForm && selectedVehicleId && selectedInstalledPartId
+          });
+          return showWarrantyForm && selectedVehicleId && selectedInstalledPartId && (
+            <ModalOverlay>
+              <ModalWrapper>
+                <CloseButton onClick={handleClaimCancel}>×</CloseButton>
+                <PaidWarrantyClaimForm
+                  vehicleId={selectedVehicleId}
+                  installedPartId={selectedInstalledPartId}
+                  onSuccess={handleClaimSuccess}
+                  onCancel={handleClaimCancel}
+                />
+              </ModalWrapper>
+            </ModalOverlay>
+          );
+        })()}
 
         {/* Claim Detail Modal */}
         <ClaimDetailModal
