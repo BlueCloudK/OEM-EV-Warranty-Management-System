@@ -184,6 +184,24 @@ INSERT INTO warranty_claims (claim_date, status, resolution_date, description, i
 INSERT INTO warranty_claims (claim_date, status, resolution_date, description, installed_part_id, vehicle_id, service_center_id, assigned_to_user_id, recall_response_id, warranty_status, is_paid_warranty, warranty_fee, paid_warranty_note, mileage_at_claim) VALUES
 ('2024-11-06 09:45:00', 'MANAGER_REVIEW', NULL, N'Hệ thống BMS báo lỗi code E204', 3, 1, 1, 7, NULL, 'VALID', FALSE, NULL, NULL, 15000);
 
+-- ===== PAID WARRANTY CLAIMS (Linh kiện quá hạn phải trả phí) =====
+
+-- Claim 6: Paid warranty - Expired by mileage (PENDING_PAYMENT)
+INSERT INTO warranty_claims (claim_date, status, resolution_date, description, installed_part_id, vehicle_id, service_center_id, assigned_to_user_id, recall_response_id, warranty_status, is_paid_warranty, warranty_fee, paid_warranty_note, mileage_at_claim) VALUES
+('2024-11-07 10:20:00', 'PENDING_PAYMENT', NULL, N'Động cơ giảm công suất, mất lực khi tăng tốc', 2, 1, 1, 7, NULL, 'EXPIRED_MILEAGE', TRUE, 8500000.00, N'Xe đã đi 105,000 km vượt quá giới hạn bảo hành 100,000 km. Phí bảo hành 35% chi phí sửa chữa ước tính (24 triệu). Vui lòng thanh toán để tiếp tục xử lý.', 105000);
+
+-- Claim 7: Paid warranty - Expired both date and mileage (PAYMENT_CONFIRMED)
+INSERT INTO warranty_claims (claim_date, status, resolution_date, description, installed_part_id, vehicle_id, service_center_id, assigned_to_user_id, recall_response_id, warranty_status, is_paid_warranty, warranty_fee, paid_warranty_note, mileage_at_claim) VALUES
+('2024-11-07 14:30:00', 'PAYMENT_CONFIRMED', NULL, N'Inverter báo lỗi E502, xe không thể sạc pin', 7, 2, 2, 8, NULL, 'EXPIRED_BOTH', TRUE, 18000000.00, N'Quá hạn bảo hành cả theo thời gian (48 tháng) và số km (85,000/80,000 km). Phí bảo hành 50% chi phí thay inverter (36 triệu). Khách hàng đã thanh toán, chờ xác nhận từ manager.', 85000);
+
+-- Claim 8: Paid warranty - Part warranty expired (PROCESSING)
+INSERT INTO warranty_claims (claim_date, status, resolution_date, description, installed_part_id, vehicle_id, service_center_id, assigned_to_user_id, recall_response_id, warranty_status, is_paid_warranty, warranty_fee, paid_warranty_note, mileage_at_claim) VALUES
+('2024-11-08 09:00:00', 'PROCESSING', NULL, N'Bộ sạc nhanh DC không hoạt động, hiển thị lỗi charging failure', 14, 4, 3, 9, NULL, 'PART_WARRANTY_EXPIRED', TRUE, 12000000.00, N'Bộ sạc đã hết hạn bảo hành (26 tháng, giới hạn 24 tháng). Phí bảo hành 40% chi phí thay bộ sạc (30 triệu). Đã xác nhận thanh toán, đang xử lý.', 52000);
+
+-- Claim 9: Paid warranty - Expired mileage (COMPLETED)
+INSERT INTO warranty_claims (claim_date, status, resolution_date, description, installed_part_id, vehicle_id, service_center_id, assigned_to_user_id, recall_response_id, warranty_status, is_paid_warranty, warranty_fee, paid_warranty_note, mileage_at_claim) VALUES
+('2024-10-25 11:15:00', 'COMPLETED', '2024-10-28 16:00:00', N'Hệ thống treo khí nén bị rò rỉ, xe bị lún một bên', 11, 3, 3, 9, NULL, 'EXPIRED_MILEAGE', TRUE, 16500000.00, N'Số km vượt giới hạn bảo hành (82,000/80,000 km). Phí bảo hành 30% chi phí sửa chữa (55 triệu). Đã hoàn thành thay module khí nén.', 82000);
+
 -- =====================================================
 -- 9. RECALL REQUESTS
 -- =====================================================
