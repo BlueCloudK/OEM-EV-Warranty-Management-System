@@ -33,36 +33,36 @@ INSERT INTO service_centers (name, address, phone, opening_hours, latitude, long
 -- =====================================================
 -- Table: users
 -- Columns: username, email, password, address, created_at, role_id, service_center_id
--- Password for all users: 123456 (BCrypt hashed)
+-- Password for all users: 123456 (BCrypt hashed for Spring Security 3.5.6)
 
 -- ADMIN (1 user)
 INSERT INTO users (username, email, password, address, created_at, role_id, service_center_id) VALUES
-('admin', 'admin@vinfast.vn', '$2a$10$N9qo8uLOickgx2ZMRZoMye6J9mKWJh5NEpD0T/Z/d8Y1RZzH1dW9C', N'Tòa nhà VinFast, Hà Nội', '2024-01-01 08:00:00', 1, NULL);
+('admin', 'admin@vinfast.vn', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', N'Tòa nhà VinFast, Hà Nội', '2024-01-01 08:00:00', 1, NULL);
 
 -- EVM_STAFF (2 users)
 INSERT INTO users (username, email, password, address, created_at, role_id, service_center_id) VALUES
-('evmstaff1', 'evmstaff1@vinfast.vn', '$2a$10$N9qo8uLOickgx2ZMRZoMye6J9mKWJh5NEpD0T/Z/d8Y1RZzH1dW9C', N'Tòa nhà VinFast, Hà Nội', '2024-01-01 08:00:00', 2, NULL),
-('evmstaff2', 'evmstaff2@vinfast.vn', '$2a$10$N9qo8uLOickgx2ZMRZoMye6J9mKWJh5NEpD0T/Z/d8Y1RZzH1dW9C', N'Tòa nhà VinFast, TP.HCM', '2024-01-01 08:00:00', 2, NULL);
+('evmstaff1', 'evmstaff1@vinfast.vn', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', N'Tòa nhà VinFast, Hà Nội', '2024-01-01 08:00:00', 2, NULL),
+('evmstaff2', 'evmstaff2@vinfast.vn', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', N'Tòa nhà VinFast, TP.HCM', '2024-01-01 08:00:00', 2, NULL);
 
 -- SC_STAFF (3 users - one per service center)
 INSERT INTO users (username, email, password, address, created_at, role_id, service_center_id) VALUES
-('scstaff_hn', 'scstaff.hn@vinfast.vn', '$2a$10$N9qo8uLOickgx2ZMRZoMye6J9mKWJh5NEpD0T/Z/d8Y1RZzH1dW9C', N'Hà Nội', '2024-01-01 08:00:00', 3, 1),
-('scstaff_hcm', 'scstaff.hcm@vinfast.vn', '$2a$10$N9qo8uLOickgx2ZMRZoMye6J9mKWJh5NEpD0T/Z/d8Y1RZzH1dW9C', N'TP.HCM', '2024-01-01 08:00:00', 3, 2),
-('scstaff_dn', 'scstaff.dn@vinfast.vn', '$2a$10$N9qo8uLOickgx2ZMRZoMye6J9mKWJh5NEpD0T/Z/d8Y1RZzH1dW9C', N'Đà Nẵng', '2024-01-01 08:00:00', 3, 3);
+('scstaff_hn', 'scstaff.hn@vinfast.vn', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', N'Hà Nội', '2024-01-01 08:00:00', 3, 1),
+('scstaff_hcm', 'scstaff.hcm@vinfast.vn', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', N'TP.HCM', '2024-01-01 08:00:00', 3, 2),
+('scstaff_dn', 'scstaff.dn@vinfast.vn', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', N'Đà Nẵng', '2024-01-01 08:00:00', 3, 3);
 
 -- SC_TECHNICIAN (3 users - one per service center)
 INSERT INTO users (username, email, password, address, created_at, role_id, service_center_id) VALUES
-('tech_hn', 'tech.hn@vinfast.vn', '$2a$10$N9qo8uLOickgx2ZMRZoMye6J9mKWJh5NEpD0T/Z/d8Y1RZzH1dW9C', N'Hà Nội', '2024-01-01 08:00:00', 4, 1),
-('tech_hcm', 'tech.hcm@vinfast.vn', '$2a$10$N9qo8uLOickgx2ZMRZoMye6J9mKWJh5NEpD0T/Z/d8Y1RZzH1dW9C', N'TP.HCM', '2024-01-01 08:00:00', 4, 2),
-('tech_dn', 'tech.dn@vinfast.vn', '$2a$10$N9qo8uLOickgx2ZMRZoMye6J9mKWJh5NEpD0T/Z/d8Y1RZzH1dW9C', N'Đà Nẵng', '2024-01-01 08:00:00', 4, 3);
+('tech_hn', 'tech.hn@vinfast.vn', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', N'Hà Nội', '2024-01-01 08:00:00', 4, 1),
+('tech_hcm', 'tech.hcm@vinfast.vn', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', N'TP.HCM', '2024-01-01 08:00:00', 4, 2),
+('tech_dn', 'tech.dn@vinfast.vn', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', N'Đà Nẵng', '2024-01-01 08:00:00', 4, 3);
 
 -- CUSTOMER (5 users)
 INSERT INTO users (username, email, password, address, created_at, role_id, service_center_id) VALUES
-('customer1', 'nguyenvana@gmail.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye6J9mKWJh5NEpD0T/Z/d8Y1RZzH1dW9C', N'45 Láng Hạ, Đống Đa, Hà Nội', '2024-01-15 10:30:00', 5, NULL),
-('customer2', 'tranthib@gmail.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye6J9mKWJh5NEpD0T/Z/d8Y1RZzH1dW9C', N'123 Nguyễn Huệ, Quận 1, TP.HCM', '2024-01-20 14:00:00', 5, NULL),
-('customer3', 'levanc@gmail.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye6J9mKWJh5NEpD0T/Z/d8Y1RZzH1dW9C', N'67 Trần Phú, Hải Châu, Đà Nẵng', '2024-02-01 09:15:00', 5, NULL),
-('customer4', 'phamthid@gmail.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye6J9mKWJh5NEpD0T/Z/d8Y1RZzH1dW9C', N'89 Hoàng Diệu, Ba Đình, Hà Nội', '2024-02-10 11:45:00', 5, NULL),
-('customer5', 'hoangvane@gmail.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye6J9mKWJh5NEpD0T/Z/d8Y1RZzH1dW9C', N'234 Lê Lợi, Quận 3, TP.HCM', '2024-02-15 16:20:00', 5, NULL);
+('customer1', 'nguyenvana@gmail.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', N'45 Láng Hạ, Đống Đa, Hà Nội', '2024-01-15 10:30:00', 5, NULL),
+('customer2', 'tranthib@gmail.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', N'123 Nguyễn Huệ, Quận 1, TP.HCM', '2024-01-20 14:00:00', 5, NULL),
+('customer3', 'levanc@gmail.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', N'67 Trần Phú, Hải Châu, Đà Nẵng', '2024-02-01 09:15:00', 5, NULL),
+('customer4', 'phamthid@gmail.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', N'89 Hoàng Diệu, Ba Đình, Hà Nội', '2024-02-10 11:45:00', 5, NULL),
+('customer5', 'hoangvane@gmail.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', N'234 Lê Lợi, Quận 3, TP.HCM', '2024-02-15 16:20:00', 5, NULL);
 
 -- =====================================================
 -- 4. CUSTOMERS
