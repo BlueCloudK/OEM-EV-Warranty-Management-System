@@ -1,60 +1,81 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWarrantyClaimsManagement } from '../../hooks/useWarrantyClaimsManagement';
+import PaidWarrantyClaimForm from '../../components/PaidWarrantyClaimForm';
 import * as S from './WarrantyClaimsManagement.styles';
 import { FaClipboardList, FaPlus, FaEdit, FaSearch, FaArrowLeft, FaSpinner, FaEye } from 'react-icons/fa';
+import styled from 'styled-components';
 
-// Form Modal Component
-const ClaimFormModal = ({ isOpen, onClose, onSubmit, claim, vehicles, parts, installedParts, prefilledVehicle, onVehicleChange }) => {
-  const [formData, setFormData] = useState({ description: '', installedPartId: '', vehicleId: '' });
-  const [errors, setErrors] = useState({});
+// Modal wrapper for the PaidWarrantyClaimForm
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+`;
 
-  useEffect(() => {
-    if (isOpen) {
-      if (claim) {
-        setFormData({ 
-          description: claim.description, 
-          installedPartId: claim.installedPartId, 
-          vehicleId: claim.vehicleId 
-        });
-        onVehicleChange(claim.vehicleId);
-      } else if (prefilledVehicle) {
-        setFormData({ description: `Yêu cầu cho xe ${prefilledVehicle.vehicleName}`, installedPartId: '', vehicleId: prefilledVehicle.vehicleId });
-        onVehicleChange(prefilledVehicle.vehicleId);
-      } else {
-        setFormData({ description: '', installedPartId: '', vehicleId: '' });
-      }
-      setErrors({});
-    }
-  }, [claim, prefilledVehicle, isOpen]);
+const ModalWrapper = styled.div`
+  max-width: 1000px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+`;
 
-  const validate = () => {
-    const newErrors = {};
-    if (!formData.description) newErrors.description = 'Mô tả là bắt buộc';
-    if (!formData.vehicleId) newErrors.vehicleId = 'Phải chọn xe';
-    if (!formData.installedPartId) newErrors.installedPartId = 'Phải chọn linh kiện đã lắp đặt';
-    return newErrors;
-  };
+const CloseButton = styled.button`
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: all 0.3s;
+  color: #666;
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const validationErrors = validate();
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
-    const { success, message } = await onSubmit(formData, claim?.warrantyClaimId);
-    if (success) {
-      onClose();
-    } else {
-      setErrors({ general: message });
-    }
-  };
+  &:hover {
+    background: white;
+    color: #333;
+    transform: scale(1.1);
+  }
+`;
+
+// Simplified vehicle selection modal for new claims
+const VehicleSelectionModal = ({ isOpen, onClose, vehicles, installedParts, onVehicleSelect, onInstalledPartSelect, fetchInstalledPartsForVehicle }) => {
+  const [selectedVehicleId, setSelectedVehicleId] = useState('');
+  const [selectedInstalledPartId, setSelectedInstalledPartId] = useState('');
 
   const handleVehicleChange = (e) => {
     const vehicleId = e.target.value;
-    setFormData({ ...formData, vehicleId, installedPartId: '' }); // Reset installedPartId when vehicle changes
-    onVehicleChange(vehicleId);
+    setSelectedVehicleId(vehicleId);
+    setSelectedInstalledPartId('');
+    if (vehicleId) {
+      fetchInstalledPartsForVehicle(vehicleId);
+    }
+  };
+
+  const handleNext = () => {
+    if (selectedVehicleId && selectedInstalledPartId) {
+      onVehicleSelect(selectedVehicleId);
+      onInstalledPartSelect(selectedInstalledPartId);
+      onClose();
+    } else {
+      alert('Vui lòng chọn xe và linh kiện');
+    }
   };
 
   if (!isOpen) return null;
@@ -62,35 +83,37 @@ const ClaimFormModal = ({ isOpen, onClose, onSubmit, claim, vehicles, parts, ins
   return (
     <S.ModalOverlay>
       <S.ModalContent>
-        <h2>{claim ? 'Chỉnh sửa Yêu cầu' : 'Tạo Yêu cầu mới'}</h2>
-        <form onSubmit={handleSubmit}>
-          {errors.general && <S.ErrorText>{errors.general}</S.ErrorText>}
-          <S.FormGroup>
-            <S.Label>Xe *</S.Label>
-            <S.Select name="vehicleId" value={formData.vehicleId} onChange={handleVehicleChange} hasError={!!errors.vehicleId} disabled={!!prefilledVehicle || !!claim}>
-              <option value="">Chọn xe</option>
-              {vehicles.map(v => <option key={v.vehicleId} value={v.vehicleId}>{v.vehicleName} ({v.vehicleVin})</option>)} 
-            </S.Select>
-            {errors.vehicleId && <S.ErrorText>{errors.vehicleId}</S.ErrorText>}
-          </S.FormGroup>
-          <S.FormGroup>
-            <S.Label>Linh kiện đã lắp đặt *</S.Label>
-            <S.Select name="installedPartId" value={formData.installedPartId} onChange={(e) => setFormData({ ...formData, installedPartId: e.target.value })} hasError={!!errors.installedPartId} disabled={!formData.vehicleId || !!claim}>
-              <option value="">Chọn linh kiện đã lắp đặt</option>
-              {installedParts.map(p => <option key={p.installedPartId} value={p.installedPartId}>{p.partName} (Lắp đặt: {p.installationDate})</option>)} 
-            </S.Select>
-            {errors.installedPartId && <S.ErrorText>{errors.installedPartId}</S.ErrorText>}
-          </S.FormGroup>
-          <S.FormGroup>
-            <S.Label>Mô tả vấn đề *</S.Label>
-            <S.TextArea name="description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} hasError={!!errors.description} rows={4} />
-            {errors.description && <S.ErrorText>{errors.description}</S.ErrorText>}
-          </S.FormGroup>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-            <S.Button type="button" onClick={onClose}>Hủy</S.Button>
-            <S.Button primary type="submit">{claim ? 'Cập nhật' : 'Tạo mới'}</S.Button>
-          </div>
-        </form>
+        <h2>Chọn Xe và Linh Kiện</h2>
+        <S.FormGroup>
+          <S.Label>Xe *</S.Label>
+          <S.Select value={selectedVehicleId} onChange={handleVehicleChange}>
+            <option value="">Chọn xe</option>
+            {vehicles.map(v => (
+              <option key={v.vehicleId} value={v.vehicleId}>
+                {v.vehicleName} ({v.vehicleVin})
+              </option>
+            ))}
+          </S.Select>
+        </S.FormGroup>
+        <S.FormGroup>
+          <S.Label>Linh kiện đã lắp đặt *</S.Label>
+          <S.Select
+            value={selectedInstalledPartId}
+            onChange={(e) => setSelectedInstalledPartId(e.target.value)}
+            disabled={!selectedVehicleId}
+          >
+            <option value="">Chọn linh kiện</option>
+            {installedParts.map(p => (
+              <option key={p.installedPartId} value={p.installedPartId}>
+                {p.partName} (Lắp đặt: {p.installationDate})
+              </option>
+            ))}
+          </S.Select>
+        </S.FormGroup>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px' }}>
+          <S.Button type="button" onClick={onClose}>Hủy</S.Button>
+          <S.Button primary type="button" onClick={handleNext}>Tiếp tục</S.Button>
+        </div>
       </S.ModalContent>
     </S.ModalOverlay>
   );
@@ -104,17 +127,46 @@ const WarrantyClaimsManagement = () => {
     handleFilterChange, handleCreateOrUpdate, handlePageChange, fetchInstalledPartsForVehicle
   } = useWarrantyClaimsManagement();
 
-  const [showForm, setShowForm] = useState(!!prefilledVehicle);
-  const [selectedClaim, setSelectedClaim] = useState(null);
+  const [showVehicleSelection, setShowVehicleSelection] = useState(false);
+  const [showWarrantyForm, setShowWarrantyForm] = useState(false);
+  const [selectedVehicleId, setSelectedVehicleId] = useState(null);
+  const [selectedInstalledPartId, setSelectedInstalledPartId] = useState(null);
+
+  // Auto-open form if prefilled vehicle is provided
+  useEffect(() => {
+    if (prefilledVehicle) {
+      setSelectedVehicleId(prefilledVehicle.vehicleId);
+      fetchInstalledPartsForVehicle(prefilledVehicle.vehicleId);
+      setShowVehicleSelection(true);
+    }
+  }, [prefilledVehicle]);
 
   const openCreateForm = () => {
-    setSelectedClaim(null);
-    setShowForm(true);
+    setShowVehicleSelection(true);
   };
 
-  const openEditForm = (claim) => {
-    setSelectedClaim(claim);
-    setShowForm(true);
+  const handleVehicleSelected = (vehicleId) => {
+    setSelectedVehicleId(vehicleId);
+  };
+
+  const handleInstalledPartSelected = (installedPartId) => {
+    setSelectedInstalledPartId(installedPartId);
+    setShowVehicleSelection(false);
+    setShowWarrantyForm(true);
+  };
+
+  const handleClaimSuccess = (response) => {
+    setShowWarrantyForm(false);
+    setSelectedVehicleId(null);
+    setSelectedInstalledPartId(null);
+    // Refresh claims list
+    window.location.reload();
+  };
+
+  const handleClaimCancel = () => {
+    setShowWarrantyForm(false);
+    setSelectedVehicleId(null);
+    setSelectedInstalledPartId(null);
   };
 
   return (
@@ -128,7 +180,10 @@ const WarrantyClaimsManagement = () => {
           <S.FilterContainer>
             <S.Select value={filterStatus} onChange={(e) => handleFilterChange(e.target.value)}>
               <option value="all">Tất cả trạng thái</option>
-              <option value="SUBMITTED">Chờ duyệt</option>
+              <option value="SUBMITTED">Tiếp nhận</option>
+              <option value="PENDING_PAYMENT">Chờ thanh toán</option>
+              <option value="PAYMENT_CONFIRMED">Đã xác nhận thanh toán</option>
+              <option value="MANAGER_REVIEW">Manager đang xem xét</option>
               <option value="PROCESSING">Đang xử lý</option>
               <option value="COMPLETED">Hoàn thành</option>
               <option value="REJECTED">Từ chối</option>
@@ -151,6 +206,8 @@ const WarrantyClaimsManagement = () => {
                   <S.Th>Khách hàng</S.Th>
                   <S.Th>Xe</S.Th>
                   <S.Th>Linh kiện</S.Th>
+                  <S.Th>Loại BH</S.Th>
+                  <S.Th>Phí</S.Th>
                   <S.Th>Trạng thái</S.Th>
                   <S.Th>Ngày yêu cầu</S.Th>
                   <S.Th>Thao tác</S.Th>
@@ -163,11 +220,27 @@ const WarrantyClaimsManagement = () => {
                     <S.Td>{claim.customerName}</S.Td>
                     <S.Td>{claim.vehicleVin}</S.Td>
                     <S.Td>{claim.partName}</S.Td>
+                    <S.Td>
+                      {claim.isPaidWarranty ? (
+                        <span style={{ color: '#ff9800', fontWeight: 'bold' }}>Tính phí</span>
+                      ) : (
+                        <span style={{ color: '#4caf50', fontWeight: 'bold' }}>Miễn phí</span>
+                      )}
+                    </S.Td>
+                    <S.Td>
+                      {claim.isPaidWarranty && claim.warrantyFee ? (
+                        <span style={{ color: '#ff6f00', fontWeight: 'bold' }}>
+                          {parseFloat(claim.warrantyFee).toLocaleString('vi-VN')} VNĐ
+                        </span>
+                      ) : (
+                        '-'
+                      )}
+                    </S.Td>
                     <S.Td>{claim.status}</S.Td>
                     <S.Td>{new Date(claim.claimDate).toLocaleDateString()}</S.Td>
                     <S.Td>
-                      <S.Button small onClick={() => openEditForm(claim)}>
-                        <FaEdit /> Sửa
+                      <S.Button small onClick={() => navigate(`/scstaff/warranty-claims/${claim.warrantyClaimId}`)}>
+                        <FaEye /> Xem
                       </S.Button>
                     </S.Td>
                   </tr>
@@ -178,17 +251,35 @@ const WarrantyClaimsManagement = () => {
           </S.TableContainer>
         )}
 
-        <ClaimFormModal 
-          isOpen={showForm} 
-          onClose={() => setShowForm(false)} 
-          onSubmit={handleCreateOrUpdate} 
-          claim={selectedClaim} 
+        {/* Vehicle Selection Modal */}
+        <VehicleSelectionModal
+          isOpen={showVehicleSelection}
+          onClose={() => {
+            setShowVehicleSelection(false);
+            setSelectedVehicleId(null);
+            setSelectedInstalledPartId(null);
+          }}
           vehicles={vehicles}
-          parts={parts}
           installedParts={installedParts}
-          prefilledVehicle={prefilledVehicle}
-          onVehicleChange={fetchInstalledPartsForVehicle}
+          onVehicleSelect={handleVehicleSelected}
+          onInstalledPartSelect={handleInstalledPartSelected}
+          fetchInstalledPartsForVehicle={fetchInstalledPartsForVehicle}
         />
+
+        {/* Paid Warranty Claim Form Modal */}
+        {showWarrantyForm && (
+          <ModalOverlay>
+            <ModalWrapper>
+              <CloseButton onClick={handleClaimCancel}>×</CloseButton>
+              <PaidWarrantyClaimForm
+                vehicleId={selectedVehicleId}
+                installedPartId={selectedInstalledPartId}
+                onSuccess={handleClaimSuccess}
+                onCancel={handleClaimCancel}
+              />
+            </ModalWrapper>
+          </ModalOverlay>
+        )}
       </S.ContentWrapper>
     </S.PageContainer>
   );
