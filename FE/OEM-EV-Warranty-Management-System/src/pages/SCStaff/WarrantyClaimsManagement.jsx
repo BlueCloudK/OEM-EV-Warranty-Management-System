@@ -54,6 +54,37 @@ const CloseButton = styled.button`
   }
 `;
 
+// Claim Detail Modal
+const ClaimDetailModal = ({ isOpen, onClose, claim }) => {
+  if (!isOpen || !claim) return null;
+
+  return (
+    <S.ModalOverlay onClick={onClose}>
+      <S.ModalContent onClick={(e) => e.stopPropagation()}>
+        <h2>Chi tiết Yêu cầu Bảo hành #{claim.warrantyClaimId}</h2>
+        <div style={{ marginTop: '20px' }}>
+          <p><strong>Trạng thái:</strong> {claim.status}</p>
+          <p><strong>Ngày tạo:</strong> {new Date(claim.claimDate).toLocaleDateString('vi-VN')}</p>
+          <p><strong>Khách hàng:</strong> {claim.customerName || 'N/A'}</p>
+          <p><strong>Xe (VIN):</strong> {claim.vehicleVin || 'N/A'}</p>
+          <p><strong>Linh kiện:</strong> {claim.partName || 'N/A'}</p>
+          <p><strong>Loại bảo hành:</strong> {claim.isPaidWarranty ? 'Tính phí' : 'Miễn phí'}</p>
+          {claim.isPaidWarranty && claim.warrantyFee && (
+            <p><strong>Phí:</strong> {parseFloat(claim.warrantyFee).toLocaleString('vi-VN')} VNĐ</p>
+          )}
+          <p><strong>Mô tả:</strong> {claim.description || 'N/A'}</p>
+          {claim.rejectionReason && (
+            <p style={{ color: '#f44336' }}><strong>Lý do từ chối:</strong> {claim.rejectionReason}</p>
+          )}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px' }}>
+          <S.Button onClick={onClose}>Đóng</S.Button>
+        </div>
+      </S.ModalContent>
+    </S.ModalOverlay>
+  );
+};
+
 // Simplified vehicle selection modal for new claims
 const VehicleSelectionModal = ({ isOpen, onClose, vehicles, installedParts, onSelect, fetchInstalledPartsForVehicle }) => {
   const [selectedVehicleId, setSelectedVehicleId] = useState('');
@@ -131,6 +162,18 @@ const WarrantyClaimsManagement = () => {
   const [showWarrantyForm, setShowWarrantyForm] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState(null);
   const [selectedInstalledPartId, setSelectedInstalledPartId] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedClaim, setSelectedClaim] = useState(null);
+
+  // Debug state changes
+  useEffect(() => {
+    console.log('[WarrantyClaimsManagement] State changed:', {
+      showVehicleSelection,
+      showWarrantyForm,
+      selectedVehicleId,
+      selectedInstalledPartId
+    });
+  }, [showVehicleSelection, showWarrantyForm, selectedVehicleId, selectedInstalledPartId]);
 
   // Auto-open form if prefilled vehicle is provided
   useEffect(() => {
@@ -146,11 +189,13 @@ const WarrantyClaimsManagement = () => {
   };
 
   const handleVehicleAndPartSelected = (vehicleId, installedPartId) => {
+    console.log('[WarrantyClaimsManagement] handleVehicleAndPartSelected called with:', { vehicleId, installedPartId });
     // Set both IDs at once
     setSelectedVehicleId(vehicleId);
     setSelectedInstalledPartId(installedPartId);
     setShowVehicleSelection(false);
     setShowWarrantyForm(true);
+    console.log('[WarrantyClaimsManagement] State updated - showWarrantyForm:', true);
   };
 
   const handleClaimSuccess = async (response) => {
@@ -166,6 +211,17 @@ const WarrantyClaimsManagement = () => {
     setShowWarrantyForm(false);
     setSelectedVehicleId(null);
     setSelectedInstalledPartId(null);
+  };
+
+  const handleViewClaim = (claim) => {
+    console.log('[WarrantyClaimsManagement] View claim:', claim);
+    setSelectedClaim(claim);
+    setShowDetailModal(true);
+  };
+
+  const handleCloseDetailModal = () => {
+    setShowDetailModal(false);
+    setSelectedClaim(null);
   };
 
   return (
@@ -238,7 +294,7 @@ const WarrantyClaimsManagement = () => {
                     <S.Td>{claim.status}</S.Td>
                     <S.Td>{new Date(claim.claimDate).toLocaleDateString()}</S.Td>
                     <S.Td>
-                      <S.Button $small onClick={() => navigate(`/scstaff/warranty-claims/${claim.warrantyClaimId}`)}>
+                      <S.Button $small onClick={() => handleViewClaim(claim)}>
                         <FaEye /> Xem
                       </S.Button>
                     </S.Td>
@@ -278,6 +334,13 @@ const WarrantyClaimsManagement = () => {
             </ModalWrapper>
           </ModalOverlay>
         )}
+
+        {/* Claim Detail Modal */}
+        <ClaimDetailModal
+          isOpen={showDetailModal}
+          onClose={handleCloseDetailModal}
+          claim={selectedClaim}
+        />
       </S.ContentWrapper>
     </S.PageContainer>
   );
