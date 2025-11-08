@@ -112,6 +112,11 @@ CREATE TABLE warranty_claims (
     service_center_id BIGINT,
     assigned_to_user_id BIGINT,
     recall_request_id BIGINT UNIQUE,
+    -- Paid warranty fields
+    warranty_status VARCHAR(30),
+    is_paid_warranty BOOLEAN NOT NULL DEFAULT FALSE,
+    warranty_fee DECIMAL(10, 2),
+    paid_warranty_note NVARCHAR(500),
     FOREIGN KEY (installed_part_id) REFERENCES installed_parts(installed_part_id),
     FOREIGN KEY (vehicle_id) REFERENCES vehicles(vehicle_id),
     FOREIGN KEY (service_center_id) REFERENCES service_centers(service_center_id),

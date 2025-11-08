@@ -1,9 +1,11 @@
 package com.swp391.warrantymanagement.entity;
 
 import com.swp391.warrantymanagement.enums.WarrantyClaimStatus;
+import com.swp391.warrantymanagement.enums.WarrantyStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -149,4 +151,58 @@ public class WarrantyClaim {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "recall_response_id", unique = true)
     private RecallResponse recallResponse;
+
+    /**
+     * Trạng thái bảo hành khi tạo claim (VALID, EXPIRED_DATE, EXPIRED_MILEAGE, v.v.).
+     * <p>
+     * <strong>Mục đích:</strong> Lưu lại kết quả kiểm tra bảo hành tại thời điểm tạo claim,
+     * phục vụ cho việc audit và reporting.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "warranty_status", length = 30)
+    private WarrantyStatus warrantyStatus;
+
+    /**
+     * Cờ đánh dấu claim này có phải là bảo hành tính phí hay không.
+     * <p>
+     * <strong>Business logic:</strong>
+     * <ul>
+     *     <li>{@code isPaidWarranty = false}: Bảo hành miễn phí (trong thời hạn)</li>
+     *     <li>{@code isPaidWarranty = true}: Bảo hành tính phí (quá hạn nhưng vẫn được chấp nhận)</li>
+     * </ul>
+     * <p>
+     * <strong>Tại sao nullable = false với default = false:</strong> Đảm bảo luôn có giá trị,
+     * mặc định là bảo hành miễn phí trừ khi được set explicitly.
+     */
+    @Column(name = "is_paid_warranty", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private Boolean isPaidWarranty = false;
+
+    /**
+     * Phí bảo hành (chỉ áp dụng khi {@code isPaidWarranty = true}).
+     * <p>
+     * <strong>Tại sao dùng BigDecimal:</strong> Đảm bảo độ chính xác tuyệt đối cho số tiền
+     * (tránh lỗi làm tròn của float/double trong tính toán tài chính).
+     * <p>
+     * <strong>Business logic:</strong>
+     * <ul>
+     *     <li>Nếu {@code isPaidWarranty = false} → {@code warrantyFee = null hoặc 0}</li>
+     *     <li>Nếu {@code isPaidWarranty = true} → {@code warrantyFee > 0}</li>
+     * </ul>
+     * Phí có thể được tính dựa trên:
+     * - Thời gian quá hạn
+     * - Loại linh kiện
+     * - Chi phí sửa chữa ước tính
+     * - Chính sách giá của công ty
+     */
+    @Column(name = "warranty_fee", precision = 10, scale = 2)
+    private BigDecimal warrantyFee;
+
+    /**
+     * Ghi chú về việc tính phí bảo hành (lý do, cách tính phí, v.v.).
+     * <p>
+     * <strong>Mục đích:</strong> Minh bạch với khách hàng về việc tại sao phải trả phí
+     * và phí được tính như thế nào.
+     */
+    @Column(name = "paid_warranty_note", length = 500, columnDefinition = "nvarchar(500)")
+    private String paidWarrantyNote;
 }
