@@ -117,7 +117,7 @@ public class VehicleServiceImpl implements VehicleService {
         Customer customer = customerRepository.findById(UUID.fromString(requestDTO.getCustomerId()))
                 .orElseThrow(() -> new ResourceNotFoundException("Customer", "id", requestDTO.getCustomerId()));
 
-        Optional.ofNullable(vehicleRepository.findByVehicleVin(requestDTO.getVehicleVin())).ifPresent(v -> {
+        vehicleRepository.findByVehicleVin(requestDTO.getVehicleVin()).ifPresent(v -> {
             throw new DuplicateResourceException("Vehicle", "VIN", requestDTO.getVehicleVin());
         });
 
