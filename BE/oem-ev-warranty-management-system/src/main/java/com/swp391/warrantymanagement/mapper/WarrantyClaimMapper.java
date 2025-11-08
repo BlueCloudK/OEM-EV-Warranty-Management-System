@@ -28,6 +28,12 @@ public final class WarrantyClaimMapper {
         entity.setStatus(WarrantyClaimStatus.SUBMITTED); // Business rule: luôn bắt đầu với SUBMITTED
         entity.setClaimDate(LocalDateTime.now());
 
+        // Paid warranty fields
+        entity.setIsPaidWarranty(requestDTO.getIsPaidWarranty() != null ? requestDTO.getIsPaidWarranty() : false);
+        entity.setEstimatedRepairCost(requestDTO.getEstimatedRepairCost());
+        entity.setWarrantyFee(requestDTO.getWarrantyFee());
+        entity.setPaidWarrantyNote(requestDTO.getPaidWarrantyNote());
+
         return entity;
     }
 
@@ -78,6 +84,12 @@ public final class WarrantyClaimMapper {
             responseDTO.setAssignedToUsername(entity.getAssignedTo().getUsername());
             responseDTO.setAssignedToEmail(entity.getAssignedTo().getEmail());
         }
+
+        // Paid warranty fields
+        responseDTO.setIsPaidWarranty(entity.getIsPaidWarranty() != null ? entity.getIsPaidWarranty() : false);
+        responseDTO.setEstimatedRepairCost(entity.getEstimatedRepairCost());
+        responseDTO.setWarrantyFee(entity.getWarrantyFee());
+        responseDTO.setPaidWarrantyNote(entity.getPaidWarrantyNote());
 
         return responseDTO;
     }
