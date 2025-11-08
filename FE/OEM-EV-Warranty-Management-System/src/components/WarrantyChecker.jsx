@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import warrantyValidationApi from '../api/warrantyValidation';
 import { FaCheckCircle, FaTimesCircle, FaExclamationTriangle, FaCar, FaCog, FaCalendarAlt, FaTachometerAlt, FaMoneyBillWave } from 'react-icons/fa';
@@ -15,7 +15,7 @@ import { FaCheckCircle, FaTimesCircle, FaExclamationTriangle, FaCar, FaCog, FaCa
  * - Tính phí bảo hành tính phí (nếu hết hạn)
  * - Phân biệt Extended Warranty Parts vs Standard Parts
  */
-const WarrantyChecker = ({ vehicleId, installedPartId, onWarrantyChecked }) => {
+const WarrantyChecker = ({ vehicleId, installedPartId, onWarrantyChecked, autoCheck = false }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [warrantyInfo, setWarrantyInfo] = useState(null);
@@ -59,6 +59,14 @@ const WarrantyChecker = ({ vehicleId, installedPartId, onWarrantyChecked }) => {
       setLoading(false);
     }
   };
+
+  // Auto check warranty on mount if autoCheck is true
+  useEffect(() => {
+    if (autoCheck && (vehicleId || installedPartId)) {
+      handleCheckWarranty();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoCheck]); // Only run once when autoCheck changes
 
   // Tính phí bảo hành
   const handleCalculateFee = async () => {

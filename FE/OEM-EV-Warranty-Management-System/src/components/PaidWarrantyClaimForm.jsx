@@ -136,6 +136,7 @@ const PaidWarrantyClaimForm = ({ vehicleId, installedPartId, onSuccess, onCancel
             vehicleId={vehicleId}
             installedPartId={installedPartId}
             onWarrantyChecked={handleWarrantyChecked}
+            autoCheck={true}
           />
         </StepSection>
       )}
