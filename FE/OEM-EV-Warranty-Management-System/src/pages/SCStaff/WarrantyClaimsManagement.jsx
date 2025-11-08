@@ -124,7 +124,7 @@ const WarrantyClaimsManagement = () => {
   const navigate = useNavigate();
   const {
     claims, vehicles, parts, installedParts, loading, error, pagination, filterStatus, prefilledVehicle,
-    handleFilterChange, handleCreateOrUpdate, handlePageChange, fetchInstalledPartsForVehicle
+    handleFilterChange, handleCreateOrUpdate, handlePageChange, fetchInstalledPartsForVehicle, fetchClaims
   } = useWarrantyClaimsManagement();
 
   const [showVehicleSelection, setShowVehicleSelection] = useState(false);
@@ -153,12 +153,13 @@ const WarrantyClaimsManagement = () => {
     setShowWarrantyForm(true);
   };
 
-  const handleClaimSuccess = (response) => {
+  const handleClaimSuccess = async (response) => {
+    console.log('Claim created successfully:', response);
     setShowWarrantyForm(false);
     setSelectedVehicleId(null);
     setSelectedInstalledPartId(null);
     // Refresh claims list
-    window.location.reload();
+    await fetchClaims();
   };
 
   const handleClaimCancel = () => {
