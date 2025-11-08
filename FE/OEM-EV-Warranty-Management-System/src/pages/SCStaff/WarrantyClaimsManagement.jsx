@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useWarrantyClaimsManagement } from '../../hooks/useWarrantyClaimsManagement';
 import PaidWarrantyClaimForm from '../../components/PaidWarrantyClaimForm';
 import * as S from './WarrantyClaimsManagement.styles';
-import { FaClipboardList, FaPlus, FaEdit, FaSearch, FaArrowLeft, FaSpinner, FaEye } from 'react-icons/fa';
+import { FaClipboardList, FaPlus, FaEdit, FaSearch, FaArrowLeft, FaSpinner, FaEye, FaCheck, FaTrash } from 'react-icons/fa';
 import styled from 'styled-components';
 
 // Modal wrapper for the PaidWarrantyClaimForm
@@ -135,11 +135,21 @@ const VehicleSelectionModal = ({ isOpen, onClose, vehicles, installedParts, onSe
             disabled={!selectedVehicleId}
           >
             <option value="">Chọn linh kiện</option>
-            {installedParts.map(p => (
-              <option key={p.installedPartId} value={p.installedPartId}>
-                {p.partName} (Lắp đặt: {p.installationDate})
-              </option>
-            ))}
+            {installedParts.map(p => {
+              const installDate = new Date(p.installationDate).toLocaleDateString('vi-VN');
+              const expiryDate = new Date(p.warrantyExpirationDate).toLocaleDateString('vi-VN');
+              const today = new Date();
+              const expiry = new Date(p.warrantyExpirationDate);
+              const isExpired = today > expiry;
+              const daysRemaining = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
+
+              return (
+                <option key={p.installedPartId} value={p.installedPartId}>
+                  {p.partName} | Lắp: {installDate} | BH đến: {expiryDate} |
+                  {isExpired ? ` HẾT HẠN ${Math.abs(daysRemaining)} ngày` : ` Còn ${daysRemaining} ngày`}
+                </option>
+              );
+            })}
           </S.Select>
         </S.FormGroup>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px' }}>
@@ -226,6 +236,59 @@ const WarrantyClaimsManagement = () => {
     setSelectedClaim(null);
   };
 
+  const handleConfirmPayment = async (claimId) => {
+    if (!window.confirm('Xác nhận khách hàng đã thanh toán phí bảo hành tại quầy?')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`http://localhost:8080/api/warranty-claims/${claimId}/confirm-payment`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Không thể xác nhận thanh toán');
+      }
+
+      alert('Đã xác nhận thanh toán thành công!');
+      await fetchClaims(); // Refresh list
+    } catch (error) {
+      console.error('Error confirming payment:', error);
+      alert('Có lỗi xảy ra khi xác nhận thanh toán: ' + error.message);
+    }
+  };
+
+  const handleDeleteClaim = async (claimId) => {
+    if (!window.confirm('Bạn có chắc muốn xóa yêu cầu bảo hành này?')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`http://localhost:8080/api/warranty-claims/${claimId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Không thể xóa yêu cầu bảo hành');
+      }
+
+      alert('Đã xóa yêu cầu bảo hành thành công!');
+      await fetchClaims(); // Refresh list
+    } catch (error) {
+      console.error('Error deleting claim:', error);
+      alert('Có lỗi xảy ra khi xóa yêu cầu: ' + error.message);
+    }
+  };
+
   return (
     <S.PageContainer>
       <S.ContentWrapper>
@@ -296,9 +359,26 @@ const WarrantyClaimsManagement = () => {
                     <S.Td>{claim.status}</S.Td>
                     <S.Td>{new Date(claim.claimDate).toLocaleDateString()}</S.Td>
                     <S.Td>
-                      <S.Button $small onClick={() => handleViewClaim(claim)}>
-                        <FaEye /> Xem
-                      </S.Button>
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        <S.Button $small onClick={() => handleViewClaim(claim)}>
+                          <FaEye /> Xem
+                        </S.Button>
+                        {claim.status === 'PENDING_PAYMENT' && (
+                          <S.Button $small style={{ background: '#4caf50' }} onClick={() => handleConfirmPayment(claim.warrantyClaimId)}>
+                            <FaCheck /> Xác nhận TT
+                          </S.Button>
+                        )}
+                        {(claim.status === 'SUBMITTED' || claim.status === 'PENDING_PAYMENT') && (
+                          <>
+                            <S.Button $small style={{ background: '#2196f3' }} onClick={() => handleViewClaim(claim)}>
+                              <FaEdit /> Sửa
+                            </S.Button>
+                            <S.Button $small style={{ background: '#f44336' }} onClick={() => handleDeleteClaim(claim.warrantyClaimId)}>
+                              <FaTrash /> Xóa
+                            </S.Button>
+                          </>
+                        )}
+                      </div>
                     </S.Td>
                   </tr>
                 ))}
