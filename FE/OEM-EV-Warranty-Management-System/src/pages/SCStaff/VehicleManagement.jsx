@@ -398,21 +398,44 @@ const VehicleManagement = () => {
                               <S.Table>
                                 <thead>
                                   <tr>
-                                    <S.Th>ID Lắp đặt</S.Th>
-                                    <S.Th>ID Phụ tùng</S.Th>
+                                    <S.Th>ID</S.Th>
+                                    <S.Th>Tên phụ tùng</S.Th>
+                                    <S.Th>Mã phụ tùng</S.Th>
+                                    <S.Th>Nhà sản xuất</S.Th>
                                     <S.Th>Ngày lắp đặt</S.Th>
                                     <S.Th>Ngày hết hạn BH</S.Th>
+                                    <S.Th>Trạng thái BH</S.Th>
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  {installedParts.map(part => (
-                                    <tr key={part.installedPartId}>
-                                      <S.Td>{part.installedPartId}</S.Td>
-                                      <S.Td>{part.partId}</S.Td>
-                                      <S.Td>{part.installationDate}</S.Td>
-                                      <S.Td>{part.warrantyExpirationDate}</S.Td>
-                                    </tr>
-                                  ))}
+                                  {installedParts.map(part => {
+                                    const today = new Date();
+                                    const expiryDate = new Date(part.warrantyExpirationDate);
+                                    const isExpired = today > expiryDate;
+                                    const daysRemaining = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+
+                                    return (
+                                      <tr key={part.installedPartId}>
+                                        <S.Td>{part.installedPartId}</S.Td>
+                                        <S.Td style={{ fontWeight: 'bold' }}>{part.partName || 'N/A'}</S.Td>
+                                        <S.Td mono>{part.partNumber || 'N/A'}</S.Td>
+                                        <S.Td>{part.manufacturer || 'N/A'}</S.Td>
+                                        <S.Td>{new Date(part.installationDate).toLocaleDateString('vi-VN')}</S.Td>
+                                        <S.Td>{new Date(part.warrantyExpirationDate).toLocaleDateString('vi-VN')}</S.Td>
+                                        <S.Td>
+                                          {isExpired ? (
+                                            <span style={{ color: '#f44336', fontWeight: 'bold' }}>
+                                              HẾT HẠN {Math.abs(daysRemaining)} ngày
+                                            </span>
+                                          ) : (
+                                            <span style={{ color: '#4caf50', fontWeight: 'bold' }}>
+                                              Còn {daysRemaining} ngày
+                                            </span>
+                                          )}
+                                        </S.Td>
+                                      </tr>
+                                    );
+                                  })}
                                 </tbody>
                               </S.Table>
                             ) : (
