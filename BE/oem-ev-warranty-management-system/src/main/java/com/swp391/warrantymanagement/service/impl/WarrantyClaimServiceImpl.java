@@ -207,18 +207,55 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
     }
 
     /**
-     * Xóa warranty claim theo ID.
+     * Xóa warranty claim theo ID với role-based validation.
+     * <p>
+     * <strong>Quyền hạn:</strong>
+     * <ul>
+     * <li>ADMIN: Có thể xóa claim ở bất kỳ trạng thái nào</li>
+     * <li>SC_STAFF: Chỉ có thể xóa claim ở trạng thái SUBMITTED hoặc PENDING_PAYMENT</li>
+     * </ul>
      *
      * @param id claim ID cần xóa
      * @throws ResourceNotFoundException nếu claim không tồn tại
+     * @throws IllegalStateException nếu SC_STAFF cố gắng xóa claim không ở trạng thái SUBMITTED/PENDING_PAYMENT
      */
     @Override
     @Transactional
     public void deleteClaim(Long id) {
-        if (!warrantyClaimRepository.existsById(id)) {
-            throw new ResourceNotFoundException("WarrantyClaim", "id", id);
+        WarrantyClaim claim = warrantyClaimRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("WarrantyClaim", "id", id));
+
+        // Kiểm tra quyền xóa dựa trên role
+        Optional<String> currentUsername = SecurityUtil.getCurrentUsername();
+        if (currentUsername.isPresent()) {
+            User currentUser = userRepository.findByUsername(currentUsername.get())
+                .orElse(null);
+
+            if (currentUser != null) {
+                String roleName = currentUser.getRole().getRoleName();
+
+                // SC_STAFF chỉ có thể xóa claims ở trạng thái SUBMITTED hoặc PENDING_PAYMENT
+                if ("SC_STAFF".equals(roleName)) {
+                    if (claim.getStatus() != WarrantyClaimStatus.SUBMITTED &&
+                        claim.getStatus() != WarrantyClaimStatus.PENDING_PAYMENT) {
+                        throw new IllegalStateException(
+                            "SC_STAFF can only delete claims in SUBMITTED or PENDING_PAYMENT status. " +
+                            "Current status: " + claim.getStatus()
+                        );
+                    }
+                    logger.info("SC_STAFF {} deleting claim {} in status {}",
+                        currentUsername.get(), id, claim.getStatus());
+                }
+                // ADMIN có thể xóa bất kỳ claim nào
+                else if ("ADMIN".equals(roleName)) {
+                    logger.info("ADMIN {} deleting claim {} in status {}",
+                        currentUsername.get(), id, claim.getStatus());
+                }
+            }
         }
+
         warrantyClaimRepository.deleteById(id);
+        logger.info("Successfully deleted warranty claim {}", id);
     }
 
     /**
@@ -326,6 +363,33 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
         claim.setResolutionDate(LocalDateTime.now());
 
         WarrantyClaim savedClaim = warrantyClaimRepository.save(claim);
+        return WarrantyClaimMapper.toResponseDTO(savedClaim);
+    }
+
+    /**
+     * SC Staff hoặc Admin xác nhận khách hàng đã thanh toán phí bảo hành tại quầy.
+     * Chuyển status từ PENDING_PAYMENT sang PAYMENT_CONFIRMED.
+     *
+     * @param claimId claim ID cần xác nhận thanh toán
+     * @return WarrantyClaimResponseDTO chứa thông tin claim đã cập nhật
+     * @throws ResourceNotFoundException nếu claim không tồn tại
+     * @throws IllegalStateException nếu claim không ở status PENDING_PAYMENT
+     */
+    @Override
+    @Transactional
+    public WarrantyClaimResponseDTO confirmPayment(Long claimId) {
+        WarrantyClaim claim = warrantyClaimRepository.findById(claimId)
+            .orElseThrow(() -> new ResourceNotFoundException("WarrantyClaim", "id", claimId));
+
+        if (claim.getStatus() != WarrantyClaimStatus.PENDING_PAYMENT) {
+            throw new IllegalStateException("Claim must be in PENDING_PAYMENT status to confirm payment. Current status: " + claim.getStatus());
+        }
+
+        claim.setStatus(WarrantyClaimStatus.PAYMENT_CONFIRMED);
+
+        WarrantyClaim savedClaim = warrantyClaimRepository.save(claim);
+        logger.info("Payment confirmed for claim {} - status updated to PAYMENT_CONFIRMED", claimId);
+
         return WarrantyClaimMapper.toResponseDTO(savedClaim);
     }
 
