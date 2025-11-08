@@ -70,6 +70,37 @@ const PartFormModal = ({ isOpen, onClose, onSubmit, part }) => {
     if (errors[name]) setErrors(prev => ({...prev, [name]: null}));
   };
 
+  // Pre-fill warranty data when checkbox is checked
+  const handleExtendedWarrantyChange = (e) => {
+    const checked = e.target.checked;
+    setFormData(prev => {
+      if (checked && !prev.defaultWarrantyMonths) {
+        // Pre-fill với giá trị mẫu cho phụ tùng quan trọng
+        return {
+          ...prev,
+          hasExtendedWarranty: checked,
+          defaultWarrantyMonths: 96, // 8 năm - mặc định cho Battery
+          defaultWarrantyMileage: 192000, // 192,000 km
+          gracePeriodDays: 365, // 1 năm grace period
+          paidWarrantyFeePercentageMin: 0.20, // 20%
+          paidWarrantyFeePercentageMax: 0.50 // 50%
+        };
+      } else if (!checked) {
+        // Clear warranty data khi uncheck
+        return {
+          ...prev,
+          hasExtendedWarranty: false,
+          defaultWarrantyMonths: null,
+          defaultWarrantyMileage: null,
+          gracePeriodDays: null,
+          paidWarrantyFeePercentageMin: null,
+          paidWarrantyFeePercentageMax: null
+        };
+      }
+      return { ...prev, hasExtendedWarranty: checked };
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const validationErrors = validate();
@@ -154,7 +185,7 @@ const PartFormModal = ({ isOpen, onClose, onSubmit, part }) => {
                   id="hasExtendedWarranty"
                   name="hasExtendedWarranty"
                   checked={formData.hasExtendedWarranty || false}
-                  onChange={handleInputChange}
+                  onChange={handleExtendedWarrantyChange}
                   style={{ width: '18px', height: '18px', cursor: 'pointer' }}
                 />
                 <S.Label htmlFor="hasExtendedWarranty" style={{ margin: 0, cursor: 'pointer' }}>
@@ -162,7 +193,7 @@ const PartFormModal = ({ isOpen, onClose, onSubmit, part }) => {
                 </S.Label>
               </div>
               <small style={{ color: '#6b7280', fontSize: '13px', display: 'block', marginTop: '4px' }}>
-                ✓ Chọn cho phụ tùng quan trọng (Pin, Motor, Động cơ)<br />
+                ✓ Chọn cho phụ tùng quan trọng (Pin, Motor, Động cơ) → Tự động điền giá trị mẫu<br />
                 ✗ Không chọn cho phụ tùng thường (Đèn, Nội thất) → Dùng bảo hành xe
               </small>
             </S.FormGroup>
