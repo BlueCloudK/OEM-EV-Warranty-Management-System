@@ -123,11 +123,11 @@ const PaidWarrantyClaimForm = ({ vehicleId, installedPartId, onSuccess, onCancel
       <FormHeader>
         <h2>Tạo Yêu Cầu Bảo Hành</h2>
         <StepIndicator>
-          <Step active={step >= 1} completed={step > 1}>1. Kiểm Tra</Step>
+          <Step $active={step >= 1} $completed={step > 1}>1. Kiểm Tra</Step>
           <StepSeparator />
-          <Step active={step >= 2} completed={step > 2}>2. Thông Tin</Step>
+          <Step $active={step >= 2} $completed={step > 2}>2. Thông Tin</Step>
           <StepSeparator />
-          <Step active={step >= 3}>3. Xác Nhận</Step>
+          <Step $active={step >= 3}>3. Xác Nhận</Step>
         </StepIndicator>
       </FormHeader>
 
@@ -299,8 +299,8 @@ const StepIndicator = styled.div`
 const Step = styled.div`
   padding: 8px 16px;
   border-radius: 20px;
-  background: ${props => props.completed ? '#4caf50' : props.active ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.3)'};
-  color: ${props => props.active && !props.completed ? '#667eea' : 'white'};
+  background: ${props => props.$completed ? '#4caf50' : props.$active ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.3)'};
+  color: ${props => props.$active && !props.$completed ? '#667eea' : 'white'};
   font-weight: 600;
   font-size: 0.9rem;
   transition: all 0.3s;
