@@ -308,3 +308,117 @@ export const TextArea = styled.textarea`
     border-color: #14b8a6;
   }
 `;
+
+/* Daily Stats Card Styles */
+export const StatsCard = styled.div`
+  background: ${({ $limitReached, $nearLimit }) =>
+    $limitReached ? '#fef2f2' : $nearLimit ? '#fffbeb' : '#f0fdfa'};
+  border: 2px solid ${({ $limitReached, $nearLimit }) =>
+    $limitReached ? '#fca5a5' : $nearLimit ? '#fcd34d' : '#99f6e4'};
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+`;
+
+export const StatsHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+`;
+
+export const StatsTitle = styled.h3`
+  margin: 0;
+  color: #0f766e;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+export const LimitWarning = styled.div`
+  background: #fca5a5;
+  color: #991b1b;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+`;
+
+export const StatsContent = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+`;
+
+export const StatsNumbers = styled.div`
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+`;
+
+export const StatsBig = styled.div`
+  font-size: 48px;
+  font-weight: bold;
+  color: #0f766e;
+  line-height: 1;
+`;
+
+export const StatsLabel = styled.div`
+  font-size: 18px;
+  color: #6b7280;
+  font-weight: 500;
+`;
+
+export const StatsInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  color: #374151;
+
+  strong {
+    color: #0f766e;
+    font-weight: 600;
+  }
+`;
+
+export const ProgressBar = styled.div`
+  width: 100%;
+  height: 12px;
+  background: #e0f2f1;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 12px;
+`;
+
+export const ProgressFill = styled.div`
+  height: 100%;
+  width: ${({ $percentage }) => Math.min($percentage, 100)}%;
+  background: ${({ $limitReached, $nearLimit }) =>
+    $limitReached ? '#ef4444' : $nearLimit ? '#f59e0b' : '#14b8a6'};
+  transition: width 0.5s ease, background 0.3s ease;
+  border-radius: 6px;
+`;
+
+export const WarningMessage = styled.div`
+  background: ${({ $error }) => $error ? '#fee2e2' : '#fef3c7'};
+  color: ${({ $error }) => $error ? '#991b1b' : '#92400e'};
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  svg {
+    flex-shrink: 0;
+  }
+`;
