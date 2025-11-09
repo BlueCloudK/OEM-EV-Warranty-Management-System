@@ -78,6 +78,76 @@ public class Part {
     @Column(name = "price", nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
 
+    // ======= WARRANTY CONFIGURATION (OPTION 2: HIERARCHY WARRANTY) =======
+
+    /**
+     * Linh kiện có bảo hành mở rộng riêng hay không.
+     * <p>
+     * <strong>Hierarchy Warranty Logic:</strong>
+     * <ul>
+     *     <li>{@code true}: Linh kiện QUAN TRỌNG (VD: Battery, Motor) → Kiểm tra part warranty</li>
+     *     <li>{@code false}: Linh kiện THƯỜNG (VD: Đèn, nội thất) → Kiểm tra vehicle warranty</li>
+     * </ul>
+     */
+    @Column(name = "has_extended_warranty", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private Boolean hasExtendedWarranty = false;
+
+    /**
+     * Thời hạn bảo hành mặc định (tháng) cho linh kiện này.
+     * <p>
+     * <strong>Ví dụ:</strong>
+     * <ul>
+     *     <li>Battery: 96 tháng (8 năm)</li>
+     *     <li>Motor: 48 tháng (4 năm)</li>
+     *     <li>Display: 24 tháng (2 năm)</li>
+     * </ul>
+     * <strong>Chỉ áp dụng khi:</strong> {@code hasExtendedWarranty = true}
+     */
+    @Column(name = "default_warranty_months")
+    private Integer defaultWarrantyMonths;
+
+    /**
+     * Giới hạn km mặc định cho bảo hành linh kiện.
+     * <p>
+     * <strong>Ví dụ:</strong>
+     * <ul>
+     *     <li>Battery: 192,000 km</li>
+     *     <li>Motor: 80,000 km</li>
+     *     <li>Display: 50,000 km</li>
+     * </ul>
+     * <strong>Chỉ áp dụng khi:</strong> {@code hasExtendedWarranty = true}
+     */
+    @Column(name = "default_warranty_mileage")
+    private Integer defaultWarrantyMileage;
+
+    /**
+     * Grace period (ngày) sau khi hết hạn vẫn có thể bảo hành tính phí.
+     * <p>
+     * <strong>Business Logic:</strong>
+     * <ul>
+     *     <li>Linh kiện đắt (Battery) → Grace period dài (365 ngày)</li>
+     *     <li>Linh kiện rẻ (Display) → Grace period ngắn (90 ngày)</li>
+     * </ul>
+     */
+    @Column(name = "grace_period_days")
+    private Integer gracePeriodDays;
+
+    /**
+     * Phần trăm phí bảo hành tối thiểu (của chi phí sửa chữa).
+     * <p>
+     * <strong>Ví dụ:</strong> 0.20 = 20% (ngày đầu quá hạn)
+     */
+    @Column(name = "paid_warranty_fee_percentage_min", precision = 5, scale = 2)
+    private BigDecimal paidWarrantyFeePercentageMin;
+
+    /**
+     * Phần trăm phí bảo hành tối đa (của chi phí sửa chữa).
+     * <p>
+     * <strong>Ví dụ:</strong> 0.50 = 50% (ngày cuối grace period)
+     */
+    @Column(name = "paid_warranty_fee_percentage_max", precision = 5, scale = 2)
+    private BigDecimal paidWarrantyFeePercentageMax;
+
     // ======= RELATIONSHIPS =======
 
     /**

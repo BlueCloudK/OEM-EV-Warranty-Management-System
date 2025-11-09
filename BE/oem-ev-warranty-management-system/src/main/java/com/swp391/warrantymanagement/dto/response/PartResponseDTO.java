@@ -5,13 +5,22 @@ import java.math.BigDecimal;
 
 /**
  * PartResponseDTO - Returns part information to frontend
- * Contains only part details (NO vehicle information)
+ * Contains part details including warranty configuration
  */
 @Data
 public class PartResponseDTO {
+    // Basic information
     private Long partId;
     private String partName;
     private String partNumber;
     private String manufacturer;
     private BigDecimal price;
+
+    // Warranty configuration
+    private Boolean hasExtendedWarranty;
+    private Integer defaultWarrantyMonths;
+    private Integer defaultWarrantyMileage;
+    private Integer gracePeriodDays;
+    private BigDecimal paidWarrantyFeePercentageMin;
+    private BigDecimal paidWarrantyFeePercentageMax;
 }
