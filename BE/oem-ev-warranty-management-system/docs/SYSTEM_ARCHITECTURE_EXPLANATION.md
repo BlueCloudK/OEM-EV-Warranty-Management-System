@@ -76,10 +76,14 @@ SC_STAFF đăng nhập và tạo WarrantyClaim:
   - Chọn xe của khách hàng, ghi nhận mô tả lỗi
   - Kiểm tra sơ bộ và xác định linh kiện có thể bị lỗi
     ↓
-Hệ thống tự động kiểm tra điều kiện bảo hành
+Hệ thống tự động kiểm tra điều kiện bảo hành và daily limit
     ↓
 Nếu hợp lệ → Tạo WarrantyClaim với status = SUBMITTED
+  - Bảo hành miễn phí: isPaidWarranty = false
+  - Bảo hành có phí: isPaidWarranty = true, warrantyFee được tính tự động
 Nếu không → SC_STAFF thông báo lý do từ chối cho khách hàng
+    ↓
+Nếu đạt daily limit → Hệ thống gửi notification cho ADMIN và SC_STAFF
 ```
 
 ### 3️⃣ ADMIN DUYỆT CLAIM
@@ -126,15 +130,18 @@ ADMIN quyết định:
   → APPROVE: Chấp thuận yêu cầu triệu hồi.
   → REJECT: Từ chối, nhập lý do.
     ↓
-Nếu APPROVED, hệ thống xác định khách hàng bị ảnh hưởng, tạo RecallResponse (status=PENDING) và gửi thông báo
+Nếu APPROVED, hệ thống tự động:
+  - Tìm tất cả xe có part bị ảnh hưởng
+  - Tạo RecallResponse riêng cho mỗi customer (status=PENDING)
+  - Gửi thông báo email/SMS cho customers
     ↓
 CUSTOMER nhận thông báo, đăng nhập và phản hồi:
-  → ACCEPT: Đồng ý tham gia. Status `RecallResponse` đổi thành ACCEPTED.
-  → DECLINE: Từ chối. Status `RecallResponse` đổi thành DECLINED (lưu lại để miễn trừ trách nhiệm).
+  → CONFIRM ACCEPTED: Đồng ý tham gia. RecallResponse status → ACCEPTED.
+  → CONFIRM DECLINED: Từ chối. RecallResponse status → DECLINED (lưu lại để miễn trừ trách nhiệm).
     ↓
 Nếu ACCEPTED, khách hàng được hướng dẫn đến trung tâm bảo hành.
     ↓
-SC_STAFF tạo WarrantyClaim mới liên kết với RecallRequest.
+SC_STAFF tạo WarrantyClaim mới, liên kết với RecallResponse.
     ↓
 Quy trình sửa chữa tiếp diễn như bước 4️⃣ và 5️⃣.
 ```
@@ -196,10 +203,11 @@ Quy trình sửa chữa tiếp diễn như bước 4️⃣ và 5️⃣.
 - **InstalledPart**: Linh kiện CỤ THỂ được lắp vào xe CỤ THỂ (installation date, warranty expiration)
 
 ### 3. Warranty Process
-- **WarrantyClaim**: Yêu cầu bảo hành (status, description, resolution)
+- **WarrantyClaim**: Yêu cầu bảo hành (status, description, resolution, isPaidWarranty, warrantyFee, warrantyStatus)
 - **WorkLog**: Nhật ký công việc của technician (start time, end time, work done)
 - **PartRequest**: Yêu cầu linh kiện từ technician đến EVM (status, tracking)
-- **RecallRequest**: Thông báo triệu hồi từ EVM đến customer
+- **RecallRequest**: Yêu cầu triệu hồi từ EVM (part defect notification)
+- **RecallResponse**: Phản hồi của customer đối với recall request (PENDING, ACCEPTED, DECLINED)
 
 ### 4. Service & Feedback
 - **ServiceCenter**: Trung tâm bảo hành (address, GPS coordinates, opening hours)
@@ -268,19 +276,23 @@ WarrantyClaim ────→ WorkLog (Technician ghi nhật ký)
 ## 📊 CÁC BUSINESS METRIC QUAN TRỌNG
 
 ### 1. Warranty Metrics
-- **Claim Success Rate** = (RESOLVED claims / Total claims) × 100%
+- **Claim Success Rate** = (COMPLETED claims / Total claims) × 100%
 - **Average Resolution Time** = AVG(resolutionDate - claimDate)
 - **SLA Compliance** = (Claims resolved within 24h / Total claims) × 100%
+- **Daily Claims Count** = Claims created on specific date (with daily limit monitoring)
+- **Paid vs Free Warranty Ratio** = (Paid claims / Total claims) × 100%
 
 ### 2. Quality Metrics
 - **CSAT Score** = (Feedbacks ≥ 4 stars / Total feedbacks) × 100%
 - **Part Failure Rate** = (Claims for Part X / Total Part X installed) × 100%
 - **Repeat Claim Rate** = (Vehicles with >1 claim / Total vehicles) × 100%
+- **Recall Response Rate** = (RecallResponse ACCEPTED / Total RecallResponse) × 100%
 
 ### 3. Efficiency Metrics
 - **Technician Productivity** = Total claims resolved / Total working hours
-- **Part Request Approval Time** = AVG(approvedDate - requestDate)
+- **Part Request Approval Time** = AVG(approvalDate - requestDate)
 - **Service Center Workload** = Active claims / Available technicians
+- **Average Warranty Fee** = AVG(warrantyFee) for paid warranties
 
 ---
 
