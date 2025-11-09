@@ -535,49 +535,71 @@ Response (200 OK):
 [
   {
     "recallRequestId": 4001,
-    "installedPartId": 501,
-    "partName": "Battery Pack",
-    "partNumber": "BP-001-LR",
-    "vehicleId": 101,
-    "vehicleName": "Tesla Model 3",
-    "reason": "Potential fire hazard due to manufacturing defect in batch XYZ",
+    "affectedPartNumber": "BP-001-LR",
+    "description": "Potential fire hazard due to manufacturing defect in batch XYZ",
     "status": "APPROVED",
-    "customerResponse": null,
-    "customerResponseDate": null,
-    "createdAt": "2024-04-01T08:00:00",
-    "createdBy": "evm_staff_alice"
+    "requestDate": "2024-04-01T08:00:00",
+    "approvedDate": "2024-04-01T14:00:00",
+    "rejectedDate": null
   }
 ]
 ```
 
-2. Customer sees unconfirmed recalls highlighted
-3. Customer clicks "Respond" on a recall
-4. Frontend displays recall details with confirmation options
-5. Customer selects response: ACCEPTED or REJECTED
-6. Customer enters optional notes
+2. Get recall responses for this customer:
+
+```
+GET /api/recall-responses/my-responses
+Authorization: Bearer <accessToken>
+
+Response (200 OK):
+[
+  {
+    "recallResponseId": 5001,
+    "recallRequestId": 4001,
+    "vehicleId": 101,
+    "vehicleName": "Tesla Model 3",
+    "vehicleVin": "5YJ3E1EA5KF123456",
+    "customerId": "550e8400-e29b-41d4-a716-446655440000",
+    "customerName": "John Doe",
+    "status": "PENDING",
+    "responseDate": null,
+    "confirmedDate": null,
+    "recallRequest": {
+      "affectedPartNumber": "BP-001-LR",
+      "description": "Potential fire hazard..."
+    }
+  }
+]
+```
+
+3. Customer sees unconfirmed recalls highlighted
+4. Customer clicks "Respond" on a recall
+5. Frontend displays recall details with confirmation options
+6. Customer selects response: ACCEPTED or DECLINED
 7. Customer clicks "Submit Response"
 
 **API Calls:**
 ```
-PATCH /api/recall-requests/4001/customer-confirm
+PATCH /api/recall-responses/5001/confirm
 Authorization: Bearer <accessToken>
 Request Body:
 {
-  "response": "ACCEPTED",
-  "notes": "I will bring my vehicle next week"
+  "status": "ACCEPTED"
 }
 
 Response (200 OK):
 {
+  "recallResponseId": 5001,
   "recallRequestId": 4001,
-  "installedPartId": 501,
-  ...
-  "customerResponse": "ACCEPTED",
-  "customerResponseDate": "2024-04-02T10:00:00"
+  "vehicleId": 101,
+  "status": "ACCEPTED",
+  "responseDate": "2024-04-01T08:00:00",
+  "confirmedDate": "2024-04-02T10:00:00"
 }
 ```
 
-8. Frontend updates recall status and displays confirmation message
+8. Frontend updates recall response status and displays confirmation message
+9. If ACCEPTED, customer receives instructions to visit service center
 
 ---
 
@@ -958,14 +980,19 @@ Response (200 OK):
     {
       "warrantyClaimId": 1002,
       "claimDate": "2024-04-05T09:30:00",
-      "status": "PENDING_ADMIN_APPROVAL",
+      "status": "SUBMITTED",
+      "warrantyStatus": "VALID",
+      "isPaidWarranty": false,
       "description": "Customer reports battery degradation",
       ...
     },
     {
       "warrantyClaimId": 1003,
       "claimDate": "2024-04-05T14:00:00",
-      "status": "ADMIN_APPROVED",
+      "status": "PROCESSING",
+      "warrantyStatus": "EXPIRED_DATE",
+      "isPaidWarranty": true,
+      "warrantyFee": 700000,
       ...
     }
   ],
@@ -980,12 +1007,55 @@ Response (200 OK):
 
 2. Frontend displays claims in sortable table
 3. Frontend highlights claims by status:
-   - PENDING_ADMIN_APPROVAL: Yellow
-   - ADMIN_APPROVED: Blue (ready for technician)
-   - IN_PROGRESS: Orange
+   - SUBMITTED: Yellow (new claim)
+   - PENDING_PAYMENT: Orange (awaiting payment)
+   - PAYMENT_CONFIRMED: Blue (payment done)
+   - MANAGER_REVIEW: Purple (under review)
+   - PROCESSING: Cyan (in progress)
    - COMPLETED: Green
+   - REJECTED: Red
 
 4. Staff can filter by status, date range, vehicle, or customer
+
+---
+
+### 6. View Daily Claims Statistics
+**Actor:** SC_STAFF, ADMIN
+
+**Steps:**
+1. Staff navigates to "Daily Statistics" dashboard
+
+**API Calls:**
+```
+GET /api/warranty-claims/{claimId}/daily-stats
+Authorization: Bearer <accessToken>
+
+Response (200 OK):
+{
+  "date": "2025-11-09",
+  "totalClaims": 12,
+  "limitThreshold": 10,
+  "isLimitReached": true,
+  "breakdownByStatus": {
+    "SUBMITTED": 5,
+    "PENDING_PAYMENT": 2,
+    "PAYMENT_CONFIRMED": 1,
+    "MANAGER_REVIEW": 1,
+    "PROCESSING": 2,
+    "COMPLETED": 1
+  },
+  "breakdownByWarrantyType": {
+    "FREE": 8,
+    "PAID": 4
+  }
+}
+```
+
+2. Frontend displays statistics with charts:
+   - Pie chart: Claims by status
+   - Bar chart: Free vs Paid warranties
+   - Alert banner if daily limit is reached
+3. If limit reached, ADMIN receives notification to investigate
 
 ---
 
@@ -2068,24 +2138,35 @@ ADMIN_APPROVED
 
 **Step 1: Claim Creation (SC_STAFF)**
 - Customer visits service center with vehicle issue
+- SC_STAFF validates warranty status (free vs paid)
 - SC_STAFF creates warranty claim
-- API: `POST /api/warranty-claims/sc-create`
-- Initial Status: `PENDING_ADMIN_APPROVAL`
+- API: `POST /api/warranty-claims`
+  - For free warranty: `isPaidWarranty = false`
+  - For paid warranty: `isPaidWarranty = true`, include `warrantyFee` and `estimatedRepairCost`
+- Initial Status: `SUBMITTED` (free) or `PENDING_PAYMENT` (paid)
+- System checks daily claim limit and sends notification if threshold reached
 
-**Step 2: Admin Review (ADMIN)**
-- Admin receives notification of new claim
+**Step 1.5: Payment Confirmation (For Paid Warranty Only)**
+- If `isPaidWarranty = true`:
+  - Customer makes payment
+  - SC_STAFF confirms payment
+  - API: `PATCH /api/warranty-claims/{id}/status` with status `PAYMENT_CONFIRMED`
+  - Status changes to: `PAYMENT_CONFIRMED`
+
+**Step 2: Manager/Admin Review**
+- Admin/Manager receives notification of new claim (status: SUBMITTED or PAYMENT_CONFIRMED)
 - Admin reviews claim details, verifies warranty validity
 - Admin decides: Approve or Reject
 
 **Step 2a: If Approved**
-- API: `PATCH /api/warranty-claims/{id}/admin-accept`
-- Status changes to: `ADMIN_APPROVED`
+- API: `PATCH /api/warranty-claims/{id}/status` with status `MANAGER_REVIEW` → `PROCESSING`
+- Status changes to: `MANAGER_REVIEW` then `PROCESSING` after technician assignment
 - Service center notified
 - Claim enters technician queue
 
 **Step 2b: If Rejected**
-- API: `PATCH /api/warranty-claims/{id}/admin-reject`
-- Status changes to: `ADMIN_REJECTED`
+- API: `PATCH /api/warranty-claims/{id}/status` with status `REJECTED`
+- Status changes to: `REJECTED`
 - Customer and service center notified with reason
 - **Workflow ends**
 
