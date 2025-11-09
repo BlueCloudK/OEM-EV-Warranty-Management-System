@@ -1,7 +1,10 @@
 package com.swp391.warrantymanagement.dto.response;
 
 import com.swp391.warrantymanagement.enums.WarrantyClaimStatus;
+import com.swp391.warrantymanagement.enums.WarrantyStatus;
 import lombok.Data;
+
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /** Response DTO: Dữ liệu trả về FE cho WarrantyClaim - đầy đủ thông tin */
@@ -42,4 +45,25 @@ public class WarrantyClaimResponseDTO {
     private String comments; // Comments khi approve/reject
     private String updatedBy; // Staff đã cập nhật status
     private LocalDateTime lastUpdated; // Thời gian update cuối
+
+    // Paid warranty information - thông tin bảo hành tính phí
+    /**
+     * Trạng thái bảo hành khi tạo claim (VALID, EXPIRED_DATE, etc.)
+     */
+    private WarrantyStatus warrantyStatus;
+
+    /**
+     * Có phải bảo hành tính phí không
+     */
+    private Boolean isPaidWarranty;
+
+    /**
+     * Phí bảo hành (nếu là bảo hành tính phí)
+     */
+    private BigDecimal warrantyFee;
+
+    /**
+     * Ghi chú về phí bảo hành
+     */
+    private String paidWarrantyNote;
 }

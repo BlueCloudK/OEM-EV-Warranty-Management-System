@@ -27,6 +27,15 @@ public final class InstalledPartMapper {
         entity.setPart(part);
         entity.setVehicle(vehicle);
 
+        // Set mileage at installation (for warranty tracking)
+        entity.setMileageAtInstallation(requestDTO.getMileageAtInstallation());
+
+        // Auto-fill warranty configuration from Part (if part has extended warranty)
+        if (part != null && part.getHasExtendedWarranty() != null && part.getHasExtendedWarranty()) {
+            entity.setWarrantyPeriodMonths(part.getDefaultWarrantyMonths());
+            entity.setWarrantyMileageLimit(part.getDefaultWarrantyMileage());
+        }
+
         return entity;
     }
 
@@ -40,6 +49,15 @@ public final class InstalledPartMapper {
         entity.setWarrantyExpirationDate(requestDTO.getWarrantyExpirationDate());
         entity.setPart(part);
         entity.setVehicle(vehicle);
+
+        // Update mileage at installation
+        entity.setMileageAtInstallation(requestDTO.getMileageAtInstallation());
+
+        // Update warranty configuration from Part (if part has extended warranty)
+        if (part != null && part.getHasExtendedWarranty() != null && part.getHasExtendedWarranty()) {
+            entity.setWarrantyPeriodMonths(part.getDefaultWarrantyMonths());
+            entity.setWarrantyMileageLimit(part.getDefaultWarrantyMileage());
+        }
     }
 
     // Entity -> Response DTO (for API response)

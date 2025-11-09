@@ -116,5 +116,6 @@ export const useWarrantyClaimsManagement = () => {
     handleCreateOrUpdate,
     handlePageChange,
     fetchInstalledPartsForVehicle, // Expose this function
+    fetchClaims, // Expose fetchClaims for manual refresh
   };
 };
