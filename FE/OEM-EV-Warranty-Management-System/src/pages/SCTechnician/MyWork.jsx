@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { dataApi } from '../../api/dataApi';
 import * as S from './MyWork.styles';
-import { FaClipboardCheck, FaSpinner, FaClock, FaCheckCircle, FaTasks, FaExclamationCircle, FaChartLine, FaCalendarDay, FaEye, FaPlay, FaFilter } from 'react-icons/fa';
+import { FaClipboardCheck, FaSpinner, FaClock, FaCheckCircle, FaTasks, FaExclamationCircle, FaChartLine, FaCalendarDay, FaEye, FaPlay, FaFilter, FaExclamationTriangle } from 'react-icons/fa';
 
 const ClaimDetailModal = ({ isOpen, onClose, claim, onStartProcessing, onComplete }) => {
   const [completionNote, setCompletionNote] = useState('');
@@ -156,6 +156,24 @@ const MyWork = () => {
   const [pagination, setPagination] = useState({ currentPage: 0, pageSize: 10, totalPages: 0, totalElements: 0 });
   const [selectedClaim, setSelectedClaim] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [dailyStats, setDailyStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  const fetchDailyStats = useCallback(async () => {
+    try {
+      setStatsLoading(true);
+      console.log("Fetching daily stats...");
+      const stats = await dataApi.getMyDailyStats();
+      console.log("Daily stats received:", stats);
+      setDailyStats(stats);
+    } catch (err) {
+      console.error("Error fetching daily stats:", err);
+      console.error("Error details:", err.response?.data);
+      setDailyStats(null);
+    } finally {
+      setStatsLoading(false);
+    }
+  }, []);
 
   const fetchData = useCallback(async () => {
     try {
@@ -216,6 +234,10 @@ const MyWork = () => {
   }, [pagination.currentPage, pagination.pageSize, filterStatus]);
 
   useEffect(() => {
+    fetchDailyStats();
+  }, [fetchDailyStats]);
+
+  useEffect(() => {
     fetchData();
   }, [fetchData]);
 
@@ -228,6 +250,7 @@ const MyWork = () => {
     try {
       await dataApi.techStartClaim(claimId, note);
       await fetchData();
+      await fetchDailyStats(); // Refresh daily stats
       return { success: true };
     } catch (err) {
       alert(`Lỗi: ${err.response?.data?.message || err.message}`);
@@ -340,6 +363,57 @@ const MyWork = () => {
             </S.PerformanceContent>
           </S.PerformanceCard>
         </S.PerformanceGrid>
+
+        {/* Daily Claim Limit Stats */}
+        {statsLoading ? (
+          <S.DailyLimitCard>
+            <S.DailyLimitHeader>
+              <S.DailyLimitTitle>
+                <FaSpinner style={{ animation: 'spin 1s linear infinite' }} /> Đang tải giới hạn hôm nay...
+              </S.DailyLimitTitle>
+            </S.DailyLimitHeader>
+          </S.DailyLimitCard>
+        ) : dailyStats ? (
+          <S.DailyLimitCard $nearLimit={dailyStats.usagePercentage >= 80} $limitReached={dailyStats.limitReached}>
+            <S.DailyLimitHeader>
+              <S.DailyLimitTitle>
+                <FaChartLine /> Giới hạn xử lý claim hôm nay
+              </S.DailyLimitTitle>
+              {dailyStats.limitReached && (
+                <S.LimitBadge $error>
+                  <FaExclamationTriangle /> Đã đạt giới hạn
+                </S.LimitBadge>
+              )}
+            </S.DailyLimitHeader>
+            <S.DailyLimitContent>
+              <S.DailyLimitNumbers>
+                <S.DailyLimitBig>{dailyStats.claimsStartedToday}</S.DailyLimitBig>
+                <S.DailyLimitLabel>/ {dailyStats.dailyLimit} yêu cầu</S.DailyLimitLabel>
+              </S.DailyLimitNumbers>
+              <S.DailyLimitInfo>
+                <div>Còn lại: <strong>{dailyStats.remainingClaims}</strong> yêu cầu</div>
+                <div>Đã sử dụng: <strong>{dailyStats.usagePercentage.toFixed(1)}%</strong></div>
+              </S.DailyLimitInfo>
+            </S.DailyLimitContent>
+            <S.DailyProgressBar>
+              <S.DailyProgressFill
+                $percentage={dailyStats.usagePercentage}
+                $nearLimit={dailyStats.usagePercentage >= 80}
+                $limitReached={dailyStats.limitReached}
+              />
+            </S.DailyProgressBar>
+            {dailyStats.usagePercentage >= 80 && !dailyStats.limitReached && (
+              <S.DailyWarningMessage>
+                <FaExclamationTriangle /> Bạn đang gần đạt giới hạn xử lý claim trong ngày!
+              </S.DailyWarningMessage>
+            )}
+            {dailyStats.limitReached && (
+              <S.DailyWarningMessage $error>
+                <FaExclamationTriangle /> Bạn đã đạt giới hạn {dailyStats.dailyLimit} yêu cầu trong ngày. Vui lòng thử lại vào ngày mai.
+              </S.DailyWarningMessage>
+            )}
+          </S.DailyLimitCard>
+        ) : null}
 
         <S.Section>
           <S.SectionHeader>
