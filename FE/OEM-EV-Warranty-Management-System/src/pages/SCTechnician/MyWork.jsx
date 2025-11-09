@@ -168,7 +168,13 @@ const MyWork = () => {
       setDailyStats(stats);
     } catch (err) {
       console.error("Error fetching daily stats:", err);
+      console.error("Error status:", err.response?.status);
       console.error("Error details:", err.response?.data);
+
+      // Don't show daily stats card if user doesn't have permission or service center
+      if (err.response?.status === 403) {
+        console.warn("⚠️ Cannot fetch daily stats - User may not have SC_TECHNICIAN role or service center");
+      }
       setDailyStats(null);
     } finally {
       setStatsLoading(false);

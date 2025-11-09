@@ -216,7 +216,7 @@ public class WorkLogController {
      * @return {@link ResponseEntity} chứa {@link DailyClaimStatsResponseDTO} với thông tin thống kê.
      */
     @GetMapping("/my-daily-stats")
-    @PreAuthorize("hasAnyRole('SC_TECHNICIAN', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('SC_TECHNICIAN', 'SC_STAFF', 'ADMIN')")
     public ResponseEntity<DailyClaimStatsResponseDTO> getMyDailyStats() {
         String username = SecurityUtil.getCurrentUsername()
                 .orElseThrow(() -> new AuthenticationRequiredException("Authentication required"));
