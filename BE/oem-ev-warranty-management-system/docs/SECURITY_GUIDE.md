@@ -146,9 +146,13 @@ Hệ thống sử dụng 2 lớp bảo vệ:
 | **Customers** | ✅ (CRUD) | ✅ (Read) | ✅ (CRUD) | ❌ | ✅ (Profile) |
 | **Vehicles** | ✅ (CRUD) | ✅ (CRUD) | ✅ (CRUD) | ✅ (Read) | ✅ (Read Own) |
 | **Parts** | ✅ (CRUD) | ✅ (CRUD) | ✅ (Read) | ✅ (Read) | ✅ (Read) |
-| **Warranty Claims** | ✅ (CRUD) | ✅ (Read) | ✅ (CRUD) | ✅ (Process) | ✅ (Read Own) |
+| **Warranty Claims** | ✅ (CRUD + Daily Stats) | ✅ (Read All) | ✅ (CRUD + Daily Stats) | ✅ (Process + Read) | ✅ (Read Own) |
+| **Installed Parts** | ✅ (CRUD) | ✅ (Read) | ✅ (CRUD) | ✅ (Read) | ❌ |
+| **Work Logs** | ✅ (CRUD) | ✅ (Read) | ✅ (Read) | ✅ (CRUD) | ❌ |
 | **Part Requests** | ✅ (CRUD) | ✅ (Approve) | ✅ (Read) | ✅ (Create) | ❌ |
-| **Service Centers** | ✅ (CRUD) | ✅ (Read) | ✅ (Read) | ✅ (Read) | ✅ (Read) |
+| **Recall Requests** | ✅ (Approve/Reject) | ✅ (Create) | ✅ (Read) | ❌ | ✅ (Read Own) |
+| **Recall Responses** | ✅ (Read All) | ✅ (Read) | ✅ (Read) | ❌ | ✅ (Confirm Own) |
+| **Service Centers** | ✅ (CRUD) | ✅ (Read) | ✅ (Read) | ✅ (Read) | ✅ (Read - Public) |
 | **Feedbacks** | ✅ (CRUD) | ✅ (Read) | ✅ (Read) | ✅ (Read) | ✅ (CRUD Own) |
 
 > **Lưu ý quan trọng:** Bảng trên chỉ là tóm tắt. Để xem chi tiết quyền truy cập của từng endpoint (GET, POST, PUT, DELETE), hãy tham khảo **Swagger UI**.
