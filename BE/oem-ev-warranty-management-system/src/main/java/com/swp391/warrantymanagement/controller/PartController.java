@@ -56,7 +56,7 @@ public class PartController {
      * @return {@link ResponseEntity} chứa một {@link PagedResponse} các linh kiện.
      */
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN')")
     public ResponseEntity<PagedResponse<PartResponseDTO>> getAllParts(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
