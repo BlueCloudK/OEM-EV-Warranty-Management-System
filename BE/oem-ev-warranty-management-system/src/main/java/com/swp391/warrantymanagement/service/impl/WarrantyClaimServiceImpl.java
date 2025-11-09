@@ -596,21 +596,17 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
 
         WarrantyClaim savedClaim = warrantyClaimRepository.save(claim);
 
+        // Create work log using already obtained currentUser
         try {
-            SecurityUtil.getCurrentUsername().ifPresent(username -> {
-                User currentUser = userRepository.findByUsername(username)
-                        .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+            WorkLog workLog = new WorkLog();
+            workLog.setStartTime(LocalDateTime.now());
+            workLog.setEndTime(null);
+            workLog.setDescription(note != null && !note.trim().isEmpty() ? note : "Technician started processing claim");
+            workLog.setWarrantyClaim(savedClaim);
+            workLog.setUser(currentUser);
 
-                WorkLog workLog = new WorkLog();
-                workLog.setStartTime(LocalDateTime.now());
-                workLog.setEndTime(null);
-                workLog.setDescription(note != null && !note.trim().isEmpty() ? note : "Technician started processing claim");
-                workLog.setWarrantyClaim(savedClaim);
-                workLog.setUser(currentUser);
-
-                workLogRepository.save(workLog);
-                logger.info("Work log created for claim {} by user {} (ID: {})", claimId, username, currentUser.getUserId());
-            });
+            workLogRepository.save(workLog);
+            logger.info("Work log created for claim {} by user {} (ID: {})", claimId, username, currentUser.getUserId());
         } catch (Exception e) {
             logger.error("Failed to create work log for claim {}: {}", claimId, e.getMessage());
         }
