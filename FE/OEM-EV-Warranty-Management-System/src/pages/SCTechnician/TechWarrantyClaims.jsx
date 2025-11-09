@@ -151,10 +151,13 @@ const TechWarrantyClaims = () => {
   const fetchDailyStats = useCallback(async () => {
     try {
       setStatsLoading(true);
+      console.log("Fetching daily stats...");
       const stats = await dataApi.getMyDailyStats();
+      console.log("Daily stats received:", stats);
       setDailyStats(stats);
     } catch (err) {
       console.error("Error fetching daily stats:", err);
+      console.error("Error details:", err.response?.data);
       // Don't show error if stats fail, just hide the card
       setDailyStats(null);
     } finally {
@@ -276,7 +279,15 @@ const TechWarrantyClaims = () => {
           </S.HeaderTop>
 
           {/* Daily Stats Card */}
-          {!statsLoading && dailyStats && (
+          {statsLoading ? (
+            <S.StatsCard>
+              <S.StatsHeader>
+                <S.StatsTitle>
+                  <FaSpinner style={{ animation: 'spin 1s linear infinite' }} /> Đang tải thống kê...
+                </S.StatsTitle>
+              </S.StatsHeader>
+            </S.StatsCard>
+          ) : dailyStats ? (
             <S.StatsCard $nearLimit={dailyStats.usagePercentage >= 80} $limitReached={dailyStats.limitReached}>
               <S.StatsHeader>
                 <S.StatsTitle>
@@ -316,7 +327,7 @@ const TechWarrantyClaims = () => {
                 </S.WarningMessage>
               )}
             </S.StatsCard>
-          )}
+          ) : null}
 
           <S.FilterContainer>
             <FaFilter />
