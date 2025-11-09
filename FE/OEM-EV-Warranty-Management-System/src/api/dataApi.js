@@ -79,6 +79,7 @@ export const dataApi = {
   createWorkLog: (data) => apiClient('/api/work-logs', { method: 'POST', body: JSON.stringify(data) }),
   updateWorkLog: (id, data) => apiClient(`/api/work-logs/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteWorkLog: (id) => apiClient(`/api/work-logs/${id}`, { method: 'DELETE' }),
+  getMyDailyStats: () => apiClient('/api/work-logs/my-daily-stats'),
 
   // Part Requests (Assumed endpoints based on UI needs)
   getAllPartRequests: (params = {}) => apiClient(`/api/part-requests?${new URLSearchParams(params)}`),

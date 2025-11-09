@@ -2,6 +2,7 @@ package com.swp391.warrantymanagement.controller;
 
 import com.swp391.warrantymanagement.dto.request.WorkLogRequestDTO;
 import com.swp391.warrantymanagement.dto.response.WorkLogResponseDTO;
+import com.swp391.warrantymanagement.dto.response.DailyClaimStatsResponseDTO;
 import com.swp391.warrantymanagement.exception.AuthenticationRequiredException;
 import com.swp391.warrantymanagement.util.SecurityUtil;
 import com.swp391.warrantymanagement.dto.response.PagedResponse;
@@ -206,5 +207,22 @@ public class WorkLogController {
         logger.info("Get my work logs request for user {}: page={}, size={}", username, page, size);
         PagedResponse<WorkLogResponseDTO> workLogsPage = workLogService.getWorkLogsByUsername(username, PageRequest.of(page, size));
         return ResponseEntity.ok(workLogsPage);
+    }
+
+    /**
+     * Lấy thống kê số claim đã xử lý trong ngày của technician hiện tại.
+     * Endpoint này giúp technician biết họ đã xử lý bao nhiêu claim trong ngày và còn lại bao nhiêu.
+     *
+     * @return {@link ResponseEntity} chứa {@link DailyClaimStatsResponseDTO} với thông tin thống kê.
+     */
+    @GetMapping("/my-daily-stats")
+    @PreAuthorize("hasAnyRole('SC_TECHNICIAN', 'ADMIN')")
+    public ResponseEntity<DailyClaimStatsResponseDTO> getMyDailyStats() {
+        String username = SecurityUtil.getCurrentUsername()
+                .orElseThrow(() -> new AuthenticationRequiredException("Authentication required"));
+        logger.info("Get daily stats for user: {}", username);
+        DailyClaimStatsResponseDTO stats = workLogService.getMyDailyStats(username);
+        logger.info("Daily stats retrieved for user {}: {}/{} claims", username, stats.getClaimsStartedToday(), stats.getDailyLimit());
+        return ResponseEntity.ok(stats);
     }
 }
