@@ -283,7 +283,8 @@ const VehicleManagement = () => {
   const navigate = useNavigate();
   const {
     vehicles, customers, parts, installedParts, loading, error, searchTerm, setSearchTerm,
-    searchType, setSearchType, handleSearch, handleCreateOrUpdate, handleDelete, handleInstallPart, fetchInstalledPartsForVehicle, clearInstalledParts
+    searchType, setSearchType, handleSearch, handleCreateOrUpdate, handleDelete, handleInstallPart, fetchInstalledPartsForVehicle, clearInstalledParts,
+    pagination, handlePageChange
   } = useVehicleManagement();
 
   const [showForm, setShowForm] = useState(false);
@@ -449,8 +450,33 @@ const VehicleManagement = () => {
                 ))}
               </tbody>
             </S.Table>
-            {/* Pagination controls can be added here */}
           </S.TableContainer>
+        )}
+
+        {/* Pagination Controls */}
+        {!loading && !error && vehicles.length > 0 && pagination.totalPages > 0 && (
+          <S.PaginationContainer>
+            <S.Button
+              small
+              onClick={() => handlePageChange(pagination.currentPage - 1)}
+              disabled={pagination.currentPage === 0}
+            >
+              Trước
+            </S.Button>
+            <span style={{ margin: '0 15px', fontWeight: 'bold' }}>
+              Trang {pagination.currentPage + 1} / {pagination.totalPages}
+              <span style={{ marginLeft: '10px', color: '#666', fontSize: '0.9em' }}>
+                (Tổng: {pagination.totalElements} xe)
+              </span>
+            </span>
+            <S.Button
+              small
+              onClick={() => handlePageChange(pagination.currentPage + 1)}
+              disabled={pagination.currentPage >= pagination.totalPages - 1}
+            >
+              Tiếp
+            </S.Button>
+          </S.PaginationContainer>
         )}
 
         <VehicleFormModal 

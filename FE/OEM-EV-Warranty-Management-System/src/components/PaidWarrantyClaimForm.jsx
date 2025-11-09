@@ -115,14 +115,25 @@ const PaidWarrantyClaimForm = ({ vehicleId, installedPartId, onSuccess, onCancel
     return true;
   };
 
-  // Submit claim
-  const handleSubmit = async (e) => {
+  // Handle next to confirmation step
+  const handleNextToConfirmation = (e) => {
     e.preventDefault();
 
     if (!validateForm()) {
       return;
     }
 
+    setError(null);
+    setStep(3);
+  };
+
+  // Handle back from confirmation
+  const handleBackFromConfirmation = () => {
+    setStep(2);
+  };
+
+  // Submit claim
+  const handleSubmit = async () => {
     setLoading(true);
     setError(null);
 
@@ -139,12 +150,17 @@ const PaidWarrantyClaimForm = ({ vehicleId, installedPartId, onSuccess, onCancel
 
       const response = await warrantyClaimsApi.createWarrantyClaim(claimData);
 
+      // Show success notification
+      alert('Tạo yêu cầu bảo hành thành công!');
+
       if (onSuccess) {
         onSuccess(response);
       }
     } catch (err) {
       setError(err.message || 'Lỗi khi tạo warranty claim');
       console.error('Claim creation error:', err);
+      // Go back to form step if there's an error
+      setStep(2);
     } finally {
       setLoading(false);
     }
@@ -189,7 +205,7 @@ const PaidWarrantyClaimForm = ({ vehicleId, installedPartId, onSuccess, onCancel
       {/* Step 2: Claim Form */}
       {step === 2 && warrantyInfo && (
         <StepSection>
-          <Form onSubmit={handleSubmit}>
+          <Form onSubmit={handleNextToConfirmation}>
             {/* Warranty Status Summary */}
             <WarrantySummary isPaid={formData.isPaidWarranty}>
               {formData.isPaidWarranty ? (
@@ -282,10 +298,73 @@ const PaidWarrantyClaimForm = ({ vehicleId, installedPartId, onSuccess, onCancel
                 Hủy
               </CancelButton>
               <SubmitButton type="submit" disabled={loading}>
-                {loading ? 'Đang tạo claim...' : formData.isPaidWarranty ? 'Tạo Claim & Chờ Thanh Toán' : 'Tạo Claim'}
+                Tiếp tục
               </SubmitButton>
             </FormActions>
           </Form>
+        </StepSection>
+      )}
+
+      {/* Step 3: Confirmation */}
+      {step === 3 && warrantyInfo && (
+        <StepSection>
+          <ConfirmationContainer>
+            <ConfirmationHeader>
+              <h3>Xác Nhận Thông Tin Yêu Cầu Bảo Hành</h3>
+              <p>Vui lòng kiểm tra kỹ thông tin trước khi gửi yêu cầu</p>
+            </ConfirmationHeader>
+
+            <ConfirmationDetails>
+              <DetailRow>
+                <DetailLabel>Loại bảo hành:</DetailLabel>
+                <DetailValue>
+                  {formData.isPaidWarranty ? (
+                    <span style={{ color: '#ff9800', fontWeight: 'bold' }}>Bảo Hành Tính Phí</span>
+                  ) : (
+                    <span style={{ color: '#4caf50', fontWeight: 'bold' }}>Bảo Hành Miễn Phí</span>
+                  )}
+                </DetailValue>
+              </DetailRow>
+
+              {formData.isPaidWarranty && (
+                <DetailRow>
+                  <DetailLabel>Phí bảo hành:</DetailLabel>
+                  <DetailValue style={{ color: '#ff6f00', fontWeight: 'bold', fontSize: '1.2rem' }}>
+                    {parseFloat(formData.warrantyFee).toLocaleString('vi-VN')} VNĐ
+                  </DetailValue>
+                </DetailRow>
+              )}
+
+              <DetailRow>
+                <DetailLabel>Mô tả vấn đề:</DetailLabel>
+                <DetailValue>{formData.description}</DetailValue>
+              </DetailRow>
+
+              {formData.isPaidWarranty && formData.estimatedRepairCost && (
+                <DetailRow>
+                  <DetailLabel>Chi phí sửa chữa ước tính:</DetailLabel>
+                  <DetailValue>
+                    {parseFloat(formData.estimatedRepairCost).toLocaleString('vi-VN')} VNĐ
+                  </DetailValue>
+                </DetailRow>
+              )}
+            </ConfirmationDetails>
+
+            {formData.isPaidWarranty && (
+              <PaymentNotice style={{ marginTop: '20px' }}>
+                <strong>Lưu ý quan trọng:</strong> Sau khi tạo yêu cầu, bạn cần thanh toán phí bảo hành tại quầy trước khi yêu cầu được xử lý.
+              </PaymentNotice>
+            )}
+
+            <FormActions>
+              <CancelButton type="button" onClick={handleBackFromConfirmation} disabled={loading}>
+                Quay lại
+              </CancelButton>
+              <SubmitButton type="button" onClick={handleSubmit} disabled={loading}>
+                {loading ? 'Đang tạo claim...' : 'Xác nhận và gửi yêu cầu'}
+              </SubmitButton>
+            </FormActions>
+          </ConfirmationContainer>
         </StepSection>
       )}
     </Container>
@@ -544,6 +623,62 @@ const CancelButton = styled.button`
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
   }
+`;
+
+const ConfirmationContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+`;
+
+const ConfirmationHeader = styled.div`
+  text-align: center;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #e0e0e0;
+
+  h3 {
+    margin: 0 0 12px 0;
+    color: #333;
+    font-size: 1.5rem;
+  }
+
+  p {
+    margin: 0;
+    color: #666;
+    font-size: 1rem;
+  }
+`;
+
+const ConfirmationDetails = styled.div`
+  background: #f9f9f9;
+  border-radius: 8px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+`;
+
+const DetailRow = styled.div`
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e0e0e0;
+
+  &:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+`;
+
+const DetailLabel = styled.div`
+  font-weight: 600;
+  color: #555;
+`;
+
+const DetailValue = styled.div`
+  color: #333;
+  word-break: break-word;
 `;
 
 export default PaidWarrantyClaimForm;

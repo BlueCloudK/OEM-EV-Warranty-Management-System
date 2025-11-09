@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { dataApi } from '../../api/dataApi';
 import * as S from './TechWarrantyClaims.styles';
-import { FaClipboardList, FaSpinner, FaEye, FaPlay, FaCheckCircle, FaFilter } from 'react-icons/fa';
+import { FaClipboardList, FaSpinner, FaEye, FaPlay, FaCheckCircle, FaFilter, FaChartLine, FaExclamationTriangle } from 'react-icons/fa';
 
 const ClaimDetailModal = ({ isOpen, onClose, claim, onStartProcessing, onComplete }) => {
   const [completionNote, setCompletionNote] = useState('');
@@ -145,6 +145,25 @@ const TechWarrantyClaims = () => {
   const [filterStatus, setFilterStatus] = useState('pending'); // pending, all, MANAGER_REVIEW, PROCESSING, COMPLETED
   const [selectedClaim, setSelectedClaim] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [dailyStats, setDailyStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  const fetchDailyStats = useCallback(async () => {
+    try {
+      setStatsLoading(true);
+      console.log("Fetching daily stats...");
+      const stats = await dataApi.getMyDailyStats();
+      console.log("Daily stats received:", stats);
+      setDailyStats(stats);
+    } catch (err) {
+      console.error("Error fetching daily stats:", err);
+      console.error("Error details:", err.response?.data);
+      // Don't show error if stats fail, just hide the card
+      setDailyStats(null);
+    } finally {
+      setStatsLoading(false);
+    }
+  }, []);
 
   const fetchClaims = useCallback(async () => {
     try {
@@ -195,6 +214,10 @@ const TechWarrantyClaims = () => {
   }, [pagination.currentPage, pagination.pageSize, filterStatus]);
 
   useEffect(() => {
+    fetchDailyStats();
+  }, [fetchDailyStats]);
+
+  useEffect(() => {
     fetchClaims();
   }, [fetchClaims]);
 
@@ -207,6 +230,7 @@ const TechWarrantyClaims = () => {
     try {
       await dataApi.techStartClaim(claimId, note);
       await fetchClaims();
+      await fetchDailyStats(); // Refresh stats after starting a claim
       return { success: true };
     } catch (err) {
       console.error('Error starting claim:', err);
@@ -253,6 +277,58 @@ const TechWarrantyClaims = () => {
           <S.HeaderTop>
             <S.HeaderTitle><FaClipboardList /> Yêu cầu Bảo hành</S.HeaderTitle>
           </S.HeaderTop>
+
+          {/* Daily Stats Card */}
+          {statsLoading ? (
+            <S.StatsCard>
+              <S.StatsHeader>
+                <S.StatsTitle>
+                  <FaSpinner style={{ animation: 'spin 1s linear infinite' }} /> Đang tải thống kê...
+                </S.StatsTitle>
+              </S.StatsHeader>
+            </S.StatsCard>
+          ) : dailyStats ? (
+            <S.StatsCard $nearLimit={dailyStats.usagePercentage >= 80} $limitReached={dailyStats.limitReached}>
+              <S.StatsHeader>
+                <S.StatsTitle>
+                  <FaChartLine /> Thống kê hôm nay
+                </S.StatsTitle>
+                {dailyStats.limitReached && (
+                  <S.LimitWarning>
+                    <FaExclamationTriangle /> Đã đạt giới hạn
+                  </S.LimitWarning>
+                )}
+              </S.StatsHeader>
+              <S.StatsContent>
+                <S.StatsNumbers>
+                  <S.StatsBig>{dailyStats.claimsStartedToday}</S.StatsBig>
+                  <S.StatsLabel>/ {dailyStats.dailyLimit} yêu cầu</S.StatsLabel>
+                </S.StatsNumbers>
+                <S.StatsInfo>
+                  <div>Còn lại: <strong>{dailyStats.remainingClaims}</strong> yêu cầu</div>
+                  <div>Sử dụng: <strong>{dailyStats.usagePercentage.toFixed(1)}%</strong></div>
+                </S.StatsInfo>
+              </S.StatsContent>
+              <S.ProgressBar>
+                <S.ProgressFill
+                  $percentage={dailyStats.usagePercentage}
+                  $nearLimit={dailyStats.usagePercentage >= 80}
+                  $limitReached={dailyStats.limitReached}
+                />
+              </S.ProgressBar>
+              {dailyStats.usagePercentage >= 80 && !dailyStats.limitReached && (
+                <S.WarningMessage>
+                  <FaExclamationTriangle /> Bạn đang gần đạt giới hạn yêu cầu trong ngày!
+                </S.WarningMessage>
+              )}
+              {dailyStats.limitReached && (
+                <S.WarningMessage $error>
+                  <FaExclamationTriangle /> Bạn đã đạt giới hạn {dailyStats.dailyLimit} yêu cầu trong ngày. Vui lòng thử lại vào ngày mai.
+                </S.WarningMessage>
+              )}
+            </S.StatsCard>
+          ) : null}
+
           <S.FilterContainer>
             <FaFilter />
             <span>Lọc:</span>
