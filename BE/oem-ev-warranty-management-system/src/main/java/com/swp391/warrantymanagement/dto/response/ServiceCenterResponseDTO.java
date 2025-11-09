@@ -16,6 +16,7 @@ public class ServiceCenterResponseDTO {
     private String openingHours;
     private BigDecimal latitude;
     private BigDecimal longitude;
+    private Integer dailyClaimLimitPerTech;
 
     // Statistics
     private Integer totalStaff;

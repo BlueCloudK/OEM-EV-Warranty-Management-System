@@ -38,4 +38,9 @@ public class ServiceCenterRequestDTO {
     @DecimalMax(value = "180.0", message = "Longitude must be between -180 and 180")
     @Digits(integer = 3, fraction = 6, message = "Longitude must have maximum 3 integer digits and 6 decimal places")
     private BigDecimal longitude;
+
+    @NotNull(message = "Daily claim limit per technician is required")
+    @Min(value = 1, message = "Daily claim limit must be at least 1")
+    @Max(value = 100, message = "Daily claim limit cannot exceed 100")
+    private Integer dailyClaimLimitPerTech;
 }
