@@ -60,7 +60,7 @@ public class WarrantyClaimController {
      * @return {@link ResponseEntity} chứa một {@link PagedResponse} các yêu cầu bảo hành.
      */
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN')")
     public ResponseEntity<PagedResponse<WarrantyClaimResponseDTO>> getAllClaims(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
