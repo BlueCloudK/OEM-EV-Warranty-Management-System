@@ -29,18 +29,20 @@ A comprehensive electric vehicle warranty management system for manufacturers, s
 ### Key Highlights
 
 - ✅ **Multi-role Support**: 5+ user roles with hierarchical access control
-- ✅ **Automated Workflow**: Automated warranty claim processing workflow
-- ✅ **Real-time Tracking**: Instant warranty claim status updates
-- ✅ **Recall Management**: Integrated vehicle recall system with customer notifications
-- ✅ **Analytics & Reporting**: Analytics dashboard with charts and metrics
-- ✅ **High Security**: JWT authentication with refresh token mechanism
+- ✅ **Automated Workflow**: 7-state warranty claim processing with paid warranty support
+- ✅ **Real-time Tracking**: Instant warranty claim status updates with daily limit monitoring
+- ✅ **Recall Management**: Integrated vehicle recall system with individual customer response tracking
+- ✅ **Analytics & Reporting**: Comprehensive analytics dashboard with daily stats and metrics
+- ✅ **High Security**: JWT authentication with refresh token mechanism and RBAC
 
 ## 🚀 Key Features
 
 ### 🔧 Warranty Management
-- Create and track warranty claims
-- Automated approval/rejection workflow
-- Real-time status updates
+- Create and track warranty claims (free & paid warranties)
+- Automated approval/rejection workflow with 7-state status tracking
+- Real-time status updates with daily claim limit monitoring
+- Paid warranty fee calculation based on expiration and repair cost
+- Warranty validation service (vehicle & part warranty checking)
 - Document and image storage
 
 ### 🚙 Vehicle Management
@@ -59,14 +61,19 @@ A comprehensive electric vehicle warranty management system for manufacturers, s
 - Customer ratings and feedback
 
 ### 📢 Recall Management
-- Create recall campaigns
-- Automated customer notifications
-- Response tracking and recall processing
+- Create recall campaigns by affected part number
+- Automated customer notifications via RecallResponse entity
+- Individual customer response tracking (PENDING → ACCEPTED/DECLINED)
+- Recall approval workflow (EVM creates → ADMIN approves → Customers respond)
+- Integration with warranty claim workflow for recall repairs
 
 ### 📊 Analytics & Reporting
 - Role-based overview dashboards
 - Detailed charts and statistics
 - Service center performance reports
+- Daily claim statistics with threshold monitoring
+- Paid vs free warranty ratio tracking
+- Recall response rate analytics
 
 ### 💬 Feedback Management
 - Collect customer ratings
@@ -287,11 +294,11 @@ OEM-EV-Warranty-Management-System/
 │       ├── src/main/resources/
 │       │   └── application.properties           # Spring configuration
 │       └── docs/                                # Documentation
-│           ├── API_DOCUMENTATION.md
-│           ├── SYSTEM_ARCHITECTURE_EXPLANATION.md
-│           ├── DATA_FLOW_SCENARIOS.md
-│           ├── SECURITY_GUIDE.md
-│           └── CORS_CONFIGURATION.md
+│           ├── SYSTEM_ARCHITECTURE_EXPLANATION.md  # System design & workflows
+│           ├── DATA_FLOW_SCENARIOS.md              # API flows & use cases
+│           ├── SECURITY_GUIDE.md                   # Authentication & RBAC
+│           ├── WARRANTY_BUSINESS_RULES.md          # Warranty validation & fees
+│           └── CORS_CONFIGURATION.md               # CORS setup guide
 │
 ├── FE/                                          # Frontend (React)
 │   ├── Dockerfile
@@ -343,7 +350,10 @@ The system provides 15+ controllers with 100+ endpoints:
 | **AuthController** | Login, logout, refresh token, registration, password reset |
 | **CustomerController** | Customer profile management, vehicles, warranty history |
 | **VehicleController** | Vehicle registration, VIN lookup, vehicle information management |
-| **WarrantyClaimController** | Create/manage warranty claims, status updates |
+| **WarrantyClaimController** | Create/manage warranty claims, status updates, daily statistics, assign claims |
+| **WarrantyValidationController** | Validate vehicle/part warranty, calculate warranty fees |
+| **RecallResponseController** | Manage customer responses to recall requests |
+| **InstalledPartController** | Track parts installed in vehicles, warranty expiry monitoring |
 | **PartController** | Parts catalog management |
 | **PartRequestController** | Parts request and tracking |
 | **ServiceCenterController** | Service center management, ratings |
@@ -456,13 +466,13 @@ allowedOrigins: http://localhost:3000, http://localhost:5173
 
 ## 📖 Documentation
 
-### Backend Documentation (BE/docs/)
+### Backend Documentation (BE/oem-ev-warranty-management-system/docs/)
 
-- **API_DOCUMENTATION.md**: Complete API documentation
-- **SYSTEM_ARCHITECTURE_EXPLANATION.md**: System architecture explanation
-- **DATA_FLOW_SCENARIOS.md**: Data flow scenarios
-- **SECURITY_GUIDE.md**: Security guide
-- **CORS_CONFIGURATION.md**: CORS configuration
+- **SYSTEM_ARCHITECTURE_EXPLANATION.md**: System architecture, workflows, and design patterns
+- **DATA_FLOW_SCENARIOS.md**: Complete data flows and API scenarios for all user roles
+- **SECURITY_GUIDE.md**: JWT authentication, RBAC, and permissions matrix
+- **WARRANTY_BUSINESS_RULES.md**: Warranty validation logic, fee calculation, and claim lifecycle
+- **CORS_CONFIGURATION.md**: CORS setup for development and production
 
 ### Requirements Documentation (Requirements/)
 
@@ -476,18 +486,31 @@ allowedOrigins: http://localhost:3000, http://localhost:5173
 
 ### 1. Warranty Claim Process
 
+**Free Warranty Flow:**
 ```
-Customer notifies SC → SC Staff creates claim →
-System validates warranty → Admin approves →
-Technician repairs → Customer provides feedback → Complete
+Customer notifies SC → SC Staff creates claim (SUBMITTED) →
+System validates warranty (VALID) → Manager Review (MANAGER_REVIEW) →
+Admin approves → Technician assigned (PROCESSING) →
+Technician repairs → Complete (COMPLETED) → Customer provides feedback
+```
+
+**Paid Warranty Flow:**
+```
+Customer notifies SC → SC Staff creates claim (SUBMITTED) →
+System calculates fee (EXPIRED_DATE/MILEAGE) → Customer pays (PENDING_PAYMENT) →
+Payment confirmed (PAYMENT_CONFIRMED) → Manager Review (MANAGER_REVIEW) →
+Admin approves → Technician assigned (PROCESSING) →
+Technician repairs → Complete (COMPLETED) → Customer provides feedback
 ```
 
 ### 2. Recall Process
 
 ```
-EVM Staff creates recall campaign → Admin approves →
-System notifies customers → Customer accepts/declines →
-SC Staff creates warranty claim → Technician processes → Complete
+EVM Staff creates RecallRequest (by part number) → Admin approves →
+System creates RecallResponse for each affected customer (PENDING) →
+Customer receives notification → Customer confirms (ACCEPTED/DECLINED) →
+If ACCEPTED: SC Staff creates warranty claim (linked to RecallResponse) →
+Technician processes repair → Complete
 ```
 
 ### 3. Parts Request Process
@@ -589,14 +612,16 @@ kill -9 <PID>
 ## 📝 Changelog
 
 ### Version 1.0.0 (Current)
-- ✅ Complete warranty management system
-- ✅ 5 user roles with dedicated dashboards
-- ✅ JWT authentication with refresh token
-- ✅ Integrated recall management
-- ✅ Smart refresh system
-- ✅ Service center mapping
-- ✅ Docker containerization
-- ✅ API documentation with Swagger
+- ✅ Complete warranty management system with free & paid warranty support
+- ✅ 5 user roles with dedicated dashboards and granular permissions
+- ✅ JWT authentication with refresh token and token blacklisting
+- ✅ Integrated recall management with RecallResponse tracking
+- ✅ 7-state warranty claim workflow (SUBMITTED → PENDING_PAYMENT → PAYMENT_CONFIRMED → MANAGER_REVIEW → PROCESSING → COMPLETED → REJECTED)
+- ✅ Daily claim limit monitoring with automatic notifications
+- ✅ Warranty validation service with automatic fee calculation
+- ✅ Service center mapping and geolocation features
+- ✅ Docker containerization with multi-service orchestration
+- ✅ Comprehensive API documentation with Swagger UI
 
 ## 🤝 Contributing
 
