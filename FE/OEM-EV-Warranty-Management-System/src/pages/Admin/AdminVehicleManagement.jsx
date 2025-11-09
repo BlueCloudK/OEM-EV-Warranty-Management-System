@@ -243,15 +243,40 @@ const AdminVehicleManagement = () => {
                 ))}
               </tbody>
             </S.Table>
-            {/* Pagination controls can be added here */}
           </S.TableContainer>
         )}
 
-        <VehicleFormModal 
-          isOpen={showForm} 
-          onClose={() => setShowForm(false)} 
-          onSubmit={handleCreateOrUpdate} 
-          vehicle={selectedVehicle} 
+        {/* Pagination Controls */}
+        {pagination && !error && (
+          <S.PaginationContainer>
+            <S.Button
+              $small
+              onClick={() => handlePageChange(pagination.currentPage - 1)}
+              disabled={pagination.currentPage === 0}
+            >
+              Trước
+            </S.Button>
+            <span style={{ margin: '0 15px', fontWeight: 'bold' }}>
+              Trang {pagination.currentPage + 1} / {pagination.totalPages}
+              <span style={{ marginLeft: '10px', color: '#666', fontSize: '0.9em' }}>
+                (Tổng: {pagination.totalElements} xe)
+              </span>
+            </span>
+            <S.Button
+              $small
+              onClick={() => handlePageChange(pagination.currentPage + 1)}
+              disabled={pagination.currentPage >= pagination.totalPages - 1}
+            >
+              Tiếp
+            </S.Button>
+          </S.PaginationContainer>
+        )}
+
+        <VehicleFormModal
+          isOpen={showForm}
+          onClose={() => setShowForm(false)}
+          onSubmit={handleCreateOrUpdate}
+          vehicle={selectedVehicle}
           customers={customers}
         />
       </S.ContentWrapper>

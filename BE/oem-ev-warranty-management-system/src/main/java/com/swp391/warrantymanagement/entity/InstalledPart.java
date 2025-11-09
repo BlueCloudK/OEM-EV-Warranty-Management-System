@@ -54,6 +54,41 @@ public class InstalledPart {
     @Column(name = "warranty_expiration_date", nullable = false)
     private LocalDate warrantyExpirationDate;
 
+    // ======= HIERARCHY WARRANTY TRACKING =======
+
+    /**
+     * Số km của xe tại thời điểm lắp đặt linh kiện.
+     * <p>
+     * <strong>Mục đích:</strong> Để tính toán km đã chạy kể từ khi lắp đặt linh kiện.
+     * <p>
+     * <strong>Business Logic:</strong>
+     * {@code kmSinceInstallation = vehicle.currentMileage - mileageAtInstallation}
+     */
+    @Column(name = "mileage_at_installation", nullable = false)
+    private Integer mileageAtInstallation;
+
+    /**
+     * Thời hạn bảo hành (tháng) cho linh kiện cụ thể này.
+     * <p>
+     * <strong>Default:</strong> Copy từ {@code part.defaultWarrantyMonths} khi lắp đặt.
+     * <p>
+     * <strong>Tại sao lưu riêng:</strong> Cho phép override warranty policy cho từng lần lắp đặt cụ thể
+     * (VD: khuyến mãi, bảo hành đặc biệt).
+     */
+    @Column(name = "warranty_period_months")
+    private Integer warrantyPeriodMonths;
+
+    /**
+     * Giới hạn km cho bảo hành linh kiện cụ thể này.
+     * <p>
+     * <strong>Default:</strong> Copy từ {@code part.defaultWarrantyMileage} khi lắp đặt.
+     * <p>
+     * <strong>Business Logic:</strong>
+     * Bảo hành hợp lệ khi: {@code kmSinceInstallation <= warrantyMileageLimit}
+     */
+    @Column(name = "warranty_mileage_limit")
+    private Integer warrantyMileageLimit;
+
     /**
      * Mối quan hệ N-1 tới entity {@link Part}.
      * Cho biết đây là loại linh kiện nào từ danh mục (catalog).

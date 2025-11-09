@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import * as S from './VehicleLookup.styles';
 import {
-  FaCar, FaSearch, FaSpinner, FaInfoCircle, FaCalendar, FaBarcode, FaCog
+  FaCar, FaSearch, FaSpinner, FaInfoCircle, FaCalendar, FaBarcode, FaCog,
+  FaTachometerAlt, FaShieldAlt
 } from 'react-icons/fa';
 import apiClient from '../../api/apiClient';
 
@@ -195,6 +196,13 @@ const VehicleLookup = () => {
               <S.InfoValue>{vehicle.vehicleYear || 'N/A'}</S.InfoValue>
             </S.InfoItem>
 
+            <S.InfoItem>
+              <S.InfoLabel><FaTachometerAlt /> Số km hiện tại</S.InfoLabel>
+              <S.InfoValue>
+                {vehicle.currentMileage ? `${vehicle.currentMileage.toLocaleString('vi-VN')} km` : 'N/A'}
+              </S.InfoValue>
+            </S.InfoItem>
+
             {vehicle.customerId && (
               <S.InfoItem>
                 <S.InfoLabel><FaInfoCircle /> ID Khách hàng</S.InfoLabel>
@@ -206,6 +214,30 @@ const VehicleLookup = () => {
               <S.InfoItem $fullWidth>
                 <S.InfoLabel><FaInfoCircle /> Chủ sở hữu</S.InfoLabel>
                 <S.InfoValue>{vehicle.customerName}</S.InfoValue>
+              </S.InfoItem>
+            )}
+
+            {vehicle.warrantyStartDate && vehicle.warrantyEndDate && (
+              <S.InfoItem $fullWidth>
+                <S.InfoLabel><FaShieldAlt /> Thời hạn bảo hành xe</S.InfoLabel>
+                <S.InfoValue>
+                  {formatDate(vehicle.warrantyStartDate)} - {formatDate(vehicle.warrantyEndDate)}
+                  {(() => {
+                    const endDate = new Date(vehicle.warrantyEndDate);
+                    const now = new Date();
+                    const daysRemaining = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
+
+                    if (daysRemaining > 0) {
+                      return <span style={{ color: '#10b981', marginLeft: '8px' }}>
+                        (Còn {daysRemaining} ngày)
+                      </span>;
+                    } else {
+                      return <span style={{ color: '#ef4444', marginLeft: '8px' }}>
+                        (Hết hạn {Math.abs(daysRemaining)} ngày trước)
+                      </span>;
+                    }
+                  })()}
+                </S.InfoValue>
               </S.InfoItem>
             )}
           </S.VehicleGrid>

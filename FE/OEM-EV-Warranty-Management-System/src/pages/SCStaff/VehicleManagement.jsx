@@ -177,11 +177,12 @@ const InstallPartFormModal = ({ isOpen, onClose, onSubmit, vehicle, parts }) => 
 
   useEffect(() => {
     if (isOpen) {
-      setFormData({ 
-        vehicleId: vehicle?.vehicleId, 
-        partId: '', 
-        installationDate: new Date().toISOString().slice(0, 10), 
-        warrantyExpirationDate: '' 
+      setFormData({
+        vehicleId: vehicle?.vehicleId,
+        partId: '',
+        installationDate: new Date().toISOString().slice(0, 10),
+        warrantyExpirationDate: '',
+        mileageAtInstallation: vehicle?.mileage || 0
       });
       setErrors({});
     }
@@ -214,7 +215,8 @@ const InstallPartFormModal = ({ isOpen, onClose, onSubmit, vehicle, parts }) => 
       vehicleId: parseInt(formData.vehicleId, 10),
       partId: parseInt(formData.partId, 10), // Part ID phải là Long
       installationDate: formData.installationDate,
-      warrantyExpirationDate: formData.warrantyExpirationDate
+      warrantyExpirationDate: formData.warrantyExpirationDate,
+      mileageAtInstallation: parseInt(formData.mileageAtInstallation, 10) || 0
     };
     const { success, message } = await onSubmit(payload);
     if (success) {
@@ -250,6 +252,22 @@ const InstallPartFormModal = ({ isOpen, onClose, onSubmit, vehicle, parts }) => 
             <S.Input name="warrantyExpirationDate" type="date" value={formData.warrantyExpirationDate || ''} onChange={handleInputChange} required hasError={!!errors.warrantyExpirationDate} />
             {errors.warrantyExpirationDate && <S.ErrorText>{errors.warrantyExpirationDate}</S.ErrorText>}
           </S.FormGroup>
+          <S.FormGroup>
+            <S.Label>Số km tại thời điểm lắp đặt *</S.Label>
+            <S.Input
+              name="mileageAtInstallation"
+              type="number"
+              min="0"
+              value={formData.mileageAtInstallation || 0}
+              onChange={handleInputChange}
+              required
+              hasError={!!errors.mileageAtInstallation}
+            />
+            <small style={{ color: '#666', fontSize: '0.85rem' }}>
+              Số km hiện tại của xe: {vehicle?.mileage?.toLocaleString() || 'N/A'} km
+            </small>
+            {errors.mileageAtInstallation && <S.ErrorText>{errors.mileageAtInstallation}</S.ErrorText>}
+          </S.FormGroup>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
             <S.Button type="button" onClick={onClose}>Hủy</S.Button>
             <S.Button primary type="submit">Lắp đặt</S.Button>
@@ -265,7 +283,8 @@ const VehicleManagement = () => {
   const navigate = useNavigate();
   const {
     vehicles, customers, parts, installedParts, loading, error, searchTerm, setSearchTerm,
-    searchType, setSearchType, handleSearch, handleCreateOrUpdate, handleDelete, handleInstallPart, fetchInstalledPartsForVehicle, clearInstalledParts
+    searchType, setSearchType, handleSearch, handleCreateOrUpdate, handleDelete, handleInstallPart, fetchInstalledPartsForVehicle, clearInstalledParts,
+    pagination, handlePageChange
   } = useVehicleManagement();
 
   const [showForm, setShowForm] = useState(false);
@@ -380,21 +399,44 @@ const VehicleManagement = () => {
                               <S.Table>
                                 <thead>
                                   <tr>
-                                    <S.Th>ID Lắp đặt</S.Th>
-                                    <S.Th>ID Phụ tùng</S.Th>
+                                    <S.Th>ID</S.Th>
+                                    <S.Th>Tên phụ tùng</S.Th>
+                                    <S.Th>Mã phụ tùng</S.Th>
+                                    <S.Th>Nhà sản xuất</S.Th>
                                     <S.Th>Ngày lắp đặt</S.Th>
                                     <S.Th>Ngày hết hạn BH</S.Th>
+                                    <S.Th>Trạng thái BH</S.Th>
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  {installedParts.map(part => (
-                                    <tr key={part.installedPartId}>
-                                      <S.Td>{part.installedPartId}</S.Td>
-                                      <S.Td>{part.partId}</S.Td>
-                                      <S.Td>{part.installationDate}</S.Td>
-                                      <S.Td>{part.warrantyExpirationDate}</S.Td>
-                                    </tr>
-                                  ))}
+                                  {installedParts.map(part => {
+                                    const today = new Date();
+                                    const expiryDate = new Date(part.warrantyExpirationDate);
+                                    const isExpired = today > expiryDate;
+                                    const daysRemaining = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+
+                                    return (
+                                      <tr key={part.installedPartId}>
+                                        <S.Td>{part.installedPartId}</S.Td>
+                                        <S.Td style={{ fontWeight: 'bold' }}>{part.partName || 'N/A'}</S.Td>
+                                        <S.Td mono>{part.partNumber || 'N/A'}</S.Td>
+                                        <S.Td>{part.manufacturer || 'N/A'}</S.Td>
+                                        <S.Td>{new Date(part.installationDate).toLocaleDateString('vi-VN')}</S.Td>
+                                        <S.Td>{new Date(part.warrantyExpirationDate).toLocaleDateString('vi-VN')}</S.Td>
+                                        <S.Td>
+                                          {isExpired ? (
+                                            <span style={{ color: '#f44336', fontWeight: 'bold' }}>
+                                              HẾT HẠN {Math.abs(daysRemaining)} ngày
+                                            </span>
+                                          ) : (
+                                            <span style={{ color: '#4caf50', fontWeight: 'bold' }}>
+                                              Còn {daysRemaining} ngày
+                                            </span>
+                                          )}
+                                        </S.Td>
+                                      </tr>
+                                    );
+                                  })}
                                 </tbody>
                               </S.Table>
                             ) : (
@@ -408,8 +450,33 @@ const VehicleManagement = () => {
                 ))}
               </tbody>
             </S.Table>
-            {/* Pagination controls can be added here */}
           </S.TableContainer>
+        )}
+
+        {/* Pagination Controls */}
+        {!loading && !error && vehicles.length > 0 && pagination.totalPages > 0 && (
+          <S.PaginationContainer>
+            <S.Button
+              small
+              onClick={() => handlePageChange(pagination.currentPage - 1)}
+              disabled={pagination.currentPage === 0}
+            >
+              Trước
+            </S.Button>
+            <span style={{ margin: '0 15px', fontWeight: 'bold' }}>
+              Trang {pagination.currentPage + 1} / {pagination.totalPages}
+              <span style={{ marginLeft: '10px', color: '#666', fontSize: '0.9em' }}>
+                (Tổng: {pagination.totalElements} xe)
+              </span>
+            </span>
+            <S.Button
+              small
+              onClick={() => handlePageChange(pagination.currentPage + 1)}
+              disabled={pagination.currentPage >= pagination.totalPages - 1}
+            >
+              Tiếp
+            </S.Button>
+          </S.PaginationContainer>
         )}
 
         <VehicleFormModal 

@@ -202,8 +202,33 @@ const AdminCustomerManagement = () => {
                             ))}
                             </tbody>
                         </S.Table>
-                        {/* Pagination controls can be added here */}
                     </S.TableContainer>
+                )}
+
+                {/* Pagination Controls */}
+                {pagination && !error && (
+                    <S.PaginationContainer>
+                        <S.Button
+                            $small
+                            onClick={() => handlePageChange(pagination.currentPage - 1)}
+                            disabled={pagination.currentPage === 0}
+                        >
+                            Trước
+                        </S.Button>
+                        <span style={{ margin: '0 15px', fontWeight: 'bold' }}>
+                            Trang {pagination.currentPage + 1} / {pagination.totalPages}
+                            <span style={{ marginLeft: '10px', color: '#666', fontSize: '0.9em' }}>
+                                (Tổng: {pagination.totalElements} khách hàng)
+                            </span>
+                        </span>
+                        <S.Button
+                            $small
+                            onClick={() => handlePageChange(pagination.currentPage + 1)}
+                            disabled={pagination.currentPage >= pagination.totalPages - 1}
+                        >
+                            Tiếp
+                        </S.Button>
+                    </S.PaginationContainer>
                 )}
 
                 <CustomerFormModal

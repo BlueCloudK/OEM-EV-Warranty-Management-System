@@ -26,6 +26,14 @@ public final class PartMapper {
         entity.setManufacturer(requestDTO.getManufacturer());
         entity.setPrice(requestDTO.getPrice());
 
+        // Warranty configuration
+        entity.setHasExtendedWarranty(requestDTO.getHasExtendedWarranty() != null ? requestDTO.getHasExtendedWarranty() : false);
+        entity.setDefaultWarrantyMonths(requestDTO.getDefaultWarrantyMonths());
+        entity.setDefaultWarrantyMileage(requestDTO.getDefaultWarrantyMileage());
+        entity.setGracePeriodDays(requestDTO.getGracePeriodDays());
+        entity.setPaidWarrantyFeePercentageMin(requestDTO.getPaidWarrantyFeePercentageMin());
+        entity.setPaidWarrantyFeePercentageMax(requestDTO.getPaidWarrantyFeePercentageMax());
+
         return entity;
     }
 
@@ -38,6 +46,14 @@ public final class PartMapper {
         entity.setPartNumber(requestDTO.getPartNumber());
         entity.setManufacturer(requestDTO.getManufacturer());
         entity.setPrice(requestDTO.getPrice());
+
+        // Warranty configuration
+        entity.setHasExtendedWarranty(requestDTO.getHasExtendedWarranty() != null ? requestDTO.getHasExtendedWarranty() : false);
+        entity.setDefaultWarrantyMonths(requestDTO.getDefaultWarrantyMonths());
+        entity.setDefaultWarrantyMileage(requestDTO.getDefaultWarrantyMileage());
+        entity.setGracePeriodDays(requestDTO.getGracePeriodDays());
+        entity.setPaidWarrantyFeePercentageMin(requestDTO.getPaidWarrantyFeePercentageMin());
+        entity.setPaidWarrantyFeePercentageMax(requestDTO.getPaidWarrantyFeePercentageMax());
     }
 
     // Entity -> Response DTO (for API response)
@@ -50,6 +66,14 @@ public final class PartMapper {
         responseDTO.setPartNumber(entity.getPartNumber());
         responseDTO.setManufacturer(entity.getManufacturer());
         responseDTO.setPrice(entity.getPrice());
+
+        // Warranty configuration
+        responseDTO.setHasExtendedWarranty(entity.getHasExtendedWarranty());
+        responseDTO.setDefaultWarrantyMonths(entity.getDefaultWarrantyMonths());
+        responseDTO.setDefaultWarrantyMileage(entity.getDefaultWarrantyMileage());
+        responseDTO.setGracePeriodDays(entity.getGracePeriodDays());
+        responseDTO.setPaidWarrantyFeePercentageMin(entity.getPaidWarrantyFeePercentageMin());
+        responseDTO.setPaidWarrantyFeePercentageMax(entity.getPaidWarrantyFeePercentageMax());
 
         return responseDTO;
     }

@@ -207,3 +207,15 @@ export const TextArea = styled.textarea`
     border-color: #1d4ed8;
   }
 `;
+
+
+export const PaginationContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+  padding: 16px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+`;

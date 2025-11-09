@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -37,7 +38,7 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
         String vehicleModel, String vehicleName, Pageable pageable);
 
     // Tìm xe theo VIN (Vehicle Identification Number - unique)
-    Vehicle findByVehicleVin(String vehicleVin);
+    Optional<Vehicle> findByVehicleVin(String vehicleVin);
     boolean existsByVehicleVin(String vehicleVin);
 
     // Warranty expiring methods

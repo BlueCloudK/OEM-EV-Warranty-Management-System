@@ -24,6 +24,8 @@ public final class ServiceCenterMapper {
         entity.setOpeningHours(requestDTO.getOpeningHours());
         entity.setLatitude(requestDTO.getLatitude());
         entity.setLongitude(requestDTO.getLongitude());
+        entity.setDailyClaimLimitPerTech(requestDTO.getDailyClaimLimitPerTech() != null
+            ? requestDTO.getDailyClaimLimitPerTech() : 10);
 
         return entity;
     }
@@ -38,6 +40,8 @@ public final class ServiceCenterMapper {
         entity.setOpeningHours(requestDTO.getOpeningHours());
         entity.setLatitude(requestDTO.getLatitude());
         entity.setLongitude(requestDTO.getLongitude());
+        entity.setDailyClaimLimitPerTech(requestDTO.getDailyClaimLimitPerTech() != null
+            ? requestDTO.getDailyClaimLimitPerTech() : 10);
     }
 
     // Entity -> Response DTO (basic info)
@@ -52,6 +56,8 @@ public final class ServiceCenterMapper {
         responseDTO.setOpeningHours(entity.getOpeningHours());
         responseDTO.setLatitude(entity.getLatitude());
         responseDTO.setLongitude(entity.getLongitude());
+        responseDTO.setDailyClaimLimitPerTech(entity.getDailyClaimLimitPerTech() != null
+            ? entity.getDailyClaimLimitPerTech() : 10);
 
         // Statistics will be set by service layer
         responseDTO.setTotalStaff(0);

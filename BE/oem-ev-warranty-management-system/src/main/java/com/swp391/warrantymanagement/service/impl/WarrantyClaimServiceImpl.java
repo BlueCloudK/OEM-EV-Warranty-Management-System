@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -48,6 +49,9 @@ import java.util.UUID;
 public class WarrantyClaimServiceImpl implements WarrantyClaimService {
 
     private static final Logger logger = LoggerFactory.getLogger(WarrantyClaimServiceImpl.class);
+
+    // Default grace period nếu Part không có config riêng (giống WarrantyValidationServiceImpl)
+    private static final int DEFAULT_GRACE_PERIOD_DAYS = 180;
 
     private final WarrantyClaimRepository warrantyClaimRepository;
     private final InstalledPartRepository installedPartRepository;
@@ -121,8 +125,51 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
             throw new IllegalArgumentException("Installed part " + requestDTO.getInstalledPartId() + " is not installed on vehicle " + requestDTO.getVehicleId());
         }
 
-        if (installedPart.getWarrantyExpirationDate().isBefore(LocalDate.now())) {
-            throw new IllegalArgumentException("Warranty for this installed part has expired on " + installedPart.getWarrantyExpirationDate());
+        // Kiểm tra warranty expiration với HIERARCHY WARRANTY MODEL
+        LocalDate today = LocalDate.now();
+        Part part = installedPart.getPart();
+
+        // Xác định warranty expiration date theo hierarchy model
+        LocalDate expirationDate;
+        String warrantyType;
+
+        if (part != null && part.getHasExtendedWarranty() != null && part.getHasExtendedWarranty()) {
+            // Extended warranty part → Check part-level warranty
+            expirationDate = installedPart.getWarrantyExpirationDate();
+            warrantyType = "part-level (extended warranty)";
+            logger.info("Checking part-level warranty for extended part: {}", part.getPartName());
+        } else {
+            // Standard part → Check vehicle-level warranty
+            expirationDate = vehicle.getWarrantyEndDate();
+            warrantyType = "vehicle-level (standard part)";
+            logger.info("Checking vehicle-level warranty for standard part: {}", part != null ? part.getPartName() : "unknown");
+        }
+
+        if (expirationDate.isBefore(today)) {
+            // Warranty đã hết hạn - kiểm tra grace period
+            long daysExpired = ChronoUnit.DAYS.between(expirationDate, today);
+
+            // Lấy grace period từ Part (nếu có), fallback về default
+            int gracePeriodDays = part != null && part.getGracePeriodDays() != null
+                ? part.getGracePeriodDays()
+                : DEFAULT_GRACE_PERIOD_DAYS;
+
+            // Nếu còn trong grace period VÀ là paid warranty claim → Cho phép
+            if (daysExpired <= gracePeriodDays) {
+                if (requestDTO.getIsPaidWarranty() != null && requestDTO.getIsPaidWarranty()) {
+                    // Valid paid warranty claim trong grace period
+                    logger.info("Creating paid warranty claim in grace period: installedPartId={}, daysExpired={}, gracePeriod={}, warrantyType={}, usingDefault={}",
+                        requestDTO.getInstalledPartId(), daysExpired, gracePeriodDays, warrantyType, (part == null || part.getGracePeriodDays() == null));
+                } else {
+                    // Hết hạn nhưng không phải paid warranty
+                    throw new IllegalArgumentException("Warranty (" + warrantyType + ") expired on " + expirationDate +
+                        ". To create a claim, use paid warranty option (isPaidWarranty=true).");
+                }
+            } else {
+                // Quá grace period
+                throw new IllegalArgumentException("Warranty (" + warrantyType + ") expired on " + expirationDate +
+                    " and grace period of " + gracePeriodDays + " days has passed. Cannot create claim.");
+            }
         }
 
         WarrantyClaim claim = WarrantyClaimMapper.toEntity(requestDTO, installedPart, vehicle);
@@ -159,6 +206,17 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
 
         claim.setDescription(requestDTO.getDescription());
 
+        // Update paid warranty fields if provided
+        if (requestDTO.getIsPaidWarranty() != null) {
+            claim.setIsPaidWarranty(requestDTO.getIsPaidWarranty());
+        }
+        if (requestDTO.getWarrantyFee() != null) {
+            claim.setWarrantyFee(requestDTO.getWarrantyFee());
+        }
+        if (requestDTO.getPaidWarrantyNote() != null) {
+            claim.setPaidWarrantyNote(requestDTO.getPaidWarrantyNote());
+        }
+
         if (!claim.getInstalledPart().getInstalledPartId().equals(requestDTO.getInstalledPartId())) {
             InstalledPart installedPart = installedPartRepository.findById(requestDTO.getInstalledPartId())
                 .orElseThrow(() -> new ResourceNotFoundException("InstalledPart", "id", requestDTO.getInstalledPartId()));
@@ -167,8 +225,52 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
                 throw new IllegalArgumentException("Installed part " + requestDTO.getInstalledPartId() + " is not installed on vehicle " + requestDTO.getVehicleId());
             }
 
-            if (installedPart.getWarrantyExpirationDate().isBefore(LocalDate.now())) {
-                throw new IllegalArgumentException("Warranty for this installed part has expired on " + installedPart.getWarrantyExpirationDate());
+            // Kiểm tra warranty expiration với HIERARCHY WARRANTY MODEL khi đổi part
+            LocalDate today = LocalDate.now();
+            Part part = installedPart.getPart();
+            Vehicle vehicle = installedPart.getVehicle();
+
+            // Xác định warranty expiration date theo hierarchy model
+            LocalDate expirationDate;
+            String warrantyType;
+
+            if (part != null && part.getHasExtendedWarranty() != null && part.getHasExtendedWarranty()) {
+                // Extended warranty part → Check part-level warranty
+                expirationDate = installedPart.getWarrantyExpirationDate();
+                warrantyType = "part-level (extended warranty)";
+                logger.info("Checking part-level warranty for extended part: {}", part.getPartName());
+            } else {
+                // Standard part → Check vehicle-level warranty
+                expirationDate = vehicle.getWarrantyEndDate();
+                warrantyType = "vehicle-level (standard part)";
+                logger.info("Checking vehicle-level warranty for standard part: {}", part != null ? part.getPartName() : "unknown");
+            }
+
+            if (expirationDate.isBefore(today)) {
+                // Warranty đã hết hạn - kiểm tra grace period
+                long daysExpired = ChronoUnit.DAYS.between(expirationDate, today);
+
+                // Lấy grace period từ Part (nếu có), fallback về default
+                int gracePeriodDays = part != null && part.getGracePeriodDays() != null
+                    ? part.getGracePeriodDays()
+                    : DEFAULT_GRACE_PERIOD_DAYS;
+
+                // Nếu còn trong grace period VÀ là paid warranty claim → Cho phép
+                if (daysExpired <= gracePeriodDays) {
+                    if (claim.getIsPaidWarranty() != null && claim.getIsPaidWarranty()) {
+                        // Valid paid warranty claim trong grace period
+                        logger.info("Updating claim to expired part with paid warranty: claimId={}, installedPartId={}, daysExpired={}, gracePeriod={}, warrantyType={}, usingDefault={}",
+                            id, requestDTO.getInstalledPartId(), daysExpired, gracePeriodDays, warrantyType, (part == null || part.getGracePeriodDays() == null));
+                    } else {
+                        // Hết hạn nhưng claim không phải paid warranty
+                        throw new IllegalArgumentException("Warranty (" + warrantyType + ") expired on " + expirationDate +
+                            ". Cannot switch to expired part without paid warranty.");
+                    }
+                } else {
+                    // Quá grace period
+                    throw new IllegalArgumentException("Warranty (" + warrantyType + ") expired on " + expirationDate +
+                        " and grace period of " + gracePeriodDays + " days has passed.");
+                }
             }
 
             claim.setInstalledPart(installedPart);
@@ -207,18 +309,55 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
     }
 
     /**
-     * Xóa warranty claim theo ID.
+     * Xóa warranty claim theo ID với role-based validation.
+     * <p>
+     * <strong>Quyền hạn:</strong>
+     * <ul>
+     * <li>ADMIN: Có thể xóa claim ở bất kỳ trạng thái nào</li>
+     * <li>SC_STAFF: Chỉ có thể xóa claim ở trạng thái SUBMITTED hoặc PENDING_PAYMENT</li>
+     * </ul>
      *
      * @param id claim ID cần xóa
      * @throws ResourceNotFoundException nếu claim không tồn tại
+     * @throws IllegalStateException nếu SC_STAFF cố gắng xóa claim không ở trạng thái SUBMITTED/PENDING_PAYMENT
      */
     @Override
     @Transactional
     public void deleteClaim(Long id) {
-        if (!warrantyClaimRepository.existsById(id)) {
-            throw new ResourceNotFoundException("WarrantyClaim", "id", id);
+        WarrantyClaim claim = warrantyClaimRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("WarrantyClaim", "id", id));
+
+        // Kiểm tra quyền xóa dựa trên role
+        Optional<String> currentUsername = SecurityUtil.getCurrentUsername();
+        if (currentUsername.isPresent()) {
+            User currentUser = userRepository.findByUsername(currentUsername.get())
+                .orElse(null);
+
+            if (currentUser != null) {
+                String roleName = currentUser.getRole().getRoleName();
+
+                // SC_STAFF chỉ có thể xóa claims ở trạng thái SUBMITTED hoặc PENDING_PAYMENT
+                if ("SC_STAFF".equals(roleName)) {
+                    if (claim.getStatus() != WarrantyClaimStatus.SUBMITTED &&
+                        claim.getStatus() != WarrantyClaimStatus.PENDING_PAYMENT) {
+                        throw new IllegalStateException(
+                            "SC_STAFF can only delete claims in SUBMITTED or PENDING_PAYMENT status. " +
+                            "Current status: " + claim.getStatus()
+                        );
+                    }
+                    logger.info("SC_STAFF {} deleting claim {} in status {}",
+                        currentUsername.get(), id, claim.getStatus());
+                }
+                // ADMIN có thể xóa bất kỳ claim nào
+                else if ("ADMIN".equals(roleName)) {
+                    logger.info("ADMIN {} deleting claim {} in status {}",
+                        currentUsername.get(), id, claim.getStatus());
+                }
+            }
         }
+
         warrantyClaimRepository.deleteById(id);
+        logger.info("Successfully deleted warranty claim {}", id);
     }
 
     /**
@@ -231,11 +370,23 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
     private boolean isValidStatusTransition(WarrantyClaimStatus current, WarrantyClaimStatus target) {
         switch (current) {
             case SUBMITTED:
+                // Free warranty: SUBMITTED → MANAGER_REVIEW
                 return target == WarrantyClaimStatus.MANAGER_REVIEW || target == WarrantyClaimStatus.REJECTED;
+
+            case PENDING_PAYMENT:
+                // Paid warranty: chờ thanh toán → đã xác nhận thanh toán
+                return target == WarrantyClaimStatus.PAYMENT_CONFIRMED || target == WarrantyClaimStatus.REJECTED;
+
+            case PAYMENT_CONFIRMED:
+                // Paid warranty: đã thanh toán → chuyển sang manager review
+                return target == WarrantyClaimStatus.MANAGER_REVIEW || target == WarrantyClaimStatus.REJECTED;
+
             case MANAGER_REVIEW:
                 return target == WarrantyClaimStatus.PROCESSING || target == WarrantyClaimStatus.REJECTED;
+
             case PROCESSING:
                 return target == WarrantyClaimStatus.COMPLETED || target == WarrantyClaimStatus.REJECTED;
+
             default:
                 return false;
         }
@@ -262,8 +413,36 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
             throw new IllegalArgumentException("Installed part " + requestDTO.getInstalledPartId() + " is not installed on vehicle " + requestDTO.getVehicleId());
         }
 
-        if (installedPart.getWarrantyExpirationDate().isBefore(LocalDate.now())) {
-            throw new IllegalArgumentException("Warranty for this installed part has expired on " + installedPart.getWarrantyExpirationDate());
+        // Kiểm tra warranty expiration với grace period support
+        LocalDate today = LocalDate.now();
+        LocalDate expirationDate = installedPart.getWarrantyExpirationDate();
+
+        if (expirationDate.isBefore(today)) {
+            // Warranty đã hết hạn - kiểm tra grace period
+            long daysExpired = ChronoUnit.DAYS.between(expirationDate, today);
+
+            // Lấy grace period từ Part (nếu có), fallback về default
+            Part part = installedPart.getPart();
+            int gracePeriodDays = part != null && part.getGracePeriodDays() != null
+                ? part.getGracePeriodDays()
+                : DEFAULT_GRACE_PERIOD_DAYS;
+
+            // Nếu còn trong grace period VÀ là paid warranty claim → Cho phép
+            if (daysExpired <= gracePeriodDays) {
+                if (requestDTO.getIsPaidWarranty() != null && requestDTO.getIsPaidWarranty()) {
+                    // Valid paid warranty claim trong grace period
+                    logger.info("SC_STAFF creating paid warranty claim in grace period: installedPartId={}, daysExpired={}, gracePeriod={}, usingDefault={}",
+                        requestDTO.getInstalledPartId(), daysExpired, gracePeriodDays, (part == null || part.getGracePeriodDays() == null));
+                } else {
+                    // Hết hạn nhưng không phải paid warranty
+                    throw new IllegalArgumentException("Warranty expired on " + expirationDate +
+                        ". To create a claim, use paid warranty option (isPaidWarranty=true).");
+                }
+            } else {
+                // Quá grace period
+                throw new IllegalArgumentException("Warranty expired on " + expirationDate +
+                    " and grace period of " + gracePeriodDays + " days has passed. Cannot create claim.");
+            }
         }
 
         WarrantyClaim claim = WarrantyClaimMapper.toEntity(requestDTO, installedPart, vehicle);
@@ -330,6 +509,33 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
     }
 
     /**
+     * SC Staff hoặc Admin xác nhận khách hàng đã thanh toán phí bảo hành tại quầy.
+     * Chuyển status từ PENDING_PAYMENT sang PAYMENT_CONFIRMED.
+     *
+     * @param claimId claim ID cần xác nhận thanh toán
+     * @return WarrantyClaimResponseDTO chứa thông tin claim đã cập nhật
+     * @throws ResourceNotFoundException nếu claim không tồn tại
+     * @throws IllegalStateException nếu claim không ở status PENDING_PAYMENT
+     */
+    @Override
+    @Transactional
+    public WarrantyClaimResponseDTO confirmPayment(Long claimId) {
+        WarrantyClaim claim = warrantyClaimRepository.findById(claimId)
+            .orElseThrow(() -> new ResourceNotFoundException("WarrantyClaim", "id", claimId));
+
+        if (claim.getStatus() != WarrantyClaimStatus.PENDING_PAYMENT) {
+            throw new IllegalStateException("Claim must be in PENDING_PAYMENT status to confirm payment. Current status: " + claim.getStatus());
+        }
+
+        claim.setStatus(WarrantyClaimStatus.PAYMENT_CONFIRMED);
+
+        WarrantyClaim savedClaim = warrantyClaimRepository.save(claim);
+        logger.info("Payment confirmed for claim {} - status updated to PAYMENT_CONFIRMED", claimId);
+
+        return WarrantyClaimMapper.toResponseDTO(savedClaim);
+    }
+
+    /**
      * Technician bắt đầu xử lý claim, chuyển status từ MANAGER_REVIEW sang PROCESSING và tạo work log.
      *
      * @param claimId claim ID cần xử lý
@@ -348,6 +554,41 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
             throw new IllegalStateException("Claim must be in MANAGER_REVIEW status to start processing. Current status: " + claim.getStatus());
         }
 
+        // Check daily claim limit for technician
+        String username = SecurityUtil.getCurrentUsername()
+            .orElseThrow(() -> new IllegalStateException("User not authenticated"));
+
+        User currentUser = userRepository.findByUsername(username)
+            .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+
+        // Check if user has a service center and daily limit configured
+        if (currentUser.getServiceCenter() != null) {
+            Integer dailyLimit = currentUser.getServiceCenter().getDailyClaimLimitPerTech();
+
+            if (dailyLimit != null && dailyLimit > 0) {
+                // Calculate start and end of today
+                LocalDateTime startOfDay = LocalDateTime.now().toLocalDate().atStartOfDay();
+                LocalDateTime endOfDay = startOfDay.plusDays(1).minusSeconds(1);
+
+                // Count claims started by this user today
+                long claimsStartedToday = workLogRepository.countClaimsStartedByUserToday(
+                    currentUser.getUserId(),
+                    startOfDay,
+                    endOfDay
+                );
+
+                if (claimsStartedToday >= dailyLimit) {
+                    throw new IllegalStateException(
+                        String.format("Bạn đã đạt giới hạn xử lý claim trong ngày (%d/%d). Vui lòng thử lại vào ngày mai.",
+                            claimsStartedToday, dailyLimit)
+                    );
+                }
+
+                logger.info("Technician {} has started {}/{} claims today",
+                    username, claimsStartedToday, dailyLimit);
+            }
+        }
+
         claim.setStatus(WarrantyClaimStatus.PROCESSING);
         if (note != null && !note.trim().isEmpty()) {
             claim.setDescription(claim.getDescription() + "\n[Tech Start]: " + note);
@@ -355,21 +596,17 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
 
         WarrantyClaim savedClaim = warrantyClaimRepository.save(claim);
 
+        // Create work log using already obtained currentUser
         try {
-            SecurityUtil.getCurrentUsername().ifPresent(username -> {
-                User currentUser = userRepository.findByUsername(username)
-                        .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+            WorkLog workLog = new WorkLog();
+            workLog.setStartTime(LocalDateTime.now());
+            workLog.setEndTime(null);
+            workLog.setDescription(note != null && !note.trim().isEmpty() ? note : "Technician started processing claim");
+            workLog.setWarrantyClaim(savedClaim);
+            workLog.setUser(currentUser);
 
-                WorkLog workLog = new WorkLog();
-                workLog.setStartTime(LocalDateTime.now());
-                workLog.setEndTime(null);
-                workLog.setDescription(note != null && !note.trim().isEmpty() ? note : "Technician started processing claim");
-                workLog.setWarrantyClaim(savedClaim);
-                workLog.setUser(currentUser);
-
-                workLogRepository.save(workLog);
-                logger.info("Work log created for claim {} by user {} (ID: {})", claimId, username, currentUser.getUserId());
-            });
+            workLogRepository.save(workLog);
+            logger.info("Work log created for claim {} by user {} (ID: {})", claimId, username, currentUser.getUserId());
         } catch (Exception e) {
             logger.error("Failed to create work log for claim {}: {}", claimId, e.getMessage());
         }
