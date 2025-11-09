@@ -33,7 +33,7 @@ export const useAdminUserManagement = () => {
 
   // Search and Pagination State
   const [searchTerm, setSearchTerm] = useState('');
-  const [pagination, setPagination] = useState({ currentPage: 0, pageSize: 10, totalPages: 0, totalElements: 0 });
+  const [pagination, setPagination] = useState({ currentPage: 0, pageSize: 20, totalPages: 0, totalElements: 0 });
   const [effectiveSearchTerm, setEffectiveSearchTerm] = useState(''); // New state for search term that actually triggers fetch
   const [selectedRole, setSelectedRole] = useState(''); // New state for role filter
   const [searchType, setSearchType] = useState('general'); // New state for search type: 'general', 'username', or 'id'

@@ -82,7 +82,7 @@ public class SecurityConfig {
 
                 // EVM_STAFF - Nhân viên nhà sản xuất: quản lý vehicles, parts, warranty policies
                 .requestMatchers("/api/vehicles/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF", "SC_TECHNICIAN", "CUSTOMER")
-                .requestMatchers("/api/parts/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF")
+                .requestMatchers("/api/parts/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF", "SC_TECHNICIAN")
 
                 // Installed Parts
                 .requestMatchers("/api/installed-parts/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF", "SC_TECHNICIAN", "CUSTOMER")
@@ -97,7 +97,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/feedbacks/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF", "SC_TECHNICIAN", "CUSTOMER")
 
                 // Work Logs
-                .requestMatchers("/api/work-logs/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF")
+                .requestMatchers("/api/work-logs/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF", "SC_TECHNICIAN")
 
                 // Part Requests - Yêu cầu linh kiện từ Technician đến EVM
                 .requestMatchers("/api/part-requests/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF", "SC_TECHNICIAN")

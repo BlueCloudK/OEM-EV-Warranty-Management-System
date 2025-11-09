@@ -29,7 +29,8 @@ const AdminServiceCenters = () => {
     phone: '',
     openingHours: '',
     latitude: '',
-    longitude: ''
+    longitude: '',
+    dailyClaimLimitPerTech: 10
   });
 
   useEffect(() => {
@@ -92,7 +93,8 @@ const AdminServiceCenters = () => {
       phone: '',
       openingHours: '8:00 - 17:00',
       latitude: '10.76', // Tp Hồ Chí Mình - giá trị mặc định
-      longitude: '106.66'
+      longitude: '106.66',
+      dailyClaimLimitPerTech: 10
     });
     setShowModal(true);
   };
@@ -106,7 +108,8 @@ const AdminServiceCenters = () => {
       phone: center.phone,
       openingHours: center.openingHours,
       latitude: center.latitude,
-      longitude: center.longitude
+      longitude: center.longitude,
+      dailyClaimLimitPerTech: center.dailyClaimLimitPerTech || 10
     });
     setShowModal(true);
   };
@@ -141,7 +144,8 @@ const AdminServiceCenters = () => {
         phone: formData.phone,
         openingHours: formData.openingHours,
         latitude: parseFloat(formData.latitude),
-        longitude: parseFloat(formData.longitude)
+        longitude: parseFloat(formData.longitude),
+        dailyClaimLimitPerTech: parseInt(formData.dailyClaimLimitPerTech) || 10
       };
 
       if (modalMode === 'create') {
@@ -276,6 +280,11 @@ const AdminServiceCenters = () => {
                   </S.InfoRow>
 
                   <S.InfoRow>
+                    <S.InfoLabel><FaClipboardList /> Giới hạn claim/ngày/KTV</S.InfoLabel>
+                    <S.InfoValue>{center.dailyClaimLimitPerTech || 10} claims</S.InfoValue>
+                  </S.InfoRow>
+
+                  <S.InfoRow>
                     <S.InfoLabel>📍 Tọa độ</S.InfoLabel>
                     <S.InfoValue>
                       {center.latitude}, {center.longitude}
@@ -379,6 +388,22 @@ const AdminServiceCenters = () => {
                   required
                   placeholder="VD: 8:00 - 17:00"
                 />
+              </S.FormGroup>
+
+              <S.FormGroup>
+                <S.Label>Giới hạn claim/ngày cho kỹ thuật viên *</S.Label>
+                <S.Input
+                  type="number"
+                  min="1"
+                  max="100"
+                  value={formData.dailyClaimLimitPerTech}
+                  onChange={(e) => setFormData({ ...formData, dailyClaimLimitPerTech: e.target.value })}
+                  required
+                  placeholder="VD: 10"
+                />
+                <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>
+                  💡 Số lượng claim tối đa mà mỗi kỹ thuật viên có thể bắt đầu xử lý trong một ngày
+                </p>
               </S.FormGroup>
 
               <S.FormRow>

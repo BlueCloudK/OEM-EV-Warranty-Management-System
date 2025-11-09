@@ -36,4 +36,20 @@ public interface WorkLogRepository extends JpaRepository<WorkLog, Long> {
         @Param("userId") Long userId);
     @Query("SELECT wl FROM WorkLog wl WHERE wl.warrantyClaim.warrantyClaimId = :claimId ORDER BY wl.startTime DESC")
     List<WorkLog> findRecentWorkLogsByClaimId(@Param("claimId") Long claimId, Pageable pageable);
+
+    /**
+     * Đếm số lượng claim mà một technician đã bắt đầu xử lý trong một ngày cụ thể.
+     * Dùng để kiểm tra daily claim limit.
+     *
+     * @param userId ID của technician
+     * @param startOfDay Thời điểm bắt đầu ngày (00:00:00)
+     * @param endOfDay Thời điểm kết thúc ngày (23:59:59)
+     * @return Số lượng claim đã bắt đầu trong ngày
+     */
+    @Query("SELECT COUNT(wl) FROM WorkLog wl WHERE wl.user.userId = :userId AND wl.startTime BETWEEN :startOfDay AND :endOfDay")
+    long countClaimsStartedByUserToday(
+        @Param("userId") Long userId,
+        @Param("startOfDay") LocalDateTime startOfDay,
+        @Param("endOfDay") LocalDateTime endOfDay
+    );
 }

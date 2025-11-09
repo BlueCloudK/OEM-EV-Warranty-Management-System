@@ -52,7 +52,7 @@ public class InstalledPartController {
      * @return {@link ResponseEntity} chứa một {@link PagedResponse} các linh kiện đã lắp đặt.
      */
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN')")
     public ResponseEntity<PagedResponse<InstalledPartResponseDTO>> getAllInstalledParts(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
@@ -87,7 +87,7 @@ public class InstalledPartController {
      * @return {@link ResponseEntity} chứa thông tin bản ghi đã được tạo với HTTP status 201 Created.
      */
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN')")
     public ResponseEntity<InstalledPartResponseDTO> createInstalledPart(
             @Valid @RequestBody InstalledPartRequestDTO requestDTO) {
         logger.info("Create installed part request: {}", requestDTO);
@@ -107,7 +107,7 @@ public class InstalledPartController {
      * @return {@link ResponseEntity} chứa thông tin đã được cập nhật.
      */
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN')")
     public ResponseEntity<InstalledPartResponseDTO> updateInstalledPart(
             @PathVariable Long id,
             @Valid @RequestBody InstalledPartRequestDTO requestDTO) {

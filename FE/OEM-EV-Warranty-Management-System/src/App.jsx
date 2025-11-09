@@ -64,6 +64,7 @@ import CustomerLayout from "./components/CustomerLayout";
 import CustomerDashboard from "./pages/Customer/CustomerDashboard";
 import CustomerProfile from "./pages/Customer/CustomerProfile";
 import WarrantyHistory from "./pages/Customer/WarrantyHistory";
+import WarrantyCheckerPage from "./pages/Customer/WarrantyChecker";
 import MyVehicles from "./pages/Customer/MyVehicles";
 import CustomerFeedback from "./pages/Customer/CustomerFeedback";
 import CustomerRecalls from "./pages/Customer/CustomerRecalls";
@@ -163,7 +164,8 @@ export default function App() {
           <Route path="dashboard" element={<CustomerDashboard />} />
           <Route path="my-vehicles" element={<MyVehicles />} />
           <Route path="warranty-history" element={<WarrantyHistory />} />
-          <Route path="warranty-claims" element={<div><h1>Yêu cầu Bảo hành</h1><p>Chức năng đang được xây dựng.</p></div>} />
+          <Route path="warranty-checker" element={<WarrantyCheckerPage />} />
+          <Route path="warranty-claims" element={<div><h1>Yêu cầu Bảo hành</h1><p>Vui lòng liên hệ trung tâm dịch vụ để tạo yêu cầu bảo hành.</p></div>} />
           <Route path="recalls" element={<CustomerRecalls />} />
           <Route path="service-centers" element={<CustomerServiceCenters />} />
           <Route path="feedback" element={<CustomerFeedback />} />

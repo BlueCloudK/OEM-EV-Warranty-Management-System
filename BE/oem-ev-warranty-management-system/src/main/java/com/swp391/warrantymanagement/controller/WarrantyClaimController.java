@@ -60,7 +60,7 @@ public class WarrantyClaimController {
      * @return {@link ResponseEntity} chứa một {@link PagedResponse} các yêu cầu bảo hành.
      */
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN')")
     public ResponseEntity<PagedResponse<WarrantyClaimResponseDTO>> getAllClaims(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
@@ -148,13 +148,14 @@ public class WarrantyClaimController {
     }
 
     /**
-     * Xóa một yêu cầu bảo hành. Endpoint này chỉ dành cho ADMIN.
+     * Xóa một yêu cầu bảo hành. Endpoint này dành cho ADMIN và SC_STAFF.
+     * SC_STAFF chỉ có thể xóa claims ở trạng thái SUBMITTED hoặc PENDING_PAYMENT.
      *
      * @param id ID của yêu cầu cần xóa.
      * @return {@link ResponseEntity} với HTTP status 204 No Content nếu xóa thành công.
      */
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF')")
     public ResponseEntity<Void> deleteClaim(@PathVariable Long id) {
         logger.info("Delete warranty claim request: {}", id);
         // Thiết kế: Tầng Service sẽ chịu trách nhiệm xử lý các ràng buộc trước khi xóa.
@@ -210,6 +211,20 @@ public class WarrantyClaimController {
         logger.info("Admin reject warranty claim: id={}, reason={}", id, reason);
         WarrantyClaimResponseDTO updatedClaim = warrantyClaimService.adminRejectClaim(id, reason);
         logger.info("Warranty claim rejected by Admin: {}", id);
+        return ResponseEntity.ok(updatedClaim);
+    }
+
+    /**
+     * SC Staff hoặc Admin xác nhận khách hàng đã thanh toán phí bảo hành tại quầy.
+     * (PENDING_PAYMENT → PAYMENT_CONFIRMED)
+     * Endpoint này cho phép staff xác nhận thanh toán tiền mặt/chuyển khoản tại quầy.
+     */
+    @PutMapping("/{id}/confirm-payment")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF')")
+    public ResponseEntity<WarrantyClaimResponseDTO> confirmPayment(@PathVariable Long id) {
+        logger.info("Confirm payment for warranty claim: id={}", id);
+        WarrantyClaimResponseDTO updatedClaim = warrantyClaimService.confirmPayment(id);
+        logger.info("Payment confirmed for warranty claim: {}", id);
         return ResponseEntity.ok(updatedClaim);
     }
 

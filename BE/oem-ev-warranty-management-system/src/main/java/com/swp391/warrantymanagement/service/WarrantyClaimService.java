@@ -50,6 +50,9 @@ public interface WarrantyClaimService {
     // Admin từ chối claim (SUBMITTED → REJECTED)
     WarrantyClaimResponseDTO adminRejectClaim(Long claimId, String reason);
 
+    // SC Staff hoặc Admin xác nhận khách hàng đã thanh toán (PENDING_PAYMENT → PAYMENT_CONFIRMED)
+    WarrantyClaimResponseDTO confirmPayment(Long claimId);
+
     // Technician bắt đầu xử lý (MANAGER_REVIEW → PROCESSING)
     WarrantyClaimResponseDTO techStartProcessing(Long claimId, String note);
 

@@ -159,6 +159,20 @@ export const Label = styled.label`
   color: #374151;
 `;
 
+export const Input = styled.input`
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid ${({ hasError }) => (hasError ? '#ef4444' : '#d1d5db')};
+  border-radius: 6px;
+  box-sizing: border-box;
+
+  &:disabled {
+    background: #f3f4f6;
+    cursor: not-allowed;
+    color: #6b7280;
+  }
+`;
+
 export const Select = styled.select`
   width: 100%;
   padding: 10px 12px;
@@ -181,4 +195,15 @@ export const ErrorText = styled.p`
   margin: 4px 0 0 0;
   font-size: 12px;
   color: #ef4444;
+`;
+
+export const PaginationContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+  padding: 16px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 `;
