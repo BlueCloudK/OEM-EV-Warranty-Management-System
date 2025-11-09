@@ -3,6 +3,7 @@ package com.swp391.warrantymanagement.service.impl;
 import com.swp391.warrantymanagement.dto.request.WorkLogRequestDTO;
 import com.swp391.warrantymanagement.dto.response.WorkLogResponseDTO;
 import com.swp391.warrantymanagement.dto.response.PagedResponse;
+import com.swp391.warrantymanagement.dto.response.DailyClaimStatsResponseDTO;
 import com.swp391.warrantymanagement.entity.User;
 import com.swp391.warrantymanagement.entity.WarrantyClaim;
 import com.swp391.warrantymanagement.entity.WorkLog;
@@ -18,6 +19,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -213,5 +215,52 @@ public class WorkLogServiceImpl implements WorkLogService {
                 .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
 
         return getWorkLogsByUser(user.getUserId(), pageable);
+    }
+
+    /**
+     * Lấy thống kê số claim đã xử lý trong ngày của technician hiện tại.
+     *
+     * @param username Username của technician
+     * @return DailyClaimStatsResponseDTO chứa thống kê hôm nay
+     * @throws ResourceNotFoundException nếu không tìm thấy user
+     */
+    @Override
+    public DailyClaimStatsResponseDTO getMyDailyStats(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+
+        // Tính start và end của ngày hôm nay
+        LocalDateTime startOfDay = LocalDateTime.now().toLocalDate().atStartOfDay();
+        LocalDateTime endOfDay = startOfDay.plusDays(1).minusSeconds(1);
+
+        // Đếm số claim đã bắt đầu hôm nay
+        long claimsStartedToday = workLogRepository.countClaimsStartedByUserToday(
+            user.getUserId(),
+            startOfDay,
+            endOfDay
+        );
+
+        // Lấy daily limit từ service center (nếu có)
+        Integer dailyLimit = 10; // Default
+        if (user.getServiceCenter() != null && user.getServiceCenter().getDailyClaimLimitPerTech() != null) {
+            dailyLimit = user.getServiceCenter().getDailyClaimLimitPerTech();
+        }
+
+        // Tính số claim còn lại
+        long remainingClaims = Math.max(0, dailyLimit - claimsStartedToday);
+
+        // Tính tỷ lệ phần trăm
+        double usagePercentage = dailyLimit > 0 ? (claimsStartedToday * 100.0 / dailyLimit) : 0.0;
+
+        // Kiểm tra đã đạt giới hạn chưa
+        boolean limitReached = claimsStartedToday >= dailyLimit;
+
+        return new DailyClaimStatsResponseDTO(
+            claimsStartedToday,
+            dailyLimit,
+            remainingClaims,
+            usagePercentage,
+            limitReached
+        );
     }
 }

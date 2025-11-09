@@ -601,3 +601,132 @@ export const LoadingState = styled(EmptyState)`
     font-size: 16px;
   }
 `;
+
+/* Daily Claim Limit Card Styles */
+export const DailyLimitCard = styled.div`
+  background: ${({ $limitReached, $nearLimit }) =>
+    $limitReached ? '#fef2f2' : $nearLimit ? '#fffbeb' : '#f0fdfa'};
+  border: 2px solid ${({ $limitReached, $nearLimit }) =>
+    $limitReached ? '#fca5a5' : $nearLimit ? '#fcd34d' : '#99f6e4'};
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 32px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+`;
+
+export const DailyLimitHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+`;
+
+export const DailyLimitTitle = styled.h3`
+  margin: 0;
+  color: #0f766e;
+  font-size: 20px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+`;
+
+export const LimitBadge = styled.div`
+  background: ${({ $error }) => $error ? '#fca5a5' : '#fcd34d'};
+  color: ${({ $error }) => $error ? '#991b1b' : '#92400e'};
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+export const DailyLimitContent = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 20px;
+`;
+
+export const DailyLimitNumbers = styled.div`
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+`;
+
+export const DailyLimitBig = styled.div`
+  font-size: 56px;
+  font-weight: 800;
+  color: #0f766e;
+  line-height: 1;
+`;
+
+export const DailyLimitLabel = styled.div`
+  font-size: 20px;
+  color: #6b7280;
+  font-weight: 600;
+`;
+
+export const DailyLimitInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 15px;
+  color: #374151;
+
+  strong {
+    color: #0f766e;
+    font-weight: 700;
+    font-size: 16px;
+  }
+`;
+
+export const DailyProgressBar = styled.div`
+  width: 100%;
+  height: 16px;
+  background: #e0f2f1;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+`;
+
+export const DailyProgressFill = styled.div`
+  height: 100%;
+  width: ${({ $percentage }) => Math.min($percentage, 100)}%;
+  background: ${({ $limitReached, $nearLimit }) =>
+    $limitReached
+      ? 'linear-gradient(90deg, #ef4444 0%, #dc2626 100%)'
+      : $nearLimit
+        ? 'linear-gradient(90deg, #f59e0b 0%, #d97706 100%)'
+        : 'linear-gradient(90deg, #14b8a6 0%, #0d9488 100%)'};
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+`;
+
+export const DailyWarningMessage = styled.div`
+  background: ${({ $error }) => $error ? '#fee2e2' : '#fef3c7'};
+  color: ${({ $error }) => $error ? '#991b1b' : '#92400e'};
+  padding: 14px 18px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid ${({ $error }) => $error ? '#fca5a5' : '#fcd34d'};
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+
+  svg {
+    flex-shrink: 0;
+    font-size: 18px;
+  }
+`;

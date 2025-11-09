@@ -94,6 +94,18 @@ public class ServiceCenter {
     @Column(name = "longitude", precision = 9, scale = 6, nullable = false)
     private BigDecimal longitude;
 
+    // ======= BUSINESS RULES =======
+
+    /**
+     * Số lượng claim tối đa mà mỗi technician có thể bắt đầu xử lý trong một ngày.
+     * <p>
+     *  <strong>Mục đích:</strong> Kiểm soát workload và đảm bảo chất lượng dịch vụ.
+     *  <strong>Giá trị mặc định:</strong> 10 claims/ngày
+     *  <strong>Lưu ý:</strong> Admin có thể điều chỉnh giá trị này cho từng service center.
+     */
+    @Column(name = "daily_claim_limit_per_tech", nullable = false)
+    private Integer dailyClaimLimitPerTech = 10;
+
     // ======= RELATIONSHIPS =======
 
     /**

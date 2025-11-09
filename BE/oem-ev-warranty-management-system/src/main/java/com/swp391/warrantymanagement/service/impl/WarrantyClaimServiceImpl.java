@@ -554,6 +554,41 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
             throw new IllegalStateException("Claim must be in MANAGER_REVIEW status to start processing. Current status: " + claim.getStatus());
         }
 
+        // Check daily claim limit for technician
+        String username = SecurityUtil.getCurrentUsername()
+            .orElseThrow(() -> new IllegalStateException("User not authenticated"));
+
+        User currentUser = userRepository.findByUsername(username)
+            .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+
+        // Check if user has a service center and daily limit configured
+        if (currentUser.getServiceCenter() != null) {
+            Integer dailyLimit = currentUser.getServiceCenter().getDailyClaimLimitPerTech();
+
+            if (dailyLimit != null && dailyLimit > 0) {
+                // Calculate start and end of today
+                LocalDateTime startOfDay = LocalDateTime.now().toLocalDate().atStartOfDay();
+                LocalDateTime endOfDay = startOfDay.plusDays(1).minusSeconds(1);
+
+                // Count claims started by this user today
+                long claimsStartedToday = workLogRepository.countClaimsStartedByUserToday(
+                    currentUser.getUserId(),
+                    startOfDay,
+                    endOfDay
+                );
+
+                if (claimsStartedToday >= dailyLimit) {
+                    throw new IllegalStateException(
+                        String.format("Bạn đã đạt giới hạn xử lý claim trong ngày (%d/%d). Vui lòng thử lại vào ngày mai.",
+                            claimsStartedToday, dailyLimit)
+                    );
+                }
+
+                logger.info("Technician {} has started {}/{} claims today",
+                    username, claimsStartedToday, dailyLimit);
+            }
+        }
+
         claim.setStatus(WarrantyClaimStatus.PROCESSING);
         if (note != null && !note.trim().isEmpty()) {
             claim.setDescription(claim.getDescription() + "\n[Tech Start]: " + note);
@@ -561,21 +596,17 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
 
         WarrantyClaim savedClaim = warrantyClaimRepository.save(claim);
 
+        // Create work log using already obtained currentUser
         try {
-            SecurityUtil.getCurrentUsername().ifPresent(username -> {
-                User currentUser = userRepository.findByUsername(username)
-                        .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+            WorkLog workLog = new WorkLog();
+            workLog.setStartTime(LocalDateTime.now());
+            workLog.setEndTime(null);
+            workLog.setDescription(note != null && !note.trim().isEmpty() ? note : "Technician started processing claim");
+            workLog.setWarrantyClaim(savedClaim);
+            workLog.setUser(currentUser);
 
-                WorkLog workLog = new WorkLog();
-                workLog.setStartTime(LocalDateTime.now());
-                workLog.setEndTime(null);
-                workLog.setDescription(note != null && !note.trim().isEmpty() ? note : "Technician started processing claim");
-                workLog.setWarrantyClaim(savedClaim);
-                workLog.setUser(currentUser);
-
-                workLogRepository.save(workLog);
-                logger.info("Work log created for claim {} by user {} (ID: {})", claimId, username, currentUser.getUserId());
-            });
+            workLogRepository.save(workLog);
+            logger.info("Work log created for claim {} by user {} (ID: {})", claimId, username, currentUser.getUserId());
         } catch (Exception e) {
             logger.error("Failed to create work log for claim {}: {}", claimId, e.getMessage());
         }

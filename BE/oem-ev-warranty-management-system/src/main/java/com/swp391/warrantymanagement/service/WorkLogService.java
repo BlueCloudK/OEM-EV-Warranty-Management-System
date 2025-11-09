@@ -3,6 +3,7 @@ package com.swp391.warrantymanagement.service;
 import com.swp391.warrantymanagement.dto.request.WorkLogRequestDTO;
 import com.swp391.warrantymanagement.dto.response.WorkLogResponseDTO;
 import com.swp391.warrantymanagement.dto.response.PagedResponse;
+import com.swp391.warrantymanagement.dto.response.DailyClaimStatsResponseDTO;
 import org.springframework.data.domain.Pageable;
 
 /**
@@ -54,4 +55,11 @@ public interface WorkLogService {
      * @param pageable Thông tin phân trang.
      */
     PagedResponse<WorkLogResponseDTO> getWorkLogsByUsername(String username, Pageable pageable);
+
+    /**
+     * Lấy thống kê số lượng claim đã xử lý trong ngày của technician hiện tại.
+     * @param username Username của technician (lấy từ Security Context).
+     * @return DailyClaimStatsResponseDTO chứa thông tin thống kê hôm nay.
+     */
+    DailyClaimStatsResponseDTO getMyDailyStats(String username);
 }
