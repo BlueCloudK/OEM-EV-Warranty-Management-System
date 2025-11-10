@@ -21,19 +21,60 @@ export const publicApiClient = async (endpoint, options = {}) => {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`❌ Public API Error (${endpoint}):`, {
-        status: response.status,
-        statusText: response.statusText,
-        body: errorText
-      });
-      throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`);
+      let errorMessage = 'Đã xảy ra lỗi khi kết nối';
+
+      try {
+        // Backend returns JSON format: { "success": false, "message": "...", "timestamp": ... }
+        const errorData = await response.json();
+
+        console.error(`❌ Public API Error (${endpoint}):`, {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorData
+        });
+
+        // Use the message from backend response if available
+        if (errorData && errorData.message) {
+          errorMessage = errorData.message;
+        } else {
+          // Fallback to status-specific messages if backend doesn't provide message
+          if (response.status === 400) {
+            errorMessage = 'Dữ liệu không hợp lệ. Vui lòng kiểm tra lại thông tin đã nhập.';
+          } else if (response.status === 401) {
+            errorMessage = 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
+          } else if (response.status === 403) {
+            errorMessage = 'Bạn không có quyền thực hiện thao tác này.';
+          } else if (response.status === 404) {
+            errorMessage = 'Không tìm thấy dữ liệu. Vui lòng kiểm tra lại.';
+          } else if (response.status === 409) {
+            errorMessage = 'Dữ liệu đã tồn tại hoặc xung đột. Vui lòng kiểm tra lại.';
+          } else if (response.status === 422) {
+            errorMessage = 'Dữ liệu không đúng định dạng. Vui lòng kiểm tra lại thông tin.';
+          } else if (response.status === 500) {
+            errorMessage = 'Lỗi máy chủ. Vui lòng thử lại sau hoặc liên hệ bộ phận hỗ trợ.';
+          } else if (response.status === 503) {
+            errorMessage = 'Hệ thống đang bảo trì. Vui lòng thử lại sau.';
+          } else {
+            errorMessage = `Lỗi kết nối (Mã lỗi: ${response.status}). Vui lòng thử lại.`;
+          }
+        }
+      } catch (parseError) {
+        console.error('Error parsing error response:', parseError);
+        // If JSON parsing fails, use status-based fallback
+        errorMessage = `Lỗi kết nối (Mã lỗi: ${response.status}). Vui lòng thử lại.`;
+      }
+
+      throw new Error(errorMessage);
     }
 
     const data = await response.json();
     return data;
   } catch (error) {
     console.error(`❌ Public API Client Error (${endpoint}):`, error);
+    // If it's a network error, provide a clear message
+    if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
+      throw new Error('Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng và thử lại.');
+    }
     throw error;
   }
 };
@@ -139,8 +180,44 @@ const apiClient = async (endpoint, options = {}) => {
 
     // Xử lý response cuối cùng
     if (!response.ok) {
-      const errorData = await response.text();
-      throw new Error(errorData || `HTTP ${response.status}: ${response.statusText}`);
+      let errorMessage = 'Đã xảy ra lỗi khi xử lý yêu cầu';
+
+      try {
+        // Backend returns JSON format: { "success": false, "message": "...", "timestamp": ... }
+        const errorData = await response.json();
+
+        // Use the message from backend response if available
+        if (errorData && errorData.message) {
+          errorMessage = errorData.message;
+        } else {
+          // Fallback to status-specific messages if backend doesn't provide message
+          if (response.status === 400) {
+            errorMessage = 'Dữ liệu không hợp lệ. Vui lòng kiểm tra lại thông tin đã nhập.';
+          } else if (response.status === 401) {
+            errorMessage = 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
+          } else if (response.status === 403) {
+            errorMessage = 'Bạn không có quyền thực hiện thao tác này.';
+          } else if (response.status === 404) {
+            errorMessage = 'Không tìm thấy dữ liệu. Vui lòng kiểm tra lại.';
+          } else if (response.status === 409) {
+            errorMessage = 'Dữ liệu đã tồn tại hoặc xung đột. Vui lòng kiểm tra lại.';
+          } else if (response.status === 422) {
+            errorMessage = 'Dữ liệu không đúng định dạng. Vui lòng kiểm tra lại thông tin.';
+          } else if (response.status === 500) {
+            errorMessage = 'Lỗi máy chủ. Vui lòng thử lại sau hoặc liên hệ bộ phận hỗ trợ.';
+          } else if (response.status === 503) {
+            errorMessage = 'Hệ thống đang bảo trì. Vui lòng thử lại sau.';
+          } else {
+            errorMessage = `Lỗi kết nối (Mã lỗi: ${response.status}). Vui lòng thử lại.`;
+          }
+        }
+      } catch (parseError) {
+        console.error('Error parsing error response:', parseError);
+        // If JSON parsing fails, use status-based fallback
+        errorMessage = `Lỗi kết nối (Mã lỗi: ${response.status}). Vui lòng thử lại.`;
+      }
+
+      throw new Error(errorMessage);
     }
 
     const contentType = response.headers.get('content-type');
@@ -151,7 +228,11 @@ const apiClient = async (endpoint, options = {}) => {
     return null; // Cho các yêu cầu không trả về JSON (ví dụ: DELETE)
 
   } catch (error) {
-    console.error(`❌ API Client Error (${options.method} ${endpoint}):`, error);
+    console.error(`❌ API Client Error (${options.method || 'GET'} ${endpoint}):`, error);
+    // If it's a network error, provide a clear message
+    if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
+      throw new Error('Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng và thử lại.');
+    }
     throw error;
   }
 };

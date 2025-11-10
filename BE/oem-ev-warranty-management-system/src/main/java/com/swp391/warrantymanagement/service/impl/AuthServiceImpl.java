@@ -8,6 +8,7 @@ import com.swp391.warrantymanagement.entity.Customer;
 import com.swp391.warrantymanagement.entity.Role;
 import com.swp391.warrantymanagement.entity.Token;
 import com.swp391.warrantymanagement.entity.User;
+import com.swp391.warrantymanagement.exception.InvalidCredentialsException;
 import com.swp391.warrantymanagement.mapper.CustomerMapper;
 import com.swp391.warrantymanagement.repository.CustomerRepository;
 import com.swp391.warrantymanagement.repository.RoleRepository;
@@ -43,16 +44,16 @@ public class AuthServiceImpl implements AuthService {
      *
      * @param loginRequest chứa username và password
      * @return AuthResponseDTO với access token, refresh token, và thông tin user
-     * @throws RuntimeException nếu user không tồn tại hoặc password không đúng
+     * @throws InvalidCredentialsException nếu user không tồn tại hoặc password không đúng (HTTP 401)
      */
     @Override
     @Transactional
     public AuthResponseDTO authenticateUser(LoginRequestDTO loginRequest) {
         User user = userRepository.findByUsername(loginRequest.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new InvalidCredentialsException("Tên đăng nhập hoặc mật khẩu không đúng"));
 
         if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid credentials");
+            throw new InvalidCredentialsException("Tên đăng nhập hoặc mật khẩu không đúng");
         }
 
         String accessToken = jwtService.generateToken(user);

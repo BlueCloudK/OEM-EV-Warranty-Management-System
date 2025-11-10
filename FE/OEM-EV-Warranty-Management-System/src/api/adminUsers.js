@@ -90,8 +90,42 @@ export const adminAuthApi = {
       });
 
       if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(errorData || `HTTP ${response.status}`);
+        let errorMessage = 'Đã xảy ra lỗi khi đăng nhập';
+
+        try {
+          // Backend returns JSON format: { "success": false, "message": "...", "timestamp": ... }
+          const errorData = await response.json();
+
+          // Use the message from backend response if available
+          if (errorData && errorData.message) {
+            errorMessage = errorData.message;
+          } else {
+            // Fallback to status-specific messages if backend doesn't provide message
+            if (response.status === 401) {
+              errorMessage = 'Tên đăng nhập hoặc mật khẩu không đúng. Vui lòng kiểm tra lại thông tin đăng nhập.';
+            } else if (response.status === 403) {
+              errorMessage = 'Tài khoản của bạn đã bị khóa hoặc không có quyền truy cập. Vui lòng liên hệ quản trị viên.';
+            } else if (response.status === 404) {
+              errorMessage = 'Không tìm thấy tài khoản. Vui lòng kiểm tra lại tên đăng nhập.';
+            } else if (response.status === 500) {
+              errorMessage = 'Lỗi máy chủ. Vui lòng thử lại sau hoặc liên hệ bộ phận hỗ trợ.';
+            } else if (response.status === 503) {
+              errorMessage = 'Hệ thống đang bảo trì. Vui lòng thử lại sau.';
+            } else {
+              errorMessage = `Lỗi kết nối (Mã lỗi: ${response.status}). Vui lòng thử lại.`;
+            }
+          }
+        } catch (parseError) {
+          console.error('Error parsing error response:', parseError);
+          // If JSON parsing fails, use status-based fallback messages
+          if (response.status === 401) {
+            errorMessage = 'Tên đăng nhập hoặc mật khẩu không đúng. Vui lòng kiểm tra lại thông tin đăng nhập.';
+          } else {
+            errorMessage = `Lỗi kết nối (Mã lỗi: ${response.status}). Vui lòng thử lại.`;
+          }
+        }
+
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
@@ -102,6 +136,10 @@ export const adminAuthApi = {
       return data;
     } catch (error) {
       console.error('❌ Error logging in:', error);
+      // If it's a network error (not our custom error), provide a clear message
+      if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
+        throw new Error('Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng và thử lại.');
+      }
       throw error;
     }
   },
