@@ -1,7 +1,8 @@
-import apiClient from './apiClient';
+import apiClient from "./apiClient";
 
 // URL cơ sở vẫn cần cho hàm login, vì nó không đi qua apiClient
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "https://8086127e5439.ngrok-free.app";
 
 export const adminUsersApi = {
   // GET ALL USERS - Lấy danh sách tất cả users với pagination và filtering
@@ -17,40 +18,44 @@ export const adminUsersApi = {
 
   // SEARCH USERS BY USERNAME - Tìm kiếm user theo username
   searchUsersByUsername: (username, page = 0, size = 10) => {
-    const queryParams = new URLSearchParams({ username, page, size }).toString();
+    const queryParams = new URLSearchParams({
+      username,
+      page,
+      size,
+    }).toString();
     return apiClient(`/api/admin/users/search?${queryParams}`);
   },
 
   // UPDATE USER (General PUT - currently problematic with password requirement)
   updateUser: (id, userData) => {
     return apiClient(`/api/admin/users/${id}`, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify(userData),
     });
   },
 
   // DELETE USER - Xóa user
   deleteUser: (id) => {
-    return apiClient(`/api/admin/users/${id}`, { method: 'DELETE' });
+    return apiClient(`/api/admin/users/${id}`, { method: "DELETE" });
   },
 
   // ACTIVATE/DEACTIVATE USER - Kích hoạt/vô hiệu hóa user
   toggleUserStatus: (id, isActive) => {
     return apiClient(`/api/admin/users/${id}/status`, {
-      method: 'PATCH',
+      method: "PATCH",
       body: JSON.stringify({ isActive }),
     });
   },
 
   // GET STATISTICS - Thống kê users (Admin)
   getStatistics: () => {
-    return apiClient('/api/admin/users/statistics');
+    return apiClient("/api/admin/users/statistics");
   },
 
   // NEW: UPDATE USER ROLE - Cập nhật vai trò người dùng
   updateUserRole: (userId, newRoleId) => {
     return apiClient(`/api/admin/users/${userId}/role?newRoleId=${newRoleId}`, {
-      method: 'PATCH',
+      method: "PATCH",
     });
   },
 
@@ -58,7 +63,7 @@ export const adminUsersApi = {
   resetUserPassword: async (userId) => {
     // Return the full response data, not just success: true
     return await apiClient(`/api/admin/users/${userId}/reset-password`, {
-      method: 'POST',
+      method: "POST",
     });
   },
 };
@@ -66,16 +71,16 @@ export const adminUsersApi = {
 export const adminAuthApi = {
   // STAFF: REGISTER CUSTOMER - Đăng ký Customer đầy đủ bởi Staff
   staffRegisterCustomer: (userData) => {
-    return apiClient('/api/auth/staff/register-customer', {
-      method: 'POST',
+    return apiClient("/api/auth/staff/register-customer", {
+      method: "POST",
       body: JSON.stringify(userData),
     });
   },
 
   // ADMIN: Create user with any role
   adminCreateUser: (userData) => {
-    return apiClient('/api/auth/admin/create-user', {
-      method: 'POST',
+    return apiClient("/api/auth/admin/create-user", {
+      method: "POST",
       body: JSON.stringify(userData),
     });
   },
@@ -84,8 +89,8 @@ export const adminAuthApi = {
   login: async (credentials) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(credentials),
       });
 
@@ -96,12 +101,12 @@ export const adminAuthApi = {
 
       const data = await response.json();
       if (data.accessToken && data.refreshToken) {
-        localStorage.setItem('accessToken', data.accessToken);
-        localStorage.setItem('refreshToken', data.refreshToken);
+        localStorage.setItem("accessToken", data.accessToken);
+        localStorage.setItem("refreshToken", data.refreshToken);
       }
       return data;
     } catch (error) {
-      console.error('❌ Error logging in:', error);
+      console.error("❌ Error logging in:", error);
       throw error;
     }
   },
@@ -110,24 +115,27 @@ export const adminAuthApi = {
   getCurrentUser: async () => {
     try {
       // Thử endpoint mới hơn trước
-      return await apiClient('/api/me');
+      return await apiClient("/api/me");
     } catch (error) {
-      console.warn('Could not fetch from /api/me, falling back to /api/auth/validate', error);
+      console.warn(
+        "Could not fetch from /api/me, falling back to /api/auth/validate",
+        error
+      );
       // Nếu thất bại, thử endpoint cũ hơn
-      return apiClient('/api/auth/validate');
+      return apiClient("/api/auth/validate");
     }
   },
 
   // GET MY PROFILE - Lấy thông tin profile đầy đủ (bao gồm customerId cho CUSTOMER)
   getMyProfile: async () => {
-    return apiClient('/api/profile');
+    return apiClient("/api/profile");
   },
 
   // LOGOUT - Đăng xuất
   logout: () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('customerId');
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("customerId");
     // Có thể thêm logic chuyển hướng trang ở đây nếu cần
     // window.location.href = '/login';
   },
