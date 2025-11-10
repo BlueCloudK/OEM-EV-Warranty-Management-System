@@ -172,6 +172,46 @@ Authorization: Bearer {token}
 }
 ```
 
+## Daily Claim Limit & Notification
+
+### Giới Hạn Số Claim Hàng Ngày
+Hệ thống giám sát số lượng warranty claims được tạo mỗi ngày để phát hiện các bất thường.
+
+**Business Logic**:
+```
+dailyClaimCount = COUNT(claims WHERE DATE(claimDate) = TODAY)
+
+IF dailyClaimCount >= DAILY_LIMIT_THRESHOLD THEN
+    sendNotification(ADMIN, SC_STAFF)
+    logAlert("Daily claim limit reached: " + dailyClaimCount)
+END IF
+```
+
+**Tham số**:
+- `DAILY_LIMIT_THRESHOLD` = 10 claims/day (có thể config)
+
+**API Endpoint**:
+```
+GET /api/warranty-claims/{id}/daily-stats
+Authorization: Bearer <token> (SC_STAFF, ADMIN)
+
+Response:
+{
+  "date": "2025-11-09",
+  "totalClaims": 12,
+  "limitThreshold": 10,
+  "isLimitReached": true,
+  "breakdownByStatus": {
+    "SUBMITTED": 5,
+    "MANAGER_REVIEW": 3,
+    "PROCESSING": 2,
+    "COMPLETED": 2
+  }
+}
+```
+
+---
+
 ## Quy Trình Tạo Warranty Claim
 
 ### Kịch Bản 1: Bảo Hành Miễn Phí (Còn Hạn)
@@ -246,6 +286,39 @@ Authorization: Bearer {token}
 
 2. **SC_STAFF** thông báo khách hàng: "Xe đã quá hạn bảo hành 200 ngày, vượt quá thời hạn cho phép (180 ngày). Không thể áp dụng bảo hành tính phí."
 
+## Warranty Claim Status Flow
+
+### WarrantyClaimStatus Enum (Updated)
+
+Hệ thống sử dụng các status sau để tracking claim lifecycle:
+
+| Status | Mô Tả | Actor Thực Hiện | Next Status |
+|--------|-------|-----------------|-------------|
+| `SUBMITTED` | Claim mới được tạo | SC_STAFF | MANAGER_REVIEW hoặc PENDING_PAYMENT |
+| `PENDING_PAYMENT` | Chờ khách hàng thanh toán phí bảo hành | SC_STAFF | PAYMENT_CONFIRMED hoặc REJECTED |
+| `PAYMENT_CONFIRMED` | Khách hàng đã thanh toán | SC_STAFF | MANAGER_REVIEW |
+| `MANAGER_REVIEW` | Chờ manager/admin duyệt | ADMIN | PROCESSING hoặc REJECTED |
+| `PROCESSING` | Technician đang sửa chữa | SC_TECHNICIAN | COMPLETED |
+| `COMPLETED` | Hoàn thành sửa chữa | SC_TECHNICIAN | (Final state) |
+| `REJECTED` | Từ chối claim | ADMIN | (Final state) |
+
+**Free Warranty Flow**:
+```
+SUBMITTED → MANAGER_REVIEW → PROCESSING → COMPLETED
+```
+
+**Paid Warranty Flow**:
+```
+SUBMITTED → PENDING_PAYMENT → PAYMENT_CONFIRMED → MANAGER_REVIEW → PROCESSING → COMPLETED
+```
+
+**Rejection Flow**:
+```
+Any status → REJECTED
+```
+
+---
+
 ## Database Schema
 
 ### Thêm Cột Mới Vào `warranty_claims`
@@ -255,7 +328,8 @@ ALTER TABLE warranty_claims
 ADD COLUMN warranty_status VARCHAR(30),
 ADD COLUMN is_paid_warranty BOOLEAN NOT NULL DEFAULT FALSE,
 ADD COLUMN warranty_fee DECIMAL(10, 2),
-ADD COLUMN paid_warranty_note NVARCHAR(500);
+ADD COLUMN paid_warranty_note NVARCHAR(500),
+ADD COLUMN status VARCHAR(30) NOT NULL DEFAULT 'SUBMITTED';
 ```
 
 ## Security & Permissions
