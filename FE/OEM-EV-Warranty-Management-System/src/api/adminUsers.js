@@ -93,28 +93,36 @@ export const adminAuthApi = {
         let errorMessage = 'Đã xảy ra lỗi khi đăng nhập';
 
         try {
-          const errorData = await response.text();
+          // Backend returns JSON format: { "success": false, "message": "...", "timestamp": ... }
+          const errorData = await response.json();
 
-          // Handle specific HTTP status codes with clear messages
-          if (response.status === 401) {
-            errorMessage = 'Tên đăng nhập hoặc mật khẩu không đúng. Vui lòng kiểm tra lại thông tin đăng nhập.';
-          } else if (response.status === 403) {
-            errorMessage = 'Tài khoản của bạn đã bị khóa hoặc không có quyền truy cập. Vui lòng liên hệ quản trị viên.';
-          } else if (response.status === 404) {
-            errorMessage = 'Không tìm thấy tài khoản. Vui lòng kiểm tra lại tên đăng nhập.';
-          } else if (response.status === 500) {
-            errorMessage = 'Lỗi máy chủ. Vui lòng thử lại sau hoặc liên hệ bộ phận hỗ trợ.';
-          } else if (response.status === 503) {
-            errorMessage = 'Hệ thống đang bảo trì. Vui lòng thử lại sau.';
-          } else if (errorData) {
-            // If server provides a specific error message, use it
-            errorMessage = errorData;
+          // Use the message from backend response if available
+          if (errorData && errorData.message) {
+            errorMessage = errorData.message;
           } else {
-            errorMessage = `Lỗi kết nối (Mã lỗi: ${response.status}). Vui lòng thử lại.`;
+            // Fallback to status-specific messages if backend doesn't provide message
+            if (response.status === 401) {
+              errorMessage = 'Tên đăng nhập hoặc mật khẩu không đúng. Vui lòng kiểm tra lại thông tin đăng nhập.';
+            } else if (response.status === 403) {
+              errorMessage = 'Tài khoản của bạn đã bị khóa hoặc không có quyền truy cập. Vui lòng liên hệ quản trị viên.';
+            } else if (response.status === 404) {
+              errorMessage = 'Không tìm thấy tài khoản. Vui lòng kiểm tra lại tên đăng nhập.';
+            } else if (response.status === 500) {
+              errorMessage = 'Lỗi máy chủ. Vui lòng thử lại sau hoặc liên hệ bộ phận hỗ trợ.';
+            } else if (response.status === 503) {
+              errorMessage = 'Hệ thống đang bảo trì. Vui lòng thử lại sau.';
+            } else {
+              errorMessage = `Lỗi kết nối (Mã lỗi: ${response.status}). Vui lòng thử lại.`;
+            }
           }
         } catch (parseError) {
           console.error('Error parsing error response:', parseError);
-          errorMessage = `Lỗi kết nối (Mã lỗi: ${response.status}). Vui lòng thử lại.`;
+          // If JSON parsing fails, use status-based fallback messages
+          if (response.status === 401) {
+            errorMessage = 'Tên đăng nhập hoặc mật khẩu không đúng. Vui lòng kiểm tra lại thông tin đăng nhập.';
+          } else {
+            errorMessage = `Lỗi kết nối (Mã lỗi: ${response.status}). Vui lòng thử lại.`;
+          }
         }
 
         throw new Error(errorMessage);
