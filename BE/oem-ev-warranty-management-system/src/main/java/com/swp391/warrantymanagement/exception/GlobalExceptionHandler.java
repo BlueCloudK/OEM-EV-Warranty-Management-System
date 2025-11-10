@@ -66,4 +66,35 @@ public class GlobalExceptionHandler {
         // Trả về status 404 (NOT_FOUND) để báo cho client biết rằng tài nguyên yêu cầu không tồn tại.
         return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
     }
+
+    /**
+     * Xử lý lỗi "Invalid Credentials" (Thông tin đăng nhập không hợp lệ).
+     * - Bắt exception InvalidCredentialsException, được ném ra khi username không tồn tại hoặc password sai.
+     * @param ex Exception chứa message lỗi cụ thể.
+     * @return Một ResponseEntity chứa message lỗi và HTTP status 401 (Unauthorized).
+     */
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidCredentialsException(InvalidCredentialsException ex) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", false);
+        response.put("message", ex.getMessage());
+        response.put("timestamp", System.currentTimeMillis());
+        // Trả về status 401 (UNAUTHORIZED) để báo cho client biết thông tin đăng nhập không đúng.
+        return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
+    }
+
+    /**
+     * Xử lý các RuntimeException chung không được xử lý bởi các handler khác.
+     * @param ex RuntimeException
+     * @return Một ResponseEntity chứa message lỗi và HTTP status 500 (Internal Server Error).
+     */
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<Map<String, Object>> handleRuntimeException(RuntimeException ex) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", false);
+        response.put("message", ex.getMessage());
+        response.put("timestamp", System.currentTimeMillis());
+        // Trả về status 500 (INTERNAL_SERVER_ERROR) cho các lỗi không mong đợi.
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 }
