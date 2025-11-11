@@ -348,7 +348,7 @@ const AdminPartsManagement = () => {
             <S.Button $primary onClick={openCreateForm}><FaPlus /> Tạo Phụ tùng</S.Button>
           </S.HeaderTop>
           <S.SearchContainer>
-            <S.Input placeholder="Tìm theo tên, mã, nhà sản xuất..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleSearch()} />
+            <S.Input placeholder="Tìm theo tên, mã phụ tùng, nhà sản xuất..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleSearch()} />
             <S.Button $small onClick={handleSearch}><FaSearch /> Tìm kiếm</S.Button>
           </S.SearchContainer>
         </S.Header>

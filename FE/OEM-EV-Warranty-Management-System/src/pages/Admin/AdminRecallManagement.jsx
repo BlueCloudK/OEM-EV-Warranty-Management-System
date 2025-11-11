@@ -697,11 +697,11 @@ export default function AdminRecallManagement() {
                       <S.TableRow key={response.recallResponseId}>
                         <S.TableCell>#{response.recallResponseId}</S.TableCell>
                         <S.TableCell>
-                          <div>{response.vehicle?.vehicleModel || 'N/A'}</div>
-                          <small>{response.vehicle?.vehicleVin || 'N/A'}</small>
+                          <div>{response.vehicleModel || 'N/A'}</div>
+                          <small>{response.vehicleVin || 'N/A'}</small>
                         </S.TableCell>
                         <S.TableCell>
-                          {response.vehicle?.customer?.user?.fullName || 'N/A'}
+                          {response.customerName || 'N/A'}
                         </S.TableCell>
                         <S.TableCell>
                           {response.createdAt ? new Date(response.createdAt).toLocaleDateString('vi-VN') : 'N/A'}
