@@ -11,6 +11,7 @@ export const useAdminPartsManagement = () => {
 
   // Search and Pagination State
   const [searchTerm, setSearchTerm] = useState('');
+  const [effectiveSearchTerm, setEffectiveSearchTerm] = useState('');
   const [pagination, setPagination] = useState({ currentPage: 0, pageSize: 10, totalPages: 0, totalElements: 0 });
 
   const fetchParts = useCallback(async () => {
@@ -38,13 +39,14 @@ export const useAdminPartsManagement = () => {
     } finally {
       setLoading(false);
     }
-  }, [pagination.currentPage, pagination.pageSize, searchTerm]);
+  }, [pagination.currentPage, pagination.pageSize, effectiveSearchTerm]);
 
   useEffect(() => {
     fetchParts();
   }, [fetchParts]);
 
   const handleSearch = () => {
+    setEffectiveSearchTerm(searchTerm);
     setPagination(prev => ({ ...prev, currentPage: 0 }));
     // fetchParts will be re-triggered by the useEffect dependency change on pagination
   };

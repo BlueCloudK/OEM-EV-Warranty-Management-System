@@ -12,6 +12,7 @@ export const useAdminVehicleManagement = () => {
 
   // Search and Pagination State
   const [searchTerm, setSearchTerm] = useState('');
+  const [effectiveSearchTerm, setEffectiveSearchTerm] = useState(''); // Actual term that triggers search
   const [pagination, setPagination] = useState({ currentPage: 0, pageSize: 10, totalPages: 0, totalElements: 0 });
 
   const fetchVehicles = useCallback(async () => {
@@ -22,10 +23,40 @@ export const useAdminVehicleManagement = () => {
       const params = { 
         page: pagination.currentPage, 
         size: pagination.pageSize, 
-        search: searchTerm,
+        search: effectiveSearchTerm,
       };
 
-      const response = await dataApi.getAllVehicles(params);
+      // If the user typed something that looks like a VIN, try the VIN-specific endpoint first
+      const term = (effectiveSearchTerm || '').trim();
+      let response;
+      const looksLikeVin = term && (term.includes('-') || /[A-Za-z]/.test(term) || term.length >= 6);
+
+      if (term) {
+        try {
+          if (looksLikeVin) {
+            const vehicleByVin = await dataApi.getVehicleByVin(encodeURIComponent(term));
+            // vehicleByVin may be an object, or wrapper with content/vehicle
+            let vehicleObj = null;
+            if (!vehicleByVin) {
+              vehicleObj = null;
+            } else if (vehicleByVin.vehicleId || vehicleByVin.id) {
+              vehicleObj = vehicleByVin;
+            }
+
+            if (vehicleObj) {
+              // Found by VIN - show single result
+              response = { content: [vehicleObj], totalPages: 1, totalElements: 1 };
+            }
+          }
+        } catch (err) {
+          // ignore VIN lookup errors and fallback to general search
+          console.warn('VIN lookup failed, falling back to general vehicle search', err);
+        }
+      }
+
+      if (!response) {
+        response = await dataApi.getAllVehicles(params);
+      }
 
       if (response && response.content) {
         setVehicles(response.content);
@@ -39,7 +70,7 @@ export const useAdminVehicleManagement = () => {
     } finally {
       setLoading(false);
     }
-  }, [pagination.currentPage, pagination.pageSize, searchTerm]);
+  }, [pagination.currentPage, pagination.pageSize, effectiveSearchTerm]);
 
   const fetchCustomers = useCallback(async () => {
     try {
@@ -59,7 +90,7 @@ export const useAdminVehicleManagement = () => {
 
   const handleSearch = () => {
     setPagination(prev => ({ ...prev, currentPage: 0 }));
-    // fetchVehicles will be re-triggered by the useEffect dependency change on pagination
+    setEffectiveSearchTerm(searchTerm); // Only trigger fetch when user actually searches
   };
 
   const handleCreateOrUpdate = async (formData, selectedVehicleId) => {
