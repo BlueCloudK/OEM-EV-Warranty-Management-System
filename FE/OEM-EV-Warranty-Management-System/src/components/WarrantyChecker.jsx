@@ -195,11 +195,11 @@ const WarrantyChecker = ({ vehicleId, installedPartId, onWarrantyChecked, autoCh
             </InfoRow>
           </InfoSection>
 
-          {/* Expiration Reasons */}
-          {warrantyInfo.expirationReasons && (
+          {/* Expiration Reasons - CHỈ hiện khi HẾT HẠN */}
+          {!warrantyInfo.isValidForFreeWarranty && warrantyInfo.expirationReasons && (
             <ExpirationSection>
-              <strong>Lý do hết hạn bảo hành:</strong>
-              <p>{warrantyInfo.expirationReasons}</p>
+              <strong>⚠️ Lý do hết hạn bảo hành:</strong>
+              <p style={{ whiteSpace: 'pre-line' }}>{warrantyInfo.expirationReasons}</p>
 
               {/* Chi tiết ngày/km quá hạn */}
               {warrantyInfo.daysRemaining < 0 && (

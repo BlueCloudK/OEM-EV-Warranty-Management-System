@@ -195,19 +195,38 @@ public class WarrantyValidationServiceImpl implements WarrantyValidationService 
         // Lấy daysRemaining TỆ NHẤT (số âm lớn nhất = quá hạn lâu nhất)
         long finalDaysRemaining = Math.min(partDaysRemaining, vehicleDaysRemaining);
 
+        // Lấy warrantyEndDate tương ứng với daysRemaining tệ nhất
+        LocalDate finalWarrantyEndDate = (partDaysRemaining <= vehicleDaysRemaining) ? partExpirationDate : vehicleExpirationDate;
+
         // Lấy mileageRemaining TỆ NHẤT (số âm lớn nhất = vượt nhiều nhất)
-        Integer finalMileageRemaining = null;
-        if (partMileageRemaining != null && vehicleMileageRemaining < 0) {
+        // Luôn so sánh CẢ part và vehicle mileage
+        Integer finalMileageRemaining;
+        Integer finalMileageLimit;
+        if (partMileageRemaining != null) {
+            // So sánh part mileage với vehicle mileage, lấy TỆ NHẤT
             finalMileageRemaining = Math.min(partMileageRemaining, vehicleMileageRemaining);
-        } else if (partMileageRemaining != null) {
-            finalMileageRemaining = partMileageRemaining;
+            // Nếu vehicle tệ hơn, dùng vehicle limit, ngược lại dùng part limit
+            finalMileageLimit = (vehicleMileageRemaining < partMileageRemaining)
+                ? DEFAULT_VEHICLE_MILEAGE_LIMIT
+                : partMileageLimit;
         } else {
+            // Nếu part không có mileage limit, chỉ dùng vehicle
             finalMileageRemaining = vehicleMileageRemaining;
+            finalMileageLimit = DEFAULT_VEHICLE_MILEAGE_LIMIT;
         }
 
         // Grace period
         int gracePeriod = part.getGracePeriodDays() != null ? part.getGracePeriodDays() : DEFAULT_GRACE_PERIOD_DAYS;
         boolean canProvidePaidWarranty = canProvidePaidWarranty(finalStatus, finalDaysRemaining, gracePeriod);
+
+        // Build detailed expiration reasons
+        String detailedReasons = buildDetailedExpirationReasons(
+            finalStatus,
+            partStatus, vehicleStatus,
+            partDaysRemaining, vehicleDaysRemaining,
+            partMileageRemaining, vehicleMileageRemaining,
+            partExpirationDate, vehicleExpirationDate
+        );
 
         return WarrantyValidationResponseDTO.builder()
                 .warrantyStatus(finalStatus)
@@ -215,10 +234,10 @@ public class WarrantyValidationServiceImpl implements WarrantyValidationService 
                 .isValidForFreeWarranty(finalStatus.isValid())
                 .canProvidePaidWarranty(canProvidePaidWarranty)
                 .warrantyStartDate(installedPart.getInstallationDate())
-                .warrantyEndDate(partExpirationDate)
+                .warrantyEndDate(finalWarrantyEndDate)
                 .daysRemaining(finalDaysRemaining)
                 .currentMileage(currentMileage)
-                .mileageLimit(partMileageLimit != null ? partMileageLimit : DEFAULT_VEHICLE_MILEAGE_LIMIT)
+                .mileageLimit(finalMileageLimit)
                 .mileageRemaining(finalMileageRemaining)
                 .installedPartId(installedPart.getInstalledPartId())
                 .partName(part.getPartName())
@@ -227,7 +246,7 @@ public class WarrantyValidationServiceImpl implements WarrantyValidationService 
                 .vehicleId(vehicle.getVehicleId())
                 .vehicleVin(vehicle.getVehicleVin())
                 .vehicleName(vehicle.getVehicleName())
-                .expirationReasons(buildExpirationReasons(finalStatus, finalDaysRemaining, finalMileageRemaining))
+                .expirationReasons(detailedReasons)
                 .build();
     }
 
@@ -402,7 +421,107 @@ public class WarrantyValidationServiceImpl implements WarrantyValidationService 
     }
 
     /**
-     * Xây dựng lý do hết hạn bảo hành.
+     * Build detailed expiration reasons showing BOTH part and vehicle status
+     */
+    private String buildDetailedExpirationReasons(
+            WarrantyStatus finalStatus,
+            WarrantyStatus partStatus, WarrantyStatus vehicleStatus,
+            long partDaysRemaining, long vehicleDaysRemaining,
+            Integer partMileageRemaining, Integer vehicleMileageRemaining,
+            LocalDate partExpirationDate, LocalDate vehicleExpirationDate) {
+
+        if (finalStatus == WarrantyStatus.VALID) {
+            return "Bảo hành còn hiệu lực";
+        }
+
+        StringBuilder reasons = new StringBuilder();
+
+        // Phân tích chi tiết từng thành phần
+        boolean partExpired = partStatus != WarrantyStatus.VALID;
+        boolean vehicleExpired = vehicleStatus != WarrantyStatus.VALID;
+
+        if (partExpired && vehicleExpired) {
+            // CẢ HAI hết hạn
+            reasons.append("Hết hạn bảo hành do CẢ linh kiện VÀ xe: ");
+
+            // Part expiration details
+            if (partDaysRemaining < 0) {
+                reasons.append("Linh kiện quá hạn ")
+                        .append(Math.abs(partDaysRemaining))
+                        .append(" ngày (hết hạn: ")
+                        .append(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy").format(partExpirationDate))
+                        .append(")");
+            }
+            if (partMileageRemaining != null && partMileageRemaining < 0) {
+                reasons.append(", vượt ")
+                        .append(Math.abs(partMileageRemaining))
+                        .append(" km");
+            }
+
+            reasons.append(". ");
+
+            // Vehicle expiration details
+            if (vehicleDaysRemaining < 0) {
+                reasons.append("Xe quá hạn ")
+                        .append(Math.abs(vehicleDaysRemaining))
+                        .append(" ngày (hết hạn: ")
+                        .append(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy").format(vehicleExpirationDate))
+                        .append(")");
+            }
+            if (vehicleMileageRemaining < 0) {
+                reasons.append(", vượt ")
+                        .append(Math.abs(vehicleMileageRemaining))
+                        .append(" km");
+            }
+
+            reasons.append(". → Áp dụng điều kiện NGHIÊM NGẶT NHẤT: ")
+                    .append(Math.max(Math.abs(partDaysRemaining), Math.abs(vehicleDaysRemaining)))
+                    .append(" ngày quá hạn");
+
+        } else if (vehicleExpired) {
+            // CHỈ xe hết hạn (part còn VALID)
+            reasons.append("Hết hạn bảo hành do XE: ");
+            if (vehicleDaysRemaining < 0) {
+                reasons.append("Quá hạn ")
+                        .append(Math.abs(vehicleDaysRemaining))
+                        .append(" ngày (hết hạn: ")
+                        .append(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy").format(vehicleExpirationDate))
+                        .append(")");
+            }
+            if (vehicleMileageRemaining < 0) {
+                reasons.append(", vượt ")
+                        .append(Math.abs(vehicleMileageRemaining))
+                        .append(" km");
+            }
+            reasons.append(". Linh kiện còn ")
+                    .append(partDaysRemaining)
+                    .append(" ngày bảo hành nhưng KHÔNG được áp dụng vì xe đã hết hạn");
+
+        } else if (partExpired) {
+            // CHỈ part hết hạn (vehicle còn VALID)
+            reasons.append("Hết hạn bảo hành do LINH KIỆN: ");
+            if (partDaysRemaining < 0) {
+                reasons.append("Quá hạn ")
+                        .append(Math.abs(partDaysRemaining))
+                        .append(" ngày (hết hạn: ")
+                        .append(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy").format(partExpirationDate))
+                        .append(")");
+            }
+            if (partMileageRemaining != null && partMileageRemaining < 0) {
+                reasons.append(", vượt ")
+                        .append(Math.abs(partMileageRemaining))
+                        .append(" km");
+            }
+            reasons.append(". Xe còn ")
+                    .append(vehicleDaysRemaining)
+                    .append(" ngày bảo hành nhưng KHÔNG được áp dụng vì linh kiện đã hết hạn");
+        }
+
+        return reasons.toString();
+    }
+
+    /**
+     * Xây dựng lý do hết hạn bảo hành (method cũ, giữ lại cho compatibility).
      */
     private String buildExpirationReasons(WarrantyStatus status, long daysRemaining, Integer mileageRemaining) {
         if (status == WarrantyStatus.VALID) {
