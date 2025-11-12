@@ -54,7 +54,6 @@ import SCTechnicianLayout from "./components/SCTechnicianLayout";
 import SCTechnicianDashboard from "./pages/SCTechnician/SCTechnicianDashboard";
 import MyWork from "./pages/SCTechnician/MyWork";
 import SCTechnicianFeedbacks from "./pages/SCTechnician/SCTechnicianFeedbacks";
-import VehicleLookup from "./pages/SCTechnician/VehicleLookup";
 import PartsLookup from "./pages/SCTechnician/PartsLookup";
 import ServiceHistory from "./pages/SCTechnician/ServiceHistory";
 import PartRequests from "./pages/SCTechnician/PartRequests";
@@ -154,7 +153,6 @@ export default function App() {
           <Route path="part-requests" element={<PartRequests />} />
           <Route path="feedbacks" element={<SCTechnicianFeedbacks />} />
           <Route path="service-history" element={<ServiceHistory />} />
-          <Route path="vehicles" element={<VehicleLookup />} />
           <Route path="parts" element={<PartsLookup />} />
         </Route>
 
