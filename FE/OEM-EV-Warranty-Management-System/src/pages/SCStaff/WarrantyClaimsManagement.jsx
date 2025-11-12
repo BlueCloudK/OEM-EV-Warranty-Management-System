@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useWarrantyClaimsManagement } from '../../hooks/useWarrantyClaimsManagement';
 import PaidWarrantyClaimForm from '../../components/PaidWarrantyClaimForm';
 import * as S from './WarrantyClaimsManagement.styles';
-import { FaClipboardList, FaPlus, FaEdit, FaSearch, FaArrowLeft, FaSpinner, FaEye, FaCheck, FaTrash } from 'react-icons/fa';
+import { FaClipboardList, FaPlus, FaEdit, FaSpinner, FaEye, FaCheck, FaTrash } from 'react-icons/fa';
 import styled from 'styled-components';
 
 // Modal wrapper for the PaidWarrantyClaimForm
@@ -259,10 +258,9 @@ const VehicleSelectionModal = ({ isOpen, onClose, vehicles, installedParts, onSe
 
 // Main Page Component
 const WarrantyClaimsManagement = () => {
-  const navigate = useNavigate();
   const {
-    claims, vehicles, parts, installedParts, loading, error, pagination, filterStatus, prefilledVehicle,
-    handleFilterChange, handleCreateOrUpdate, handlePageChange, fetchInstalledPartsForVehicle, fetchClaims
+    claims, vehicles, installedParts, loading, error, pagination, filterStatus, prefilledVehicle,
+    handleFilterChange, handlePageChange, fetchInstalledPartsForVehicle, fetchClaims
   } = useWarrantyClaimsManagement();
 
   const [showVehicleSelection, setShowVehicleSelection] = useState(false);

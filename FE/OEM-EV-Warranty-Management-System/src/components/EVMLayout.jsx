@@ -7,12 +7,12 @@ import {
 } from "react-icons/fa";
 
 const sidebarItems = [
-  { icon: <FaTachometerAlt />, label: "Dashboard", path: "/evmstaff/dashboard" },
+  { icon: <FaTachometerAlt />, label: "Tổng quan", path: "/evmstaff/dashboard" },
   { icon: <FaCogs />, label: "Quản lý Phụ tùng", path: "/evmstaff/parts" },
   { icon: <FaTools />, label: "Yêu cầu Linh kiện", path: "/evmstaff/part-requests" },
-  { icon: <FaExclamationTriangle />, label: "Yêu cầu Recall", path: "/evmstaff/recalls" },
+  { icon: <FaExclamationTriangle />, label: "Yêu cầu Triệu hồi", path: "/evmstaff/recalls" },
   { icon: <FaHistory />, label: "Lịch sử Dịch vụ", path: "/evmstaff/service-histories" },
-  { icon: <FaTasks />, label: "Work Logs", path: "/evmstaff/work-logs" },
+  { icon: <FaTasks />, label: "Nhật ký Công việc", path: "/evmstaff/work-logs" },
   { icon: <FaCommentDots />, label: "Phản hồi", path: "/evmstaff/feedbacks" },
 ];
 
@@ -27,7 +27,7 @@ export default function EVMLayout() {
       <S.Sidebar $isCollapsed={sidebarCollapsed}>
         <S.SidebarHeader $isCollapsed={sidebarCollapsed}>
           <S.SidebarToggleButton onClick={() => setSidebarCollapsed(!sidebarCollapsed)}><FaBars /></S.SidebarToggleButton>
-          {!sidebarCollapsed && <div><div style={{ fontSize: 16, fontWeight: 600 }}>EVM Staff</div><div style={{ fontSize: 12, color: "#94a3b8" }}>Portal</div></div>}
+          {!sidebarCollapsed && <div><div style={{ fontSize: 16, fontWeight: 600 }}>Nhân viên EVM</div><div style={{ fontSize: 12, color: "#94a3b8" }}>Cổng thông tin</div></div>}
         </S.SidebarHeader>
         <div style={{ flex: 1, padding: sidebarCollapsed ? 8 : 16 }}>
           {sidebarItems.map((item, index) => (
@@ -40,7 +40,11 @@ export default function EVMLayout() {
       </S.Sidebar>
 
       <S.MainContent $isCollapsed={sidebarCollapsed}>
-        <Outlet />
+        <div style={{ maxWidth: 1360, margin: "0 auto", display: "flex", flexDirection: "column", gap: 24 }}>
+          <div className="page-surface" style={{ background: "#fff", borderRadius: 20, padding: "24px 28px", boxShadow: "0 24px 58px rgba(15,23,42,0.18)", border: "1px solid rgba(226,232,240,0.85)" }}>
+            <Outlet />
+          </div>
+        </div>
       </S.MainContent>
     </S.PageContainer>
   );

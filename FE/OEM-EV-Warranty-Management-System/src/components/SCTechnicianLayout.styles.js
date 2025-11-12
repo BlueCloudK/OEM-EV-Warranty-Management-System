@@ -10,10 +10,10 @@ export const Sidebar = styled.aside`
   width: ${({ $isCollapsed }) => ($isCollapsed ? '80px' : '280px')};
   background: linear-gradient(180deg, #1e293b 0%, #334155 100%);
   color: white;
-  transition: width 0.3s ease;
+  transition: width 0.3s ease, box-shadow .2s ease;
   display: flex;
   flex-direction: column;
-  box-shadow: 4px 0 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 4px 0 16px rgba(0, 0, 0, 0.12);
   position: fixed;
   left: 0;
   top: 62px; /* Start below navbar */
@@ -55,15 +55,17 @@ export const SidebarToggleButton = styled.button`
   color: white;
   width: 36px;
   height: 36px;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, transform .15s ease, box-shadow .2s ease;
 
   &:hover {
     background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px rgba(0,0,0,.18);
   }
 `;
 
@@ -73,7 +75,7 @@ export const NavItem = styled.div`
   gap: 12px;
   padding: ${({ $isCollapsed }) => ($isCollapsed ? '12px' : '12px 16px')};
   margin-bottom: 4px;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
   background: ${({ $active }) => ($active ? 'rgba(16, 185, 129, 0.2)' : 'transparent')};
@@ -90,13 +92,16 @@ export const NavItem = styled.div`
   &:hover {
     background: rgba(16, 185, 129, 0.15);
     color: #6ee7b7;
+    box-shadow: inset 0 0 0 1px rgba(16,185,129,.25);
   }
 `;
 
 export const MainContent = styled.main`
   flex: 1;
   margin-left: ${({ $isCollapsed }) => ($isCollapsed ? '80px' : '280px')};
-  padding: 32px;
+  padding: 28px;
   overflow-y: auto;
   transition: margin-left 0.3s ease;
+  background: #f4f6fb;
+  min-height: calc(100vh - 62px);
 `;

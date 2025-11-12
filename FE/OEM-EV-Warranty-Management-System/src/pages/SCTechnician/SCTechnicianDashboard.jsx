@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSCTechnicianDashboard } from '../../hooks/useSCTechnicianDashboard';
 import * as S from './SCTechnicianDashboard.styles';
 import {
-  FaTachometerAlt, FaClipboardCheck, FaWrench, FaHistory, FaCar, FaCog,
+  FaTachometerAlt, FaClipboardCheck, FaWrench, FaHistory, FaCog,
   FaArrowRight, FaCheckCircle, FaSpinner as FaInProgress, FaCommentDots, FaTools
 } from 'react-icons/fa';
 
@@ -58,8 +58,7 @@ export default function SCTechnicianDashboard() {
     { id: 2, title: "Yêu cầu Linh kiện", description: "Gửi yêu cầu phụ tùng cần thiết cho công việc", icon: <FaTools size={24} />, color: "#ef4444", bgGradient: "linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)", path: "/sctechnician/part-requests" },
     { id: 3, title: "Feedback", description: "Xem và quản lý phản hồi từ khách hàng", icon: <FaCommentDots size={24} />, color: "#06b6d4", bgGradient: "linear-gradient(135deg, #cffafe 0%, #a5f3fc 100%)", path: "/sctechnician/feedbacks" },
     { id: 4, title: "Lịch sử Sửa chữa", description: "Xem lịch sử các công việc đã hoàn thành", icon: <FaHistory size={24} />, color: "#3b82f6", bgGradient: "linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)", path: "/sctechnician/service-history" },
-    { id: 5, title: "Tra cứu Xe", description: "Tìm kiếm thông tin xe và lịch sử bảo dưỡng", icon: <FaCar size={24} />, color: "#8b5cf6", bgGradient: "linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%)", path: "/sctechnician/vehicles" },
-    { id: 6, title: "Xem Phụ tùng", description: "Tra cứu thông tin phụ tùng trong hệ thống", icon: <FaCog size={24} />, color: "#f59e0b", bgGradient: "linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)", path: "/sctechnician/parts" },
+    { id: 5, title: "Danh sách Phụ tùng", description: "Xem và tra cứu thông tin phụ tùng trong hệ thống", icon: <FaCog size={24} />, color: "#f59e0b", bgGradient: "linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)", path: "/sctechnician/parts" },
   ];
 
   return (

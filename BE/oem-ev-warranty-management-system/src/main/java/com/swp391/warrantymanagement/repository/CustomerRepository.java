@@ -41,4 +41,18 @@ public interface CustomerRepository extends JpaRepository<Customer, UUID> {
 
     // Find customer by User entity (required for VehicleService)
     Customer findByUser(User user);
+
+    /**
+     * Tìm kiếm chung customer theo name, phone, hoặc email (case-insensitive).
+     * Email được lấy từ User entity thông qua join.
+     * Sử dụng COALESCE để xử lý null values an toàn.
+     * @param searchTerm Từ khóa tìm kiếm.
+     * @param pageable Thông tin phân trang.
+     * @return Một trang các Customer thỏa mãn điều kiện.
+     */
+    @Query("SELECT c FROM Customer c LEFT JOIN c.user u WHERE " +
+            "LOWER(COALESCE(c.name, '')) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(COALESCE(c.phone, '')) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(COALESCE(u.email, '')) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+    Page<Customer> searchCustomersGeneral(@Param("searchTerm") String searchTerm, Pageable pageable);
 }

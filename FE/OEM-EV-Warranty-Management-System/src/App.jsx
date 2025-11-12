@@ -54,7 +54,6 @@ import SCTechnicianLayout from "./components/SCTechnicianLayout";
 import SCTechnicianDashboard from "./pages/SCTechnician/SCTechnicianDashboard";
 import MyWork from "./pages/SCTechnician/MyWork";
 import SCTechnicianFeedbacks from "./pages/SCTechnician/SCTechnicianFeedbacks";
-import VehicleLookup from "./pages/SCTechnician/VehicleLookup";
 import PartsLookup from "./pages/SCTechnician/PartsLookup";
 import ServiceHistory from "./pages/SCTechnician/ServiceHistory";
 import PartRequests from "./pages/SCTechnician/PartRequests";
@@ -154,7 +153,6 @@ export default function App() {
           <Route path="part-requests" element={<PartRequests />} />
           <Route path="feedbacks" element={<SCTechnicianFeedbacks />} />
           <Route path="service-history" element={<ServiceHistory />} />
-          <Route path="vehicles" element={<VehicleLookup />} />
           <Route path="parts" element={<PartsLookup />} />
         </Route>
 
@@ -177,7 +175,7 @@ export default function App() {
       <footer className="footer">
         <div className="container">
           <p style={{ color: "#0a0404ff" }}>
-            {new Date().getFullYear()} EV Warranty — All rights reserved.
+            © {new Date().getFullYear()} Hệ Thống Bảo Hành Xe Điện — Bản quyền đã được bảo hộ.
           </p>
         </div>
       </footer>

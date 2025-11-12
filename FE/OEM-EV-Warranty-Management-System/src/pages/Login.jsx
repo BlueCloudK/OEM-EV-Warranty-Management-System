@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { FaCar, FaUser, FaLock } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
 
@@ -50,7 +50,27 @@ export default function Login() {
       }
     } catch (error) {
       console.error("❌ Login error:", error);
-      setErrorMessage(error.message || "Lỗi kết nối máy chủ. Vui lòng thử lại sau.");
+
+      // Ensure we only display string messages, not JSON objects
+      let displayMessage = "Lỗi kết nối máy chủ. Vui lòng thử lại sau.";
+
+      if (error.message) {
+        // If error.message is a string, use it
+        if (typeof error.message === 'string') {
+          displayMessage = error.message;
+        } else {
+          // If error.message is an object, try to extract the message field
+          try {
+            const parsed = typeof error.message === 'object' ? error.message : JSON.parse(error.message);
+            displayMessage = parsed.message || displayMessage;
+          } catch {
+            // If parsing fails, use default message
+            displayMessage = "Tên đăng nhập hoặc mật khẩu không đúng. Vui lòng thử lại.";
+          }
+        }
+      }
+
+      setErrorMessage(displayMessage);
     } finally {
       setIsLoading(false);
     }
@@ -59,47 +79,122 @@ export default function Login() {
   // Show loading state while checking auth status
   if (authLoading) {
     return (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", background: "#f5f7fb" }}>
-        <p>Đang kiểm tra trạng thái đăng nhập...</p>
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", background: "#f2f4f8", color: "#475569" }}>
+        <p style={{ letterSpacing: "0.35em", textTransform: "uppercase", fontSize: 12 }}>Đang kiểm tra trạng thái đăng nhập...</p>
       </div>
     );
   }
 
   // Render login form only if not authenticated
   return (
-    <div style={{ minHeight: "100vh", backgroundImage: "url('https://images.unsplash.com/photo-1615874959474-d609be9f0cda?auto=format&fit=crop&w=1920&q=80')", backgroundSize: "cover", backgroundPosition: "center", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
-      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.55)", backdropFilter: "blur(3px)" }} />
-      <div style={{ zIndex: 2, width: "880px", height: "520px", display: "flex", borderRadius: "20px", overflow: "hidden", boxShadow: "0 12px 35px rgba(0,0,0,0.35)", background: "#fff" }}>
-        <div style={{ flex: 1, padding: "60px 45px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-          <h1 style={{ color: "#044835", fontWeight: "700", fontSize: "32px", marginBottom: "15px", display: "flex", alignItems: "center", gap: "10px" }}>
-            <FaCar /> EV Warranty Portal
-          </h1>
-          <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
-            <div style={inputWrapper}>
-              <FaUser color="#044835" />
-              <input type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} required style={inputStyle} />
-            </div>
-            <div style={inputWrapper}>
-              <FaLock color="#044835" />
-              <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required style={inputStyle} />
-            </div>
-            <button type="submit" style={loginBtn} disabled={isLoading} onMouseOver={(e) => (e.currentTarget.style.background = "#06694e")} onMouseOut={(e) => (e.currentTarget.style.background = "#044835")}>
-              {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
+    <div style={{ position: "relative", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0f172a" }}>
+      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, rgba(8,47,73,0.85), rgba(13,110,97,0.82))" }} />
+      <img
+        src="https://images.unsplash.com/photo-1615874959474-d609be9f0cda?auto=format&fit=crop&w=1920&q=80"
+        alt="EV Background"
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: 0.35 }}
+      />
+
+      <div
+        style={{
+          position: "relative",
+          zIndex: 2,
+          width: "min(940px, 92vw)",
+          display: "grid",
+          gridTemplateColumns: "repeat(1, minmax(0, 1fr))",
+          background: "rgba(255,255,255,0.92)",
+          border: "1px solid rgba(255,255,255,0.35)",
+          boxShadow: "0 46px 120px rgba(0,0,0,0.45)",
+          backdropFilter: "blur(12px)",
+          overflow: "hidden",
+        }}
+      >
+        <div style={{ padding: "64px 48px", display: "flex", flexDirection: "column", gap: 32, color: "#0f172a" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <span style={{ fontSize: 12, letterSpacing: "0.38em", textTransform: "uppercase", color: "rgba(11,107,97,0.66)" }}>
+              OEM EV Warranty
+            </span>
+            <h1 style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 26, fontWeight: 600, letterSpacing: "0.04em" }}>
+              <FaCar style={{ color: "#0b6b61" }} />
+              Portal đăng nhập
+            </h1>
+            <p style={{ fontSize: 14, lineHeight: 1.7, color: "#475569" }}>
+              Truy cập hệ thống quản lý bảo hành xe điện chính hãng. Đăng nhập để tiếp tục giám sát quy trình bảo hành và khách hàng của bạn.
+            </p>
+          </div>
+
+          <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 12, letterSpacing: "0.32em", textTransform: "uppercase", color: "rgba(11,107,97,0.7)" }}>
+              Tên đăng nhập
+              <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 18px", borderRadius: 12, border: "1px solid rgba(11,107,97,0.2)", background: "rgba(255,255,255,0.96)", boxShadow: "0 16px 32px rgba(11,107,97,0.12)" }}>
+                <FaUser style={{ color: "#0f766e" }} />
+                <input
+                  type="text"
+                  placeholder="Nhập tài khoản"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                  style={{ flex: 1, border: "none", background: "transparent", fontSize: 15, color: "#0f172a", outline: "none" }}
+                />
+              </div>
+            </label>
+
+            <label style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 12, letterSpacing: "0.32em", textTransform: "uppercase", color: "rgba(11,107,97,0.7)" }}>
+              Mật khẩu
+              <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 18px", borderRadius: 12, border: "1px solid rgba(11,107,97,0.2)", background: "rgba(255,255,255,0.96)", boxShadow: "0 16px 32px rgba(11,107,97,0.12)" }}>
+                <FaLock style={{ color: "#0f766e" }} />
+                <input
+                  type="password"
+                  placeholder="Nhập mật khẩu"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  style={{ flex: 1, border: "none", background: "transparent", fontSize: 15, color: "#0f172a", outline: "none" }}
+                />
+              </div>
+            </label>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              style={{
+                marginTop: 12,
+                padding: "14px 0",
+                borderRadius: 12,
+                border: "none",
+                background: "#0b6b61",
+                color: "#f8fafc",
+                fontWeight: 600,
+                letterSpacing: ".24em",
+                textTransform: "uppercase",
+                cursor: "pointer",
+                boxShadow: "0 26px 45px rgba(11,107,97,0.35)",
+                transition: "transform .2s ease, box-shadow .2s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-3px)";
+                e.currentTarget.style.boxShadow = "0 32px 60px rgba(11,107,97,0.4)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "0 26px 45px rgba(11,107,97,0.35)";
+              }}
+            >
+              {isLoading ? "Đang đăng nhập..." : "Đăng nhập hệ thống"}
             </button>
-            {errorMessage && <p style={{ color: "red", marginTop: "10px", textAlign: 'center' }}>{errorMessage}</p>}
-            <div style={{ textAlign: "center", marginTop: "15px" }}>
-              <Link to="/forgot-password" style={{ color: "#044835", textDecoration: "none", fontSize: "14px", cursor: "pointer" }} onMouseOver={(e) => (e.currentTarget.style.textDecoration = "underline")} onMouseOut={(e) => (e.currentTarget.style.textDecoration = "none")}>
-                Quên mật khẩu?
-              </Link>
-            </div>
+
+            {errorMessage && (
+              <p style={{ textAlign: "center", color: "#e11d48", fontWeight: 600, fontSize: 14 }}>{errorMessage}</p>
+            )}
           </form>
         </div>
-        <div style={{ flex: 1, position: "relative", backgroundImage: "url('https://image.made-in-china.com/2f0j00DAwhVupLMJzd/Fast-Charging-Electric-Vehicle-M-Nv-Remote-Unlocking-New-Electric-Car-SUV.jpg')", backgroundSize: "cover", backgroundPosition: "center" }} />
+
+        <div style={{ display: "none" }} />
       </div>
     </div>
   );
 }
 
-const inputWrapper = { display: "flex", alignItems: "center", gap: "10px", padding: "12px 15px", borderRadius: "10px", border: "1px solid #ccc", background: "#fafafa" };
-const inputStyle = { border: "none", outline: "none", fontSize: "15px", flex: 1, background: "transparent" };
-const loginBtn = { padding: "12px", border: "none", borderRadius: "10px", background: "#044835", color: "#fff", fontWeight: "600", fontSize: "15px", cursor: "pointer", transition: "0.3s", marginTop: "10px" };
+const inputWrapper = { };
+const inputStyle = { };
+const loginBtn = { };

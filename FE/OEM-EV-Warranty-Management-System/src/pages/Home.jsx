@@ -8,6 +8,23 @@ export default function Home() {
   const [serviceCenters, setServiceCenters] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedCenter, setSelectedCenter] = useState(null);
+  const featureHighlights = [
+    {
+      title: "Đặt lịch dịch vụ trực tuyến",
+      description: "Chọn trung tâm dịch vụ, đặt lịch hẹn và theo dõi tiến trình trong thời gian thực.",
+      image: "https://tse1.mm.bing.net/th/id/OIP.iOjCE2-1ClgqVkhU-BR7KgHaE7?w=495&h=329&rs=1&pid=ImgDetMain&o=7&rm=3",
+    },
+    {
+      title: "Yêu cầu bảo hành",
+      description: "Gửi và theo dõi yêu cầu bảo hành xe điện với quy trình minh bạch, phản hồi tức thì.",
+      image: "https://media-cdn-v2.laodong.vn/Storage/NewsPortal/2022/3/30/1029145/Anh-Chup-Man-Hinh-20.jpg",
+    },
+    {
+      title: "Phụ tùng & dịch vụ EV",
+      description: "Quản lý phụ tùng, lịch sử bảo dưỡng và chiến dịch recall một cách đồng bộ.",
+      image: "https://cdn.tgdd.vn/hoi-dap/1384009/xe-o-to-dien-la-gi-tim-hieu-ve-cau-tao-cach-thuc-hoat-dong-1-1-800x600.jpg",
+    },
+  ];
 
   useEffect(() => {
     fetchServiceCenters();
@@ -42,145 +59,151 @@ export default function Home() {
   return (
     <main>
       {/* Hero Section */}
-      <section style={{ className: "hero-mint", background: "linear-gradient(135deg, #325f65ff 0%, #e8f5e9 100%)", padding: "56px 0", color: "black", marginTop: "-20px" }}>
-        <div className="container hero-inner">
-          <div className="hero-text">
-            <h1>
-              Chào Mừng <br /> Đến Với Hệ Thống Quản Lý Bảo Hành Xe Điện 
+      <section
+        style={{
+          position: "relative",
+          overflow: "hidden",
+          background: "linear-gradient(120deg, #0d6b61 0%, #134f5d 40%, #0b2b3a 100%)",
+          color: "#f1f5f9",
+          padding: "68px 0",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            opacity: 0.3,
+            background: "radial-gradient(circle at 20% 20%, rgba(255,255,255,0.45), transparent 55%)",
+          }}
+        />
+        <div className="container hero-inner" style={{ position: "relative", gap: "3rem" }}>
+          <div className="hero-text" style={{ flex: 1, display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "10px 18px",
+                borderRadius: 999,
+                background: "rgba(255,255,255,0.12)",
+                fontSize: 12,
+                letterSpacing: "0.35em",
+                textTransform: "uppercase",
+              }}
+            >
+              Hệ Sinh Thái Bảo Hành Xe Điện Thông Minh
+            </span>
+            <h1 style={{ fontSize: "2.6rem", lineHeight: 1.25, fontWeight: 600, textShadow: "0 16px 32px rgba(0,0,0,0.35)" }}>
+              Chào mừng tới nền tảng quản lý bảo hành xe điện OEM
             </h1>
-            <p className="lead">
-              Theo dõi bảo hành xe của bạn, đặt lịch dịch vụ và quản lý xe điện của bạn một cách dễ dàng.
+            <p style={{ fontSize: 17, color: "rgba(248, 250, 252, 0.92)", maxWidth: 640 }}>
+              Theo dõi bảo hành xe điện, quản lý phụ tùng và kết nối trung tâm dịch vụ trong một nền tảng duy nhất. Dữ liệu tập trung – trải nghiệm đồng bộ.
             </p>
-            <div className="hero-buttons">
-              <Link to="/login" className="btn-primary large" >
-                Đăng nhập
+            <div className="hero-buttons" style={{ display: "flex", alignItems: "center", gap: 20 }}>
+              <Link
+                to="/login"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "14px 26px",
+                  borderRadius: 14,
+                  background: "#fefefe",
+                  color: "#0b6b61",
+                  fontWeight: 600,
+                  letterSpacing: ".1em",
+                  textTransform: "uppercase",
+                  boxShadow: "0 24px 46px rgba(8,52,47,0.45)",
+                  textDecoration: "none",
+                  transition: "transform .2s ease, box-shadow .25s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-4px)";
+                  e.currentTarget.style.boxShadow = "0 30px 60px rgba(8,52,47,0.48)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "0 24px 46px rgba(8,52,47,0.45)";
+                }}
+              >
+                Đăng nhập hệ thống
               </Link>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 12, letterSpacing: "0.3em", textTransform: "uppercase", color: "rgba(241,245,249,0.75)" }}>
+                <span style={{ display: "block", width: 42, height: 1, background: "rgba(255,255,255,0.6)" }} />
+                Nền Tảng OEM Đáng Tin Cậy
+              </div>
             </div>
           </div>
-          <div className="hero-image">
-            <img
-              src="https://static.wixstatic.com/media/e8a86a_3465bc67fe5e4e49be8f4c0be7ae6493~mv2.png/v1/fill/w_240,h_180,al_c/vinfast-logo.png"
-              alt="logo"
-            />
+          <div className="hero-image" style={{ flex: 1, display: "flex", justifyContent: "center" }}>
+            <div
+              style={{
+                position: "relative",
+                width: "100%",
+                maxWidth: 420,
+                aspectRatio: "4 / 3",
+                background: "rgba(255,255,255,0.08)",
+                border: "1px solid rgba(255,255,255,0.35)",
+                boxShadow: "0 40px 85px rgba(0,0,0,0.45)",
+                backdropFilter: "blur(10px)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <img
+                src="https://static.wixstatic.com/media/e8a86a_3465bc67fe5e4e49be8f4c0be7ae6493~mv2.png/v1/fill/w_240,h_180,al_c/vinfast-logo.png"
+                alt="Hệ Thống Bảo Hành Xe Điện OEM"
+                style={{ height: 140, filter: "drop-shadow(0 16px 38px rgba(0,0,0,0.45))" }}
+              />
+            </div>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section
-        className="features-row"
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "stretch", // tất cả cột cao bằng nhau
-          gap: "20px",
-          width: "90%",
-          margin: "50px auto",
-          marginTop: "0px"
-        }}
-      >
-        {/* Cột 1 */}
-        <div
-          style={{
-            flex: 1,
-            padding: "20px",
-            backgroundColor: "#fff",
-            borderRadius: "10px",
-            boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-          }}
-        >
-          <img
+      <section className="features-row" style={{ display: "grid", gap: 24, gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", width: "92%", margin: "64px auto 40px" }}>
+        {featureHighlights.map((feature) => (
+          <article
+            key={feature.title}
             style={{
-              width: "100%",
-              height: "250px",
-              objectFit: "cover",
-              borderRadius: "10px",
+              padding: 22,
+              background: "#ffffff",
+              borderRadius: 14,
+              boxShadow: "0 16px 45px rgba(15,23,42,0.12)",
+              display: "flex",
+              flexDirection: "column",
+              gap: 18,
+              border: "1px solid rgba(226,232,240,0.8)",
+              transition: "transform .25s ease, box-shadow .25s ease",
             }}
-            src="https://tse1.mm.bing.net/th/id/OIP.iOjCE2-1ClgqVkhU-BR7KgHaE7?w=495&h=329&rs=1&pid=ImgDetMain&o=7&rm=3"
-              alt="logo"
-          />
-          <h3 style={{ color: "#044835ff", marginTop: "15px" }}>Đặt Lịch Dịch Vụ Trực Tuyến</h3>
-          <p style={{ color: "#053e2eff", textAlign: "center" }}>
-            Chọn trung tâm dịch vụ, đặt lịch hẹn và theo dõi tiến trình.
-          </p>
-        </div>
-
-        {/* Cột 2 */}
-        <div
-          style={{
-            flex: 1,
-            padding: "20px",
-            backgroundColor: "#fff",
-            borderRadius: "10px",
-            boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-          }}
-        >
-          <img
-            style={{
-              width: "100%",
-              height: "250px",
-              objectFit: "cover",
-              borderRadius: "10px",
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-6px)";
+              e.currentTarget.style.boxShadow = "0 24px 60px rgba(15,23,42,0.14)";
             }}
-            src="https://media-cdn-v2.laodong.vn/Storage/NewsPortal/2022/3/30/1029145/Anh-Chup-Man-Hinh-20.jpg"
-              alt="logo"
-          />
-          <h3 style={{ color: "#044835ff", marginTop: "15px" }}>Yêu Cầu Bảo Hành</h3>
-          <p style={{ color: "#053e2eff", textAlign: "center" }}>
-            Gửi và theo dõi yêu cầu bảo hành xe điện của bạn một cách dễ dàng và nhanh chóng.
-          </p>
-        </div>
-
-        {/* Cột 3 */}
-        <div
-          style={{
-            flex: 1,
-            padding: "20px",
-            backgroundColor: "#fff",
-            borderRadius: "10px",
-            boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-          }}
-        >
-          <img
-            style={{
-              width: "100%",
-              height: "250px",
-              objectFit: "cover",
-              borderRadius: "10px",
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "0 16px 45px rgba(15,23,42,0.12)";
             }}
-            src="https://cdn.tgdd.vn/hoi-dap/1384009/xe-o-to-dien-la-gi-tim-hieu-ve-cau-tao-cach-thuc-hoat-dong-1-1-800x600.jpg"
-              alt="logo"
-          />
-          <h3 style={{ color: "#044835ff", marginTop: "15px" }}>Phụ Tùng & Dịch Vụ EV</h3>
-          <p style={{ color: "#053e2eff", textAlign: "center" }}>
-            Quản lý phụ tùng xe điện, các chiến dịch bảo trì một cách hiệu quả.
-          </p>
-        </div>
+          >
+            <div style={{ height: 180, borderRadius: 12, overflow: "hidden" }}>
+              <img src={feature.image} alt={feature.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            </div>
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: "#0f172a", textTransform: "uppercase", letterSpacing: ".16em" }}>
+              {feature.title}
+            </h3>
+            <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.7 }}>{feature.description}</p>
+            <span style={{ fontSize: 11, letterSpacing: ".28em", textTransform: "uppercase", color: "rgba(11,107,97,0.65)" }}>
+              Quy Trình Bảo Hành Xe Điện
+            </span>
+          </article>
+        ))}
       </section>
 
       {/* Service Centers Section */}
-      <section style={{
-        padding: "50px 0",
-        backgroundColor: "#f9fafb",
-        marginTop: "20px"
-      }}>
-        <div className="container">
-          <h2 style={{
-            textAlign: "center",
-            color: "#044835ff",
-            fontSize: "32px",
-            marginBottom: "10px"
-          }}>
-            <FaMapMarkerAlt style={{ marginRight: "10px" }} />
+      <section style={{ padding: "74px 0", backgroundColor: "#f0f4f8" }}>
+        <div className="container" style={{ display: "flex", flexDirection: "column", gap: 40 }}>
+          <h2 style={{ textAlign: "center", color: "#0f172a", fontSize: "2rem", marginBottom: 10, fontWeight: 600, letterSpacing: ".12em", textTransform: "uppercase" }}>
+            <FaMapMarkerAlt style={{ marginRight: "12px", color: "#0b6b61" }} />
             Trung Tâm Dịch Vụ
           </h2>
           <p style={{
@@ -217,13 +240,7 @@ export default function Home() {
                 </div>
               ) : null}
 
-              <div style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))",
-                gap: "20px",
-                maxWidth: "1200px",
-                margin: "0 auto"
-              }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 24 }}>
                 {serviceCenters.map((center) => (
                   <div
                     key={center.serviceCenterId}
@@ -341,30 +358,20 @@ export default function Home() {
       </section>
 
       {/* Support Section */}
-      <div
-        style={{
-          textAlign: "center",
-          padding: "10px",
-          backgroundColor: "#465551ff",
-          marginTop: "-40px"
-        }}
-      >
-        <h2 style={{ color: "white", fontSize: "14px" }}>Cần Hỗ Trợ</h2>
-        <p style={{ color: "white", fontSize: "14px" }}>Đội ngũ của chúng tôi sẵn sàng hỗ trợ bạn 24/7 cho tất cả các nhu cầu bảo hành xe điện của bạn.</p>
-
-        {/* Thêm liên hệ */}
-        <div style={{ display: "flex", justifyContent: "center", gap: "50px" }}>
-          <a href="tel:1900232389" style={{ fontSize: "15px", display: "flex", alignItems: "center",color: "#deeae6ff" }}>
-            <FaPhone style={{ marginRight: "10px", color: "#e8efecff" }} />
+      <div style={{ textAlign: "center", padding: "22px 0", backgroundColor: "#0f172a", color: "rgba(226,232,240,0.92)" }}>
+        <h2 style={{ fontSize: "0.85rem", letterSpacing: ".32em", textTransform: "uppercase", color: "rgba(255,255,255,0.72)" }}>Đội hỗ trợ OEM</h2>
+        <p style={{ fontSize: "0.85rem", marginTop: 8 }}>Sẵn sàng hỗ trợ bạn 24/7 cho mọi nhu cầu bảo hành xe điện.</p>
+        <div style={{ display: "flex", justifyContent: "center", gap: "48px", marginTop: 16, flexWrap: "wrap" }}>
+          <a href="tel:1900232389" style={{ fontSize: "0.85rem", display: "flex", alignItems: "center", gap: 12, color: "#bfdbfe", textDecoration: "none" }}>
+            <FaPhone style={{ color: "#38bdf8" }} />
             1900 23 23 89
           </a>
-          <a href="mailto:support.vn@vinfastauto.com" style={{ fontSize: "15px", display: "flex", alignItems: "center",color: "#deeae6ff" }}>
-            <FaEnvelope style={{ marginRight: "10px", color: "#deeae6ff" }} />
+          <a href="mailto:support.vn@vinfastauto.com" style={{ fontSize: "0.85rem", display: "flex", alignItems: "center", gap: 12, color: "#bfdbfe", textDecoration: "none" }}>
+            <FaEnvelope style={{ color: "#38bdf8" }} />
             support.vn@vinfastauto.com
           </a>
         </div>
       </div>
-
     </main>
   );
 }

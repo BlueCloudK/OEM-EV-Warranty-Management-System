@@ -151,41 +151,26 @@ const AdminServiceHistoriesManagement = () => {
         <S.Header>
           <S.HeaderTop>
             <S.HeaderTitle><FaHistory /> Lịch sử Dịch vụ (Admin)</S.HeaderTitle>
-            <S.Button primary onClick={openCreateForm}><FaPlus /> Tạo mới</S.Button>
           </S.HeaderTop>
           <S.SearchContainer>
             <select value={searchType} onChange={(e) => setSearchType(e.target.value)}>
-              <option value="general">Tìm chung</option>
-              <option value="vehicle">VIN</option>
-              <option value="part">ID Phụ tùng</option>
-              <option value="dateRange">Khoảng thời gian</option>
+              {/* <option value="general">Tìm chung</option> */}
+              <option value="vehicleName">Tìm theo Xe</option>
+              <option value="vehicleVin">Tìm theo VIN</option>
             </select>
-            {searchType === 'dateRange' ? (
-              <>
-                <S.Input
-                  type="date"
-                  placeholder="Từ ngày"
-                  value={dateRange.startDate}
-                  onChange={(e) => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
-                />
-                <S.Input
-                  type="date"
-                  placeholder="Đến ngày"
-                  value={dateRange.endDate}
-                  onChange={(e) => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
-                />
-              </>
-            ) : (
-              <S.Input
-                type={searchType === 'vehicle' ? 'number' : 'text'}
-                placeholder={searchType === 'general' ? 'Tìm kiếm...' : searchType === 'vehicle' ? 'Nhập ID Xe (số)...' : 'Nhập ID Phụ tùng...'}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-              />
-            )}
+            <S.Input
+              type="text"
+              placeholder={
+                searchType === 'vehicleName' ? 'Nhập tên xe...' :
+                searchType === 'vehicleVin' ? 'Nhập VIN...' :
+                'Tìm kiếm...'
+              }
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+            />
             <S.Button small onClick={handleSearch}><FaSearch /> Tìm kiếm</S.Button>
-            {(searchTerm || dateRange.startDate || dateRange.endDate) && (
+            {searchTerm && (
               <S.Button small onClick={handleClearSearch}><FaTimes /> Xóa</S.Button>
             )}
           </S.SearchContainer>
@@ -203,9 +188,9 @@ const AdminServiceHistoriesManagement = () => {
               <thead>
                 <tr>
                   <S.Th>ID</S.Th>
-                  <S.Th>Xe (VIN)</S.Th>
-                  <S.Th>Tên xe</S.Th>
-                  <S.Th>Loại dịch vụ</S.Th>
+                  <S.Th>Xe</S.Th>
+                  <S.Th>Vin</S.Th>
+                  {/* <S.Th>Loại dịch vụ</S.Th> */}
                   <S.Th>Phụ tùng</S.Th>
                   <S.Th>Mô tả</S.Th>
                   <S.Th>Ngày dịch vụ</S.Th>
@@ -216,9 +201,9 @@ const AdminServiceHistoriesManagement = () => {
                 {serviceHistories.map(history => (
                   <tr key={history.serviceHistoryId}>
                     <S.Td>{history.serviceHistoryId}</S.Td>
-                    <S.Td>{history.vehicleVin || 'N/A'}</S.Td>
                     <S.Td>{history.vehicleName || 'N/A'}</S.Td>
-                    <S.Td>{history.serviceType || 'N/A'}</S.Td>
+                    <S.Td>{history.vehicleVin || 'N/A'}</S.Td>
+                    {/* <S.Td>{history.serviceType || 'N/A'}</S.Td> */}
                     <S.Td>{history.partName ? `${history.partName} (${history.partId})` : history.partId || 'N/A'}</S.Td>
                     <S.Td>{history.description}</S.Td>
                     <S.Td>{new Date(history.serviceDate).toLocaleDateString()}</S.Td>
