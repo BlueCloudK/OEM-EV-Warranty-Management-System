@@ -97,8 +97,12 @@ export const adminAuthApi = {
           const errorData = await response.json();
 
           // Use the message from backend response if available
-          if (errorData && errorData.message) {
+          // Ensure we only extract the message string, not the entire object
+          if (errorData && errorData.message && typeof errorData.message === 'string') {
             errorMessage = errorData.message;
+          } else if (errorData && typeof errorData === 'string') {
+            // In case the error response itself is just a string
+            errorMessage = errorData;
           } else {
             // Fallback to status-specific messages if backend doesn't provide message
             if (response.status === 401) {
