@@ -264,7 +264,7 @@ public class CustomerServiceImpl implements CustomerService {
                 .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
 
         Role userRole = user.getRole();
-        if (userRole == null || !"ROLE_CUSTOMER".equals(userRole.getRoleName())) {
+        if (userRole == null || !"CUSTOMER".equals(userRole.getRoleName())) {
             throw new IllegalStateException("Only users with CUSTOMER role can update their profile.");
         }
 
