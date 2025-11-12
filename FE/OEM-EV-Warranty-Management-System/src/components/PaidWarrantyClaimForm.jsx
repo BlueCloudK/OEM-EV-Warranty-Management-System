@@ -212,15 +212,27 @@ const PaidWarrantyClaimForm = ({ vehicleId, installedPartId, onSuccess, onCancel
                 <>
                   <FaExclamationTriangle />
                   <div>
-                    <h4>Bảo Hành Tính Phí</h4>
-                    <p>Xe/linh kiện đã hết hạn bảo hành miễn phí. Bạn có thể bảo hành với phí: <strong>{formData.warrantyFee ? parseFloat(formData.warrantyFee).toLocaleString('vi-VN') : '0'} VNĐ</strong></p>
+                    <h4>⚠️ Bảo Hành Tính Phí</h4>
+                    <p>Xe/linh kiện đã hết hạn bảo hành miễn phí. </p>
+                    {formData.warrantyFee && (
+                      <p style={{ marginTop: '8px' }}>
+                        💰 <strong>Phí bảo hành: {parseFloat(formData.warrantyFee).toLocaleString('vi-VN')} VNĐ</strong>
+                      </p>
+                    )}
+                    <FeeFormulaInfo>
+                      <small>
+                        📋 Công thức: Phí = 20%-50% × Chi phí sửa chữa (tăng dần theo số ngày quá hạn)
+                        <br/>
+                        💵 Phí tối thiểu: 500,000 VNĐ
+                      </small>
+                    </FeeFormulaInfo>
                   </div>
                 </>
               ) : (
                 <>
                   <FaCheckCircle />
                   <div>
-                    <h4>Bảo Hành Miễn Phí</h4>
+                    <h4>✅ Bảo Hành Miễn Phí</h4>
                     <p>Xe/linh kiện còn trong thời hạn bảo hành</p>
                   </div>
                 </>
@@ -473,16 +485,32 @@ const WarrantySummary = styled.div`
   h4 {
     margin: 0 0 8px 0;
     color: ${props => props.isPaid ? '#e65100' : '#2e7d32'};
+    font-size: 1.3rem;
   }
 
   p {
     margin: 0;
     color: #666;
+    line-height: 1.6;
   }
 
   strong {
     color: ${props => props.isPaid ? '#ff6f00' : '#1b5e20'};
     font-size: 1.1rem;
+  }
+`;
+
+const FeeFormulaInfo = styled.div`
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-top: 12px;
+
+  small {
+    color: #666;
+    font-size: 0.9rem;
+    line-height: 1.8;
+    display: block;
   }
 `;
 

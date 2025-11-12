@@ -198,7 +198,24 @@ const WarrantyChecker = ({ vehicleId, installedPartId, onWarrantyChecked, autoCh
           {/* Expiration Reasons */}
           {warrantyInfo.expirationReasons && (
             <ExpirationSection>
-              <strong>Lý do:</strong> {warrantyInfo.expirationReasons}
+              <strong>Lý do hết hạn bảo hành:</strong>
+              <p>{warrantyInfo.expirationReasons}</p>
+
+              {/* Chi tiết ngày/km quá hạn */}
+              {warrantyInfo.daysRemaining < 0 && (
+                <DetailList>
+                  <li>⏰ <strong>Quá hạn:</strong> {Math.abs(warrantyInfo.daysRemaining)} ngày</li>
+                  <li>📅 <strong>Ngày hết hạn:</strong> {new Date(warrantyInfo.warrantyEndDate).toLocaleDateString('vi-VN')}</li>
+                </DetailList>
+              )}
+
+              {warrantyInfo.mileageRemaining != null && warrantyInfo.mileageRemaining < 0 && (
+                <DetailList>
+                  <li>🚗 <strong>Vượt giới hạn:</strong> {Math.abs(warrantyInfo.mileageRemaining).toLocaleString('vi-VN')} km</li>
+                  <li>📏 <strong>Số km hiện tại:</strong> {warrantyInfo.currentMileage?.toLocaleString('vi-VN')} km</li>
+                  <li>📏 <strong>Giới hạn bảo hành:</strong> {warrantyInfo.mileageLimit?.toLocaleString('vi-VN')} km</li>
+                </DetailList>
+              )}
             </ExpirationSection>
           )}
 
@@ -209,6 +226,19 @@ const WarrantyChecker = ({ vehicleId, installedPartId, onWarrantyChecked, autoCh
                 <FaMoneyBillWave />
                 <h4>Bảo Hành Tính Phí</h4>
               </PaidWarrantyHeader>
+
+              {/* Grace Period Info */}
+              <GracePeriodInfo>
+                <strong>📋 Thông tin bảo hành tính phí:</strong>
+                <ul>
+                  <li>✅ Xe/linh kiện đủ điều kiện bảo hành tính phí (trong grace period 180 ngày)</li>
+                  {warrantyInfo.daysRemaining < 0 && (
+                    <li>⏱️ Thời gian quá hạn: <strong>{Math.abs(warrantyInfo.daysRemaining)}</strong> ngày / 180 ngày cho phép</li>
+                  )}
+                  <li>💰 Phí tính theo công thức: <strong>20%-50%</strong> chi phí sửa chữa (tăng dần theo số ngày quá hạn)</li>
+                  <li>💵 Phí tối thiểu: <strong>500,000 VNĐ</strong></li>
+                </ul>
+              </GracePeriodInfo>
 
               {showFeeCalculation && !warrantyInfo.estimatedWarrantyFee && (
                 <FeeCalculationForm>
@@ -223,9 +253,12 @@ const WarrantyChecker = ({ vehicleId, installedPartId, onWarrantyChecked, autoCh
                       onChange={(e) => setEstimatedRepairCost(e.target.value)}
                       placeholder="Ví dụ: 2000000"
                     />
+                    <small style={{ color: '#666', marginTop: '4px', display: 'block' }}>
+                      Nhập chi phí để xem phí bảo hành chính xác
+                    </small>
                   </FormGroup>
                   <CalculateButton onClick={handleCalculateFee} disabled={loading}>
-                    {loading ? 'Đang tính...' : 'Tính Phí'}
+                    {loading ? 'Đang tính...' : 'Tính Phí Bảo Hành'}
                   </CalculateButton>
                 </FeeCalculationForm>
               )}
@@ -233,7 +266,7 @@ const WarrantyChecker = ({ vehicleId, installedPartId, onWarrantyChecked, autoCh
               {warrantyInfo.estimatedWarrantyFee && (
                 <FeeResult>
                   <FeeAmount>
-                    Phí bảo hành: <strong>{warrantyInfo.estimatedWarrantyFee.toLocaleString('vi-VN')} VNĐ</strong>
+                    💰 Phí bảo hành: <strong>{warrantyInfo.estimatedWarrantyFee.toLocaleString('vi-VN')} VNĐ</strong>
                   </FeeAmount>
                   {warrantyInfo.feeNote && (
                     <FeeNote>{warrantyInfo.feeNote}</FeeNote>
@@ -247,8 +280,32 @@ const WarrantyChecker = ({ vehicleId, installedPartId, onWarrantyChecked, autoCh
           {!warrantyInfo.isValidForFreeWarranty && !warrantyInfo.canProvidePaidWarranty && (
             <CannotProvideWarranty>
               <FaTimesCircle />
-              <p>Không thể bảo hành (quá grace period)</p>
-              <small>Xe/linh kiện đã quá thời hạn cho phép bảo hành tính phí.</small>
+              <h3>❌ Không Thể Bảo Hành</h3>
+              <p><strong>Lý do:</strong> Đã quá thời hạn grace period cho phép (180 ngày)</p>
+
+              <DetailInfo>
+                {warrantyInfo.daysRemaining < 0 && (
+                  <>
+                    <InfoItem>
+                      <span className="label">⏰ Số ngày quá hạn:</span>
+                      <span className="value critical">{Math.abs(warrantyInfo.daysRemaining)} ngày</span>
+                    </InfoItem>
+                    <InfoItem>
+                      <span className="label">📅 Grace period tối đa:</span>
+                      <span className="value">180 ngày</span>
+                    </InfoItem>
+                    <InfoItem>
+                      <span className="label">⚠️ Vượt quá:</span>
+                      <span className="value critical">{Math.abs(warrantyInfo.daysRemaining) - 180} ngày</span>
+                    </InfoItem>
+                  </>
+                )}
+              </DetailInfo>
+
+              <small>
+                <strong>Lưu ý:</strong> Theo quy định, bảo hành tính phí chỉ áp dụng trong vòng 180 ngày kể từ ngày hết hạn bảo hành.
+                Xe/linh kiện của bạn đã vượt quá thời gian này nên không thể tạo yêu cầu bảo hành.
+              </small>
             </CannotProvideWarranty>
           )}
         </ResultContainer>
@@ -395,10 +452,85 @@ const DaysInfo = styled.span`
 const ExpirationSection = styled.div`
   background: #fff3e0;
   border-left: 4px solid #ff9800;
-  padding: 12px 16px;
-  border-radius: 4px;
+  padding: 16px 20px;
+  border-radius: 8px;
   margin-bottom: 16px;
   color: #e65100;
+
+  strong {
+    display: block;
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+    color: #e65100;
+  }
+
+  p {
+    margin: 8px 0;
+    font-size: 1rem;
+  }
+`;
+
+const DetailList = styled.ul`
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0 0;
+  background: white;
+  border-radius: 6px;
+  padding: 12px 16px;
+
+  li {
+    padding: 6px 0;
+    color: #333;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    strong {
+      color: #d84315;
+      display: inline;
+      font-size: inherit;
+      margin: 0;
+    }
+  }
+`;
+
+const GracePeriodInfo = styled.div`
+  background: #e8f5e9;
+  border: 2px solid #4caf50;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+
+  strong {
+    display: block;
+    color: #2e7d32;
+    font-size: 1.05rem;
+    margin-bottom: 12px;
+  }
+
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+
+    li {
+      padding: 6px 0;
+      color: #1b5e20;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      line-height: 1.5;
+
+      strong {
+        display: inline;
+        font-size: inherit;
+        margin: 0;
+        color: #1b5e20;
+      }
+    }
+  }
 `;
 
 const PaidWarrantySection = styled.div`
@@ -512,7 +644,7 @@ const CannotProvideWarranty = styled.div`
   background: #ffebee;
   border: 2px solid #f44336;
   border-radius: 8px;
-  padding: 20px;
+  padding: 24px;
   text-align: center;
   color: #c62828;
   margin-top: 20px;
@@ -520,18 +652,70 @@ const CannotProvideWarranty = styled.div`
   svg {
     font-size: 3rem;
     margin-bottom: 12px;
+    color: #d32f2f;
+  }
+
+  h3 {
+    margin: 12px 0;
+    font-size: 1.4rem;
+    color: #c62828;
   }
 
   p {
-    margin: 8px 0;
-    font-size: 1.2rem;
+    margin: 12px 0;
+    font-size: 1.1rem;
     font-weight: 600;
+    color: #b71c1c;
   }
 
   small {
     display: block;
-    margin-top: 8px;
+    margin-top: 16px;
     color: #d32f2f;
+    text-align: left;
+    line-height: 1.6;
+    font-size: 0.95rem;
+
+    strong {
+      color: #c62828;
+    }
+  }
+`;
+
+const DetailInfo = styled.div`
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+  text-align: left;
+`;
+
+const InfoItem = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border-bottom: 1px solid #ffcdd2;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  .label {
+    font-weight: 600;
+    color: #d32f2f;
+    font-size: 0.95rem;
+  }
+
+  .value {
+    font-size: 1rem;
+    color: #333;
+    font-weight: 700;
+
+    &.critical {
+      color: #c62828;
+      font-size: 1.1rem;
+    }
   }
 `;
 
