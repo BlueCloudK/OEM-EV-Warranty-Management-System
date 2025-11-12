@@ -21,8 +21,10 @@ const PartRequests = () => {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showConfirmDeliveredModal, setShowConfirmDeliveredModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [filterStatus, setFilterStatus] = useState('ALL');
+  const [deliveryNotes, setDeliveryNotes] = useState('');
 
   // Form state
   const [formData, setFormData] = useState({
@@ -167,19 +169,19 @@ const PartRequests = () => {
     }
   };
 
-  const handleConfirmDelivered = async (requestId) => {
-    if (!confirm('Xác nhận đã nhận được linh kiện?')) {
-      return;
-    }
+  const handleConfirmDelivered = async (e) => {
+    e.preventDefault();
 
     try {
-      await apiClient(`/api/part-requests/${requestId}/deliver`, {
+      await apiClient(`/api/part-requests/${selectedRequest.requestId}/deliver`, {
         method: 'PATCH'
       });
 
       alert('Xác nhận đã nhận hàng thành công!');
-      fetchMyRequests();
+      setShowConfirmDeliveredModal(false);
       setShowDetailModal(false);
+      setDeliveryNotes('');
+      fetchMyRequests();
     } catch (error) {
       console.error('Error confirming delivery:', error);
       alert('Không thể xác nhận: ' + (error.message || 'Lỗi không xác định'));
@@ -330,7 +332,7 @@ const PartRequests = () => {
                     </S.Button>
                   )}
                   {request.status === 'SHIPPED' && (
-                    <S.Button primary onClick={() => handleConfirmDelivered(request.requestId)}>
+                    <S.Button primary onClick={() => { setSelectedRequest(request); setShowConfirmDeliveredModal(true); }}>
                       <FaCheckCircle /> Xác nhận đã nhận
                     </S.Button>
                   )}
@@ -603,7 +605,7 @@ const PartRequests = () => {
                 </S.Button>
               )}
               {selectedRequest.status === 'SHIPPED' && (
-                <S.Button primary onClick={() => handleConfirmDelivered(selectedRequest.requestId)}>
+                <S.Button primary onClick={() => { setShowDetailModal(false); setShowConfirmDeliveredModal(true); }}>
                   <FaCheckCircle /> Xác Nhận Đã Nhận
                 </S.Button>
               )}
@@ -611,6 +613,112 @@ const PartRequests = () => {
                 Đóng
               </S.Button>
             </S.ModalFooter>
+          </S.ModalContent>
+        </S.ModalOverlay>
+      )}
+
+      {/* Confirm Delivered Modal */}
+      {showConfirmDeliveredModal && selectedRequest && (
+        <S.ModalOverlay onClick={() => setShowConfirmDeliveredModal(false)}>
+          <S.ModalContent onClick={(e) => e.stopPropagation()}>
+            <S.ModalHeader>
+              <h2><FaBoxOpen /> Xác Nhận Đã Nhận Hàng</h2>
+              <S.CloseButton onClick={() => setShowConfirmDeliveredModal(false)}>×</S.CloseButton>
+            </S.ModalHeader>
+
+            <S.Form onSubmit={handleConfirmDelivered}>
+              {/* Thông tin đơn hàng */}
+              <div style={{ background: '#f8f9fa', padding: '16px', borderRadius: '8px', marginBottom: '16px' }}>
+                <h3 style={{ margin: '0 0 12px 0', fontSize: '1rem', color: '#495057' }}>
+                  📦 Thông Tin Đơn Hàng
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#6c757d' }}>Yêu cầu:</span>
+                    <strong>#{selectedRequest.requestId}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#6c757d' }}>Linh kiện:</span>
+                    <span>{selectedRequest.faultyPartName || selectedRequest.faultyPartId}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#6c757d' }}>Số lượng:</span>
+                    <strong>{selectedRequest.quantity} chiếc</strong>
+                  </div>
+                  {selectedRequest.trackingNumber && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: '#6c757d' }}>Mã vận đơn:</span>
+                      <strong style={{ color: '#17a2b8' }}>{selectedRequest.trackingNumber}</strong>
+                    </div>
+                  )}
+                  {selectedRequest.shippedDate && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: '#6c757d' }}>Ngày gửi:</span>
+                      <span>{new Date(selectedRequest.shippedDate).toLocaleDateString('vi-VN')}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Ghi chú */}
+              <S.FormGroup>
+                <S.Label>📝 Ghi chú khi nhận hàng (tùy chọn):</S.Label>
+                <S.TextArea
+                  rows="3"
+                  value={deliveryNotes}
+                  onChange={(e) => setDeliveryNotes(e.target.value)}
+                  placeholder="VD: Đã kiểm tra hàng, tình trạng tốt, đầy đủ số lượng..."
+                  maxLength="500"
+                />
+                <S.CharCount>{deliveryNotes.length}/500</S.CharCount>
+              </S.FormGroup>
+
+              {/* Checklist */}
+              <div style={{
+                background: '#d1ecf1',
+                border: '1px solid #bee5eb',
+                borderRadius: '8px',
+                padding: '12px',
+                marginBottom: '16px'
+              }}>
+                <div style={{ fontSize: '0.9rem', color: '#0c5460' }}>
+                  <strong>✅ Vui lòng kiểm tra trước khi xác nhận:</strong>
+                  <ul style={{ marginTop: '8px', marginBottom: '0', paddingLeft: '20px' }}>
+                    <li>Số lượng linh kiện đúng với yêu cầu</li>
+                    <li>Linh kiện còn nguyên tem, seal, không bị hư hỏng</li>
+                    <li>Đúng loại linh kiện đã đặt</li>
+                    <li>Mã vận đơn (nếu có) khớp với đơn hàng</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Confirmation warning */}
+              <div style={{
+                background: '#fff3cd',
+                border: '1px solid #ffc107',
+                borderRadius: '8px',
+                padding: '12px',
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <span style={{ fontSize: '1.2rem' }}>⚠️</span>
+                <div style={{ fontSize: '0.9rem', color: '#856404' }}>
+                  <strong>Xác nhận nhận hàng:</strong> Sau khi xác nhận, trạng thái sẽ chuyển sang
+                  <strong> "ĐÃ GIAO"</strong> và bạn có thể tiến hành thay thế linh kiện.
+                </div>
+              </div>
+
+              <S.ModalFooter>
+                <S.Button type="button" onClick={() => setShowConfirmDeliveredModal(false)}>
+                  Hủy
+                </S.Button>
+                <S.Button type="submit" primary>
+                  <FaCheckCircle /> Xác Nhận Đã Nhận Đầy Đủ
+                </S.Button>
+              </S.ModalFooter>
+            </S.Form>
           </S.ModalContent>
         </S.ModalOverlay>
       )}

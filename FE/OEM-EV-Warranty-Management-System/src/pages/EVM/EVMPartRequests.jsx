@@ -551,26 +551,76 @@ const EVMPartRequests = () => {
         <S.ModalOverlay onClick={() => setShowShipModal(false)}>
           <S.ModalContent onClick={(e) => e.stopPropagation()}>
             <S.ModalHeader>
-              <h2>Gửi Hàng - Yêu Cầu #{selectedRequest.requestId}</h2>
+              <h2><FaTruck /> Xác Nhận Gửi Hàng</h2>
               <S.CloseButton onClick={() => setShowShipModal(false)}>×</S.CloseButton>
             </S.ModalHeader>
 
             <S.Form onSubmit={handleShip}>
+              {/* Thông tin yêu cầu */}
+              <S.DetailSection style={{ background: '#f8f9fa', padding: '16px', borderRadius: '8px', marginBottom: '16px' }}>
+                <S.SectionTitle>📦 Thông Tin Gửi Hàng</S.SectionTitle>
+                <S.DetailItem>
+                  <S.DetailLabel>Yêu cầu:</S.DetailLabel>
+                  <S.DetailValue><strong>#{selectedRequest.requestId}</strong></S.DetailValue>
+                </S.DetailItem>
+                <S.DetailItem>
+                  <S.DetailLabel>Linh kiện:</S.DetailLabel>
+                  <S.DetailValue>{selectedRequest.faultyPartName} ({selectedRequest.faultyPartNumber})</S.DetailValue>
+                </S.DetailItem>
+                <S.DetailItem>
+                  <S.DetailLabel>Số lượng:</S.DetailLabel>
+                  <S.DetailValue><strong>{selectedRequest.quantity}</strong> chiếc</S.DetailValue>
+                </S.DetailItem>
+                <S.DetailItem>
+                  <S.DetailLabel>Gửi đến:</S.DetailLabel>
+                  <S.DetailValue>
+                    <div><strong>{selectedRequest.serviceCenterName}</strong></div>
+                    <div style={{ color: '#6c757d', fontSize: '0.9rem' }}>{selectedRequest.serviceCenterAddress}</div>
+                  </S.DetailValue>
+                </S.DetailItem>
+                <S.DetailItem>
+                  <S.DetailLabel>Người nhận:</S.DetailLabel>
+                  <S.DetailValue>{selectedRequest.requestedByFullName}</S.DetailValue>
+                </S.DetailItem>
+              </S.DetailSection>
+
+              {/* Tracking number */}
               <S.FormGroup>
-                <S.Label>Mã vận đơn (tùy chọn):</S.Label>
+                <S.Label>📍 Mã vận đơn (Tracking Number):</S.Label>
                 <S.Input
                   type="text"
                   value={trackingNumber}
                   onChange={(e) => setTrackingNumber(e.target.value)}
-                  placeholder="Nhập mã vận đơn..."
+                  placeholder="VD: VNP123456789, GHTK987654321..."
                   maxLength="100"
                 />
+                <small style={{ color: '#6c757d', fontSize: '0.85rem', marginTop: '4px', display: 'block' }}>
+                  Nhập mã vận đơn để technician có thể theo dõi. Có thể bỏ trống nếu chưa có.
+                </small>
               </S.FormGroup>
+
+              {/* Warning */}
+              <div style={{
+                background: '#fff3cd',
+                border: '1px solid #ffc107',
+                borderRadius: '8px',
+                padding: '12px',
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <span style={{ fontSize: '1.2rem' }}>⚠️</span>
+                <div style={{ fontSize: '0.9rem', color: '#856404' }}>
+                  <strong>Xác nhận gửi hàng:</strong> Sau khi xác nhận, trạng thái sẽ chuyển sang
+                  <strong> "ĐANG VẬN CHUYỂN"</strong> và technician sẽ được thông báo.
+                </div>
+              </div>
 
               <S.ModalFooter>
                 <S.Button type="button" onClick={() => setShowShipModal(false)}>Hủy</S.Button>
                 <S.Button type="submit" primary>
-                  <FaTruck /> Xác Nhận Đã Gửi
+                  <FaTruck /> Xác Nhận Đã Gửi Hàng
                 </S.Button>
               </S.ModalFooter>
             </S.Form>
