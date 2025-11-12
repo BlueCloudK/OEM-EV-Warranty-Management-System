@@ -284,7 +284,7 @@ const WarrantyChecker = ({ vehicleId, installedPartId, onWarrantyChecked, autoCh
               <p><strong>Lý do:</strong> Đã quá thời hạn grace period cho phép (180 ngày)</p>
 
               <DetailInfo>
-                {warrantyInfo.daysRemaining < 0 && (
+                {warrantyInfo.daysRemaining < 0 && Math.abs(warrantyInfo.daysRemaining) > 180 && (
                   <>
                     <InfoItem>
                       <span className="label">⏰ Số ngày quá hạn:</span>
@@ -295,7 +295,7 @@ const WarrantyChecker = ({ vehicleId, installedPartId, onWarrantyChecked, autoCh
                       <span className="value">180 ngày</span>
                     </InfoItem>
                     <InfoItem>
-                      <span className="label">⚠️ Vượt quá:</span>
+                      <span className="label">⚠️ Vượt quá grace period:</span>
                       <span className="value critical">{Math.abs(warrantyInfo.daysRemaining) - 180} ngày</span>
                     </InfoItem>
                   </>

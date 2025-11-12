@@ -149,60 +149,114 @@ public class WarrantyValidationServiceImpl implements WarrantyValidationService 
 
     /**
      * Build response cho Extended Warranty Part.
+     * CRITICAL: Phải kiểm tra CẢ vehicle warranty VÀ part warranty, áp dụng điều kiện NGHIÊM NGẶT NHẤT
+     * theo business rules (WARRANTY_BUSINESS_RULES.md dòng 59-70)
      */
     private WarrantyValidationResponseDTO buildExtendedPartWarrantyResponse(InstalledPart installedPart, LocalDate today) {
         Part part = installedPart.getPart();
         Vehicle vehicle = installedPart.getVehicle();
 
-        // Tính km kể từ khi lắp đặt
+        // ===== 1. KIỂM TRA PART WARRANTY =====
         int currentMileage = vehicle.getMileage();
         int mileageAtInstallation = installedPart.getMileageAtInstallation() != null ? installedPart.getMileageAtInstallation() : 0;
         int mileageSinceInstallation = currentMileage - mileageAtInstallation;
 
-        // Lấy warranty limit từ installedPart (hoặc fallback về part default)
-        Integer warrantyMileageLimit = installedPart.getWarrantyMileageLimit() != null
+        Integer partMileageLimit = installedPart.getWarrantyMileageLimit() != null
                 ? installedPart.getWarrantyMileageLimit()
                 : part.getDefaultWarrantyMileage();
 
-        // Tính ngày còn lại
-        LocalDate warrantyExpirationDate = installedPart.getWarrantyExpirationDate();
-        long daysRemaining = ChronoUnit.DAYS.between(today, warrantyExpirationDate);
+        LocalDate partExpirationDate = installedPart.getWarrantyExpirationDate();
+        long partDaysRemaining = ChronoUnit.DAYS.between(today, partExpirationDate);
+        Integer partMileageRemaining = partMileageLimit != null ? partMileageLimit - mileageSinceInstallation : null;
 
-        // Tính km còn lại
-        Integer mileageRemaining = warrantyMileageLimit != null ? warrantyMileageLimit - mileageSinceInstallation : null;
-
-        // Xác định warranty status
-        WarrantyStatus status = determinePartWarrantyStatus(
+        WarrantyStatus partStatus = determinePartWarrantyStatus(
                 today,
-                warrantyExpirationDate,
+                partExpirationDate,
                 mileageSinceInstallation,
-                warrantyMileageLimit
+                partMileageLimit
         );
+
+        // ===== 2. KIỂM TRA VEHICLE WARRANTY =====
+        LocalDate vehicleExpirationDate = vehicle.getWarrantyEndDate();
+        long vehicleDaysRemaining = ChronoUnit.DAYS.between(today, vehicleExpirationDate);
+        int vehicleMileageRemaining = DEFAULT_VEHICLE_MILEAGE_LIMIT - currentMileage;
+
+        WarrantyStatus vehicleStatus = determineVehicleWarrantyStatus(
+                today,
+                vehicleExpirationDate,
+                currentMileage,
+                DEFAULT_VEHICLE_MILEAGE_LIMIT
+        );
+
+        // ===== 3. ÁP DỤNG ĐIỀU KIỆN NGHIÊM NGẶT NHẤT =====
+        // Lấy status TỆ NHẤT (VALID < EXPIRED_MILEAGE < EXPIRED_DATE < EXPIRED_BOTH)
+        WarrantyStatus finalStatus = getStrictestStatus(partStatus, vehicleStatus);
+
+        // Lấy daysRemaining TỆ NHẤT (số âm lớn nhất = quá hạn lâu nhất)
+        long finalDaysRemaining = Math.min(partDaysRemaining, vehicleDaysRemaining);
+
+        // Lấy mileageRemaining TỆ NHẤT (số âm lớn nhất = vượt nhiều nhất)
+        Integer finalMileageRemaining = null;
+        if (partMileageRemaining != null && vehicleMileageRemaining < 0) {
+            finalMileageRemaining = Math.min(partMileageRemaining, vehicleMileageRemaining);
+        } else if (partMileageRemaining != null) {
+            finalMileageRemaining = partMileageRemaining;
+        } else {
+            finalMileageRemaining = vehicleMileageRemaining;
+        }
 
         // Grace period
         int gracePeriod = part.getGracePeriodDays() != null ? part.getGracePeriodDays() : DEFAULT_GRACE_PERIOD_DAYS;
-        boolean canProvidePaidWarranty = canProvidePaidWarranty(status, daysRemaining, gracePeriod);
+        boolean canProvidePaidWarranty = canProvidePaidWarranty(finalStatus, finalDaysRemaining, gracePeriod);
 
         return WarrantyValidationResponseDTO.builder()
-                .warrantyStatus(status)
-                .statusDescription(status.getDescription())
-                .isValidForFreeWarranty(status.isValid())
+                .warrantyStatus(finalStatus)
+                .statusDescription(finalStatus.getDescription())
+                .isValidForFreeWarranty(finalStatus.isValid())
                 .canProvidePaidWarranty(canProvidePaidWarranty)
                 .warrantyStartDate(installedPart.getInstallationDate())
-                .warrantyEndDate(warrantyExpirationDate)
-                .daysRemaining(daysRemaining)
+                .warrantyEndDate(partExpirationDate)
+                .daysRemaining(finalDaysRemaining)
                 .currentMileage(currentMileage)
-                .mileageLimit(warrantyMileageLimit)
-                .mileageRemaining(mileageRemaining)
+                .mileageLimit(partMileageLimit != null ? partMileageLimit : DEFAULT_VEHICLE_MILEAGE_LIMIT)
+                .mileageRemaining(finalMileageRemaining)
                 .installedPartId(installedPart.getInstalledPartId())
                 .partName(part.getPartName())
-                .partWarrantyExpirationDate(warrantyExpirationDate)
-                .partDaysRemaining(daysRemaining)
+                .partWarrantyExpirationDate(partExpirationDate)
+                .partDaysRemaining(partDaysRemaining)
                 .vehicleId(vehicle.getVehicleId())
                 .vehicleVin(vehicle.getVehicleVin())
                 .vehicleName(vehicle.getVehicleName())
-                .expirationReasons(buildExpirationReasons(status, daysRemaining, mileageRemaining))
+                .expirationReasons(buildExpirationReasons(finalStatus, finalDaysRemaining, finalMileageRemaining))
                 .build();
+    }
+
+    /**
+     * Lấy warranty status NGHIÊM NGẶT NHẤT giữa part và vehicle.
+     * Priority: VALID < EXPIRED_MILEAGE < EXPIRED_DATE < EXPIRED_BOTH
+     */
+    private WarrantyStatus getStrictestStatus(WarrantyStatus partStatus, WarrantyStatus vehicleStatus) {
+        // Nếu một trong hai là EXPIRED_BOTH → return EXPIRED_BOTH
+        if (partStatus == WarrantyStatus.EXPIRED_BOTH || vehicleStatus == WarrantyStatus.EXPIRED_BOTH) {
+            return WarrantyStatus.EXPIRED_BOTH;
+        }
+
+        // Nếu một trong hai là EXPIRED_DATE
+        if (partStatus == WarrantyStatus.EXPIRED_DATE || vehicleStatus == WarrantyStatus.EXPIRED_DATE) {
+            // Nếu cái kia là EXPIRED_MILEAGE → return EXPIRED_BOTH
+            if (partStatus == WarrantyStatus.EXPIRED_MILEAGE || vehicleStatus == WarrantyStatus.EXPIRED_MILEAGE) {
+                return WarrantyStatus.EXPIRED_BOTH;
+            }
+            return WarrantyStatus.EXPIRED_DATE;
+        }
+
+        // Nếu một trong hai là EXPIRED_MILEAGE
+        if (partStatus == WarrantyStatus.EXPIRED_MILEAGE || vehicleStatus == WarrantyStatus.EXPIRED_MILEAGE) {
+            return WarrantyStatus.EXPIRED_MILEAGE;
+        }
+
+        // Cả hai đều VALID
+        return WarrantyStatus.VALID;
     }
 
     /**
