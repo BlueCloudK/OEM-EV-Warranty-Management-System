@@ -446,11 +446,11 @@ const AdminServiceCenters = () => {
                   height="350px"
                   editable={true}
                   onLocationChange={({ latitude, longitude }) => {
-                    setFormData({
-                      ...formData,
+                    setFormData(prev => ({
+                      ...prev,
                       latitude: latitude.toFixed(6),
                       longitude: longitude.toFixed(6)
-                    });
+                    }));
                   }}
                 />
               </S.FormGroup>

@@ -158,13 +158,11 @@ const AdminCustomerManagement = () => {
                                 setSearchType(e.target.value);
                                 setSearchTerm(''); // Clear search term when changing search type
                             }}
-                            style={{ marginRight: '10px', width: '150px' }} // Basic styling
+                            style={{ marginRight: '10px', width: '180px' }} // Basic styling
                         >
-                            <option value="general">Tìm theo tên</option>
-                            {/* <option value="id">Tìm theo ID</option> */}
-                            {/* <option value="name">Tìm theo Tên</option> */}
-                            <option value="email">Tìm theo Email</option>
-                            <option value="phone">Tìm theo SĐT</option>
+                            <option value="general">Tìm chung (Tên, Email, SĐT)</option>
+                            <option value="email">Tìm chính xác theo Email</option>
+                            <option value="phone">Tìm chính xác theo SĐT</option>
                         </S.Select>
 
                         <S.Input

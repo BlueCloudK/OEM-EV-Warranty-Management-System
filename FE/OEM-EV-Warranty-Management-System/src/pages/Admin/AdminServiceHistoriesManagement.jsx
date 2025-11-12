@@ -151,7 +151,6 @@ const AdminServiceHistoriesManagement = () => {
         <S.Header>
           <S.HeaderTop>
             <S.HeaderTitle><FaHistory /> Lịch sử Dịch vụ (Admin)</S.HeaderTitle>
-            <S.Button primary onClick={openCreateForm}><FaPlus /> Tạo mới</S.Button>
           </S.HeaderTop>
           <S.SearchContainer>
             <select value={searchType} onChange={(e) => setSearchType(e.target.value)}>
