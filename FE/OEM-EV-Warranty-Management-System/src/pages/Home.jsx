@@ -91,7 +91,7 @@ export default function Home() {
                 textTransform: "uppercase",
               }}
             >
-              Smart EV Warranty Ecosystem
+              Hệ Sinh Thái Bảo Hành Xe Điện Thông Minh
             </span>
             <h1 style={{ fontSize: "2.6rem", lineHeight: 1.25, fontWeight: 600, textShadow: "0 16px 32px rgba(0,0,0,0.35)" }}>
               Chào mừng tới nền tảng quản lý bảo hành xe điện OEM
@@ -130,7 +130,7 @@ export default function Home() {
               </Link>
               <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 12, letterSpacing: "0.3em", textTransform: "uppercase", color: "rgba(241,245,249,0.75)" }}>
                 <span style={{ display: "block", width: 42, height: 1, background: "rgba(255,255,255,0.6)" }} />
-                Trusted OEM Platform
+                Nền Tảng OEM Đáng Tin Cậy
               </div>
             </div>
           </div>
@@ -152,7 +152,7 @@ export default function Home() {
             >
               <img
                 src="https://static.wixstatic.com/media/e8a86a_3465bc67fe5e4e49be8f4c0be7ae6493~mv2.png/v1/fill/w_240,h_180,al_c/vinfast-logo.png"
-                alt="OEM EV Warranty"
+                alt="Hệ Thống Bảo Hành Xe Điện OEM"
                 style={{ height: 140, filter: "drop-shadow(0 16px 38px rgba(0,0,0,0.45))" }}
               />
             </div>
@@ -193,7 +193,7 @@ export default function Home() {
             </h3>
             <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.7 }}>{feature.description}</p>
             <span style={{ fontSize: 11, letterSpacing: ".28em", textTransform: "uppercase", color: "rgba(11,107,97,0.65)" }}>
-              EV Warranty Flow
+              Quy Trình Bảo Hành Xe Điện
             </span>
           </article>
         ))}

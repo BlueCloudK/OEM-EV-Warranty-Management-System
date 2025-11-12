@@ -177,7 +177,7 @@ export default function App() {
       <footer className="footer">
         <div className="container">
           <p style={{ color: "#0a0404ff" }}>
-            {new Date().getFullYear()} EV Warranty — All rights reserved.
+            © {new Date().getFullYear()} Hệ Thống Bảo Hành Xe Điện — Bản quyền đã được bảo hộ.
           </p>
         </div>
       </footer>
