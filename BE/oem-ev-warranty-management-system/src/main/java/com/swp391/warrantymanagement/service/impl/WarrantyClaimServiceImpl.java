@@ -445,6 +445,14 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
             }
         }
 
+        // Validation: Paid warranty must have warrantyFee > 0 (per business rules)
+        if (requestDTO.getIsPaidWarranty() != null && requestDTO.getIsPaidWarranty()) {
+            if (requestDTO.getWarrantyFee() == null || requestDTO.getWarrantyFee().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException("Paid warranty claim must have warrantyFee > 0. " +
+                    "Use /api/warranty-validation/vehicle/{vehicleId}/calculate-fee to calculate the fee.");
+            }
+        }
+
         WarrantyClaim claim = WarrantyClaimMapper.toEntity(requestDTO, installedPart, vehicle);
 
         // Set initial status based on warranty type
