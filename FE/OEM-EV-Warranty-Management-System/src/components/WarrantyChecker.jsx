@@ -178,7 +178,7 @@ const WarrantyChecker = ({ vehicleId, installedPartId, onWarrantyChecked, autoCh
               <InfoLabel><FaCalendarAlt /> Thời hạn bảo hành:</InfoLabel>
               <InfoValue>
                 {new Date(warrantyInfo.warrantyStartDate).toLocaleDateString('vi-VN')} - {new Date(warrantyInfo.warrantyEndDate).toLocaleDateString('vi-VN')}
-                <DaysInfo isExpired={warrantyInfo.daysRemaining < 0}>
+                <DaysInfo $isExpired={warrantyInfo.daysRemaining < 0}>
                   ({warrantyInfo.daysRemaining >= 0 ? 'Còn' : 'Quá'} {Math.abs(warrantyInfo.daysRemaining)} ngày)
                 </DaysInfo>
               </InfoValue>
@@ -188,7 +188,7 @@ const WarrantyChecker = ({ vehicleId, installedPartId, onWarrantyChecked, autoCh
               <InfoLabel><FaTachometerAlt /> Số km:</InfoLabel>
               <InfoValue>
                 {warrantyInfo.currentMileage?.toLocaleString('vi-VN')} / {warrantyInfo.mileageLimit?.toLocaleString('vi-VN')} km
-                <DaysInfo isExpired={warrantyInfo.mileageRemaining < 0}>
+                <DaysInfo $isExpired={warrantyInfo.mileageRemaining < 0}>
                   ({warrantyInfo.mileageRemaining >= 0 ? 'Còn' : 'Vượt'} {Math.abs(warrantyInfo.mileageRemaining).toLocaleString('vi-VN')} km)
                 </DaysInfo>
               </InfoValue>
@@ -445,7 +445,7 @@ const InfoValue = styled.div`
 
 const DaysInfo = styled.span`
   margin-left: 8px;
-  color: ${props => props.isExpired ? '#f44336' : '#4caf50'};
+  color: ${props => props.$isExpired ? '#f44336' : '#4caf50'};
   font-weight: 600;
 `;
 
