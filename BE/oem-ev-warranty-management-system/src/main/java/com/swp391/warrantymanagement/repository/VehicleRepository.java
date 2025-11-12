@@ -45,4 +45,16 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
     Page<Vehicle> findByVehicleYearLessThanEqual(int year, Pageable pageable);
 
     boolean existsByCustomer(Customer customer);
+
+    /**
+     * Tìm kiếm chung vehicle theo name, model, hoặc VIN (case-insensitive).
+     * @param searchTerm Từ khóa tìm kiếm.
+     * @param pageable Thông tin phân trang.
+     * @return Một trang các Vehicle thỏa mãn điều kiện.
+     */
+    @Query("SELECT v FROM Vehicle v WHERE " +
+            "LOWER(v.vehicleName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(v.vehicleModel) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(v.vehicleVin) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+    Page<Vehicle> searchVehiclesGeneral(@Param("searchTerm") String searchTerm, Pageable pageable);
 }

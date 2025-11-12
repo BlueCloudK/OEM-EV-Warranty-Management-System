@@ -50,4 +50,16 @@ public interface PartRepository extends JpaRepository<Part, Long> {
         @Param("partNumber") String partNumber);
 
     boolean existsByPartNumber(String partNumber);
+
+    /**
+     * Tìm kiếm chung part theo name, manufacturer, hoặc partNumber (case-insensitive).
+     * @param searchTerm Từ khóa tìm kiếm.
+     * @param pageable Thông tin phân trang.
+     * @return Một trang các Part thỏa mãn điều kiện.
+     */
+    @Query("SELECT p FROM Part p WHERE " +
+            "LOWER(p.partName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(p.manufacturer) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(p.partNumber) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+    Page<Part> searchPartsGeneral(@Param("searchTerm") String searchTerm, Pageable pageable);
 }
