@@ -12,7 +12,6 @@ const sidebarItems = [
   { icon: <FaTools />, label: "Yêu cầu Linh kiện", path: "/sctechnician/part-requests" },
   { icon: <FaCommentDots />, label: "Phản hồi", path: "/sctechnician/feedbacks" },
   { icon: <FaHistory />, label: "Lịch sử Sửa chữa", path: "/sctechnician/service-history" },
-  { icon: <FaCar />, label: "Tra cứu Xe", path: "/sctechnician/vehicles" },
   { icon: <FaCog />, label: "Xem Phụ tùng", path: "/sctechnician/parts" },
 ];
 
