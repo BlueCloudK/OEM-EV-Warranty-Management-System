@@ -82,9 +82,9 @@ export const useSCTechnicianDashboard = () => {
 
           if (statusText) {
             activities.push({
-              id: `claim-${claim.claimId}`,
+              id: `claim-${claim.warrantyClaimId}`,
               icon: 'FaWrench',
-              action: `Công việc #${claim.claimId} ${statusText}`,
+              action: `Công việc #${claim.warrantyClaimId} ${statusText}`,
               time: formatTimeAgo(claim.createdAt || claim.submittedDate)
             });
           }
