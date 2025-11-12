@@ -50,8 +50,9 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
 
     private static final Logger logger = LoggerFactory.getLogger(WarrantyClaimServiceImpl.class);
 
-    // Default grace period nếu Part không có config riêng (giống WarrantyValidationServiceImpl)
+    // Default constants (giống WarrantyValidationServiceImpl để đảm bảo consistency)
     private static final int DEFAULT_GRACE_PERIOD_DAYS = 180;
+    private static final int DEFAULT_VEHICLE_MILEAGE_LIMIT = 100_000; // 100,000 km
 
     private final WarrantyClaimRepository warrantyClaimRepository;
     private final InstalledPartRepository installedPartRepository;
