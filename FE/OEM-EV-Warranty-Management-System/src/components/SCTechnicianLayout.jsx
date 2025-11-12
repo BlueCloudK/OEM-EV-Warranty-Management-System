@@ -7,10 +7,10 @@ import {
 } from "react-icons/fa";
 
 const sidebarItems = [
-  { icon: <FaTachometerAlt />, label: "Dashboard", path: "/sctechnician/dashboard" },
+  { icon: <FaTachometerAlt />, label: "Tổng quan", path: "/sctechnician/dashboard" },
   { icon: <FaWrench />, label: "Công việc của tôi", path: "/sctechnician/my-work" },
   { icon: <FaTools />, label: "Yêu cầu Linh kiện", path: "/sctechnician/part-requests" },
-  { icon: <FaCommentDots />, label: "Feedback", path: "/sctechnician/feedbacks" },
+  { icon: <FaCommentDots />, label: "Phản hồi", path: "/sctechnician/feedbacks" },
   { icon: <FaHistory />, label: "Lịch sử Sửa chữa", path: "/sctechnician/service-history" },
   { icon: <FaCar />, label: "Tra cứu Xe", path: "/sctechnician/vehicles" },
   { icon: <FaCog />, label: "Xem Phụ tùng", path: "/sctechnician/parts" },
@@ -31,8 +31,8 @@ export default function SCTechnicianLayout() {
           </S.SidebarToggleButton>
           {!sidebarCollapsed && (
             <div>
-              <div style={{ fontSize: 16, fontWeight: 600 }}>SC Technician</div>
-              <div style={{ fontSize: 12, color: "#94a3b8" }}>Portal</div>
+              <div style={{ fontSize: 16, fontWeight: 600 }}>Kỹ thuật viên</div>
+              <div style={{ fontSize: 12, color: "#94a3b8" }}>Cổng thông tin</div>
             </div>
           )}
         </S.SidebarHeader>

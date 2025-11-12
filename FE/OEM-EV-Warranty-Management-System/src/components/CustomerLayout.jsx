@@ -7,11 +7,11 @@ import {
 } from "react-icons/fa";
 
 const sidebarItems = [
-  { icon: <FaTachometerAlt />, label: "Dashboard", path: "/customer/dashboard" },
+  { icon: <FaTachometerAlt />, label: "Tổng quan", path: "/customer/dashboard" },
   { icon: <FaCar />, label: "Xe của tôi", path: "/customer/my-vehicles" },
   { icon: <FaHistory />, label: "Lịch sử Bảo hành", path: "/customer/warranty-history" },
   // { icon: <FaClipboardList />, label: "Yêu cầu Bảo hành", path: "/customer/warranty-claims" },
-  { icon: <FaExclamationTriangle />, label: "Thông báo Recall", path: "/customer/recalls" },
+  { icon: <FaExclamationTriangle />, label: "Thông báo Triệu hồi", path: "/customer/recalls" },
   { icon: <FaClipboardList />, label: "Trung tâm Dịch vụ", path: "/customer/service-centers" },
   { icon: <FaCommentDots />, label: "Phản hồi", path: "/customer/feedback" },
   { icon: <FaUser />, label: "Thông tin cá nhân", path: "/customer/profile" },
@@ -32,8 +32,8 @@ export default function CustomerLayout() {
           </S.SidebarToggleButton>
           {!sidebarCollapsed && (
             <div>
-              <div style={{ fontSize: 16, fontWeight: 600 }}>Customer</div>
-              <div style={{ fontSize: 12, color: "#94a3b8" }}>Portal</div>
+              <div style={{ fontSize: 16, fontWeight: 600 }}>Khách hàng</div>
+              <div style={{ fontSize: 12, color: "#94a3b8" }}>Cổng thông tin</div>
             </div>
           )}
         </S.SidebarHeader>
