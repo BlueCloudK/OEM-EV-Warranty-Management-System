@@ -4,6 +4,8 @@ import com.swp391.warrantymanagement.entity.ServiceHistory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -32,5 +34,19 @@ public interface ServiceHistoryRepository extends JpaRepository<ServiceHistory, 
 
     // Tìm theo khoảng thời gian
     Page<ServiceHistory> findByServiceDateBetween(LocalDate startDate, LocalDate endDate, Pageable pageable);
+
+    /**
+     * Tìm kiếm chung service history theo serviceType, description, vehicleName, hoặc VIN (case-insensitive).
+     * Join với Vehicle để search trong vehicle information.
+     * @param searchTerm Từ khóa tìm kiếm.
+     * @param pageable Thông tin phân trang.
+     * @return Một trang các ServiceHistory thỏa mãn điều kiện.
+     */
+    @Query("SELECT sh FROM ServiceHistory sh LEFT JOIN sh.vehicle v WHERE " +
+            "LOWER(sh.serviceType) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(sh.description) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(v.vehicleName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(v.vehicleVin) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+    Page<ServiceHistory> searchServiceHistoriesGeneral(@Param("searchTerm") String searchTerm, Pageable pageable);
 
 }

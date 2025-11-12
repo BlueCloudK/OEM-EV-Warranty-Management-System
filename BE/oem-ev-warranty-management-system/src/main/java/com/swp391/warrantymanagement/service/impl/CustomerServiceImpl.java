@@ -46,7 +46,7 @@ public class CustomerServiceImpl implements CustomerService {
      * Lấy danh sách customers với pagination và search
      *
      * @param pageable thông tin phân trang và sorting
-     * @param search từ khóa tìm kiếm theo tên (optional)
+     * @param search từ khóa tìm kiếm chung trong name, phone, hoặc email (optional)
      * @return PagedResponse với danh sách CustomerResponseDTO
      */
     @Override
@@ -54,7 +54,8 @@ public class CustomerServiceImpl implements CustomerService {
         Page<Customer> customerPage;
 
         if (search != null && !search.trim().isEmpty()) {
-            customerPage = customerRepository.findByNameContainingIgnoreCase(search.trim(), pageable);
+            // Search in name, phone, and email (joined from User)
+            customerPage = customerRepository.searchCustomersGeneral(search.trim(), pageable);
         } else {
             customerPage = customerRepository.findAll(pageable);
         }
