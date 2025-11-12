@@ -123,6 +123,20 @@ const CustomerManagement = () => {
     setShowForm(true);
   };
 
+  const getSearchPlaceholder = () => {
+    switch (searchType) {
+      case 'name':
+        return 'Tìm theo Tên khách hàng...';
+      case 'email':
+        return 'Tìm theo Email...';
+      case 'phone':
+        return 'Tìm theo Số điện thoại...';
+      case 'general':  
+      default:
+        return 'Tìm theo tên...';
+    }
+  };
+
   if (authLoading || dataLoading) {
     return <S.LoadingState><FaSpinner /> <p>Đang tải...</p></S.LoadingState>;
   }
@@ -136,8 +150,24 @@ const CustomerManagement = () => {
             <S.Button $primary onClick={openCreateForm}><FaPlus /> Tạo khách hàng</S.Button>
           </S.HeaderTop>
           <S.SearchContainer>
-            <select value={searchType} onChange={(e) => setSearchType(e.target.value)}><option value="name">Tên</option><option value="email">Email</option><option value="phone">SĐT</option></select>
-            <S.Input placeholder={`Tìm theo ${searchType}...`} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleSearch()} />
+            <select 
+              value={searchType} 
+              onChange={(e) => {
+                setSearchType(e.target.value);
+                setSearchTerm(''); // Clear search term when changing search type
+              }}
+              style={{ marginRight: '10px', width: '120px', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+            >
+              <option value="general">Tìm theo tên</option>
+              <option value="email">Tìm theo Email</option>
+              <option value="phone">Tìm theo SĐT</option>
+            </select>
+            <S.Input 
+              placeholder={getSearchPlaceholder()} 
+              value={searchTerm} 
+              onChange={(e) => setSearchTerm(e.target.value)} 
+              onKeyPress={(e) => e.key === 'Enter' && handleSearch()} 
+            />
             <S.Button $small onClick={handleSearch}><FaSearch /> Tìm kiếm</S.Button>
           </S.SearchContainer>
         </S.Header>
@@ -149,13 +179,14 @@ const CustomerManagement = () => {
         ) : (
           <S.TableContainer>
             <S.Table>
-              <thead><tr><S.Th>Tên</S.Th><S.Th>Email</S.Th><S.Th>Điện thoại</S.Th><S.Th>Thao tác</S.Th></tr></thead>
+              <thead><tr><S.Th>Tên</S.Th><S.Th>Email</S.Th><S.Th>Điện thoại</S.Th><S.Th>Địa chỉ</S.Th><S.Th>Thao tác</S.Th></tr></thead>
               <tbody>
                 {customers.map(customer => (
                   <tr key={customer.customerId}>
                     <S.Td>{customer.name}</S.Td>
                     <S.Td>{customer.email}</S.Td>
                     <S.Td>{customer.phone}</S.Td>
+                    <S.Td>{customer.address}</S.Td>
                     <S.Td><S.Button $small onClick={() => openEditForm(customer)}><FaEdit /> Sửa</S.Button></S.Td>
                   </tr>
                 ))}

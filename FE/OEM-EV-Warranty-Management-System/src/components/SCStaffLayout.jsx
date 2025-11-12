@@ -39,7 +39,11 @@ export default function SCStaffLayout() {
       </S.Sidebar>
 
       <S.MainContent $isCollapsed={sidebarCollapsed}>
-        <Outlet /> {/* Đây là nơi nội dung của các trang con sẽ được render */}
+        <div style={{ maxWidth: 1360, margin: "0 auto", display: "flex", flexDirection: "column", gap: 24 }}>
+          <div className="page-surface" style={{ background: "#fff", borderRadius: 20, padding: "24px 28px", boxShadow: "0 24px 58px rgba(15,23,42,0.18)", border: "1px solid rgba(226,232,240,0.85)" }}>
+            <Outlet /> {/* Đây là nơi nội dung của các trang con sẽ được render */}
+          </div>
+        </div>
       </S.MainContent>
     </S.PageContainer>
   );

@@ -4,6 +4,8 @@ export const dataApi = {
   // Customers
   getAllCustomers: (params = {}) => apiClient(`/api/customers?${new URLSearchParams(params)}`),
   getCustomerById: (id) => apiClient(`/api/customers/${id}`),
+  getCustomerByEmail: (email) => apiClient(`/api/customers/by-email?email=${encodeURIComponent(email)}`),
+  getCustomerByPhone: (phone) => apiClient(`/api/customers/by-phone?phone=${encodeURIComponent(phone)}`),
   createCustomer: (data) => apiClient('/api/customers', { method: 'POST', body: JSON.stringify(data) }),
   updateCustomer: (id, data) => apiClient(`/api/customers/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteCustomer: (id) => apiClient(`/api/customers/${id}`, { method: 'DELETE' }),
