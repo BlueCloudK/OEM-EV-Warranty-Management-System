@@ -50,7 +50,27 @@ export default function Login() {
       }
     } catch (error) {
       console.error("❌ Login error:", error);
-      setErrorMessage(error.message || "Lỗi kết nối máy chủ. Vui lòng thử lại sau.");
+
+      // Ensure we only display string messages, not JSON objects
+      let displayMessage = "Lỗi kết nối máy chủ. Vui lòng thử lại sau.";
+
+      if (error.message) {
+        // If error.message is a string, use it
+        if (typeof error.message === 'string') {
+          displayMessage = error.message;
+        } else {
+          // If error.message is an object, try to extract the message field
+          try {
+            const parsed = typeof error.message === 'object' ? error.message : JSON.parse(error.message);
+            displayMessage = parsed.message || displayMessage;
+          } catch {
+            // If parsing fails, use default message
+            displayMessage = "Tên đăng nhập hoặc mật khẩu không đúng. Vui lòng thử lại.";
+          }
+        }
+      }
+
+      setErrorMessage(displayMessage);
     } finally {
       setIsLoading(false);
     }
