@@ -38,15 +38,16 @@ public interface ServiceHistoryRepository extends JpaRepository<ServiceHistory, 
     /**
      * Tìm kiếm chung service history theo serviceType, description, vehicleName, hoặc VIN (case-insensitive).
      * Join với Vehicle để search trong vehicle information.
+     * Sử dụng COALESCE để xử lý null values an toàn.
      * @param searchTerm Từ khóa tìm kiếm.
      * @param pageable Thông tin phân trang.
      * @return Một trang các ServiceHistory thỏa mãn điều kiện.
      */
     @Query("SELECT sh FROM ServiceHistory sh LEFT JOIN sh.vehicle v WHERE " +
-            "LOWER(sh.serviceType) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
-            "LOWER(sh.description) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
-            "LOWER(v.vehicleName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
-            "LOWER(v.vehicleVin) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+            "LOWER(COALESCE(sh.serviceType, '')) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(COALESCE(sh.description, '')) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(COALESCE(v.vehicleName, '')) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(COALESCE(v.vehicleVin, '')) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
     Page<ServiceHistory> searchServiceHistoriesGeneral(@Param("searchTerm") String searchTerm, Pageable pageable);
 
 }
