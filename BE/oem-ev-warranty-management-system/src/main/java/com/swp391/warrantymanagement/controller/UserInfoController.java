@@ -225,8 +225,8 @@ public class UserInfoController {
         }
 
         // If CUSTOMER, add customer ID
-        // FIX: So sánh role với "ROLE_CUSTOMER".
-        if ("ROLE_CUSTOMER".equals(currentUser.getRole().getRoleName())) {
+        // FIX: So sánh role với "CUSTOMER" (không có prefix ROLE_).
+        if ("CUSTOMER".equals(currentUser.getRole().getRoleName())) {
             // Thiết kế: Sử dụng Optional và ifPresent để xử lý một cách an toàn trường hợp một User có vai trò CUSTOMER
             // nhưng vì lý do nào đó chưa có Customer profile tương ứng trong database.
             // REFACTOR: Lấy customer profile thông qua service một cách an toàn.
