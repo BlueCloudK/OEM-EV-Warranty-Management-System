@@ -414,34 +414,79 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
         }
 
         // Kiểm tra warranty expiration với grace period support
+        // Theo business rules: Phải kiểm tra CẢ vehicle warranty VÀ part warranty (cả time VÀ mileage), áp dụng điều kiện nghiêm ngặt nhất
         LocalDate today = LocalDate.now();
-        LocalDate expirationDate = installedPart.getWarrantyExpirationDate();
+        LocalDate partExpirationDate = installedPart.getWarrantyExpirationDate();
+        LocalDate vehicleExpirationDate = vehicle.getWarrantyEndDate();
 
-        if (expirationDate.isBefore(today)) {
+        // Lấy grace period từ Part (nếu có), fallback về default
+        Part part = installedPart.getPart();
+        int gracePeriodDays = part != null && part.getGracePeriodDays() != null
+            ? part.getGracePeriodDays()
+            : DEFAULT_GRACE_PERIOD_DAYS;
+
+        // 1. Tính số ngày hết hạn theo THỜI GIAN
+        long partDaysExpired = partExpirationDate.isBefore(today) ? ChronoUnit.DAYS.between(partExpirationDate, today) : 0;
+        long vehicleDaysExpired = vehicleExpirationDate.isBefore(today) ? ChronoUnit.DAYS.between(vehicleExpirationDate, today) : 0;
+
+        // 2. Kiểm tra MILEAGE (số km)
+        int currentVehicleMileage = vehicle.getMileage();
+        int vehicleMileageLimit = DEFAULT_VEHICLE_MILEAGE_LIMIT;
+        boolean vehicleMileageExpired = currentVehicleMileage > vehicleMileageLimit;
+
+        // Part mileage check (nếu có extended warranty)
+        boolean partMileageExpired = false;
+        if (part.getHasExtendedWarranty() != null && part.getHasExtendedWarranty()) {
+            int mileageAtInstallation = installedPart.getMileageAtInstallation() != null ? installedPart.getMileageAtInstallation() : 0;
+            int mileageSinceInstallation = currentVehicleMileage - mileageAtInstallation;
+            Integer partMileageLimit = installedPart.getWarrantyMileageLimit() != null
+                ? installedPart.getWarrantyMileageLimit()
+                : part.getDefaultWarrantyMileage();
+            if (partMileageLimit != null) {
+                partMileageExpired = mileageSinceInstallation > partMileageLimit;
+            }
+        }
+
+        // 3. Áp dụng điều kiện nghiêm ngặt nhất
+        long maxDaysExpired = Math.max(partDaysExpired, vehicleDaysExpired);
+        boolean isExpiredByDate = maxDaysExpired > 0;
+        boolean isExpiredByMileage = vehicleMileageExpired || partMileageExpired;
+        boolean isExpired = isExpiredByDate || isExpiredByMileage;
+
+        if (isExpired) {
             // Warranty đã hết hạn - kiểm tra grace period
-            long daysExpired = ChronoUnit.DAYS.between(expirationDate, today);
+            // LƯU Ý: Grace period CHỈ áp dụng cho THỜI GIAN, KHÔNG áp dụng cho MILEAGE
+            // Nếu hết hạn do mileage → LUÔN LUÔN yêu cầu paid warranty
+            // Nếu hết hạn do time trong grace period → có thể paid warranty
 
-            // Lấy grace period từ Part (nếu có), fallback về default
-            Part part = installedPart.getPart();
-            int gracePeriodDays = part != null && part.getGracePeriodDays() != null
-                ? part.getGracePeriodDays()
-                : DEFAULT_GRACE_PERIOD_DAYS;
-
-            // Nếu còn trong grace period VÀ là paid warranty claim → Cho phép
-            if (daysExpired <= gracePeriodDays) {
+            if (isExpiredByMileage && !isExpiredByDate) {
+                // Chỉ hết hạn do mileage, time còn hiệu lực
+                if (requestDTO.getIsPaidWarranty() != null && requestDTO.getIsPaidWarranty()) {
+                    logger.info("SC_STAFF creating paid warranty claim (expired by mileage): installedPartId={}, vehicleMileage={}, limit={}",
+                        requestDTO.getInstalledPartId(), currentVehicleMileage, vehicleMileageLimit);
+                } else {
+                    throw new IllegalArgumentException("Warranty expired by mileage (" + currentVehicleMileage + " km > " + vehicleMileageLimit + " km)." +
+                        " To create a claim, use paid warranty option (isPaidWarranty=true).");
+                }
+            } else if (maxDaysExpired <= gracePeriodDays) {
+                // Hết hạn do time NHƯNG còn trong grace period
                 if (requestDTO.getIsPaidWarranty() != null && requestDTO.getIsPaidWarranty()) {
                     // Valid paid warranty claim trong grace period
-                    logger.info("SC_STAFF creating paid warranty claim in grace period: installedPartId={}, daysExpired={}, gracePeriod={}, usingDefault={}",
-                        requestDTO.getInstalledPartId(), daysExpired, gracePeriodDays, (part == null || part.getGracePeriodDays() == null));
+                    logger.info("SC_STAFF creating paid warranty claim in grace period: installedPartId={}, partDaysExpired={}, vehicleDaysExpired={}, maxDaysExpired={}, gracePeriod={}",
+                        requestDTO.getInstalledPartId(), partDaysExpired, vehicleDaysExpired, maxDaysExpired, gracePeriodDays);
                 } else {
                     // Hết hạn nhưng không phải paid warranty
-                    throw new IllegalArgumentException("Warranty expired on " + expirationDate +
-                        ". To create a claim, use paid warranty option (isPaidWarranty=true).");
+                    String expiredEntity = vehicleDaysExpired > partDaysExpired ? "vehicle" : "part";
+                    LocalDate expiredDate = vehicleDaysExpired > partDaysExpired ? vehicleExpirationDate : partExpirationDate;
+                    throw new IllegalArgumentException("Warranty expired on " + expiredDate + " (" + expiredEntity + ")." +
+                        " To create a claim, use paid warranty option (isPaidWarranty=true).");
                 }
             } else {
-                // Quá grace period
-                throw new IllegalArgumentException("Warranty expired on " + expirationDate +
-                    " and grace period of " + gracePeriodDays + " days has passed. Cannot create claim.");
+                // Quá grace period (theo TIME)
+                String expiredEntity = vehicleDaysExpired > partDaysExpired ? "vehicle" : "part";
+                LocalDate expiredDate = vehicleDaysExpired > partDaysExpired ? vehicleExpirationDate : partExpirationDate;
+                throw new IllegalArgumentException("Warranty expired on " + expiredDate + " (" + expiredEntity + ")" +
+                    " and grace period of " + gracePeriodDays + " days has passed (expired " + maxDaysExpired + " days ago). Cannot create claim.");
             }
         }
 
