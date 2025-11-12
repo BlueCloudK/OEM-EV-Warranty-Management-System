@@ -62,7 +62,7 @@ public class UserServiceImpl implements UserService {
      * Kết quả luôn được sort theo createdAt DESC (newest first).
      *
      * @param pageable Thông tin phân trang (page, size)
-     * @param search Từ khóa tìm kiếm theo username (optional)
+     * @param search Từ khóa tìm kiếm chung trong username hoặc email (optional)
      * @param role Filter theo role name (optional)
      * @return Page chứa danh sách User
      */
@@ -87,21 +87,22 @@ public class UserServiceImpl implements UserService {
     /**
      * Helper method xử lý filter logic (search và/hoặc role).
      * <p>
-     * <strong>Note:</strong> Combined filter (search + role) hiện tại chỉ filter theo role.
-     * TODO: Implement combined filter với custom query.
+     * Tìm kiếm chung trong username và email (case-insensitive).
+     * Hỗ trợ kết hợp filter theo search và role.
      */
     private Page<User> getUsersWithFilter(String search, String role, Pageable pageable) {
         if (search != null && !search.trim().isEmpty() && role != null && !role.trim().isEmpty()) {
+            // Combined filter: search in username/email AND filter by role
             Role roleEntity = roleRepository.findByRoleName(role.trim())
                     .orElseThrow(() -> new ResourceNotFoundException("Role", "name", role));
-
-            // TODO: Implement combined filter (search + role)
-            return userRepository.findByRole(roleEntity, pageable);
+            return userRepository.searchUsersGeneralWithRole(search.trim(), roleEntity, pageable);
         }
         else if (search != null && !search.trim().isEmpty()) {
-            return userRepository.findByUsernameContainingIgnoreCase(search.trim(), pageable);
+            // General search: search in username OR email
+            return userRepository.searchUsersGeneral(search.trim(), pageable);
         }
         else if (role != null && !role.trim().isEmpty()) {
+            // Filter by role only
             Role roleEntity = roleRepository.findByRoleName(role.trim())
                     .orElseThrow(() -> new ResourceNotFoundException("Role", "name", role));
             return userRepository.findByRole(roleEntity, pageable);

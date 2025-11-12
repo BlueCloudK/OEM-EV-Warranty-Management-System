@@ -157,7 +157,7 @@ const AdminUserManagement = () => {
         return 'Tìm theo Username...';
       case 'general':
       default:
-        return 'Tìm theo Username, Email, Tên...';
+        return 'Tìm theo Username hoặc Email...';
     }
   };
 
