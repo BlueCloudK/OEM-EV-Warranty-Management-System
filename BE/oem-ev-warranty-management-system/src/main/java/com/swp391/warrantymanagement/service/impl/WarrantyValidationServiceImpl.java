@@ -480,7 +480,7 @@ public class WarrantyValidationServiceImpl implements WarrantyValidationService 
 
         } else if (vehicleExpired) {
             // CHỈ xe hết hạn (part còn VALID)
-            reasons.append("Hết hạn bảo hành do XE: ");
+            reasons.append("Xe đã hết hạn bảo hành: ");
             if (vehicleDaysRemaining < 0) {
                 reasons.append("Quá hạn ")
                         .append(Math.abs(vehicleDaysRemaining))
@@ -489,17 +489,17 @@ public class WarrantyValidationServiceImpl implements WarrantyValidationService 
                         .append(")");
             }
             if (vehicleMileageRemaining < 0) {
-                reasons.append(", vượt ")
+                reasons.append(", vượt giới hạn ")
                         .append(Math.abs(vehicleMileageRemaining))
                         .append(" km");
             }
-            reasons.append(". Linh kiện còn ")
+            reasons.append(". Mặc dù linh kiện còn ")
                     .append(partDaysRemaining)
-                    .append(" ngày bảo hành nhưng KHÔNG được áp dụng vì xe đã hết hạn");
+                    .append(" ngày bảo hành, nhưng theo quy định phải áp dụng điều kiện NGHIÊM NGẶT NHẤT (xe đã hết hạn)");
 
         } else if (partExpired) {
             // CHỈ part hết hạn (vehicle còn VALID)
-            reasons.append("Hết hạn bảo hành do LINH KIỆN: ");
+            reasons.append("Linh kiện đã hết hạn bảo hành: ");
             if (partDaysRemaining < 0) {
                 reasons.append("Quá hạn ")
                         .append(Math.abs(partDaysRemaining))
@@ -508,13 +508,15 @@ public class WarrantyValidationServiceImpl implements WarrantyValidationService 
                         .append(")");
             }
             if (partMileageRemaining != null && partMileageRemaining < 0) {
-                reasons.append(", vượt ")
+                reasons.append(", vượt giới hạn ")
                         .append(Math.abs(partMileageRemaining))
                         .append(" km");
             }
-            reasons.append(". Xe còn ")
+            reasons.append(". Mặc dù xe còn ")
                     .append(vehicleDaysRemaining)
-                    .append(" ngày bảo hành nhưng KHÔNG được áp dụng vì linh kiện đã hết hạn");
+                    .append(" ngày bảo hành (")
+                    .append(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy").format(vehicleExpirationDate))
+                    .append("), nhưng theo quy định phải áp dụng điều kiện NGHIÊM NGẶT NHẤT (linh kiện đã hết hạn)");
         }
 
         return reasons.toString();
