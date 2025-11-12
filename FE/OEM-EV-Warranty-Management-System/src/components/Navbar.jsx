@@ -42,7 +42,7 @@ export default function Navbar() {
       <div className="container nav-inner">
         <div className="logo">
           <Link to={logoPath} style={{ textDecoration: "none", color: "inherit" }}>
-            <span>OEM EV Warranty</span>
+            <span>Hệ Thống Bảo Hành OEM</span>
             <span className="sub">
               Phần mềm quản lý bảo hành xe điện từ hãng
             </span>
