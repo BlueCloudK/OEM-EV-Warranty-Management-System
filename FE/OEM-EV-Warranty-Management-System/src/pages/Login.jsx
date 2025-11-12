@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { FaCar, FaUser, FaLock } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
 
@@ -186,12 +186,6 @@ export default function Login() {
             {errorMessage && (
               <p style={{ textAlign: "center", color: "#e11d48", fontWeight: 600, fontSize: 14 }}>{errorMessage}</p>
             )}
-
-            <div style={{ textAlign: "center", fontSize: 12, letterSpacing: "0.32em", textTransform: "uppercase", color: "rgba(11,107,97,0.7)" }}>
-              <Link to="/forgot-password" style={{ color: "inherit", textDecoration: "none" }}>
-                Quên mật khẩu?
-              </Link>
-            </div>
           </form>
         </div>
 
