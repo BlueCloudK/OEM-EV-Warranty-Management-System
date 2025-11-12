@@ -8,54 +8,64 @@ export const useAdminServiceHistoriesManagement = () => {
   const [pagination, setPagination] = useState({ currentPage: 0, pageSize: 10, totalPages: 0, totalElements: 0 });
   const [searchTerm, setSearchTerm] = useState('');
   const [searchType, setSearchType] = useState('general');
-  const [dateRange, setDateRange] = useState({ startDate: '', endDate: '' });
 
   const fetchServiceHistories = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const params = {
-        page: pagination.currentPage,
-        size: pagination.pageSize,
-      };
+      
       let response;
+      const page = pagination.currentPage;
+      const size = pagination.pageSize;
 
-      // Check if searching by date range
-      if (searchType === 'dateRange' && dateRange.startDate && dateRange.endDate) {
-        const dateParams = {
-          startDate: dateRange.startDate,
-          endDate: dateRange.endDate,
-          page: pagination.currentPage,
-          size: pagination.pageSize,
-        };
-        response = await dataApi.getServiceHistoriesByDateRange(dateParams);
-      } else if (searchTerm && searchTerm.trim()) {
-        // Search by other criteria
+      if (searchTerm && searchTerm.trim()) {
+        // Search by specific criteria
         switch (searchType) {
-          case 'vehicle':
-            // Search by vehicle ID (must be a number)
-            const vehicleId = parseInt(searchTerm.trim(), 10);
-            if (isNaN(vehicleId)) {
-              setError("ID Xe phải là số.");
-              setServiceHistories([]);
-              setLoading(false);
-              return;
+          case 'vehicleName':
+            try {
+              
+              // Use getAllVehicles with search parameter
+              const vehiclesResponse = await dataApi.getAllVehicles({ search: searchTerm.trim(), size: 10 });
+              
+              if (vehiclesResponse?.content?.length > 0) {
+                const vehicleId = vehiclesResponse.content[0].vehicleId || vehiclesResponse.content[0].id;
+                response = await dataApi.getServiceHistoriesByVehicle(vehicleId, { page, size });
+                
+              } else {
+
+                response = await dataApi.getAllServiceHistories({ page, size, search: searchTerm.trim() });
+              }
+            } catch (err) {
+              
+              // If all fails, fallback to general search
+              response = await dataApi.getAllServiceHistories({ page, size, search: searchTerm.trim() });
+              
             }
-            response = await dataApi.getServiceHistoriesByVehicle(vehicleId, params);
             break;
-          case 'part':
-            // Search by part ID (string)
-            response = await dataApi.getServiceHistoriesByPart(searchTerm.trim(), params);
+          case 'vehicleVin':
+            try {
+              // Try to find vehicle by VIN first, then get service histories for that vehicle
+              const vehicleByVin = await dataApi.getVehicleByVin(searchTerm.trim());
+              if (vehicleByVin && vehicleByVin.vehicleId) {
+                response = await dataApi.getServiceHistoriesByVehicle(vehicleByVin.vehicleId, { page, size });
+              } else {
+                // If no vehicle found by VIN, return empty result
+                response = { content: [], totalPages: 0, totalElements: 0 };
+              }
+            } catch (err) {
+              // If VIN search fails, fallback to general search
+              response = await dataApi.getAllServiceHistories({ page, size, search: searchTerm.trim() });
+            }
             break;
+          case 'general':
           default:
             // General search - add search term to params
-            params.search = searchTerm.trim();
-            response = await dataApi.getAllServiceHistories(params);
+            response = await dataApi.getAllServiceHistories({ page, size, search: searchTerm.trim() });
             break;
         }
       } else {
         // No search criteria - get all
-        response = await dataApi.getAllServiceHistories(params);
+        response = await dataApi.getAllServiceHistories({ page, size });
       }
 
       if (response && response.content) {
@@ -66,12 +76,12 @@ export const useAdminServiceHistoriesManagement = () => {
       }
     } catch (err) {
       console.error("Error fetching service histories:", err);
-      setError(err.response?.data?.message || "Không thể tải lịch sử dịch vụ.");
+      setError("Không thể tải lịch sử dịch vụ.");
       setServiceHistories([]);
     } finally {
       setLoading(false);
     }
-  }, [pagination.currentPage, pagination.pageSize, searchTerm, searchType, dateRange]);
+  }, [pagination.currentPage, pagination.pageSize, searchTerm, searchType]);
 
   useEffect(() => {
     fetchServiceHistories();
@@ -85,7 +95,6 @@ export const useAdminServiceHistoriesManagement = () => {
   const handleClearSearch = () => {
     setSearchTerm('');
     setSearchType('general');
-    setDateRange({ startDate: '', endDate: '' });
     setPagination(prev => ({ ...prev, currentPage: 0 }));
   };
 
@@ -129,8 +138,6 @@ export const useAdminServiceHistoriesManagement = () => {
     setSearchTerm,
     searchType,
     setSearchType,
-    dateRange,
-    setDateRange,
     handleSearch,
     handleClearSearch,
     handleCreateOrUpdate,
