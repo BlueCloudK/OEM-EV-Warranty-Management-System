@@ -65,25 +65,27 @@ public interface UserRepository extends JpaRepository<User, Long> {
     /**
      * Tìm kiếm chung người dùng theo username hoặc email (case-insensitive).
      * Tìm kiếm trong cả username và email để hỗ trợ tìm kiếm linh hoạt hơn.
+     * Sử dụng COALESCE để xử lý null values an toàn.
      * @param searchTerm Từ khóa tìm kiếm.
      * @param pageable Thông tin phân trang.
      * @return Một trang các User thỏa mãn điều kiện.
      */
     @Query("SELECT u FROM User u WHERE " +
-            "LOWER(u.username) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
-            "LOWER(u.email) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+            "LOWER(COALESCE(u.username, '')) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(COALESCE(u.email, '')) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
     Page<User> searchUsersGeneral(@Param("searchTerm") String searchTerm, Pageable pageable);
 
     /**
      * Tìm kiếm chung người dùng theo username hoặc email, và lọc theo role.
+     * Sử dụng COALESCE để xử lý null values an toàn.
      * @param searchTerm Từ khóa tìm kiếm.
      * @param role Đối tượng Role để lọc.
      * @param pageable Thông tin phân trang.
      * @return Một trang các User thỏa mãn điều kiện.
      */
     @Query("SELECT u FROM User u WHERE " +
-            "(LOWER(u.username) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
-            "LOWER(u.email) LIKE LOWER(CONCAT('%', :searchTerm, '%'))) " +
+            "(LOWER(COALESCE(u.username, '')) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(COALESCE(u.email, '')) LIKE LOWER(CONCAT('%', :searchTerm, '%'))) " +
             "AND u.role = :role")
     Page<User> searchUsersGeneralWithRole(@Param("searchTerm") String searchTerm,
                                            @Param("role") Role role,
