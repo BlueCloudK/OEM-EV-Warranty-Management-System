@@ -8,17 +8,17 @@ import {
 } from "react-icons/fa";
 
 const sidebarItems = [
-  { path: "/admin/dashboard", icon: <FaTachometerAlt />, label: "Dashboard" },
-  { path: "/admin/users", icon: <FaUserShield />, label: "Users & Roles" },
+  { path: "/admin/dashboard", icon: <FaTachometerAlt />, label: "Tổng quan" },
+  { path: "/admin/users", icon: <FaUserShield />, label: "Người dùng & Vai trò" },
   { path: "/admin/customers", icon: <FaUsers />, label: "Khách hàng" },
   { path: "/admin/vehicles", icon: <FaCar />, label: "Xe điện" },
   { path: "/admin/parts", icon: <FaCogs />, label: "Phụ tùng" },
-  { path: "/admin/warranty-claims", icon: <FaClipboardList />, label: "Warranty Claims" },
-  { path: "/admin/recalls", icon: <FaExclamationTriangle />, label: "Recall Requests" },
+  { path: "/admin/warranty-claims", icon: <FaClipboardList />, label: "Yêu cầu Bảo hành" },
+  { path: "/admin/recalls", icon: <FaExclamationTriangle />, label: "Yêu cầu Triệu hồi" },
   { path: "/admin/service-histories", icon: <FaHistory />, label: "Lịch sử dịch vụ" },
-  { path: "/admin/work-logs", icon: <FaClipboard />, label: "Work Logs" },
-  { path: "/admin/service-centers", icon: <FaMapMarkerAlt />, label: "Service Centers" },
-  { path: "/admin/feedbacks", icon: <FaCommentDots />, label: "Feedback" },
+  { path: "/admin/work-logs", icon: <FaClipboard />, label: "Nhật ký Công việc" },
+  { path: "/admin/service-centers", icon: <FaMapMarkerAlt />, label: "Trung tâm Dịch vụ" },
+  { path: "/admin/feedbacks", icon: <FaCommentDots />, label: "Phản hồi" },
 ];
 
 export default function AdminLayout() {
@@ -32,7 +32,7 @@ export default function AdminLayout() {
       <S.Sidebar $isCollapsed={sidebarCollapsed}>
         <S.SidebarHeader $isCollapsed={sidebarCollapsed}>
           <S.SidebarToggleButton onClick={() => setSidebarCollapsed(!sidebarCollapsed)}><FaBars /></S.SidebarToggleButton>
-          {!sidebarCollapsed && <div><div style={{ fontSize: 16, fontWeight: 600 }}>Admin</div><div style={{ fontSize: 12, color: "#94a3b8" }}>Panel</div></div>}
+          {!sidebarCollapsed && <div><div style={{ fontSize: 16, fontWeight: 600 }}>Admin</div><div style={{ fontSize: 12, color: "#94a3b8" }}>Bảng điều khiển</div></div>}
         </S.SidebarHeader>
         <div style={{ flex: 1, padding: sidebarCollapsed ? 8 : 16 }}>
           {sidebarItems.map((item, index) => (
