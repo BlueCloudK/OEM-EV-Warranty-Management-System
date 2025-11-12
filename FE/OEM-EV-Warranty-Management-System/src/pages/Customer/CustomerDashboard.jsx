@@ -89,8 +89,6 @@ export default function CustomerDashboard() {
       label: 'Tổng số xe',
       color: '#3b82f6',
       bgGradient: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
-      onClick: () => navigate('/customer/vehicles'),
-      clickable: true
     },
     {
       icon: <FaShieldAlt size={24} />,
@@ -105,8 +103,6 @@ export default function CustomerDashboard() {
       label: 'Tổng yêu cầu bảo hành',
       color: '#8b5cf6',
       bgGradient: 'linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%)',
-      onClick: () => navigate('/customer/warranty-history'),
-      clickable: true
     },
     {
       icon: <FaClock size={24} />,
@@ -114,8 +110,6 @@ export default function CustomerDashboard() {
       label: 'Đang xử lý',
       color: '#f59e0b',
       bgGradient: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
-      onClick: () => navigate('/customer/warranty-history'),
-      clickable: true
     },
     {
       icon: <FaCheckCircle size={24} />,
@@ -130,8 +124,6 @@ export default function CustomerDashboard() {
       label: 'Recall cần xác nhận',
       color: '#ef4444',
       bgGradient: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)',
-      onClick: () => navigate('/customer/recalls'),
-      clickable: true
     },
   ];
 
