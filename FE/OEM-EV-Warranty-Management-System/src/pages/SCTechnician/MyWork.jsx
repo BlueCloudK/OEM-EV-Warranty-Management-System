@@ -55,17 +55,21 @@ const ClaimDetailModal = ({ isOpen, onClose, claim, onStartProcessing, onComplet
             <S.DetailValue>{claim.customerName || 'N/A'}</S.DetailValue>
           </S.DetailItem>
           <S.DetailItem>
-            <S.DetailLabel>Xe (VIN):</S.DetailLabel>
-            <S.DetailValue>{claim.vehicleVin || 'N/A'}</S.DetailValue>
-          </S.DetailItem>
+            <S.DetailLabel>Xe:</S.DetailLabel>
+            <S.DetailValue>{claim.vehicleName || 'N/A'}</S.DetailValue>
+          </S.DetailItem>        
           <S.DetailItem>
             <S.DetailLabel>Phụ tùng:</S.DetailLabel>
-            <S.DetailValue>{claim.installedPartName || claim.installedPartId || 'N/A'}</S.DetailValue>
+            <S.DetailValue>{claim.partName || claim.installedPartId || 'N/A'}</S.DetailValue>
           </S.DetailItem>
           <S.DetailItem>
+            <S.DetailLabel>VIN:</S.DetailLabel>
+            <S.DetailValue>{claim.vehicleVin || 'N/A'}</S.DetailValue>
+          </S.DetailItem>
+          {/* <S.DetailItem>
             <S.DetailLabel>Loại vấn đề:</S.DetailLabel>
             <S.DetailValue>{claim.issueType || 'N/A'}</S.DetailValue>
-          </S.DetailItem>
+          </S.DetailItem> */}
           <S.DetailItem $fullWidth>
             <S.DetailLabel>Mô tả:</S.DetailLabel>
             <S.DetailValue>{claim.description || 'N/A'}</S.DetailValue>
@@ -466,7 +470,7 @@ const MyWork = () => {
                         <S.Td>{claim.warrantyClaimId}</S.Td>
                         <S.Td>{claim.customerName || 'N/A'}</S.Td>
                         <S.Td>{claim.vehicleVin || 'N/A'}</S.Td>
-                        <S.Td>{claim.installedPartName || claim.installedPartId || 'N/A'}</S.Td>
+                        <S.Td>{claim.partName || claim.installedPartId || 'N/A'}</S.Td>
                         <S.Td>{claim.claimDate ? new Date(claim.claimDate).toLocaleDateString('vi-VN') : 'N/A'}</S.Td>
                         <S.Td>
                           <S.StatusBadge $status={claim.status}>

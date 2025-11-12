@@ -160,9 +160,9 @@ const AdminCustomerManagement = () => {
                             }}
                             style={{ marginRight: '10px', width: '150px' }} // Basic styling
                         >
-                            <option value="general">Tìm kiếm chung</option>
-                            <option value="id">Tìm theo ID</option>
-                            <option value="name">Tìm theo Tên</option>
+                            <option value="general">Tìm theo tên</option>
+                            {/* <option value="id">Tìm theo ID</option> */}
+                            {/* <option value="name">Tìm theo Tên</option> */}
                             <option value="email">Tìm theo Email</option>
                             <option value="phone">Tìm theo SĐT</option>
                         </S.Select>

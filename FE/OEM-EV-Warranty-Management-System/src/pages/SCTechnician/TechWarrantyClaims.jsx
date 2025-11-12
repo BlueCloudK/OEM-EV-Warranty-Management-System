@@ -122,8 +122,7 @@ const ClaimDetailModal = ({ isOpen, onClose, claim, onStartProcessing, onComplet
                   onChange={(e) => setCompletionNote(e.target.value)}
                   placeholder="Nhập ghi chú về kết quả xử lý..."
                   rows={4}
-                />
-                />
+                />               
               </div>
               <S.Button primary onClick={handleComplete}>
                 <FaCheckCircle /> Xác nhận hoàn thành

@@ -604,8 +604,8 @@ const EVMRecallRequests = () => {
                   <S.DetailValue>{selectedRecall.partNumber || 'N/A'}</S.DetailValue>
                 </S.DetailItem>
                 <S.DetailItem>
-                  <S.DetailLabel>Part ID:</S.DetailLabel>
-                  <S.DetailValue>#{selectedRecall.part?.partId || 'N/A'}</S.DetailValue>
+                  <S.DetailLabel>Nhà sản xuất:</S.DetailLabel>
+                  <S.DetailValue>{selectedRecall.manufacturer || 'N/A'}</S.DetailValue>
                 </S.DetailItem>
               </S.DetailSection>
 

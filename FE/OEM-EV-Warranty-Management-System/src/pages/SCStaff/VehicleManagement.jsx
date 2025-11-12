@@ -347,10 +347,8 @@ const VehicleManagement = () => {
           </S.HeaderTop>
           <S.SearchContainer>
             <select value={searchType} onChange={(e) => setSearchType(e.target.value)}>
-              <option value="general">Tìm kiếm chung</option>
-              <option value="id">Mã Xe (ID)</option>
+              <option value="general">Tìm tên xe</option>
               <option value="vin">Số VIN</option>
-              <option value="customer">ID Khách hàng</option>
               <option value="model">Model Xe</option>
             </select>
             <S.Input placeholder={getSearchPlaceholder()} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSearch()} />
@@ -367,7 +365,7 @@ const VehicleManagement = () => {
         ) : (
           <S.TableContainer>
             <S.Table>
-              <thead><tr><S.Th>ID Xe</S.Th><S.Th>Tên xe</S.Th><S.Th>Model</S.Th><S.Th>VIN</S.Th><S.Th>Năm</S.Th><S.Th>Chủ sở hữu</S.Th><S.Th>ID Khách hàng</S.Th><S.Th>Thao tác</S.Th></tr></thead>
+              <thead><tr><S.Th>ID Xe</S.Th><S.Th>Tên xe</S.Th><S.Th>Model</S.Th><S.Th>VIN</S.Th><S.Th>Năm</S.Th><S.Th>Chủ sở hữu</S.Th><S.Th>Thao tác</S.Th></tr></thead>
               <tbody>
                 {vehicles.map(vehicle => (
                   <React.Fragment key={vehicle.vehicleId}>
@@ -378,7 +376,7 @@ const VehicleManagement = () => {
                       <S.Td mono>{vehicle.vehicleVin}</S.Td>
                       <S.Td>{vehicle.vehicleYear}</S.Td>
                       <S.Td>{vehicle.customerName || 'N/A'}</S.Td>
-                      <S.Td>{vehicle.customerId}</S.Td>
+                      {/* <S.Td>{vehicle.customerId}</S.Td> */}
                       <S.Td>
                         <div style={{ display: 'flex', gap: '8px' }}>
                           <S.Button small onClick={() => openEditForm(vehicle)}><FaEdit /></S.Button>
