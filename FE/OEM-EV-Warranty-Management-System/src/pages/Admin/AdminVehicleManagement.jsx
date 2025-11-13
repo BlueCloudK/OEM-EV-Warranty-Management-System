@@ -232,7 +232,7 @@ const AdminVehicleManagement = () => {
                     <S.Td>{vehicle.vehicleModel}</S.Td>
                     <S.Td $mono>{vehicle.vehicleVin}</S.Td>
                     <S.Td>{vehicle.vehicleYear}</S.Td>
-                    <S.Td>{vehicle.customer?.name || 'N/A'}</S.Td>
+                    <S.Td>{vehicle.customerName || 'N/A'}</S.Td>
                     <S.Td>
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <S.Button $small onClick={() => openEditForm(vehicle)}><FaEdit /></S.Button>

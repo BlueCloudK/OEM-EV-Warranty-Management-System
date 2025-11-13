@@ -212,15 +212,27 @@ const PaidWarrantyClaimForm = ({ vehicleId, installedPartId, onSuccess, onCancel
                 <>
                   <FaExclamationTriangle />
                   <div>
-                    <h4>Bảo Hành Tính Phí</h4>
-                    <p>Xe/linh kiện đã hết hạn bảo hành miễn phí. Bạn có thể bảo hành với phí: <strong>{formData.warrantyFee ? parseFloat(formData.warrantyFee).toLocaleString('vi-VN') : '0'} VNĐ</strong></p>
+                    <h4>⚠️ Bảo Hành Tính Phí</h4>
+                    <p>Xe/linh kiện đã hết hạn bảo hành miễn phí. </p>
+                    {formData.warrantyFee && (
+                      <p style={{ marginTop: '8px' }}>
+                        💰 <strong>Phí bảo hành: {parseFloat(formData.warrantyFee).toLocaleString('vi-VN')} VNĐ</strong>
+                      </p>
+                    )}
+                    <FeeFormulaInfo>
+                      <small>
+                        📋 Công thức: Phí = 20%-50% × Chi phí sửa chữa (tăng dần theo số ngày quá hạn)
+                        <br/>
+                        💵 Phí tối thiểu: 500,000 VNĐ
+                      </small>
+                    </FeeFormulaInfo>
                   </div>
                 </>
               ) : (
                 <>
                   <FaCheckCircle />
                   <div>
-                    <h4>Bảo Hành Miễn Phí</h4>
+                    <h4>✅ Bảo Hành Miễn Phí</h4>
                     <p>Xe/linh kiện còn trong thời hạn bảo hành</p>
                   </div>
                 </>
@@ -286,6 +298,18 @@ const PaidWarrantyClaimForm = ({ vehicleId, installedPartId, onSuccess, onCancel
                   </small>
                 </FormGroup>
 
+                {/* Chi tiết tính phí */}
+                {formData.paidWarrantyNote && (
+                  <FeeDetailsBox>
+                    <FeeDetailsHeader>
+                      <strong>Chi Tiết Tính Phí</strong>
+                    </FeeDetailsHeader>
+                    <FeeDetailsContent>
+                      {formData.paidWarrantyNote}
+                    </FeeDetailsContent>
+                  </FeeDetailsBox>
+                )}
+
                 <PaymentNotice>
                   <strong>Lưu ý:</strong> Sau khi tạo claim, bạn cần thanh toán phí bảo hành trước khi claim được xử lý.
                 </PaymentNotice>
@@ -349,6 +373,17 @@ const PaidWarrantyClaimForm = ({ vehicleId, installedPartId, onSuccess, onCancel
                 </DetailRow>
               )}
             </ConfirmationDetails>
+
+            {formData.isPaidWarranty && formData.paidWarrantyNote && (
+              <FeeDetailsBox style={{ marginTop: '20px' }}>
+                <FeeDetailsHeader>
+                  <strong>Chi Tiết Tính Phí</strong>
+                </FeeDetailsHeader>
+                <FeeDetailsContent>
+                  {formData.paidWarrantyNote}
+                </FeeDetailsContent>
+              </FeeDetailsBox>
+            )}
 
             {formData.isPaidWarranty && (
               <PaymentNotice style={{ marginTop: '20px' }}>
@@ -450,16 +485,32 @@ const WarrantySummary = styled.div`
   h4 {
     margin: 0 0 8px 0;
     color: ${props => props.isPaid ? '#e65100' : '#2e7d32'};
+    font-size: 1.3rem;
   }
 
   p {
     margin: 0;
     color: #666;
+    line-height: 1.6;
   }
 
   strong {
     color: ${props => props.isPaid ? '#ff6f00' : '#1b5e20'};
     font-size: 1.1rem;
+  }
+`;
+
+const FeeFormulaInfo = styled.div`
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-top: 12px;
+
+  small {
+    color: #666;
+    font-size: 0.9rem;
+    line-height: 1.8;
+    display: block;
   }
 `;
 
@@ -564,6 +615,37 @@ const PaymentNotice = styled.div`
     display: block;
     margin-bottom: 4px;
   }
+`;
+
+const FeeDetailsBox = styled.div`
+  background: #fff9e6;
+  border: 2px solid #ffc107;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 16px;
+`;
+
+const FeeDetailsHeader = styled.div`
+  color: #f57c00;
+  margin-bottom: 12px;
+  font-size: 1rem;
+
+  strong {
+    font-weight: 700;
+  }
+`;
+
+const FeeDetailsContent = styled.pre`
+  background: white;
+  padding: 12px;
+  border-radius: 4px;
+  white-space: pre-wrap;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 0.95rem;
+  color: #555;
+  margin: 0;
+  line-height: 1.6;
+  border: 1px solid #ffe082;
 `;
 
 const FormActions = styled.div`

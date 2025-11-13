@@ -51,11 +51,11 @@ public class VehicleServiceImpl implements VehicleService {
     private final UserRepository userRepository;
 
     /**
-     * Lấy danh sách tất cả xe với phân trang và tìm kiếm theo brand hoặc model.
-     * Hỗ trợ tìm kiếm case-insensitive trong vehicleName (brand) và vehicleModel.
+     * Lấy danh sách tất cả xe với phân trang và tìm kiếm chung.
+     * Hỗ trợ tìm kiếm case-insensitive trong vehicleName (brand), vehicleModel, và VIN.
      *
      * @param pageable thông tin phân trang (page, size, sort)
-     * @param search từ khóa tìm kiếm (optional) - tìm trong brand hoặc model
+     * @param search từ khóa tìm kiếm chung (optional) - tìm trong name, model, hoặc VIN
      * @return PagedResponse chứa danh sách VehicleResponseDTO và metadata phân trang
      */
     @Override
@@ -63,8 +63,8 @@ public class VehicleServiceImpl implements VehicleService {
         Page<Vehicle> vehiclePage;
 
         if (search != null && !search.trim().isEmpty()) {
-            vehiclePage = vehicleRepository.findByVehicleNameContainingIgnoreCaseOrVehicleModelContainingIgnoreCase(
-                search, search, pageable);
+            // Search in name, model, and VIN
+            vehiclePage = vehicleRepository.searchVehiclesGeneral(search.trim(), pageable);
         } else {
             vehiclePage = vehicleRepository.findAll(pageable);
         }

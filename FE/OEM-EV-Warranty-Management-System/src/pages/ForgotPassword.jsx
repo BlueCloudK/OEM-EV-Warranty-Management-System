@@ -130,7 +130,7 @@ export default function ForgotPassword() {
     <div className="auth-page">
       <div className="auth-card">
         <div className="auth-left">
-          <h1>EV Warranty</h1>
+          <h1>Hệ Thống Bảo Hành OEM</h1>
           <h2>Quên mật khẩu</h2>
           <p style={{ color: "#666", marginBottom: "20px" }}>
             Nhập email của bạn để nhận link khôi phục mật khẩu

@@ -58,7 +58,7 @@ const HistoryFormModal = ({ isOpen, onClose, onSubmit, history, vehicles, parts 
             <S.Label>Linh kiện *</S.Label>
             <S.Select name="partId" value={formData.partId || ''} onChange={handleInputChange} required>
               <option value="">Chọn linh kiện</option>
-              {parts.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              {parts.map(p => <option key={p.id} value={p.id}>{p.partName}</option>)}
             </S.Select>
           </S.FormGroup>
           <S.FormGroup>
@@ -105,12 +105,12 @@ const ServiceHistoryManagement = () => {
             <S.Button primary onClick={openCreateForm}><FaPlus /> Tạo Lịch sử</S.Button>
           </S.HeaderTop>
           <S.FilterContainer>
-            <S.Input placeholder="Tìm kiếm..." value={filters.searchTerm} onChange={(e) => handleFilterChange('searchTerm', e.target.value)} />
-            <S.Select value={filters.vehicleId} onChange={(e) => handleFilterChange('vehicleId', e.target.value)}><option value="">Tất cả xe</option>{vehicles.map(v => <option key={v.id} value={v.id}>{v.vehicleName}</option>)}</S.Select>
-            <S.Select value={filters.partId} onChange={(e) => handleFilterChange('partId', e.target.value)}><option value="">Tất cả linh kiện</option>{parts.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</S.Select>
+            <S.Input placeholder="Tìm kiếm theo xe,vin,linh kiện..." value={filters.searchTerm} onChange={(e) => handleFilterChange('searchTerm', e.target.value)} />
+            {/* <S.Select value={filters.vehicleName} onChange={(e) => handleFilterChange('vehicleId', e.target.value)}><option value="">Tất cả xe</option>{vehicles.map(v => <option key={v.id} value={v.id}>{v.vehicleName}</option>)}</S.Select>
+            <S.Select value={filters.partId} onChange={(e) => handleFilterChange('partId', e.target.value)}><option value="">Tất cả linh kiện</option>{parts.map(p => <option key={p.id} value={p.id}>{p.partName}</option>)}</S.Select>
             <S.Select value={filters.serviceType} onChange={(e) => handleFilterChange('serviceType', e.target.value)}><option value="">Tất cả loại DV</option><option value="REPAIR">Sửa chữa</option><option value="REPLACEMENT">Thay thế</option><option value="MAINTENANCE">Bảo dưỡng</option><option value="INSPECTION">Kiểm tra</option></S.Select>
             <S.Button secondary onClick={applyFilters}><FaFilter /> Lọc</S.Button>
-            <S.Button onClick={clearFilters}><FaTimes /> Xóa lọc</S.Button>
+            <S.Button onClick={clearFilters}><FaTimes /> Xóa lọc</S.Button> */}
           </S.FilterContainer>
         </S.Header>
 
@@ -125,22 +125,24 @@ const ServiceHistoryManagement = () => {
             <S.Table>
               <thead>
                 <tr>
-                  <S.Th>Ngày</S.Th>
-                  <S.Th>Loại DV</S.Th>
-                  <S.Th>Mô tả</S.Th>
+                  {/* <S.Th>Loại DV</S.Th> */}
                   <S.Th>Xe</S.Th>
+                  <S.Th>Vin</S.Th>
                   <S.Th>Linh kiện</S.Th>
+                  <S.Th>Mô tả</S.Th>
+                  <S.Th>Ngày</S.Th>
                   <S.Th>Thao tác</S.Th>
                 </tr>
               </thead>
               <tbody>
                 {histories.map(history => (
                   <tr key={history.id}>
-                    <S.Td>{new Date(history.serviceDate).toLocaleDateString('vi-VN')}</S.Td>
-                    <S.Td>{history.serviceType}</S.Td>
+                    {/* <S.Td>{history.serviceType}</S.Td> */}
+                    <S.Td>{history.vehicleName || 'N/A'}</S.Td>
+                    <S.Td>{history.vehicleVin || 'N/A'}</S.Td>
+                    <S.Td>{history.partName || 'N/A'}</S.Td>
                     <S.Td>{history.description}</S.Td>
-                    <S.Td>{history.vehicle?.vin || 'N/A'}</S.Td>
-                    <S.Td>{history.part?.name || 'N/A'}</S.Td>
+                    <S.Td>{new Date(history.serviceDate).toLocaleDateString('vi-VN')}</S.Td>                   
                     <S.Td>
                       <S.Button small onClick={() => openEditForm(history)}>
                         <FaEdit /> Sửa

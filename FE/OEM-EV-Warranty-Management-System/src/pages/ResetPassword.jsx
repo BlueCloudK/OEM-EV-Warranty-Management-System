@@ -182,7 +182,7 @@ export default function ResetPassword() {
     <div className="auth-page">
       <div className="auth-card">
         <div className="auth-left">
-          <h1>EV Warranty</h1>
+          <h1>Hệ Thống Bảo Hành OEM</h1>
           <h2>Đặt lại mật khẩu</h2>
           <p style={{ color: "#666", marginBottom: "20px" }}>
             Nhập mật khẩu mới cho tài khoản của bạn

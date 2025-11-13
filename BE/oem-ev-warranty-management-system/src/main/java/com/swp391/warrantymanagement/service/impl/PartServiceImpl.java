@@ -30,7 +30,7 @@ public class PartServiceImpl implements PartService {
      * Lấy danh sách parts với pagination và search
      *
      * @param pageable thông tin phân trang
-     * @param search từ khóa tìm kiếm theo tên hoặc manufacturer (optional)
+     * @param search từ khóa tìm kiếm chung trong name, manufacturer, hoặc partNumber (optional)
      * @return PagedResponse với danh sách PartResponseDTO
      */
     @Override
@@ -38,8 +38,8 @@ public class PartServiceImpl implements PartService {
         Page<Part> partPage;
 
         if (search != null && !search.trim().isEmpty()) {
-            partPage = partRepository.findByPartNameContainingIgnoreCaseOrManufacturerContainingIgnoreCase(
-                search, search, pageable);
+            // Search in name, manufacturer, and partNumber
+            partPage = partRepository.searchPartsGeneral(search.trim(), pageable);
         } else {
             partPage = partRepository.findAll(pageable);
         }

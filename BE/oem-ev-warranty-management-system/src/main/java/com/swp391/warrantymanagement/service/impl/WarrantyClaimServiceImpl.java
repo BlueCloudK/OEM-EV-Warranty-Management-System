@@ -50,8 +50,9 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
 
     private static final Logger logger = LoggerFactory.getLogger(WarrantyClaimServiceImpl.class);
 
-    // Default grace period nếu Part không có config riêng (giống WarrantyValidationServiceImpl)
+    // Default constants (giống WarrantyValidationServiceImpl để đảm bảo consistency)
     private static final int DEFAULT_GRACE_PERIOD_DAYS = 180;
+    private static final int DEFAULT_VEHICLE_MILEAGE_LIMIT = 100_000; // 100,000 km
 
     private final WarrantyClaimRepository warrantyClaimRepository;
     private final InstalledPartRepository installedPartRepository;
@@ -414,52 +415,118 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
         }
 
         // Kiểm tra warranty expiration với grace period support
+        // Theo business rules: Phải kiểm tra CẢ vehicle warranty VÀ part warranty (cả time VÀ mileage), áp dụng điều kiện nghiêm ngặt nhất
         LocalDate today = LocalDate.now();
-        LocalDate expirationDate = installedPart.getWarrantyExpirationDate();
+        LocalDate partExpirationDate = installedPart.getWarrantyExpirationDate();
+        LocalDate vehicleExpirationDate = vehicle.getWarrantyEndDate();
 
-        if (expirationDate.isBefore(today)) {
+        // Lấy grace period từ Part (nếu có), fallback về default
+        Part part = installedPart.getPart();
+        int gracePeriodDays = part != null && part.getGracePeriodDays() != null
+            ? part.getGracePeriodDays()
+            : DEFAULT_GRACE_PERIOD_DAYS;
+
+        // 1. Tính số ngày hết hạn theo THỜI GIAN
+        long partDaysExpired = partExpirationDate.isBefore(today) ? ChronoUnit.DAYS.between(partExpirationDate, today) : 0;
+        long vehicleDaysExpired = vehicleExpirationDate.isBefore(today) ? ChronoUnit.DAYS.between(vehicleExpirationDate, today) : 0;
+
+        // 2. Kiểm tra MILEAGE (số km)
+        int currentVehicleMileage = vehicle.getMileage();
+        int vehicleMileageLimit = DEFAULT_VEHICLE_MILEAGE_LIMIT;
+        boolean vehicleMileageExpired = currentVehicleMileage > vehicleMileageLimit;
+
+        // Part mileage check (nếu có extended warranty)
+        boolean partMileageExpired = false;
+        if (part.getHasExtendedWarranty() != null && part.getHasExtendedWarranty()) {
+            int mileageAtInstallation = installedPart.getMileageAtInstallation() != null ? installedPart.getMileageAtInstallation() : 0;
+            int mileageSinceInstallation = currentVehicleMileage - mileageAtInstallation;
+            Integer partMileageLimit = installedPart.getWarrantyMileageLimit() != null
+                ? installedPart.getWarrantyMileageLimit()
+                : part.getDefaultWarrantyMileage();
+            if (partMileageLimit != null) {
+                partMileageExpired = mileageSinceInstallation > partMileageLimit;
+            }
+        }
+
+        // 3. Áp dụng điều kiện nghiêm ngặt nhất
+        long maxDaysExpired = Math.max(partDaysExpired, vehicleDaysExpired);
+        boolean isExpiredByDate = maxDaysExpired > 0;
+        boolean isExpiredByMileage = vehicleMileageExpired || partMileageExpired;
+        boolean isExpired = isExpiredByDate || isExpiredByMileage;
+
+        if (isExpired) {
             // Warranty đã hết hạn - kiểm tra grace period
-            long daysExpired = ChronoUnit.DAYS.between(expirationDate, today);
+            // LƯU Ý: Grace period CHỈ áp dụng cho THỜI GIAN, KHÔNG áp dụng cho MILEAGE
+            // Nếu hết hạn do mileage → LUÔN LUÔN yêu cầu paid warranty
+            // Nếu hết hạn do time trong grace period → có thể paid warranty
 
-            // Lấy grace period từ Part (nếu có), fallback về default
-            Part part = installedPart.getPart();
-            int gracePeriodDays = part != null && part.getGracePeriodDays() != null
-                ? part.getGracePeriodDays()
-                : DEFAULT_GRACE_PERIOD_DAYS;
-
-            // Nếu còn trong grace period VÀ là paid warranty claim → Cho phép
-            if (daysExpired <= gracePeriodDays) {
+            if (isExpiredByMileage && !isExpiredByDate) {
+                // Chỉ hết hạn do mileage, time còn hiệu lực
+                if (requestDTO.getIsPaidWarranty() != null && requestDTO.getIsPaidWarranty()) {
+                    logger.info("SC_STAFF creating paid warranty claim (expired by mileage): installedPartId={}, vehicleMileage={}, limit={}",
+                        requestDTO.getInstalledPartId(), currentVehicleMileage, vehicleMileageLimit);
+                } else {
+                    throw new IllegalArgumentException("Warranty expired by mileage (" + currentVehicleMileage + " km > " + vehicleMileageLimit + " km)." +
+                        " To create a claim, use paid warranty option (isPaidWarranty=true).");
+                }
+            } else if (maxDaysExpired <= gracePeriodDays) {
+                // Hết hạn do time NHƯNG còn trong grace period
                 if (requestDTO.getIsPaidWarranty() != null && requestDTO.getIsPaidWarranty()) {
                     // Valid paid warranty claim trong grace period
-                    logger.info("SC_STAFF creating paid warranty claim in grace period: installedPartId={}, daysExpired={}, gracePeriod={}, usingDefault={}",
-                        requestDTO.getInstalledPartId(), daysExpired, gracePeriodDays, (part == null || part.getGracePeriodDays() == null));
+                    logger.info("SC_STAFF creating paid warranty claim in grace period: installedPartId={}, partDaysExpired={}, vehicleDaysExpired={}, maxDaysExpired={}, gracePeriod={}",
+                        requestDTO.getInstalledPartId(), partDaysExpired, vehicleDaysExpired, maxDaysExpired, gracePeriodDays);
                 } else {
                     // Hết hạn nhưng không phải paid warranty
-                    throw new IllegalArgumentException("Warranty expired on " + expirationDate +
-                        ". To create a claim, use paid warranty option (isPaidWarranty=true).");
+                    String expiredEntity = vehicleDaysExpired > partDaysExpired ? "vehicle" : "part";
+                    LocalDate expiredDate = vehicleDaysExpired > partDaysExpired ? vehicleExpirationDate : partExpirationDate;
+                    throw new IllegalArgumentException("Warranty expired on " + expiredDate + " (" + expiredEntity + ")." +
+                        " To create a claim, use paid warranty option (isPaidWarranty=true).");
                 }
             } else {
-                // Quá grace period
-                throw new IllegalArgumentException("Warranty expired on " + expirationDate +
-                    " and grace period of " + gracePeriodDays + " days has passed. Cannot create claim.");
+                // Quá grace period (theo TIME)
+                String expiredEntity = vehicleDaysExpired > partDaysExpired ? "vehicle" : "part";
+                LocalDate expiredDate = vehicleDaysExpired > partDaysExpired ? vehicleExpirationDate : partExpirationDate;
+                throw new IllegalArgumentException("Warranty expired on " + expiredDate + " (" + expiredEntity + ")" +
+                    " and grace period of " + gracePeriodDays + " days has passed (expired " + maxDaysExpired + " days ago). Cannot create claim.");
+            }
+        }
+
+        // Validation: Paid warranty must have warrantyFee > 0 (per business rules)
+        if (requestDTO.getIsPaidWarranty() != null && requestDTO.getIsPaidWarranty()) {
+            if (requestDTO.getWarrantyFee() == null || requestDTO.getWarrantyFee().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException("Paid warranty claim must have warrantyFee > 0. " +
+                    "Use /api/warranty-validation/vehicle/{vehicleId}/calculate-fee to calculate the fee.");
             }
         }
 
         WarrantyClaim claim = WarrantyClaimMapper.toEntity(requestDTO, installedPart, vehicle);
-        claim.setStatus(WarrantyClaimStatus.SUBMITTED);
+
+        // Set initial status based on warranty type
+        // - FREE warranty: SUBMITTED (go to admin review immediately)
+        // - PAID warranty: PENDING_PAYMENT (wait for customer payment first)
+        if (requestDTO.getIsPaidWarranty() != null && requestDTO.getIsPaidWarranty()) {
+            claim.setStatus(WarrantyClaimStatus.PENDING_PAYMENT);
+            logger.info("SC_STAFF creating PAID warranty claim - status set to PENDING_PAYMENT: claimId={}", claim.getWarrantyClaimId());
+        } else {
+            claim.setStatus(WarrantyClaimStatus.SUBMITTED);
+            logger.info("SC_STAFF creating FREE warranty claim - status set to SUBMITTED: claimId={}", claim.getWarrantyClaimId());
+        }
 
         WarrantyClaim savedClaim = warrantyClaimRepository.save(claim);
         return WarrantyClaimMapper.toResponseDTO(savedClaim);
     }
 
     /**
-     * Admin accept claim, chuyển status từ SUBMITTED sang MANAGER_REVIEW.
+     * Admin accept claim, chuyển status sang MANAGER_REVIEW.
+     * Accepts claims from two sources:
+     * - FREE warranty: SUBMITTED → MANAGER_REVIEW
+     * - PAID warranty: PAYMENT_CONFIRMED → MANAGER_REVIEW (after customer paid)
      *
      * @param claimId claim ID cần accept
      * @param note ghi chú của admin (optional)
      * @return WarrantyClaimResponseDTO chứa thông tin claim đã cập nhật
      * @throws ResourceNotFoundException nếu claim không tồn tại
-     * @throws IllegalStateException nếu claim không ở status SUBMITTED
+     * @throws IllegalStateException nếu claim không ở status SUBMITTED hoặc PAYMENT_CONFIRMED
      */
     @Override
     @Transactional
@@ -467,8 +534,12 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
         WarrantyClaim claim = warrantyClaimRepository.findById(claimId)
             .orElseThrow(() -> new ResourceNotFoundException("WarrantyClaim", "id", claimId));
 
-        if (claim.getStatus() != WarrantyClaimStatus.SUBMITTED) {
-            throw new IllegalStateException("Claim must be in SUBMITTED status to accept. Current status: " + claim.getStatus());
+        // Accept claims from SUBMITTED (free warranty) or PAYMENT_CONFIRMED (paid warranty)
+        if (claim.getStatus() != WarrantyClaimStatus.SUBMITTED &&
+            claim.getStatus() != WarrantyClaimStatus.PAYMENT_CONFIRMED) {
+            throw new IllegalStateException(
+                "Claim must be in SUBMITTED (free warranty) or PAYMENT_CONFIRMED (paid warranty) status to accept. " +
+                "Current status: " + claim.getStatus());
         }
 
         claim.setStatus(WarrantyClaimStatus.MANAGER_REVIEW);
@@ -478,17 +549,19 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
         }
 
         WarrantyClaim savedClaim = warrantyClaimRepository.save(claim);
+        logger.info("Admin accepted claim {} from status {} to MANAGER_REVIEW", claimId, claim.getStatus());
         return WarrantyClaimMapper.toResponseDTO(savedClaim);
     }
 
     /**
-     * Admin reject claim, chuyển status từ SUBMITTED sang REJECTED và set resolution date.
+     * Admin reject claim, chuyển status sang REJECTED và set resolution date.
+     * Can reject from any non-final status (SUBMITTED, PENDING_PAYMENT, PAYMENT_CONFIRMED, MANAGER_REVIEW).
      *
      * @param claimId claim ID cần reject
      * @param reason lý do từ chối
      * @return WarrantyClaimResponseDTO chứa thông tin claim đã cập nhật
      * @throws ResourceNotFoundException nếu claim không tồn tại
-     * @throws IllegalStateException nếu claim không ở status SUBMITTED
+     * @throws IllegalStateException nếu claim đã ở final status (COMPLETED/REJECTED)
      */
     @Override
     @Transactional
@@ -496,8 +569,9 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
         WarrantyClaim claim = warrantyClaimRepository.findById(claimId)
             .orElseThrow(() -> new ResourceNotFoundException("WarrantyClaim", "id", claimId));
 
-        if (claim.getStatus() != WarrantyClaimStatus.SUBMITTED) {
-            throw new IllegalStateException("Claim must be in SUBMITTED status to reject. Current status: " + claim.getStatus());
+        // Cannot reject if already in final status
+        if (claim.getStatus().isFinalStatus()) {
+            throw new IllegalStateException("Cannot reject claim that is already in final status: " + claim.getStatus());
         }
 
         claim.setStatus(WarrantyClaimStatus.REJECTED);
@@ -505,6 +579,7 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
         claim.setResolutionDate(LocalDateTime.now());
 
         WarrantyClaim savedClaim = warrantyClaimRepository.save(claim);
+        logger.info("Admin rejected claim {} with reason: {}", claimId, reason);
         return WarrantyClaimMapper.toResponseDTO(savedClaim);
     }
 

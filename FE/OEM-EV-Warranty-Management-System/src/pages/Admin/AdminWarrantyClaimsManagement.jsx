@@ -85,6 +85,8 @@ const AdminWarrantyClaimsManagement = () => {
           <S.Select value={filterStatus} onChange={(e) => handleFilterChange(e.target.value)}>
             <option value="all">Tất cả</option>
             <option value="SUBMITTED">Chờ duyệt (SUBMITTED)</option>
+            <option value="PENDING_PAYMENT">Chờ thanh toán (PENDING_PAYMENT)</option>
+            <option value="PAYMENT_CONFIRMED">Đã xác nhận thanh toán (PAYMENT_CONFIRMED)</option>
             <option value="MANAGER_REVIEW">Đã duyệt (MANAGER_REVIEW)</option>
             <option value="PROCESSING">Đang xử lý (PROCESSING)</option>
             <option value="COMPLETED">Hoàn thành (COMPLETED)</option>

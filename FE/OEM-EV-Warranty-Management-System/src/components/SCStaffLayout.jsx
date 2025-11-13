@@ -6,13 +6,13 @@ import {
 } from "react-icons/fa";
 
 const sidebarItems = [
-  { icon: <FaHome size={18} />, label: "Dashboard", path: "/scstaff/dashboard" },
+  { icon: <FaHome size={18} />, label: "Tổng quan", path: "/scstaff/dashboard" },
   { icon: <FaUserCog size={18} />, label: "Khách hàng", path: "/scstaff/customers" },
   { icon: <FaCar size={18} />, label: "Xe", path: "/scstaff/vehicles" },
   { icon: <FaClipboardList size={18} />, label: "Bảo hành", path: "/scstaff/warranty-claims" },
-  { icon: <FaExclamationTriangle size={18} />, label: "Recall", path: "/scstaff/recalls" },
+  { icon: <FaExclamationTriangle size={18} />, label: "Triệu hồi", path: "/scstaff/recalls" },
   { icon: <FaHistory size={18} />, label: "Lịch sử", path: "/scstaff/service-history" },
-  { icon: <FaCommentDots size={18} />, label: "Feedback", path: "/scstaff/feedbacks" },
+  { icon: <FaCommentDots size={18} />, label: "Phản hồi", path: "/scstaff/feedbacks" },
 ];
 
 export default function SCStaffLayout() {
@@ -26,7 +26,7 @@ export default function SCStaffLayout() {
       <S.Sidebar $isCollapsed={sidebarCollapsed}>
         <S.SidebarHeader $isCollapsed={sidebarCollapsed}>
           <S.SidebarToggleButton onClick={() => setSidebarCollapsed(!sidebarCollapsed)}><FaBars size={16} /></S.SidebarToggleButton>
-          {!sidebarCollapsed && <div><div style={{ fontSize: 16, fontWeight: 600, color: "#f1f5f9" }}>SC Staff</div><div style={{ fontSize: 12, color: "#94a3b8" }}>Dashboard</div></div>}
+          {!sidebarCollapsed && <div><div style={{ fontSize: 16, fontWeight: 600, color: "#f1f5f9" }}>Nhân viên TT</div><div style={{ fontSize: 12, color: "#94a3b8" }}>Bảng điều khiển</div></div>}
         </S.SidebarHeader>
         <div style={{ flex: 1, padding: sidebarCollapsed ? 8 : 16 }}>
           {sidebarItems.map((item, index) => (
@@ -39,7 +39,11 @@ export default function SCStaffLayout() {
       </S.Sidebar>
 
       <S.MainContent $isCollapsed={sidebarCollapsed}>
-        <Outlet /> {/* Đây là nơi nội dung của các trang con sẽ được render */}
+        <div style={{ maxWidth: 1360, margin: "0 auto", display: "flex", flexDirection: "column", gap: 24 }}>
+          <div className="page-surface" style={{ background: "#fff", borderRadius: 20, padding: "24px 28px", boxShadow: "0 24px 58px rgba(15,23,42,0.18)", border: "1px solid rgba(226,232,240,0.85)" }}>
+            <Outlet /> {/* Đây là nơi nội dung của các trang con sẽ được render */}
+          </div>
+        </div>
       </S.MainContent>
     </S.PageContainer>
   );

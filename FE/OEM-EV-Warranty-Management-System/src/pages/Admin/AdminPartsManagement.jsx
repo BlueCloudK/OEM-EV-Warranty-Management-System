@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext'; // Import the master auth hook
 import { useAdminPartsManagement } from '../../hooks/useAdminPartsManagement';
 import * as S from './AdminPartsManagement.styles';
-import { FaCogs, FaPlus, FaEdit, FaSearch, FaTrash, FaSpinner } from 'react-icons/fa';
+import { FaCogs, FaPlus, FaEdit, FaSearch, FaTrash, FaSpinner, FaFileImport } from 'react-icons/fa';
 
 // Form Modal Component - partId is now auto-generated (Long)
 const PartFormModal = ({ isOpen, onClose, onSubmit, part }) => {
@@ -204,39 +204,31 @@ const PartFormModal = ({ isOpen, onClose, onSubmit, part }) => {
             {formData.hasExtendedWarranty && (
               <>
                 <S.FormGroup>
-                  <S.Label>Thời hạn bảo hành mặc định (tháng) *</S.Label>
+                  <S.Label>Thời gian bảo hành mặc định (tháng)</S.Label>
                   <S.Input
                     name="defaultWarrantyMonths"
                     type="number"
                     min="1"
                     value={formData.defaultWarrantyMonths || ''}
                     onChange={handleInputChange}
-                    required={formData.hasExtendedWarranty}
                     hasError={!!errors.defaultWarrantyMonths}
-                    placeholder="VD: 96 (8 năm)"
+                    placeholder="VD: 96"
                   />
                   {errors.defaultWarrantyMonths && <S.ErrorText>{errors.defaultWarrantyMonths}</S.ErrorText>}
-                  <small style={{ color: '#6b7280', fontSize: '13px' }}>
-                    Ví dụ: Pin - 96 tháng, Motor - 48 tháng, Màn hình - 24 tháng
-                  </small>
                 </S.FormGroup>
 
                 <S.FormGroup>
-                  <S.Label>Giới hạn km mặc định *</S.Label>
+                  <S.Label>Giới hạn km (km)</S.Label>
                   <S.Input
                     name="defaultWarrantyMileage"
                     type="number"
                     min="1"
                     value={formData.defaultWarrantyMileage || ''}
                     onChange={handleInputChange}
-                    required={formData.hasExtendedWarranty}
                     hasError={!!errors.defaultWarrantyMileage}
                     placeholder="VD: 192000"
                   />
                   {errors.defaultWarrantyMileage && <S.ErrorText>{errors.defaultWarrantyMileage}</S.ErrorText>}
-                  <small style={{ color: '#6b7280', fontSize: '13px' }}>
-                    Ví dụ: Pin - 192,000 km, Motor - 80,000 km
-                  </small>
                 </S.FormGroup>
 
                 <S.FormGroup>
@@ -251,53 +243,45 @@ const PartFormModal = ({ isOpen, onClose, onSubmit, part }) => {
                     placeholder="VD: 365"
                   />
                   {errors.gracePeriodDays && <S.ErrorText>{errors.gracePeriodDays}</S.ErrorText>}
-                  <small style={{ color: '#6b7280', fontSize: '13px' }}>
-                    Số ngày sau khi hết hạn vẫn có thể bảo hành tính phí. Để trống = không có grace period
-                  </small>
                 </S.FormGroup>
 
-                <S.FormGroup>
-                  <S.Label>Phí bảo hành tối thiểu (% chi phí sửa)</S.Label>
-                  <S.Input
-                    name="paidWarrantyFeePercentageMin"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    max="1"
-                    value={formData.paidWarrantyFeePercentageMin || ''}
-                    onChange={handleInputChange}
-                    hasError={!!errors.paidWarrantyFeePercentageMin}
-                    placeholder="VD: 0.20 (20%)"
-                  />
-                  {errors.paidWarrantyFeePercentageMin && <S.ErrorText>{errors.paidWarrantyFeePercentageMin}</S.ErrorText>}
-                  <small style={{ color: '#6b7280', fontSize: '13px' }}>
-                    Nhập giá trị từ 0.00 đến 1.00 (0% - 100%). VD: 0.20 = 20%
-                  </small>
-                </S.FormGroup>
-
-                <S.FormGroup>
-                  <S.Label>Phí bảo hành tối đa (% chi phí sửa)</S.Label>
-                  <S.Input
-                    name="paidWarrantyFeePercentageMax"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    max="1"
-                    value={formData.paidWarrantyFeePercentageMax || ''}
-                    onChange={handleInputChange}
-                    hasError={!!errors.paidWarrantyFeePercentageMax}
-                    placeholder="VD: 0.50 (50%)"
-                  />
-                  {errors.paidWarrantyFeePercentageMax && <S.ErrorText>{errors.paidWarrantyFeePercentageMax}</S.ErrorText>}
-                  <small style={{ color: '#6b7280', fontSize: '13px' }}>
-                    Nhập giá trị từ 0.00 đến 1.00 (0% - 100%). VD: 0.50 = 50%
-                  </small>
+                <S.FormGroup style={{ display: 'flex', gap: '12px' }}>
+                  <div style={{ flex: 1 }}>
+                    <S.Label>Phí bảo hành trả phí tối thiểu (%)</S.Label>
+                    <S.Input
+                      name="paidWarrantyFeePercentageMin"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="1"
+                      value={formData.paidWarrantyFeePercentageMin || ''}
+                      onChange={handleInputChange}
+                      hasError={!!errors.paidWarrantyFeePercentageMin}
+                      placeholder="VD: 0.20"
+                    />
+                    {errors.paidWarrantyFeePercentageMin && <S.ErrorText>{errors.paidWarrantyFeePercentageMin}</S.ErrorText>}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <S.Label>Phí bảo hành trả phí tối đa (%)</S.Label>
+                    <S.Input
+                      name="paidWarrantyFeePercentageMax"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="1"
+                      value={formData.paidWarrantyFeePercentageMax || ''}
+                      onChange={handleInputChange}
+                      hasError={!!errors.paidWarrantyFeePercentageMax}
+                      placeholder="VD: 0.50"
+                    />
+                    {errors.paidWarrantyFeePercentageMax && <S.ErrorText>{errors.paidWarrantyFeePercentageMax}</S.ErrorText>}
+                  </div>
                 </S.FormGroup>
               </>
             )}
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px' }}>
             <S.Button type="button" onClick={onClose}>Hủy</S.Button>
             <S.Button $primary type="submit">{part ? 'Cập nhật' : 'Tạo mới'}</S.Button>
           </div>
@@ -307,17 +291,97 @@ const PartFormModal = ({ isOpen, onClose, onSubmit, part }) => {
   );
 };
 
-// Main Page Component with new Authentication Flow
+const ImportPartsModal = ({ isOpen, onClose, onImport }) => {
+  const [file, setFile] = useState(null);
+  const [error, setError] = useState(null);
+  const [processing, setProcessing] = useState(false);
+  const [results, setResults] = useState(null);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!file) {
+      setError('Vui lòng chọn file CSV');
+      return;
+    }
+    setProcessing(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const { success, data, message } = await onImport(formData);
+    if (success) {
+      setResults(data);
+      setFile(null);
+      setError(null);
+    } else {
+      setError(message || 'Có lỗi xảy ra khi import CSV');
+    }
+    setProcessing(false);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <S.ModalOverlay>
+      <S.ModalContent style={{ maxHeight: '90vh', overflowY: 'auto' }}>
+        <h2>Import phụ tùng từ CSV</h2>
+        <form onSubmit={handleSubmit}>
+          <S.FormGroup>
+            <S.Label>Chọn file CSV</S.Label>
+            <input
+              type="file"
+              accept=".csv"
+              onChange={(e) => {
+                setFile(e.target.files[0]);
+                setResults(null);
+              }}
+            />
+          </S.FormGroup>
+          {error && <S.ErrorText>{error}</S.ErrorText>}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+            <S.Button type="button" onClick={onClose}>Hủy</S.Button>
+            <S.Button $primary type="submit" disabled={processing}>
+              {processing ? 'Đang xử lý...' : 'Import'}
+            </S.Button>
+          </div>
+        </form>
+
+        {results && (
+          <div style={{ marginTop: '20px', padding: '16px', borderRadius: '8px', background: '#f9fafb', border: '1px solid #e5e7eb' }}>
+            <h3 style={{ marginTop: 0 }}>Kết quả Import</h3>
+            <p>✅ Thành công: {results.successCount}</p>
+            <p>❌ Thất bại: {results.failureCount}</p>
+            {results.failures && results.failures.length > 0 && (
+              <div style={{ marginTop: '12px', maxHeight: '200px', overflowY: 'auto', border: '1px solid #e5e7eb', padding: '12px', borderRadius: '8px', background: '#fff' }}>
+                <h4 style={{ marginTop: 0 }}>Chi tiết lỗi</h4>
+                <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '14px' }}>
+                  {results.failures.map((failure, index) => (
+                    <li key={index} style={{ marginBottom: '6px', color: '#ef4444' }}>
+                      Dòng {failure.row}: {failure.reason}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+      </S.ModalContent>
+    </S.ModalOverlay>
+  );
+};
+
+// Main Component with new Authentication Flow
 const AdminPartsManagement = () => {
   const navigate = useNavigate();
   const { isAuthenticated, loading: authLoading } = useAuth();
   const {
     parts, loading: dataLoading, error, pagination, searchTerm, setSearchTerm,
-    handleSearch, handleCreateOrUpdate, handleDelete, handlePageChange
+    handleSearch, handleCreateOrUpdate, handleDelete, handlePageChange,
+    handleImportParts
   } = useAdminPartsManagement();
 
   const [showForm, setShowForm] = useState(false);
   const [selectedPart, setSelectedPart] = useState(null);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -345,10 +409,13 @@ const AdminPartsManagement = () => {
         <S.Header>
           <S.HeaderTop>
             <S.HeaderTitle><FaCogs /> Quản lý Phụ tùng (Admin)</S.HeaderTitle>
-            <S.Button $primary onClick={openCreateForm}><FaPlus /> Tạo Phụ tùng</S.Button>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <S.Button onClick={() => setShowImportModal(true)}><FaFileImport /> Import CSV</S.Button>
+              <S.Button $primary onClick={openCreateForm}><FaPlus /> Tạo Phụ tùng</S.Button>
+            </div>
           </S.HeaderTop>
           <S.SearchContainer>
-            <S.Input placeholder="Tìm theo tên, mã, nhà sản xuất..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleSearch()} />
+            <S.Input placeholder="Tìm theo tên, mã phụ tùng, nhà sản xuất..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleSearch()} />
             <S.Button $small onClick={handleSearch}><FaSearch /> Tìm kiếm</S.Button>
           </S.SearchContainer>
         </S.Header>
@@ -445,6 +512,12 @@ const AdminPartsManagement = () => {
           onClose={() => setShowForm(false)}
           onSubmit={handleCreateOrUpdate}
           part={selectedPart}
+        />
+
+        <ImportPartsModal
+          isOpen={showImportModal}
+          onClose={() => setShowImportModal(false)}
+          onImport={handleImportParts}
         />
       </S.ContentWrapper>
     </S.PageContainer>

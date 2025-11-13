@@ -48,14 +48,15 @@ public class ServiceHistoryServiceImpl implements ServiceHistoryService {
      * Lấy tất cả service histories với pagination và search.
      *
      * @param pageable pagination parameters
-     * @param search từ khóa tìm kiếm (theo serviceType)
+     * @param search từ khóa tìm kiếm chung trong serviceType, description, vehicleName, hoặc VIN
      * @return PagedResponse với service histories
      */
     @Override
     public PagedResponse<ServiceHistoryResponseDTO> getAllServiceHistoriesPage(Pageable pageable, String search) {
         Page<ServiceHistory> serviceHistoryPage;
         if (search != null && !search.trim().isEmpty()) {
-            serviceHistoryPage = serviceHistoryRepository.findByServiceTypeContainingIgnoreCase(search, pageable);
+            // Search in serviceType, description, vehicleName, and VIN
+            serviceHistoryPage = serviceHistoryRepository.searchServiceHistoriesGeneral(search.trim(), pageable);
         } else {
             serviceHistoryPage = serviceHistoryRepository.findAll(pageable);
         }

@@ -60,7 +60,7 @@ public class UserManagementController {
      *
      * @param page   Số trang (mặc định là 0).
      * @param size   Số lượng phần tử trên mỗi trang (mặc định là 10).
-     * @param search Từ khóa tìm kiếm (trong username).
+     * @param search Từ khóa tìm kiếm chung (trong username hoặc email).
      * @param role   Tên vai trò để lọc.
      * @return {@link ResponseEntity} chứa một Map với dữ liệu người dùng và thông tin phân trang.
      */

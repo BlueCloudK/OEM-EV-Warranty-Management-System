@@ -157,7 +157,7 @@ const AdminUserManagement = () => {
         return 'Tìm theo Username...';
       case 'general':
       default:
-        return 'Tìm theo Username, Email, Tên...';
+        return 'Tìm theo Username hoặc Email...';
     }
   };
 
@@ -167,46 +167,45 @@ const AdminUserManagement = () => {
 
   return (
     <>
-      <S.HeaderTop>
-        <S.HeaderTitle><FaUsers /> Quản lý Người dùng (Admin)</S.HeaderTitle>
-        <S.Button $primary onClick={() => setShowCreateForm(true)}><FaPlus /> Tạo Người dùng</S.Button>
-      </S.HeaderTop>
-      <S.SearchContainer>
-        {/* Search Type Dropdown */}
-        <S.Select
+      <div className="section-header">
+        <div>
+          <S.HeaderTitle><FaUsers /> Quản lý Người dùng (Admin)</S.HeaderTitle>
+          <p style={{ margin: "6px 0 0", color: "#64748b", fontSize: 14 }}>Theo dõi và phân quyền tài khoản hệ thống</p>
+        </div>
+        <button className="btn primary" onClick={() => setShowCreateForm(true)}><FaPlus /> Tạo Người dùng</button>
+      </div>
+
+      <div className="toolbar">
+        <select
           value={searchType}
           onChange={(e) => {
             setSearchType(e.target.value);
             setSearchTerm('');
           }}
-          style={{ marginRight: '10px', width: '150px' }}
         >
           <option value="general">Tìm kiếm chung</option>
           <option value="username">Tìm theo Username</option>
           <option value="id">Tìm theo ID</option> 
-        </S.Select>
+        </select>
 
-        <S.Input 
+        <input 
           placeholder={getSearchPlaceholder()} 
           value={searchTerm} 
           onChange={(e) => setSearchTerm(e.target.value)} 
           onKeyPress={(e) => e.key === 'Enter' && handleSearch()} 
         />
-        <S.Button $small onClick={handleSearch}><FaSearch /> Tìm kiếm</S.Button>
+        <button className="btn" onClick={handleSearch}><FaSearch /> Tìm kiếm</button>
 
-        {/* Role Filter Dropdown */}
-        <S.Select
+        <select
           value={selectedRole}
           onChange={(e) => {
             setSelectedRole(e.target.value);
           }}
-          style={{ marginLeft: '10px', width: '150px' }}
         >
           <option value="">Tất cả vai trò</option>
           {roles.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
-        </S.Select>
-
-      </S.SearchContainer>
+        </select>
+      </div>
 
       {error ? (
         <S.EmptyState>{error}</S.EmptyState>

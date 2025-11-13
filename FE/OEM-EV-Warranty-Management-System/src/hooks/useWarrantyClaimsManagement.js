@@ -19,10 +19,28 @@ export const useWarrantyClaimsManagement = () => {
       const params = { 
         page: pagination.currentPage, 
         size: pagination.pageSize, 
-        status: filterStatus === 'all' ? '' : filterStatus,
       };
+      
+      console.log('🔍 Fetching claims with params:', params);
+      console.log('📝 Filter status:', filterStatus);
 
-      const response = await dataApi.getAllWarrantyClaims(params);
+      let response;
+      
+      // Use specific endpoint for status filtering
+      if (filterStatus && filterStatus !== 'all') {
+        console.log('🏷️ Using status-specific endpoint for:', filterStatus);
+        response = await dataApi.getClaimsByStatus(filterStatus, params);
+      } else {
+        console.log('� Using general endpoint (all claims)');
+        response = await dataApi.getAllWarrantyClaims(params);
+      }
+
+      console.log('📋 Claims API response:', {
+        totalElements: response?.totalElements,
+        totalClaims: response?.content?.length,
+        firstClaim: response?.content?.[0],
+        statuses: response?.content?.map(c => c.status)
+      });
 
       if (response && response.content) {
         setClaims(response.content);
@@ -79,6 +97,7 @@ export const useWarrantyClaimsManagement = () => {
   }, [fetchClaims, fetchVehicles, fetchParts]);
 
   const handleFilterChange = (status) => {
+    console.log('🔄 Filter changed to:', status);
     setFilterStatus(status);
     setPagination(prev => ({ ...prev, currentPage: 0 }));
   };
