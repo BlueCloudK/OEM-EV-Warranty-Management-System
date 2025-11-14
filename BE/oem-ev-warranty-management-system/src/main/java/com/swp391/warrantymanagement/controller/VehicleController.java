@@ -1,11 +1,13 @@
 package com.swp391.warrantymanagement.controller;
 
 import com.swp391.warrantymanagement.dto.request.VehicleRequestDTO;
-import com.swp391.warrantymanagement.dto.response.VehicleResponseDTO;
 import com.swp391.warrantymanagement.dto.response.PagedResponse;
+import com.swp391.warrantymanagement.dto.response.VehicleResponseDTO;
 import com.swp391.warrantymanagement.service.VehicleService;
 import com.swp391.warrantymanagement.util.SecurityUtil;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -13,15 +15,18 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.UUID;
 
 /**
- * REST controller for Vehicle APIs.
- * Handles CRUD operations for vehicles using DTOs only.
- * Business Rules: Customer can only manage their own vehicles, ADMIN/STAFF can manage all
+ * REST controller cho các API liên quan đến Xe (Vehicle).
+ * <p>
+ * Controller này xử lý các hoạt động CRUD cho xe và các nghiệp vụ liên quan.
+ * <p>
+ * <b>Quy tắc nghiệp vụ:</b>
+ * <ul>
+ *     <li>CUSTOMER chỉ có thể quản lý các xe của chính mình.</li>
+ *     <li>ADMIN/STAFF có thể quản lý tất cả các xe trong hệ thống.</li>
+ * </ul>
  */
 @RestController
 @RequestMapping("api/vehicles")
@@ -31,7 +36,16 @@ public class VehicleController {
     @Autowired
     private VehicleService vehicleService;
 
-    // Get all vehicles with pagination (ADMIN/STAFF only)
+    /**
+     * Lấy danh sách tất cả các xe trong hệ thống với phân trang và tìm kiếm.
+     * <p>
+     * Endpoint này chỉ dành cho các vai trò quản trị và nhân viên.
+     *
+     * @param page   Số trang (mặc định là 0).
+     * @param size   Số lượng phần tử trên mỗi trang (mặc định là 10).
+     * @param search Chuỗi tìm kiếm (có thể là VIN, model, brand, tên khách hàng).
+     * @return {@link ResponseEntity} chứa một {@link PagedResponse} các xe.
+     */
     @GetMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN')")
     public ResponseEntity<PagedResponse<VehicleResponseDTO>> getAllVehicles(
@@ -46,7 +60,14 @@ public class VehicleController {
         return ResponseEntity.ok(vehiclesPage);
     }
 
-    // Get vehicle by ID
+    /**
+     * Lấy thông tin chi tiết của một xe dựa trên ID.
+     * <p>
+     * CUSTOMER chỉ có thể truy cập xe của chính mình (logic được xử lý ở tầng Service).
+     *
+     * @param id ID của xe cần lấy thông tin.
+     * @return {@link ResponseEntity} chứa {@link VehicleResponseDTO} nếu tìm thấy, ngược lại trả về 404 Not Found.
+     */
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN') or hasRole('CUSTOMER')")
     public ResponseEntity<VehicleResponseDTO> getVehicleById(@PathVariable Long id) {
@@ -60,7 +81,14 @@ public class VehicleController {
         return ResponseEntity.notFound().build();
     }
 
-    // Create new vehicle (ADMIN/EVM_STAFF/SC_STAFF)
+    /**
+     * Tạo một xe mới trong hệ thống.
+     * <p>
+     * Chỉ dành cho các vai trò quản trị và nhân viên.
+     *
+     * @param requestDTO DTO chứa thông tin xe mới.
+     * @return {@link ResponseEntity} chứa thông tin xe đã được tạo với HTTP status 201 Created.
+     */
     @PostMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN')")
     public ResponseEntity<VehicleResponseDTO> createVehicle(@Valid @RequestBody VehicleRequestDTO requestDTO) {
@@ -75,7 +103,13 @@ public class VehicleController {
         }
     }
 
-    // Update vehicle (ADMIN/EVM_STAFF/SC_STAFF)
+    /**
+     * Cập nhật thông tin của một xe đã tồn tại.
+     *
+     * @param id         ID của xe cần cập nhật.
+     * @param requestDTO DTO chứa thông tin cập nhật.
+     * @return {@link ResponseEntity} chứa thông tin xe đã được cập nhật.
+     */
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN')")
     public ResponseEntity<VehicleResponseDTO> updateVehicle(
@@ -92,7 +126,12 @@ public class VehicleController {
         return ResponseEntity.notFound().build();
     }
 
-    // Delete vehicle (ADMIN/EVM_STAFF/SC_STAFF)
+    /**
+     * Xóa một xe khỏi hệ thống.
+     *
+     * @param id ID của xe cần xóa.
+     * @return {@link ResponseEntity} với HTTP status 204 No Content nếu xóa thành công.
+     */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN')")
     public ResponseEntity<Void> deleteVehicle(@PathVariable Long id) {
@@ -102,7 +141,16 @@ public class VehicleController {
         return ResponseEntity.noContent().build();
     }
 
-    // Get vehicles by customer ID (ADMIN/STAFF only)
+    /**
+     * Lấy danh sách các xe thuộc về một khách hàng cụ thể.
+     * <p>
+     * Chỉ dành cho các vai trò quản trị và nhân viên.
+     *
+     * @param customerId ID của khách hàng.
+     * @param page       Số trang.
+     * @param size       Số lượng phần tử trên trang.
+     * @return {@link ResponseEntity} chứa một {@link PagedResponse} các xe của khách hàng đó.
+     */
     @GetMapping("/by-customer/{customerId}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN')")
     public ResponseEntity<PagedResponse<VehicleResponseDTO>> getVehiclesByCustomer(
@@ -116,7 +164,15 @@ public class VehicleController {
         return ResponseEntity.ok(vehiclesPage);
     }
 
-    // Customer get their own vehicles (CUSTOMER only)
+    /**
+     * Cho phép khách hàng (CUSTOMER) tự lấy danh sách các xe của chính mình.
+     * <p>
+     * Hệ thống sẽ tự động lấy thông tin người dùng đang đăng nhập từ Security Context.
+     *
+     * @param page Số trang.
+     * @param size Số lượng phần tử trên trang.
+     * @return {@link ResponseEntity} chứa một {@link PagedResponse} các xe của người dùng hiện tại.
+     */
     @GetMapping("/my-vehicles")
     @PreAuthorize("hasRole('CUSTOMER')")
     public ResponseEntity<PagedResponse<VehicleResponseDTO>> getMyVehicles(
@@ -124,7 +180,7 @@ public class VehicleController {
             @RequestParam(defaultValue = "10") int size) {
         logger.info("Get my vehicles request: page={}, size={}", page, size);
         try {
-            // Get username from SecurityContext (already authenticated by JWT filter)
+            // Lấy username từ SecurityContext (đã được xác thực bởi JWT filter)
             String username = SecurityUtil.getCurrentUsername()
                     .orElseThrow(() -> new RuntimeException("User not authenticated"));
             logger.info("Current authenticated user: {}", username);
@@ -139,7 +195,12 @@ public class VehicleController {
         }
     }
 
-    // Search vehicles by VIN (ADMIN/STAFF only - sensitive information)
+    /**
+     * Tìm kiếm một xe dựa trên số VIN (Vehicle Identification Number).
+     *
+     * @param vin Số VIN của xe.
+     * @return {@link ResponseEntity} chứa {@link VehicleResponseDTO} nếu tìm thấy.
+     */
     @GetMapping("/by-vin")
     @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN')")
     public ResponseEntity<VehicleResponseDTO> getVehicleByVin(@RequestParam String vin) {
@@ -153,7 +214,15 @@ public class VehicleController {
         return ResponseEntity.notFound().build();
     }
 
-    // Search vehicles by model/brand (All authenticated users)
+    /**
+     * Tìm kiếm xe dựa trên model hoặc brand.
+     *
+     * @param model Model của xe (không bắt buộc).
+     * @param brand Hãng sản xuất của xe (không bắt buộc).
+     * @param page  Số trang.
+     * @param size  Số lượng phần tử trên trang.
+     * @return {@link ResponseEntity} chứa một {@link PagedResponse} các xe phù hợp.
+     */
     @GetMapping("/search")
     @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN') or hasRole('CUSTOMER')")
     public ResponseEntity<PagedResponse<VehicleResponseDTO>> searchVehicles(
@@ -169,7 +238,16 @@ public class VehicleController {
         return ResponseEntity.ok(vehiclesPage);
     }
 
-    // Get vehicles with warranty expiring soon (ADMIN/STAFF only - business intelligence)
+    /**
+     * Lấy danh sách các xe sắp hết hạn bảo hành.
+     * <p>
+     * Đây là một tính năng nghiệp vụ (business intelligence) cho phép nhân viên chủ động liên hệ khách hàng.
+     *
+     * @param daysFromNow Số ngày tính từ hiện tại (ví dụ: 30 ngày tới).
+     * @param page        Số trang.
+     * @param size        Số lượng phần tử trên trang.
+     * @return {@link ResponseEntity} chứa một {@link PagedResponse} các xe sắp hết hạn bảo hành.
+     */
     @GetMapping("/warranty-expiring")
     @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN')")
     public ResponseEntity<PagedResponse<VehicleResponseDTO>> getVehiclesWithExpiringWarranty(
