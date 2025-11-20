@@ -202,24 +202,6 @@ export default function CustomerDashboard() {
         ))}
       </S.StatsGrid>
 
-      {/* Recent Activity */}
-      {recentActivity && recentActivity.length > 0 && (
-        <div style={{ marginBottom: '32px' }}>
-          <S.SectionTitle>
-            <FaHistory /> Hoạt động Gần đây
-          </S.SectionTitle>
-          <div style={{ background: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)' }}>
-            {recentActivity.map((activity) => (
-              <div key={activity.id} style={{ display: 'flex', alignItems: 'center', gap: '15px', padding: '12px', background: '#f9fafb', borderRadius: '8px', marginBottom: '10px' }}>
-                <div style={{ fontSize: '20px', color: '#6b7280' }}>{iconMap[activity.icon]}</div>
-                <div style={{ flex: 1 }}>{activity.action}</div>
-                <div style={{ fontSize: '12px', color: '#9ca3af' }}>{activity.time}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Quick Actions */}
       <S.SectionTitle>
         <FaArrowRight /> Truy cập nhanh
