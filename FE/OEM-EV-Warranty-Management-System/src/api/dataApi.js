@@ -6,6 +6,7 @@ export const dataApi = {
   getCustomerById: (id) => apiClient(`/api/customers/${id}`),
   getCustomerByEmail: (email) => apiClient(`/api/customers/by-email?email=${encodeURIComponent(email)}`),
   getCustomerByPhone: (phone) => apiClient(`/api/customers/by-phone?phone=${encodeURIComponent(phone)}`),
+  searchCustomersByName: (name, page = 0, size = 10) => apiClient(`/api/customers/search?name=${encodeURIComponent(name)}&page=${page}&size=${size}`),
   createCustomer: (data) => apiClient('/api/customers', { method: 'POST', body: JSON.stringify(data) }),
   updateCustomer: (id, data) => apiClient(`/api/customers/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteCustomer: (id) => apiClient(`/api/customers/${id}`, { method: 'DELETE' }),

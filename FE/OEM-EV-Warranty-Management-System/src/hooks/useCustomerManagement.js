@@ -14,7 +14,7 @@ export const useCustomerManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [effectiveSearchTerm, setEffectiveSearchTerm] = useState('');
   const [pagination, setPagination] = useState({ currentPage: 0, pageSize: 10, totalPages: 0, totalElements: 0 });
-  const [searchType, setSearchType] = useState('name');
+  const [searchType, setSearchType] = useState('general');
 
   const fetchCustomers = useCallback(async () => {
     try {

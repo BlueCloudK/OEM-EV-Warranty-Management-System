@@ -13,7 +13,8 @@ export const PageContainer = styled.div`
 
 export const ContentWrapper = styled.div`
   max-width: 1400px;
-  margin: auto;
+  margin: 0 auto;
+  padding-right: 16px;
 `;
 
 export const Header = styled.div`
@@ -78,8 +79,9 @@ export const FilterContainer = styled.div`
 export const TableContainer = styled.div`
   background: #fff;
   border-radius: 12px;
-  overflow: hidden;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  padding: 0 12px 16px 12px;
+  overflow: hidden;
 `;
 
 export const Table = styled.table`
@@ -99,10 +101,10 @@ export const Th = styled.th`
 export const Td = styled.td`
   padding: 12px 15px;
   border-bottom: 1px solid #f3f4f6;
-  max-width: 200px;
+  max-width: 220px;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
 `;
 
 export const EmptyState = styled.div`
@@ -206,4 +208,40 @@ export const PaginationContainer = styled.div`
   background: white;
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+`;
+
+export const StatusBadge = styled.span`
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  min-width: 110px;
+  text-align: center;
+  display: inline-block;
+  white-space: nowrap;
+  background-color: ${({ $status }) => {
+    switch ($status) {
+      case 'SUBMITTED': return '#f59e0b';
+      case 'PENDING_PAYMENT': return '#f97316';
+      case 'PAYMENT_CONFIRMED': return '#06b6d4';
+      case 'MANAGER_REVIEW': return '#8b5cf6';
+      case 'PROCESSING': return '#3b82f6';
+      case 'COMPLETED': return '#16a34a';
+      case 'REJECTED': return '#dc2626';
+      default: return '#64748b';
+    }
+  }};
+`;
+
+export const DateCell = styled(Td)`
+  max-width: 140px;
+  min-width: 120px;
+  text-align: right;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: initial;
+  font-weight: 500;
+  color: #475569;
+  padding-right: 8px;
 `;

@@ -363,13 +363,13 @@ const EVMPartManagement = () => {
                     <S.Td>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(part.price)}</S.Td>
                     <S.Td>
                       {part.hasExtendedWarranty ? (
-                        <span style={{ color: '#2563eb', fontWeight: 'bold', background: '#dbeafe', padding: '4px 8px', borderRadius: '4px', fontSize: '12px' }}>
+                        <S.WarrantyBadge style={{ color: '#2563eb', background: '#dbeafe' }}>
                           BH Mở rộng
-                        </span>
+                        </S.WarrantyBadge>
                       ) : (
-                        <span style={{ color: '#6b7280', background: '#f3f4f6', padding: '4px 8px', borderRadius: '4px', fontSize: '12px' }}>
+                        <S.WarrantyBadge style={{ color: '#6b7280', background: '#f3f4f6' }}>
                           BH Xe
-                        </span>
+                        </S.WarrantyBadge>
                       )}
                     </S.Td>
                     <S.Td>

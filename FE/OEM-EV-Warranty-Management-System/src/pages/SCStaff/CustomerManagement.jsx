@@ -150,18 +150,17 @@ const CustomerManagement = () => {
             <S.Button $primary onClick={openCreateForm}><FaPlus /> Tạo khách hàng</S.Button>
           </S.HeaderTop>
           <S.SearchContainer>
-            <select 
-              value={searchType} 
+            <S.Select 
+              value={searchType}
               onChange={(e) => {
                 setSearchType(e.target.value);
-                setSearchTerm(''); // Clear search term when changing search type
+                setSearchTerm('');
               }}
-              style={{ marginRight: '10px', width: '120px', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
             >
-              <option value="general">Tìm theo tên</option>
-              <option value="email">Tìm theo Email</option>
-              <option value="phone">Tìm theo SĐT</option>
-            </select>
+              <option value="general">Tìm chung (Tên, Email, SĐT)</option>
+              <option value="email">Tìm chính xác theo Email</option>
+              <option value="phone">Tìm chính xác theo SĐT</option>
+            </S.Select>
             <S.Input 
               placeholder={getSearchPlaceholder()} 
               value={searchTerm} 

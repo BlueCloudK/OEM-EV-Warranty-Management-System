@@ -26,7 +26,7 @@ export default function SCStaffLayout() {
       <S.Sidebar $isCollapsed={sidebarCollapsed}>
         <S.SidebarHeader $isCollapsed={sidebarCollapsed}>
           <S.SidebarToggleButton onClick={() => setSidebarCollapsed(!sidebarCollapsed)}><FaBars size={16} /></S.SidebarToggleButton>
-          {!sidebarCollapsed && <div><div style={{ fontSize: 16, fontWeight: 600, color: "#f1f5f9" }}>Nhân viên TT</div><div style={{ fontSize: 12, color: "#94a3b8" }}>Bảng điều khiển</div></div>}
+          {!sidebarCollapsed && <div><div style={{ fontSize: 16, fontWeight: 600, color: "#f1f5f9" }}>Nhân viên</div><div style={{ fontSize: 12, color: "#94a3b8" }}>Bảng điều khiển</div></div>}
         </S.SidebarHeader>
         <div style={{ flex: 1, padding: sidebarCollapsed ? 8 : 16 }}>
           {sidebarItems.map((item, index) => (

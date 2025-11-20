@@ -55,6 +55,20 @@ const AdminWarrantyClaimsManagement = () => {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [selectedClaim, setSelectedClaim] = useState(null);
 
+  // Function to convert status to Vietnamese
+  const getStatusLabel = (status) => {
+    const statusMap = {
+      'SUBMITTED': 'Chờ duyệt',
+      'PENDING_PAYMENT': 'Chờ thanh toán',
+      'PAYMENT_CONFIRMED': 'Đã xác nhận thanh toán',
+      'MANAGER_REVIEW': 'Đã duyệt',
+      'PROCESSING': 'Đang xử lý',
+      'COMPLETED': 'Hoàn thành',
+      'REJECTED': 'Từ chối'
+    };
+    return statusMap[status] || status;
+  };
+
   const openRejectModal = (claim) => {
     setSelectedClaim(claim);
     setShowRejectModal(true);
@@ -84,13 +98,13 @@ const AdminWarrantyClaimsManagement = () => {
         <S.FilterContainer style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <S.Select value={filterStatus} onChange={(e) => handleFilterChange(e.target.value)}>
             <option value="all">Tất cả</option>
-            <option value="SUBMITTED">Chờ duyệt (SUBMITTED)</option>
-            <option value="PENDING_PAYMENT">Chờ thanh toán (PENDING_PAYMENT)</option>
-            <option value="PAYMENT_CONFIRMED">Đã xác nhận thanh toán (PAYMENT_CONFIRMED)</option>
-            <option value="MANAGER_REVIEW">Đã duyệt (MANAGER_REVIEW)</option>
-            <option value="PROCESSING">Đang xử lý (PROCESSING)</option>
-            <option value="COMPLETED">Hoàn thành (COMPLETED)</option>
-            <option value="REJECTED">Từ chối (REJECTED)</option>
+            <option value="SUBMITTED">Chờ duyệt</option>
+            <option value="PENDING_PAYMENT">Chờ thanh toán</option>
+            <option value="PAYMENT_CONFIRMED">Đã xác nhận thanh toán</option>
+            <option value="MANAGER_REVIEW">Đã duyệt</option>
+            <option value="PROCESSING">Đang xử lý</option>
+            <option value="COMPLETED">Hoàn thành</option>
+            <option value="REJECTED">Từ chối</option>
           </S.Select>
           <S.Button onClick={refreshClaims} disabled={loading} title="Làm mới dữ liệu">
             <FaSyncAlt style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} /> Làm mới
@@ -127,7 +141,7 @@ const AdminWarrantyClaimsManagement = () => {
                   <S.Td>{claim.vehicleVin}</S.Td>
                   <S.Td>{claim.partName}</S.Td>
                   <S.Td>{claim.description}</S.Td>
-                  <S.Td><S.StatusBadge $status={claim.status}>{claim.status}</S.StatusBadge></S.Td>
+                  <S.Td><S.StatusBadge $status={claim.status}>{getStatusLabel(claim.status)}</S.StatusBadge></S.Td>
                   <S.Td>{new Date(claim.claimDate).toLocaleDateString()}</S.Td>
                   <S.Td>
                     <div style={{ display: 'flex', gap: '8px' }}>

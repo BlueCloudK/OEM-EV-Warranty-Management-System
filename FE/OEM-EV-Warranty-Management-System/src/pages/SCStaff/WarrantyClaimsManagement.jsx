@@ -5,6 +5,20 @@ import * as S from './WarrantyClaimsManagement.styles';
 import { FaClipboardList, FaPlus, FaEdit, FaSpinner, FaEye, FaCheck, FaTrash } from 'react-icons/fa';
 import styled from 'styled-components';
 
+// Function to convert status to Vietnamese
+const getStatusLabel = (status) => {
+  const statusMap = {
+    'SUBMITTED': 'Chờ duyệt',
+    'PENDING_PAYMENT': 'Chờ thanh toán',
+    'PAYMENT_CONFIRMED': 'Đã xác nhận thanh toán',
+    'MANAGER_REVIEW': 'Đã duyệt',
+    'PROCESSING': 'Đang xử lý',
+    'COMPLETED': 'Hoàn thành',
+    'REJECTED': 'Từ chối'
+  };
+  return statusMap[status] || status;
+};
+
 // Modal wrapper for the PaidWarrantyClaimForm
 const ModalOverlay = styled.div`
   position: fixed;
@@ -62,7 +76,7 @@ const ClaimDetailModal = ({ isOpen, onClose, claim }) => {
       <S.ModalContent onClick={(e) => e.stopPropagation()}>
         <h2>Chi tiết Yêu cầu Bảo hành #{claim.warrantyClaimId}</h2>
         <div style={{ marginTop: '20px' }}>
-          <p><strong>Trạng thái:</strong> {claim.status}</p>
+          <p><strong>Trạng thái:</strong> {getStatusLabel(claim.status)}</p>
           <p><strong>Ngày tạo:</strong> {new Date(claim.claimDate).toLocaleDateString('vi-VN')}</p>
           <p><strong>Khách hàng:</strong> {claim.customerName || 'N/A'}</p>
           <p><strong>Xe (VIN):</strong> {claim.vehicleVin || 'N/A'}</p>
@@ -414,7 +428,7 @@ const WarrantyClaimsManagement = () => {
               <option value="SUBMITTED">Tiếp nhận</option>
               <option value="PENDING_PAYMENT">Chờ thanh toán</option>
               <option value="PAYMENT_CONFIRMED">Đã xác nhận thanh toán</option>
-              <option value="MANAGER_REVIEW">Manager đang xem xét</option>
+              <option value="MANAGER_REVIEW">Đã duyệt</option>
               <option value="PROCESSING">Đang xử lý</option>
               <option value="COMPLETED">Hoàn thành</option>
               <option value="REJECTED">Từ chối</option>
@@ -467,8 +481,12 @@ const WarrantyClaimsManagement = () => {
                         '-'
                       )}
                     </S.Td>
-                    <S.Td>{claim.status}</S.Td>
-                    <S.Td>{new Date(claim.claimDate).toLocaleDateString()}</S.Td>
+                    <S.Td>
+                      <S.StatusBadge $status={claim.status}>
+                        {getStatusLabel(claim.status)}
+                      </S.StatusBadge>
+                    </S.Td>
+                    <S.DateCell>{new Date(claim.claimDate).toLocaleDateString('vi-VN')}</S.DateCell>
                     <S.Td>
                       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                         <S.Button $small onClick={() => handleViewClaim(claim)}>

@@ -7,6 +7,7 @@ import {
 } from "react-icons/fa";
 import { recallRequestsApi } from "../../api/recallRequests";
 import { recallResponsesApi } from "../../api/recallResponses";
+import { dataApi } from "../../api/dataApi";
 
 export default function AdminRecallManagement() {
   const [recalls, setRecalls] = useState([]);
@@ -186,7 +187,28 @@ export default function AdminRecallManagement() {
       setLoadingResponses(true);
       const data = await recallResponsesApi.getByCampaign(recallRequestId);
       console.log('📋 Recall Responses loaded:', data);
-      setResponses(data || []);
+      
+      // Enrich responses with vehicle and customer details
+      const enrichedResponses = await Promise.all(
+        (data || []).map(async (response) => {
+          try {
+            if (response.vehicleId) {
+              const vehicleDetails = await dataApi.getVehicleById(response.vehicleId);
+              console.log('🚗 Vehicle details for', response.vehicleId, ':', vehicleDetails);
+              return {
+                ...response,
+                customerName: vehicleDetails.customerName || 'N/A',
+              };
+            }
+            return response;
+          } catch (error) {
+            console.error('Error fetching vehicle details for', response.vehicleId, ':', error);
+            return response;
+          }
+        })
+      );
+      
+      setResponses(enrichedResponses);
     } catch (error) {
       console.error('Error fetching recall responses:', error);
       alert('Không thể tải danh sách responses');
@@ -697,11 +719,11 @@ export default function AdminRecallManagement() {
                       <S.TableRow key={response.recallResponseId}>
                         <S.TableCell>#{response.recallResponseId}</S.TableCell>
                         <S.TableCell>
-                          <div>{response.vehicleModel || 'N/A'}</div>
-                          <small>{response.vehicleVin || 'N/A'}</small>
+                          <div style={{ fontWeight: '500' }}>{response.vehicleModel || 'N/A'}</div>
+                          <small style={{ color: '#7f8c8d', fontFamily: 'monospace' }}>{response.vehicleVin || 'N/A'}</small>
                         </S.TableCell>
                         <S.TableCell>
-                          {response.customerName || 'N/A'}
+                          <div style={{ fontWeight: '500' }}>{response.customerName || 'N/A'}</div>
                         </S.TableCell>
                         <S.TableCell>
                           {response.createdAt ? new Date(response.createdAt).toLocaleDateString('vi-VN') : 'N/A'}
