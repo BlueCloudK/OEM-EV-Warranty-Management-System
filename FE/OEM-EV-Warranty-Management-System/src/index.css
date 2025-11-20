@@ -367,3 +367,39 @@ tbody tr:last-child td {
   color: #991b1b;
   border: 1px solid #fecaca;
 }
+
+/* Global footer */
+.footer {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 24px 32px;
+  margin-top: 48px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  color: #475569;
+  font-size: 14px;
+  line-height: 1.6;
+  text-align: left;
+  position: relative;
+  z-index: 900;
+}
+
+.footer .container {
+  width: 100%;
+  max-width: 1360px;
+  margin: 0 auto;
+}
+
+body.has-sidebar .footer {
+  margin-left: 280px;
+  width: calc(100% - 280px);
+  padding-left: 32px;
+}
+
+@media (max-width: 1023px) {
+  body.has-sidebar .footer {
+    margin-left: 0;
+    width: 100%;
+    padding-left: 24px;
+  }
+}

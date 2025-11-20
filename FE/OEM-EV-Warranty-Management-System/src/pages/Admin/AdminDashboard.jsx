@@ -134,69 +134,6 @@ export default function AdminDashboard() {
         })()}
       </S.ChartContainer>
 
-      <S.ChartContainer>
-        <S.SectionHeader>
-          <S.SectionIntro>
-            <h3>Tiến độ chiến dịch Recall</h3>
-            <S.SectionSubtitle>Theo từng chiến dịch đang hoạt động</S.SectionSubtitle>
-          </S.SectionIntro>
-        </S.SectionHeader>
-        {chartData.recallProgressChart && chartData.recallProgressChart.length > 0 ? (
-          chartData.recallProgressChart.map((campaign, index) => {
-            const total = campaign.total || 0;
-            const completedPercent = total > 0 ? (campaign.completed / total) * 100 : 0;
-            const notifiedPercent = total > 0 ? (campaign.notified / total) * 100 : 0;
-            const pendingPercent = total > 0 ? (campaign.pending / total) * 100 : 0;
-
-            return (
-              <S.SectionCard key={index} style={{ boxShadow: "none", border: "none", padding: 0, background: "transparent" }}>
-                <S.SectionHeader>
-                  <S.SectionIntro>
-                    <h3 style={{ fontSize: 16 }}>{campaign.name}</h3>
-                    <S.SectionSubtitle>Tổng {total} xe bị ảnh hưởng</S.SectionSubtitle>
-                  </S.SectionIntro>
-                </S.SectionHeader>
-                <S.ProgressShell style={{ height: 32 }}>
-                  {campaign.completed > 0 && (
-                    <S.ProgressSegment $percent={completedPercent} $color="#10b981">
-                      {completedPercent > 10 && campaign.completed}
-                    </S.ProgressSegment>
-                  )}
-                  {campaign.notified > 0 && (
-                    <S.ProgressSegment $percent={notifiedPercent} $color="#3b82f6">
-                      {notifiedPercent > 10 && campaign.notified}
-                    </S.ProgressSegment>
-                  )}
-                  {campaign.pending > 0 && (
-                    <S.ProgressSegment $percent={pendingPercent} $color="#ef4444">
-                      {pendingPercent > 10 && campaign.pending}
-                    </S.ProgressSegment>
-                  )}
-                </S.ProgressShell>
-                <S.LegendRow style={{ marginTop: 12 }}>
-                  <S.LegendItem>
-                    <S.LegendSwatch $color="#10b981" />
-                    <S.LegendText>Đã xác nhận: <strong>{campaign.completed}</strong> ({completedPercent.toFixed(1)}%)</S.LegendText>
-                  </S.LegendItem>
-                  <S.LegendItem>
-                    <S.LegendSwatch $color="#3b82f6" />
-                    <S.LegendText>Đã thông báo: <strong>{campaign.notified}</strong> ({notifiedPercent.toFixed(1)}%)</S.LegendText>
-                  </S.LegendItem>
-                  <S.LegendItem>
-                    <S.LegendSwatch $color="#ef4444" />
-                    <S.LegendText>Chưa xử lý: <strong>{campaign.pending}</strong> ({pendingPercent.toFixed(1)}%)</S.LegendText>
-                  </S.LegendItem>
-                </S.LegendRow>
-              </S.SectionCard>
-            );
-          })
-        ) : (
-          <div style={{ textAlign: "center", padding: "40px", color: "#94a3b8" }}>
-            <p>Chưa có chiến dịch recall nào</p>
-          </div>
-        )}
-      </S.ChartContainer>
-
       <S.RecentActivityContainer>
         <h3><FaHistory /> Hoạt động gần đây</h3>
         {dataLoading ? (
