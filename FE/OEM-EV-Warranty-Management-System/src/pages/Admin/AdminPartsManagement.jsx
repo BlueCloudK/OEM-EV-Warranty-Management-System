@@ -291,83 +291,7 @@ const PartFormModal = ({ isOpen, onClose, onSubmit, part }) => {
   );
 };
 
-const ImportPartsModal = ({ isOpen, onClose, onImport }) => {
-  const [file, setFile] = useState(null);
-  const [error, setError] = useState(null);
-  const [processing, setProcessing] = useState(false);
-  const [results, setResults] = useState(null);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!file) {
-      setError('Vui lòng chọn file CSV');
-      return;
-    }
-    setProcessing(true);
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const { success, data, message } = await onImport(formData);
-    if (success) {
-      setResults(data);
-      setFile(null);
-      setError(null);
-    } else {
-      setError(message || 'Có lỗi xảy ra khi import CSV');
-    }
-    setProcessing(false);
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <S.ModalOverlay>
-      <S.ModalContent style={{ maxHeight: '90vh', overflowY: 'auto' }}>
-        <h2>Import phụ tùng từ CSV</h2>
-        <form onSubmit={handleSubmit}>
-          <S.FormGroup>
-            <S.Label>Chọn file CSV</S.Label>
-            <input
-              type="file"
-              accept=".csv"
-              onChange={(e) => {
-                setFile(e.target.files[0]);
-                setResults(null);
-              }}
-            />
-          </S.FormGroup>
-          {error && <S.ErrorText>{error}</S.ErrorText>}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-            <S.Button type="button" onClick={onClose}>Hủy</S.Button>
-            <S.Button $primary type="submit" disabled={processing}>
-              {processing ? 'Đang xử lý...' : 'Import'}
-            </S.Button>
-          </div>
-        </form>
-
-        {results && (
-          <div style={{ marginTop: '20px', padding: '16px', borderRadius: '8px', background: '#f9fafb', border: '1px solid #e5e7eb' }}>
-            <h3 style={{ marginTop: 0 }}>Kết quả Import</h3>
-            <p>✅ Thành công: {results.successCount}</p>
-            <p>❌ Thất bại: {results.failureCount}</p>
-            {results.failures && results.failures.length > 0 && (
-              <div style={{ marginTop: '12px', maxHeight: '200px', overflowY: 'auto', border: '1px solid #e5e7eb', padding: '12px', borderRadius: '8px', background: '#fff' }}>
-                <h4 style={{ marginTop: 0 }}>Chi tiết lỗi</h4>
-                <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '14px' }}>
-                  {results.failures.map((failure, index) => (
-                    <li key={index} style={{ marginBottom: '6px', color: '#ef4444' }}>
-                      Dòng {failure.row}: {failure.reason}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        )}
-      </S.ModalContent>
-    </S.ModalOverlay>
-  );
-};
 
 // Main Component with new Authentication Flow
 const AdminPartsManagement = () => {
@@ -376,7 +300,6 @@ const AdminPartsManagement = () => {
   const {
     parts, loading: dataLoading, error, pagination, searchTerm, setSearchTerm,
     handleSearch, handleCreateOrUpdate, handleDelete, handlePageChange,
-    handleImportParts
   } = useAdminPartsManagement();
 
   const [showForm, setShowForm] = useState(false);
@@ -410,7 +333,6 @@ const AdminPartsManagement = () => {
           <S.HeaderTop>
             <S.HeaderTitle><FaCogs /> Quản lý Phụ tùng (Admin)</S.HeaderTitle>
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-              <S.Button onClick={() => setShowImportModal(true)}><FaFileImport /> Import CSV</S.Button>
               <S.Button $primary onClick={openCreateForm}><FaPlus /> Tạo Phụ tùng</S.Button>
             </div>
           </S.HeaderTop>
@@ -514,11 +436,7 @@ const AdminPartsManagement = () => {
           part={selectedPart}
         />
 
-        <ImportPartsModal
-          isOpen={showImportModal}
-          onClose={() => setShowImportModal(false)}
-          onImport={handleImportParts}
-        />
+        
       </S.ContentWrapper>
     </S.PageContainer>
   );
