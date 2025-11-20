@@ -126,7 +126,7 @@ public class InstalledPartController {
      * @return {@link ResponseEntity} với HTTP status 204 No Content nếu xóa thành công.
      */
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF')")
     public ResponseEntity<Void> deleteInstalledPart(@PathVariable Long id) {
         logger.info("Delete installed part request: {}", id);
         // Thiết kế: Tầng Service sẽ chịu trách nhiệm xử lý các ràng buộc trước khi xóa.

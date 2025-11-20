@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -88,6 +89,36 @@ public class InstalledPart {
      */
     @Column(name = "warranty_mileage_limit")
     private Integer warrantyMileageLimit;
+
+    // ======= SOFT DELETE FIELDS =======
+
+    /**
+     * Trạng thái hoạt động của linh kiện đã lắp đặt.
+     * <p>
+     * <strong>Soft Delete Pattern:</strong>
+     * <ul>
+     *     <li>{@code true} (default): Linh kiện đang hoạt động, có thể tạo warranty claim.</li>
+     *     <li>{@code false}: Linh kiện đã bị "xóa mềm" (soft delete), bị ẩn khỏi hệ thống.
+     *     Không thể tạo warranty claim mới cho linh kiện này.</li>
+     * </ul>
+     * <p>
+     * <strong>Tại sao không xóa thật (hard delete):</strong>
+     * <ul>
+     *     <li>Bảo toàn dữ liệu lịch sử và tính toàn vẹn của database.</li>
+     *     <li>Tránh lỗi foreign key constraint với các bảng liên quan (WarrantyClaim).</li>
+     *     <li>Cho phép khôi phục (restore) nếu cần.</li>
+     * </ul>
+     */
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = true;
+
+    /**
+     * Thời điểm linh kiện bị đánh dấu là không hoạt động (soft delete).
+     * <p>
+     * <strong>Audit Trail:</strong> Lưu lại thời gian để có thể audit và báo cáo.
+     */
+    @Column(name = "removed_at")
+    private LocalDateTime removedAt;
 
     /**
      * Mối quan hệ N-1 tới entity {@link Part}.
