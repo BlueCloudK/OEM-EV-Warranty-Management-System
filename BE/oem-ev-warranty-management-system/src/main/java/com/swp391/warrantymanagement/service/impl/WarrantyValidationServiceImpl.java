@@ -247,6 +247,7 @@ public class WarrantyValidationServiceImpl implements WarrantyValidationService 
                 .vehicleVin(vehicle.getVehicleVin())
                 .vehicleName(vehicle.getVehicleName())
                 .expirationReasons(detailedReasons)
+                .gracePeriodDays(gracePeriod)
                 .build();
     }
 
@@ -334,6 +335,7 @@ public class WarrantyValidationServiceImpl implements WarrantyValidationService 
                 .vehicleVin(vehicle.getVehicleVin())
                 .vehicleName(vehicle.getVehicleName())
                 .expirationReasons(buildExpirationReasons(status, daysRemaining, mileageRemaining))
+                .gracePeriodDays(DEFAULT_GRACE_PERIOD_DAYS)
                 .build();
     }
 
