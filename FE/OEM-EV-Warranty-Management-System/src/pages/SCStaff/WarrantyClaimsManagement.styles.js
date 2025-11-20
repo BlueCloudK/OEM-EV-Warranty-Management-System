@@ -207,3 +207,27 @@ export const PaginationContainer = styled.div`
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 `;
+
+export const StatusBadge = styled.span`
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  min-width: 110px;
+  text-align: center;
+  display: inline-block;
+  white-space: nowrap;
+  background-color: ${({ $status }) => {
+    switch ($status) {
+      case 'SUBMITTED': return '#f59e0b';
+      case 'PENDING_PAYMENT': return '#f97316';
+      case 'PAYMENT_CONFIRMED': return '#06b6d4';
+      case 'MANAGER_REVIEW': return '#8b5cf6';
+      case 'PROCESSING': return '#3b82f6';
+      case 'COMPLETED': return '#16a34a';
+      case 'REJECTED': return '#dc2626';
+      default: return '#64748b';
+    }
+  }};
+`;
