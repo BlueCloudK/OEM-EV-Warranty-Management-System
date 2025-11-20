@@ -299,11 +299,9 @@ const AdminServiceCenters = () => {
                     <S.StatBadge>
                       <FaClipboardList /> {center.totalClaims || 0} claims
                     </S.StatBadge>
-                    {center.averageRating && (
-                      <S.StatBadge>
-                        <FaStar /> {center.averageRating.toFixed(1)}
-                      </S.StatBadge>
-                    )}
+                    <S.StatBadge>
+                      <FaStar /> {center.averageRating ? `${center.averageRating.toFixed(1)} ` : 'Chưa có đánh giá'}
+                    </S.StatBadge>
                   </S.StatsRow>
                 </S.CardBody>
               </S.Card>
