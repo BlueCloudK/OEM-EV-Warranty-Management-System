@@ -346,11 +346,11 @@ const VehicleManagement = () => {
             <S.Button primary onClick={openCreateForm}><FaPlus /> Tạo xe mới</S.Button>
           </S.HeaderTop>
           <S.SearchContainer>
-            <select value={searchType} onChange={(e) => setSearchType(e.target.value)}>
-              <option value="general">Tìm tên xe</option>
-              <option value="vin">Số VIN</option>
-              <option value="model">Model Xe</option>
-            </select>
+            <S.SearchSelect value={searchType} onChange={(e) => setSearchType(e.target.value)}>
+              <option value="general">Tìm chung (Tên, VIN, Model)</option>
+              <option value="vin">Tìm theo Số VIN</option>
+              <option value="model">Tìm theo Model</option>
+            </S.SearchSelect>
             <S.Input placeholder={getSearchPlaceholder()} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSearch()} />
             <S.Button small onClick={handleSearch}><FaSearch /> Tìm kiếm</S.Button>
           </S.SearchContainer>

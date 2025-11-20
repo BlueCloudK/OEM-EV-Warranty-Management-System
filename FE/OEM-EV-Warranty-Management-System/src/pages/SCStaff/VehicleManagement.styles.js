@@ -65,6 +65,24 @@ export const SearchContainer = styled.div`
   flex-wrap: wrap;
 `;
 
+export const SearchSelect = styled.select`
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 14px;
+  min-width: 200px;
+  color: #0f172a;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+  transition: border-color .2s ease, box-shadow .2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  }
+`;
+
 export const TableContainer = styled.div`
   background: #fff;
   border-radius: 12px;
