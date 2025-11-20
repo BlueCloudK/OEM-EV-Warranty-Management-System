@@ -404,13 +404,33 @@ export const Star = styled.button`
   border: none;
   cursor: pointer;
   padding: 4px;
-  color: ${({ $filled }) => $filled ? '#fbbf24' : '#d1d5db'};
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+
+  svg {
+    color: ${({ $filled }) => $filled ? '#fbbf24' : '#d1d5db'};
+    transition: all 0.2s ease;
+    width: 1em;
+    height: 1em;
+  }
 
   &:hover {
-    color: #fbbf24;
     transform: scale(1.1);
+    
+    svg {
+      color: #fbbf24;
+    }
   }
+
+  /* Đảm bảo màu vàng khi được chọn */
+  ${({ $filled }) => $filled && `
+    svg {
+      color: #fbbf24 !important;
+    }
+  `}
 `;
 
 export const ModalFooter = styled.div`
