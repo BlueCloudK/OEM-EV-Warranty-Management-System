@@ -11,7 +11,7 @@ import {
 const FeedbackModal = ({ isOpen, onClose, feedback, onSubmit, warrantyClaims }) => {
   const [formData, setFormData] = useState({
     warrantyClaimId: '',
-    rating: 5,
+    rating: 0, // Ban đầu không có sao nào được chọn
     comments: ''
   });
   const [hoverRating, setHoverRating] = useState(0);
@@ -20,13 +20,13 @@ const FeedbackModal = ({ isOpen, onClose, feedback, onSubmit, warrantyClaims }) 
     if (feedback) {
       setFormData({
         warrantyClaimId: feedback.warrantyClaim?.warrantyClaimId || '',
-        rating: feedback.rating || 5,
+        rating: feedback.rating || 0, // Giữ nguyên rating của feedback khi edit
         comments: feedback.comment || '' // Backend uses 'comment' not 'comments'
       });
     } else {
       setFormData({
         warrantyClaimId: '',
-        rating: 5,
+        rating: 0, // Ban đầu không có sao nào được chọn
         comments: ''
       });
     }
@@ -38,22 +38,42 @@ const FeedbackModal = ({ isOpen, onClose, feedback, onSubmit, warrantyClaims }) 
       alert('Vui lòng chọn yêu cầu bảo hành');
       return;
     }
+    if (!formData.rating || formData.rating === 0) {
+      alert('Vui lòng chọn đánh giá (sao)');
+      return;
+    }
     onSubmit(formData);
   };
 
+  const handleStarClick = (star) => {
+    // Update rating và reset hover cùng lúc để đảm bảo hiển thị đúng ngay lập tức
+    setFormData(prev => ({ ...prev, rating: star }));
+    setHoverRating(0);
+  };
+
   const renderStars = () => {
-    return [1, 2, 3, 4, 5].map((star) => (
-      <S.Star
-        key={star}
-        type="button"
-        $filled={star <= (hoverRating || formData.rating)}
-        onMouseEnter={() => setHoverRating(star)}
-        onMouseLeave={() => setHoverRating(0)}
-        onClick={() => setFormData({ ...formData, rating: star })}
-      >
-        <FaStar />
-      </S.Star>
-    ));
+    // Ưu tiên hiển thị hoverRating khi đang hover (hoverRating > 0)
+    // Nếu không hover (hoverRating = 0), hiển thị rating đã chọn
+    const displayRating = hoverRating > 0 ? hoverRating : formData.rating;
+    
+    return [1, 2, 3, 4, 5].map((star) => {
+      // Ngôi sao được tô màu vàng nếu star <= displayRating
+      // Ví dụ: click vào sao 5 -> displayRating = 5 -> sao 1,2,3,4,5 đều <= 5 -> tất cả đều vàng
+      const isFilled = star <= displayRating;
+      
+      return (
+        <S.Star
+          key={star}
+          type="button"
+          $filled={isFilled}
+          onMouseEnter={() => setHoverRating(star)}
+          onMouseLeave={() => setHoverRating(0)}
+          onClick={() => handleStarClick(star)}
+        >
+          <FaStar />
+        </S.Star>
+      );
+    });
   };
 
   if (!isOpen) return null;
@@ -97,9 +117,23 @@ const FeedbackModal = ({ isOpen, onClose, feedback, onSubmit, warrantyClaims }) 
 
             <S.FormGroup>
               <S.Label>Đánh giá *</S.Label>
-              <S.RatingSelector>
-                {renderStars()}
-              </S.RatingSelector>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                <S.RatingSelector>
+                  {renderStars()}
+                </S.RatingSelector>
+                {formData.rating > 0 && (
+                  <span style={{ 
+                    fontSize: '14px', 
+                    color: '#6b7280', 
+                    fontWeight: 500,
+                    padding: '4px 12px',
+                    background: '#f3f4f6',
+                    borderRadius: '6px'
+                  }}>
+                    {formData.rating} / 5 sao
+                  </span>
+                )}
+              </div>
             </S.FormGroup>
 
             <S.FormGroup>

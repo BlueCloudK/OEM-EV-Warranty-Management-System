@@ -85,6 +85,11 @@ export default function App() {
     }
   }, [isDashboardPage]);
 
+  // Scroll to top when route changes
+  React.useLayoutEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [location.pathname]);
+
   return (
     <>
       <Navbar />

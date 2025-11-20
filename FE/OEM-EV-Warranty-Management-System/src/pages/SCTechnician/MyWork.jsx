@@ -3,6 +3,20 @@ import { dataApi } from '../../api/dataApi';
 import * as S from './MyWork.styles';
 import { FaClipboardCheck, FaSpinner, FaClock, FaCheckCircle, FaTasks, FaExclamationCircle, FaChartLine, FaCalendarDay, FaEye, FaPlay, FaFilter, FaExclamationTriangle } from 'react-icons/fa';
 
+// Function to convert status to Vietnamese
+const getStatusLabel = (status) => {
+  const statusMap = {
+    SUBMITTED: "Chờ duyệt",
+    PENDING_PAYMENT: "Chờ thanh toán",
+    PAYMENT_CONFIRMED: "Đã xác nhận thanh toán",
+    MANAGER_REVIEW: "Chờ xử lý",
+    PROCESSING: "Đang xử lý",
+    COMPLETED: "Hoàn thành",
+    REJECTED: "Từ chối",
+  };
+  return statusMap[status] || status;
+};
+
 const ClaimDetailModal = ({ isOpen, onClose, claim, onStartProcessing, onComplete }) => {
   const [completionNote, setCompletionNote] = useState('');
   const [startNote, setStartNote] = useState('');
@@ -44,7 +58,7 @@ const ClaimDetailModal = ({ isOpen, onClose, claim, onStartProcessing, onComplet
         <S.DetailGrid>
           <S.DetailItem>
             <S.DetailLabel>Trạng thái:</S.DetailLabel>
-            <S.StatusBadge $status={claim.status}>{claim.status}</S.StatusBadge>
+            <S.StatusBadge $status={claim.status}>{getStatusLabel(claim.status)}</S.StatusBadge>
           </S.DetailItem>
           <S.DetailItem>
             <S.DetailLabel>Ngày tạo:</S.DetailLabel>
@@ -474,7 +488,7 @@ const MyWork = () => {
                         <S.Td>{claim.claimDate ? new Date(claim.claimDate).toLocaleDateString('vi-VN') : 'N/A'}</S.Td>
                         <S.Td>
                           <S.StatusBadge $status={claim.status}>
-                            {claim.status}
+                            {getStatusLabel(claim.status)}
                           </S.StatusBadge>
                         </S.Td>
                         <S.Td>

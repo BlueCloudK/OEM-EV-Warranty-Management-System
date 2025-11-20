@@ -199,7 +199,7 @@ const InstallPartFormModal = ({ isOpen, onClose, onSubmit, vehicle, parts }) => 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    if (errors[name]) setErrors(prev => ({...prev, [name]: null}));
+    if (errors[name]) setErrors(prev => ({ ...prev, [name]: null }));
   };
 
   const handleSubmit = async (e) => {
@@ -283,7 +283,7 @@ const VehicleManagement = () => {
   const navigate = useNavigate();
   const {
     vehicles, customers, parts, installedParts, loading, error, searchTerm, setSearchTerm,
-    searchType, setSearchType, handleSearch, handleCreateOrUpdate, handleDelete, handleInstallPart, fetchInstalledPartsForVehicle, clearInstalledParts,
+    searchType, setSearchType, handleSearch, handleCreateOrUpdate, handleDelete, handleInstallPart, handleDeleteInstalledPart, fetchInstalledPartsForVehicle, clearInstalledParts,
     pagination, handlePageChange
   } = useVehicleManagement();
 
@@ -404,6 +404,7 @@ const VehicleManagement = () => {
                                     <S.Th>Ngày lắp đặt</S.Th>
                                     <S.Th>Ngày hết hạn BH</S.Th>
                                     <S.Th>Trạng thái BH</S.Th>
+                                    <S.Th>Thao tác</S.Th>
                                   </tr>
                                 </thead>
                                 <tbody>
@@ -431,6 +432,15 @@ const VehicleManagement = () => {
                                               Còn {daysRemaining} ngày
                                             </span>
                                           )}
+                                        </S.Td>
+                                        <S.Td>
+                                          <S.Button
+                                            small
+                                            danger
+                                            onClick={() => handleDeleteInstalledPart(part.installedPartId, vehicle.vehicleId)}
+                                          >
+                                            <FaTrash /> Ẩn
+                                          </S.Button>
                                         </S.Td>
                                       </tr>
                                     );
@@ -477,19 +487,19 @@ const VehicleManagement = () => {
           </S.PaginationContainer>
         )}
 
-        <VehicleFormModal 
-          isOpen={showForm} 
-          onClose={() => setShowForm(false)} 
-          onSubmit={handleCreateOrUpdate} 
-          vehicle={selectedVehicle} 
+        <VehicleFormModal
+          isOpen={showForm}
+          onClose={() => setShowForm(false)}
+          onSubmit={handleCreateOrUpdate}
+          vehicle={selectedVehicle}
           customers={customers}
         />
 
-        <InstallPartFormModal 
-          isOpen={showInstallPartForm} 
-          onClose={() => setShowInstallPartForm(false)} 
-          onSubmit={handleInstallPart} 
-          vehicle={selectedVehicle} 
+        <InstallPartFormModal
+          isOpen={showInstallPartForm}
+          onClose={() => setShowInstallPartForm(false)}
+          onSubmit={handleInstallPart}
+          vehicle={selectedVehicle}
           parts={parts}
         />
 

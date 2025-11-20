@@ -5,7 +5,7 @@ export const useVehicleManagement = () => {
   const [vehicles, setVehicles] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [parts, setParts] = useState([]);
-  const [installedParts, setInstalledParts] = useState([]); 
+  const [installedParts, setInstalledParts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -67,7 +67,7 @@ export const useVehicleManagement = () => {
 
   const fetchCustomers = useCallback(async () => {
     try {
-      const response = await dataApi.getAllCustomers({ size: 1000 }); 
+      const response = await dataApi.getAllCustomers({ size: 1000 });
       if (response && response.content) {
         setCustomers(response.content);
       }
@@ -76,9 +76,9 @@ export const useVehicleManagement = () => {
     }
   }, []);
 
-  const fetchParts = useCallback(async () => { 
+  const fetchParts = useCallback(async () => {
     try {
-      const response = await dataApi.getAllParts({ size: 1000 }); 
+      const response = await dataApi.getAllParts({ size: 1000 });
       if (response && response.content) {
         setParts(response.content);
       }
@@ -87,7 +87,7 @@ export const useVehicleManagement = () => {
     }
   }, []);
 
-  const fetchInstalledPartsForVehicle = useCallback(async (vehicleId) => { 
+  const fetchInstalledPartsForVehicle = useCallback(async (vehicleId) => {
     try {
       const response = await dataApi.getInstalledPartsByVehicle(vehicleId);
       if (response && response.content) {
@@ -108,7 +108,7 @@ export const useVehicleManagement = () => {
   useEffect(() => {
     fetchVehicles();
     fetchCustomers();
-    fetchParts(); 
+    fetchParts();
   }, [fetchVehicles, fetchCustomers, fetchParts]);
 
   const handleSearch = () => {
@@ -124,7 +124,7 @@ export const useVehicleManagement = () => {
       } else {
         await dataApi.createVehicle(formData);
       }
-      fetchVehicles(); 
+      fetchVehicles();
       return { success: true };
     } catch (err) {
       console.error(`Error ${isEditing ? 'updating' : 'creating'} vehicle:`, err);
@@ -133,17 +133,18 @@ export const useVehicleManagement = () => {
   };
 
   const handleDelete = async (vehicleId) => {
-    if (await window.confirm('Bạn có chắc chắn muốn xóa xe này không?')) {
-        try {
-            await dataApi.deleteVehicle(vehicleId);
-            fetchVehicles(); 
-        } catch (err) {
-            alert(`Lỗi khi xóa xe: ${err.message}`);
-        }
+    const confirmed = await window.confirm('Bạn có chắc chắn muốn xóa xe này không?');
+    if (confirmed) {
+      try {
+        await dataApi.deleteVehicle(vehicleId);
+        fetchVehicles();
+      } catch (err) {
+        alert(`Lỗi khi xóa xe: ${err.message}`);
+      }
     }
   };
 
-  const handleInstallPart = async (formData) => { 
+  const handleInstallPart = async (formData) => {
     try {
       await dataApi.createInstalledPart(formData);
       return { success: true };
@@ -153,6 +154,24 @@ export const useVehicleManagement = () => {
     }
   };
 
+  const handleDeleteInstalledPart = async (installedPartId, vehicleId) => {
+    const confirmed = await window.confirm('Bạn có chắc chắn muốn ẩn phụ tùng này không? Phụ tùng sẽ không thể tạo yêu cầu bảo hành mới.');
+    if (confirmed) {
+      try {
+        await dataApi.deleteInstalledPart(installedPartId);
+        // Refresh installed parts list for this vehicle
+        await fetchInstalledPartsForVehicle(vehicleId);
+        alert('Phụ tùng đã được ẩn thành công.');
+        return { success: true };
+      } catch (err) {
+        console.error("Error removing installed part:", err);
+        alert(`Lỗi khi ẩn phụ tùng: ${err.message}`);
+        return { success: false, message: err.message || "Đã xảy ra lỗi." };
+      }
+    }
+    return { success: false };
+  };
+
   const handlePageChange = (newPage) => {
     setPagination(prev => ({ ...prev, currentPage: newPage }));
   };
@@ -160,20 +179,21 @@ export const useVehicleManagement = () => {
   return {
     vehicles,
     customers,
-    parts, 
-    installedParts, 
+    parts,
+    installedParts,
     loading,
     error,
     pagination,
-    searchTerm, 
+    searchTerm,
     setSearchTerm,
-    searchType, 
+    searchType,
     setSearchType,
     handleSearch,
     handleCreateOrUpdate,
     handleDelete,
-    handleInstallPart, 
-    fetchInstalledPartsForVehicle, 
+    handleInstallPart,
+    handleDeleteInstalledPart,
+    fetchInstalledPartsForVehicle,
     clearInstalledParts, // Expose clear function
     handlePageChange,
   };

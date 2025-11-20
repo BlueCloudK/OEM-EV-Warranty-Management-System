@@ -124,4 +124,10 @@ public class WarrantyValidationResponseDTO {
      * Các lý do hết hạn bảo hành (nếu có)
      */
     private String expirationReasons;
+
+    /**
+     * Số ngày grace period được áp dụng cho part này
+     * (180 ngày mặc định, hoặc custom value từ part)
+     */
+    private Integer gracePeriodDays;
 }

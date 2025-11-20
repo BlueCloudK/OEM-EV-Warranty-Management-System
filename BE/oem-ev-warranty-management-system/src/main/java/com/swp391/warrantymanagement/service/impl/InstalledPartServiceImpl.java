@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -38,13 +39,14 @@ public class InstalledPartServiceImpl implements InstalledPartService {
 
     /**
      * Lấy tất cả installed parts với pagination.
+     * Chỉ trả về những installed parts đang hoạt động (isActive = true).
      *
      * @param pageable pagination parameters
-     * @return paged response of installed parts
+     * @return paged response of active installed parts
      */
     @Override
     public PagedResponse<InstalledPartResponseDTO> getAllInstalledParts(Pageable pageable) {
-        Page<InstalledPart> installedPartPage = installedPartRepository.findAll(pageable);
+        Page<InstalledPart> installedPartPage = installedPartRepository.findByIsActiveTrue(pageable);
         List<InstalledPartResponseDTO> responseDTOs = InstalledPartMapper.toResponseDTOList(
             installedPartPage.getContent());
 
@@ -134,7 +136,15 @@ public class InstalledPartServiceImpl implements InstalledPartService {
     }
 
     /**
-     * Xóa installed part record (hard delete).
+     * Xóa mềm (soft delete) installed part - đánh dấu là không hoạt động thay vì xóa thật.
+     * <p>
+     * <strong>Lý do dùng Soft Delete:</strong>
+     * <ul>
+     *     <li>Bảo toàn dữ liệu lịch sử và tính toàn vẹn của database</li>
+     *     <li>Tránh lỗi foreign key constraint với WarrantyClaim và các bảng liên quan</li>
+     *     <li>Cho phép khôi phục (restore) nếu cần</li>
+     *     <li>InstalledPart bị soft delete sẽ không thể tạo warranty claim mới</li>
+     * </ul>
      *
      * @param id installed part ID
      * @throws ResourceNotFoundException nếu không tìm thấy
@@ -142,22 +152,26 @@ public class InstalledPartServiceImpl implements InstalledPartService {
     @Override
     @Transactional
     public void deleteInstalledPart(Long id) {
-        if (!installedPartRepository.existsById(id)) {
-            throw new ResourceNotFoundException("InstalledPart", "id", id);
-        }
-        installedPartRepository.deleteById(id);
+        InstalledPart installedPart = installedPartRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("InstalledPart", "id", id));
+
+        // Soft delete: đánh dấu là không hoạt động
+        installedPart.setIsActive(false);
+        installedPart.setRemovedAt(LocalDateTime.now());
+        installedPartRepository.save(installedPart);
     }
 
     /**
      * Lấy installed parts theo vehicle ID (lịch sử parts của xe).
+     * Chỉ trả về những installed parts đang hoạt động (isActive = true).
      *
      * @param vehicleId vehicle ID
      * @param pageable pagination parameters
-     * @return paged response of installed parts
+     * @return paged response of active installed parts
      */
     @Override
     public PagedResponse<InstalledPartResponseDTO> getInstalledPartsByVehicle(Long vehicleId, Pageable pageable) {
-        Page<InstalledPart> installedPartPage = installedPartRepository.findByVehicleVehicleId(vehicleId, pageable);
+        Page<InstalledPart> installedPartPage = installedPartRepository.findByVehicleVehicleIdAndIsActiveTrue(vehicleId, pageable);
         List<InstalledPartResponseDTO> responseDTOs = InstalledPartMapper.toResponseDTOList(
             installedPartPage.getContent());
 
@@ -175,14 +189,15 @@ public class InstalledPartServiceImpl implements InstalledPartService {
     /**
      * Lấy installed parts theo part ID (tracking installations của part type).
      * Use case: Quality control, recall management, inventory analysis.
+     * Chỉ trả về những installed parts đang hoạt động (isActive = true).
      *
      * @param partId part ID
      * @param pageable pagination parameters
-     * @return paged response of installed parts
+     * @return paged response of active installed parts
      */
     @Override
     public PagedResponse<InstalledPartResponseDTO> getInstalledPartsByPart(Long partId, Pageable pageable) {
-        Page<InstalledPart> installedPartPage = installedPartRepository.findByPartPartId(partId, pageable);
+        Page<InstalledPart> installedPartPage = installedPartRepository.findByPartPartIdAndIsActiveTrue(partId, pageable);
         List<InstalledPartResponseDTO> responseDTOs = InstalledPartMapper.toResponseDTOList(
             installedPartPage.getContent());
 
@@ -200,10 +215,11 @@ public class InstalledPartServiceImpl implements InstalledPartService {
     /**
      * Lấy installed parts có warranty sắp hết hạn trong N ngày.
      * Use case: Proactive notification, expired warranty tracking, dashboard metrics.
+     * Chỉ trả về những installed parts đang hoạt động (isActive = true).
      *
      * @param daysFromNow số ngày từ hôm nay (0 = đã expired, 30 = hết hạn trong 30 ngày)
      * @param pageable pagination parameters
-     * @return paged response of parts với warranty sắp hết hạn
+     * @return paged response of active parts với warranty sắp hết hạn
      */
     @Override
     public PagedResponse<InstalledPartResponseDTO> getInstalledPartsWithExpiringWarranty(
@@ -211,7 +227,7 @@ public class InstalledPartServiceImpl implements InstalledPartService {
         LocalDate today = LocalDate.now();
         LocalDate cutoffDate = LocalDate.now().plusDays(daysFromNow);
 
-        Page<InstalledPart> installedPartPage = installedPartRepository.findByWarrantyExpirationDateBetween(
+        Page<InstalledPart> installedPartPage = installedPartRepository.findByWarrantyExpirationDateBetweenAndIsActiveTrue(
             today, cutoffDate, pageable);
 
         List<InstalledPartResponseDTO> responseDTOs = InstalledPartMapper.toResponseDTOList(

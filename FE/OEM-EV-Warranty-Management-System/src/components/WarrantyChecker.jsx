@@ -231,9 +231,9 @@ const WarrantyChecker = ({ vehicleId, installedPartId, onWarrantyChecked, autoCh
               <GracePeriodInfo>
                 <strong>📋 Thông tin bảo hành tính phí:</strong>
                 <ul>
-                  <li>✅ Xe/linh kiện đủ điều kiện bảo hành tính phí (trong grace period 180 ngày)</li>
+                  <li>✅ Xe/linh kiện đủ điều kiện bảo hành tính phí (trong grace period {warrantyInfo.gracePeriodDays || 180} ngày)</li>
                   {warrantyInfo.daysRemaining < 0 && (
-                    <li>⏱️ Thời gian quá hạn: <strong>{Math.abs(warrantyInfo.daysRemaining)}</strong> ngày / 180 ngày cho phép</li>
+                    <li>⏱️ Thời gian quá hạn: <strong>{Math.abs(warrantyInfo.daysRemaining)}</strong> ngày / {warrantyInfo.gracePeriodDays || 180} ngày cho phép</li>
                   )}
                   <li>💰 Phí tính theo công thức: <strong>20%-50%</strong> chi phí sửa chữa (tăng dần theo số ngày quá hạn)</li>
                   <li>💵 Phí tối thiểu: <strong>500,000 VNĐ</strong></li>
@@ -281,29 +281,29 @@ const WarrantyChecker = ({ vehicleId, installedPartId, onWarrantyChecked, autoCh
             <CannotProvideWarranty>
               <FaTimesCircle />
               <h3>❌ Không Thể Bảo Hành</h3>
-              <p><strong>Lý do:</strong> Đã quá thời hạn grace period cho phép (180 ngày)</p>
+              <p><strong>Lý do:</strong> Đã quá thời hạn grace period cho phép ({warrantyInfo.gracePeriodDays || 180} ngày)</p>
 
               <DetailInfo>
-                {warrantyInfo.daysRemaining < 0 && Math.abs(warrantyInfo.daysRemaining) > 180 && (
+                {warrantyInfo.daysRemaining < 0 && Math.abs(warrantyInfo.daysRemaining) > (warrantyInfo.gracePeriodDays || 180) && (
                   <>
                     <InfoItem>
                       <span className="label">⏰ Số ngày quá hạn:</span>
                       <span className="value critical">{Math.abs(warrantyInfo.daysRemaining)} ngày</span>
                     </InfoItem>
                     <InfoItem>
-                      <span className="label">📅 Grace period tối đa:</span>
-                      <span className="value">180 ngày</span>
+                      <span className="label">📅 Grace period của linh kiện này:</span>
+                      <span className="value">{warrantyInfo.gracePeriodDays || 180} ngày</span>
                     </InfoItem>
                     <InfoItem>
                       <span className="label">⚠️ Vượt quá grace period:</span>
-                      <span className="value critical">{Math.abs(warrantyInfo.daysRemaining) - 180} ngày</span>
+                      <span className="value critical">{Math.abs(warrantyInfo.daysRemaining) - (warrantyInfo.gracePeriodDays || 180)} ngày</span>
                     </InfoItem>
                   </>
                 )}
               </DetailInfo>
 
               <small>
-                <strong>Lưu ý:</strong> Theo quy định, bảo hành tính phí chỉ áp dụng trong vòng 180 ngày kể từ ngày hết hạn bảo hành.
+                <strong>Lưu ý:</strong> Theo quy định, bảo hành tính phí chỉ áp dụng trong vòng {warrantyInfo.gracePeriodDays || 180} ngày kể từ ngày hết hạn bảo hành.
                 Xe/linh kiện của bạn đã vượt quá thời gian này nên không thể tạo yêu cầu bảo hành.
               </small>
             </CannotProvideWarranty>

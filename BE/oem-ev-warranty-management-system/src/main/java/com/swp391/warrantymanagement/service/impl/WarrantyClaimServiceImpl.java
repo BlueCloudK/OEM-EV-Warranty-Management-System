@@ -122,6 +122,11 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
         InstalledPart installedPart = installedPartRepository.findById(requestDTO.getInstalledPartId())
             .orElseThrow(() -> new ResourceNotFoundException("InstalledPart", "id", requestDTO.getInstalledPartId()));
 
+        // Kiểm tra installed part có đang hoạt động không (soft delete check)
+        if (!installedPart.getIsActive()) {
+            throw new IllegalArgumentException("Installed part " + requestDTO.getInstalledPartId() + " is no longer active and cannot be used for warranty claims.");
+        }
+
         if (!installedPart.getVehicle().getVehicleId().equals(requestDTO.getVehicleId())) {
             throw new IllegalArgumentException("Installed part " + requestDTO.getInstalledPartId() + " is not installed on vehicle " + requestDTO.getVehicleId());
         }
@@ -130,46 +135,84 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
         LocalDate today = LocalDate.now();
         Part part = installedPart.getPart();
 
-        // Xác định warranty expiration date theo hierarchy model
-        LocalDate expirationDate;
-        String warrantyType;
+        // Lấy grace period từ Part (nếu có), fallback về default
+        int gracePeriodDays = part != null && part.getGracePeriodDays() != null
+            ? part.getGracePeriodDays()
+            : DEFAULT_GRACE_PERIOD_DAYS;
 
-        if (part != null && part.getHasExtendedWarranty() != null && part.getHasExtendedWarranty()) {
-            // Extended warranty part → Check part-level warranty
-            expirationDate = installedPart.getWarrantyExpirationDate();
-            warrantyType = "part-level (extended warranty)";
-            logger.info("Checking part-level warranty for extended part: {}", part.getPartName());
-        } else {
-            // Standard part → Check vehicle-level warranty
-            expirationDate = vehicle.getWarrantyEndDate();
-            warrantyType = "vehicle-level (standard part)";
-            logger.info("Checking vehicle-level warranty for standard part: {}", part != null ? part.getPartName() : "unknown");
-        }
+        // ===== ÁP DỤNG STRICTEST RULE: KIỂM TRA CẢ VEHICLE VÀ PART WARRANTY =====
+        boolean isExtendedPart = part != null && part.getHasExtendedWarranty() != null && part.getHasExtendedWarranty();
 
-        if (expirationDate.isBefore(today)) {
-            // Warranty đã hết hạn - kiểm tra grace period
-            long daysExpired = ChronoUnit.DAYS.between(expirationDate, today);
+        if (isExtendedPart) {
+            // Extended warranty part → Check CẢ part-level VÀ vehicle-level warranty
+            logger.info("Checking BOTH part-level and vehicle-level warranty for extended part: {}", part.getPartName());
 
-            // Lấy grace period từ Part (nếu có), fallback về default
-            int gracePeriodDays = part != null && part.getGracePeriodDays() != null
-                ? part.getGracePeriodDays()
-                : DEFAULT_GRACE_PERIOD_DAYS;
+            // 1. Kiểm tra PART warranty
+            LocalDate partExpirationDate = installedPart.getWarrantyExpirationDate();
+            long partDaysRemaining = ChronoUnit.DAYS.between(today, partExpirationDate);
 
-            // Nếu còn trong grace period VÀ là paid warranty claim → Cho phép
-            if (daysExpired <= gracePeriodDays) {
-                if (requestDTO.getIsPaidWarranty() != null && requestDTO.getIsPaidWarranty()) {
-                    // Valid paid warranty claim trong grace period
-                    logger.info("Creating paid warranty claim in grace period: installedPartId={}, daysExpired={}, gracePeriod={}, warrantyType={}, usingDefault={}",
-                        requestDTO.getInstalledPartId(), daysExpired, gracePeriodDays, warrantyType, (part == null || part.getGracePeriodDays() == null));
+            // 2. Kiểm tra VEHICLE warranty
+            LocalDate vehicleExpirationDate = vehicle.getWarrantyEndDate();
+            long vehicleDaysRemaining = ChronoUnit.DAYS.between(today, vehicleExpirationDate);
+
+            // 3. Áp dụng STRICTEST RULE - Lấy daysRemaining TỆ NHẤT (số âm lớn nhất)
+            long finalDaysRemaining = Math.min(partDaysRemaining, vehicleDaysRemaining);
+            boolean isPartExpiredWorse = partDaysRemaining <= vehicleDaysRemaining;
+
+            LocalDate finalExpirationDate = isPartExpiredWorse ? partExpirationDate : vehicleExpirationDate;
+            String warrantyType = isPartExpiredWorse ? "part-level (extended warranty)" : "vehicle-level (affecting extended part)";
+
+            logger.info("Extended part warranty check - partDaysRemaining={}, vehicleDaysRemaining={}, finalDaysRemaining={}, strictestRule={}",
+                partDaysRemaining, vehicleDaysRemaining, finalDaysRemaining, warrantyType);
+
+            // Kiểm tra xem đã hết hạn chưa
+            if (finalDaysRemaining < 0) {
+                // Đã hết hạn - kiểm tra grace period
+                long daysExpired = Math.abs(finalDaysRemaining);
+
+                if (daysExpired <= gracePeriodDays) {
+                    // Trong grace period
+                    if (requestDTO.getIsPaidWarranty() != null && requestDTO.getIsPaidWarranty()) {
+                        logger.info("Creating paid warranty claim in grace period: installedPartId={}, daysExpired={}, gracePeriod={}, appliedRule={}",
+                            requestDTO.getInstalledPartId(), daysExpired, gracePeriodDays, warrantyType);
+                    } else {
+                        throw new IllegalArgumentException("Warranty (" + warrantyType + ") expired on " + finalExpirationDate +
+                            " (" + daysExpired + " days ago). To create a claim, use paid warranty option (isPaidWarranty=true).");
+                    }
                 } else {
-                    // Hết hạn nhưng không phải paid warranty
-                    throw new IllegalArgumentException("Warranty (" + warrantyType + ") expired on " + expirationDate +
-                        ". To create a claim, use paid warranty option (isPaidWarranty=true).");
+                    // Quá grace period
+                    throw new IllegalArgumentException("Warranty (" + warrantyType + ") expired on " + finalExpirationDate +
+                        " and grace period of " + gracePeriodDays + " days has passed (" + daysExpired + " days expired). Cannot create claim.");
                 }
-            } else {
-                // Quá grace period
-                throw new IllegalArgumentException("Warranty (" + warrantyType + ") expired on " + expirationDate +
-                    " and grace period of " + gracePeriodDays + " days has passed. Cannot create claim.");
+            }
+            // Nếu finalDaysRemaining >= 0 → còn hạn → cho phép tạo claim miễn phí
+
+        } else {
+            // Standard part → Check CHỈ vehicle-level warranty
+            LocalDate expirationDate = vehicle.getWarrantyEndDate();
+            String warrantyType = "vehicle-level (standard part)";
+            logger.info("Checking vehicle-level warranty for standard part: {}", part != null ? part.getPartName() : "unknown");
+
+            if (expirationDate.isBefore(today)) {
+                // Warranty đã hết hạn - kiểm tra grace period
+                long daysExpired = ChronoUnit.DAYS.between(expirationDate, today);
+
+                // Nếu còn trong grace period VÀ là paid warranty claim → Cho phép
+                if (daysExpired <= gracePeriodDays) {
+                    if (requestDTO.getIsPaidWarranty() != null && requestDTO.getIsPaidWarranty()) {
+                        // Valid paid warranty claim trong grace period
+                        logger.info("Creating paid warranty claim in grace period: installedPartId={}, daysExpired={}, gracePeriod={}, warrantyType={}, usingDefault={}",
+                            requestDTO.getInstalledPartId(), daysExpired, gracePeriodDays, warrantyType, (part == null || part.getGracePeriodDays() == null));
+                    } else {
+                        // Hết hạn nhưng không phải paid warranty
+                        throw new IllegalArgumentException("Warranty (" + warrantyType + ") expired on " + expirationDate +
+                            ". To create a claim, use paid warranty option (isPaidWarranty=true).");
+                    }
+                } else {
+                    // Quá grace period
+                    throw new IllegalArgumentException("Warranty (" + warrantyType + ") expired on " + expirationDate +
+                        " and grace period of " + gracePeriodDays + " days has passed. Cannot create claim.");
+                }
             }
         }
 
@@ -231,46 +274,77 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
             Part part = installedPart.getPart();
             Vehicle vehicle = installedPart.getVehicle();
 
-            // Xác định warranty expiration date theo hierarchy model
-            LocalDate expirationDate;
-            String warrantyType;
+            // Lấy grace period từ Part (nếu có), fallback về default
+            int gracePeriodDays = part != null && part.getGracePeriodDays() != null
+                ? part.getGracePeriodDays()
+                : DEFAULT_GRACE_PERIOD_DAYS;
 
-            if (part != null && part.getHasExtendedWarranty() != null && part.getHasExtendedWarranty()) {
-                // Extended warranty part → Check part-level warranty
-                expirationDate = installedPart.getWarrantyExpirationDate();
-                warrantyType = "part-level (extended warranty)";
-                logger.info("Checking part-level warranty for extended part: {}", part.getPartName());
-            } else {
-                // Standard part → Check vehicle-level warranty
-                expirationDate = vehicle.getWarrantyEndDate();
-                warrantyType = "vehicle-level (standard part)";
-                logger.info("Checking vehicle-level warranty for standard part: {}", part != null ? part.getPartName() : "unknown");
-            }
+            // ===== ÁP DỤNG STRICTEST RULE: KIỂM TRA CẢ VEHICLE VÀ PART WARRANTY =====
+            boolean isExtendedPart = part != null && part.getHasExtendedWarranty() != null && part.getHasExtendedWarranty();
 
-            if (expirationDate.isBefore(today)) {
-                // Warranty đã hết hạn - kiểm tra grace period
-                long daysExpired = ChronoUnit.DAYS.between(expirationDate, today);
+            if (isExtendedPart) {
+                // Extended warranty part → Check CẢ part-level VÀ vehicle-level warranty
+                logger.info("Checking BOTH part-level and vehicle-level warranty for extended part update: {}", part.getPartName());
 
-                // Lấy grace period từ Part (nếu có), fallback về default
-                int gracePeriodDays = part != null && part.getGracePeriodDays() != null
-                    ? part.getGracePeriodDays()
-                    : DEFAULT_GRACE_PERIOD_DAYS;
+                // 1. Kiểm tra PART warranty
+                LocalDate partExpirationDate = installedPart.getWarrantyExpirationDate();
+                long partDaysRemaining = ChronoUnit.DAYS.between(today, partExpirationDate);
 
-                // Nếu còn trong grace period VÀ là paid warranty claim → Cho phép
-                if (daysExpired <= gracePeriodDays) {
-                    if (claim.getIsPaidWarranty() != null && claim.getIsPaidWarranty()) {
-                        // Valid paid warranty claim trong grace period
-                        logger.info("Updating claim to expired part with paid warranty: claimId={}, installedPartId={}, daysExpired={}, gracePeriod={}, warrantyType={}, usingDefault={}",
-                            id, requestDTO.getInstalledPartId(), daysExpired, gracePeriodDays, warrantyType, (part == null || part.getGracePeriodDays() == null));
+                // 2. Kiểm tra VEHICLE warranty
+                LocalDate vehicleExpirationDate = vehicle.getWarrantyEndDate();
+                long vehicleDaysRemaining = ChronoUnit.DAYS.between(today, vehicleExpirationDate);
+
+                // 3. Áp dụng STRICTEST RULE - Lấy daysRemaining TỆ NHẤT
+                long finalDaysRemaining = Math.min(partDaysRemaining, vehicleDaysRemaining);
+                boolean isPartExpiredWorse = partDaysRemaining <= vehicleDaysRemaining;
+
+                LocalDate finalExpirationDate = isPartExpiredWorse ? partExpirationDate : vehicleExpirationDate;
+                String warrantyType = isPartExpiredWorse ? "part-level (extended warranty)" : "vehicle-level (affecting extended part)";
+
+                // Kiểm tra xem đã hết hạn chưa
+                if (finalDaysRemaining < 0) {
+                    // Đã hết hạn - kiểm tra grace period
+                    long daysExpired = Math.abs(finalDaysRemaining);
+
+                    if (daysExpired <= gracePeriodDays) {
+                        // Trong grace period
+                        if (claim.getIsPaidWarranty() != null && claim.getIsPaidWarranty()) {
+                            logger.info("Updating claim to expired part with paid warranty: claimId={}, installedPartId={}, daysExpired={}, gracePeriod={}, appliedRule={}",
+                                id, requestDTO.getInstalledPartId(), daysExpired, gracePeriodDays, warrantyType);
+                        } else {
+                            throw new IllegalArgumentException("Warranty (" + warrantyType + ") expired on " + finalExpirationDate +
+                                " (" + daysExpired + " days ago). Cannot switch to expired part without paid warranty.");
+                        }
                     } else {
-                        // Hết hạn nhưng claim không phải paid warranty
-                        throw new IllegalArgumentException("Warranty (" + warrantyType + ") expired on " + expirationDate +
-                            ". Cannot switch to expired part without paid warranty.");
+                        // Quá grace period
+                        throw new IllegalArgumentException("Warranty (" + warrantyType + ") expired on " + finalExpirationDate +
+                            " and grace period of " + gracePeriodDays + " days has passed (" + daysExpired + " days expired). Cannot switch to expired part.");
                     }
-                } else {
-                    // Quá grace period
-                    throw new IllegalArgumentException("Warranty (" + warrantyType + ") expired on " + expirationDate +
-                        " and grace period of " + gracePeriodDays + " days has passed.");
+                }
+                // Nếu finalDaysRemaining >= 0 → còn hạn → cho phép update
+
+            } else {
+                // Standard part → Check CHỈ vehicle-level warranty
+                LocalDate expirationDate = vehicle.getWarrantyEndDate();
+                String warrantyType = "vehicle-level (standard part)";
+                logger.info("Checking vehicle-level warranty for standard part update: {}", part != null ? part.getPartName() : "unknown");
+
+                if (expirationDate.isBefore(today)) {
+                    // Warranty đã hết hạn - kiểm tra grace period
+                    long daysExpired = ChronoUnit.DAYS.between(expirationDate, today);
+
+                    if (daysExpired <= gracePeriodDays) {
+                        if (claim.getIsPaidWarranty() != null && claim.getIsPaidWarranty()) {
+                            logger.info("Updating claim to expired part with paid warranty: claimId={}, installedPartId={}, daysExpired={}, gracePeriod={}, warrantyType={}",
+                                id, requestDTO.getInstalledPartId(), daysExpired, gracePeriodDays, warrantyType);
+                        } else {
+                            throw new IllegalArgumentException("Warranty (" + warrantyType + ") expired on " + expirationDate +
+                                ". Cannot switch to expired part without paid warranty.");
+                        }
+                    } else {
+                        throw new IllegalArgumentException("Warranty (" + warrantyType + ") expired on " + expirationDate +
+                            " and grace period of " + gracePeriodDays + " days has passed. Cannot switch to expired part.");
+                    }
                 }
             }
 

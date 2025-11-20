@@ -94,12 +94,16 @@ export default function CustomerServiceCenters() {
                   <span>{center.openingHours || "8:00 - 17:00"}</span>
                 </S.InfoRow>
 
-                {center.averageRating && (
-                  <S.RatingBadge>
-                    <FaStar style={{ color: "#fbbf24" }} />
-                    <span>{center.averageRating.toFixed(1)}</span>
-                  </S.RatingBadge>
-                )}
+                <S.RatingBadge>
+                  {center.averageRating && center.averageRating > 0 ? (
+                    <>
+                      <FaStar style={{ color: "#fbbf24" }} />
+                      <span>{center.averageRating.toFixed(1)}</span>
+                    </>
+                  ) : (
+                    <span style={{ color: "#6b7280" }}>Chưa có đánh giá</span>
+                  )}
+                </S.RatingBadge>
               </S.CenterInfo>
 
               {selectedCenter?.serviceCenterId === center.serviceCenterId && (
