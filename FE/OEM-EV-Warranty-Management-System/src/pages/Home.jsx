@@ -322,23 +322,25 @@ export default function Home() {
                     </p>
                   </div>
 
-                  {center.averageRating && (
-                    <div style={{
-                      marginTop: "12px",
-                      padding: "8px 12px",
-                      backgroundColor: "#f0fdf4",
-                      borderRadius: "6px",
-                      display: "inline-block"
+                  <div style={{
+                    marginTop: "12px",
+                    padding: "8px 12px",
+                    backgroundColor: center.averageRating && center.averageRating > 0 ? "#f0fdf4" : "#f3f4f6",
+                    borderRadius: "6px",
+                    display: "inline-block"
+                  }}>
+                    <span style={{
+                      color: center.averageRating && center.averageRating > 0 ? "#166534" : "#6b7280",
+                      fontSize: "14px",
+                      fontWeight: "600"
                     }}>
-                      <span style={{
-                        color: "#166534",
-                        fontSize: "14px",
-                        fontWeight: "600"
-                      }}>
-                        ⭐ {center.averageRating.toFixed(1)}
-                      </span>
-                    </div>
-                  )}
+                      {center.averageRating && center.averageRating > 0 ? (
+                        <>⭐ {center.averageRating.toFixed(1)}</>
+                      ) : (
+                        "Chưa có đánh giá"
+                      )}
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>
