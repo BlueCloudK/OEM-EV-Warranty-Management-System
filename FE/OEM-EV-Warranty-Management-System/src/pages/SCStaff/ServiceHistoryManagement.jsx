@@ -102,7 +102,6 @@ const ServiceHistoryManagement = () => {
         <S.Header>
           <S.HeaderTop>
             <S.HeaderTitle><FaHistory /> Quản lý Lịch sử Dịch vụ</S.HeaderTitle>
-            <S.Button primary onClick={openCreateForm}><FaPlus /> Tạo Lịch sử</S.Button>
           </S.HeaderTop>
           <S.FilterContainer>
             <S.Input placeholder="Tìm kiếm theo xe,vin,linh kiện..." value={filters.searchTerm} onChange={(e) => handleFilterChange('searchTerm', e.target.value)} />
@@ -142,7 +141,7 @@ const ServiceHistoryManagement = () => {
                     <S.Td>{history.vehicleVin || 'N/A'}</S.Td>
                     <S.Td>{history.partName || 'N/A'}</S.Td>
                     <S.Td>{history.description}</S.Td>
-                    <S.Td>{new Date(history.serviceDate).toLocaleDateString('vi-VN')}</S.Td>                   
+                    <S.Td>{new Date(history.serviceDate).toLocaleDateString('vi-VN')}</S.Td>
                     <S.Td>
                       <S.Button small onClick={() => openEditForm(history)}>
                         <FaEdit /> Sửa

@@ -58,7 +58,11 @@ const PaidWarrantyClaimForm = ({ vehicleId, installedPartId, onSuccess, onCancel
     } else {
       // Warranty expired and cannot provide paid warranty
       console.log('[PaidWarrantyClaimForm] Cannot provide warranty - staying at step 1');
-      setError('Xe/linh kiện đã hết hạn bảo hành và vượt quá thời gian cho phép bảo hành tính phí. Không thể tạo yêu cầu bảo hành.');
+      setError(
+        info.expirationReasons
+          ? `Không thể tạo yêu cầu: ${info.expirationReasons}`
+          : 'Xe/linh kiện đã hết hạn bảo hành và vượt quá thời gian cho phép bảo hành tính phí.'
+      );
     }
   };
 
@@ -213,7 +217,12 @@ const PaidWarrantyClaimForm = ({ vehicleId, installedPartId, onSuccess, onCancel
                   <FaExclamationTriangle />
                   <div>
                     <h4>⚠️ Bảo Hành Tính Phí</h4>
-                    <p>Xe/linh kiện đã hết hạn bảo hành miễn phí. </p>
+                    <p>Xe/linh kiện đã hết hạn bảo hành miễn phí.</p>
+                    {warrantyInfo?.expirationReasons && (
+                      <p style={{ color: '#d84315', fontWeight: '500', marginTop: '4px' }}>
+                        Lý do: {warrantyInfo.expirationReasons}
+                      </p>
+                    )}
                     {formData.warrantyFee && (
                       <p style={{ marginTop: '8px' }}>
                         💰 <strong>Phí bảo hành: {parseFloat(formData.warrantyFee).toLocaleString('vi-VN')} VNĐ</strong>
@@ -222,7 +231,7 @@ const PaidWarrantyClaimForm = ({ vehicleId, installedPartId, onSuccess, onCancel
                     <FeeFormulaInfo>
                       <small>
                         📋 Công thức: Phí = 20%-50% × Chi phí sửa chữa (tăng dần theo số ngày quá hạn)
-                        <br/>
+                        <br />
                         💵 Phí tối thiểu: 500,000 VNĐ
                       </small>
                     </FeeFormulaInfo>

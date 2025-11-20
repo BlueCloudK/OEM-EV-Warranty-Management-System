@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCreateCustomerAccount } from '../../hooks/useCreateCustomerAccount';
 import * as S from './CreateCustomerAccount.styles';
-import { 
-  FaUserPlus, FaArrowLeft, FaUser, FaEnvelope, FaLock, FaMapMarkerAlt, 
+import {
+  FaUserPlus, FaArrowLeft, FaUser, FaEnvelope, FaLock, FaMapMarkerAlt,
   FaEye, FaEyeSlash, FaSave, FaPhone, FaAddressBook
 } from 'react-icons/fa';
 
@@ -53,7 +53,7 @@ const CreateCustomerAccount = () => {
                 <input type="text" value={formData.name} onChange={(e) => handleInputChange('name', e.target.value)} placeholder="Nguyễn Văn A" />
                 {formErrors.name && <p>{formErrors.name}</p>}
               </S.FullWidthField>
-              
+
               <div>
                 <label><FaUser /> Tên đăng nhập *</label>
                 <input type="text" value={formData.username} onChange={(e) => handleInputChange('username', e.target.value)} placeholder="nguyenvana" />

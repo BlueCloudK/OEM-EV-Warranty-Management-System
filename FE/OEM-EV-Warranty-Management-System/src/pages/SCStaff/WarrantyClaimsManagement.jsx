@@ -331,7 +331,7 @@ const VehicleSelectionModal = ({
                 <option key={p.installedPartId} value={p.installedPartId}>
                   {p.partName} | Lắp: {installDate} | BH đến: {expiryDate} |
                   {isExpired
-                    ? ` HẾT HẠN ${Math.abs(daysRemaining)} ngày`
+                    ? ` HẾT HẠN (Ngày) ${Math.abs(daysRemaining)} ngày`
                     : ` Còn ${daysRemaining} ngày`}
                 </option>
               );
@@ -470,11 +470,11 @@ const WarrantyClaimsManagement = () => {
   };
 
   const handleConfirmPayment = async (claimId) => {
-    if (
-      !window.confirm(
-        "Xác nhận khách hàng đã thanh toán phí bảo hành tại quầy?"
-      )
-    ) {
+    const confirmed = await window.confirm(
+      "Xác nhận khách hàng đã thanh toán phí bảo hành tại quầy?"
+    );
+
+    if (!confirmed) {
       return;
     }
 
@@ -504,7 +504,9 @@ const WarrantyClaimsManagement = () => {
   };
 
   const handleDeleteClaim = async (claimId) => {
-    if (!window.confirm("Bạn có chắc muốn xóa yêu cầu bảo hành này?")) {
+    const confirmed = await window.confirm("Bạn có chắc muốn xóa yêu cầu bảo hành này?");
+
+    if (!confirmed) {
       return;
     }
 
@@ -649,25 +651,25 @@ const WarrantyClaimsManagement = () => {
                         )}
                         {(claim.status === "SUBMITTED" ||
                           claim.status === "PENDING_PAYMENT") && (
-                          <>
-                            <S.Button
-                              $small
-                              style={{ background: "#2196f3" }}
-                              onClick={() => handleEditClaim(claim)}
-                            >
-                              <FaEdit /> Sửa
-                            </S.Button>
-                            <S.Button
-                              $small
-                              style={{ background: "#f44336" }}
-                              onClick={() =>
-                                handleDeleteClaim(claim.warrantyClaimId)
-                              }
-                            >
-                              <FaTrash /> Xóa
-                            </S.Button>
-                          </>
-                        )}
+                            <>
+                              <S.Button
+                                $small
+                                style={{ background: "#2196f3" }}
+                                onClick={() => handleEditClaim(claim)}
+                              >
+                                <FaEdit /> Sửa
+                              </S.Button>
+                              <S.Button
+                                $small
+                                style={{ background: "#f44336" }}
+                                onClick={() =>
+                                  handleDeleteClaim(claim.warrantyClaimId)
+                                }
+                              >
+                                <FaTrash /> Xóa
+                              </S.Button>
+                            </>
+                          )}
                       </div>
                     </S.Td>
                   </tr>

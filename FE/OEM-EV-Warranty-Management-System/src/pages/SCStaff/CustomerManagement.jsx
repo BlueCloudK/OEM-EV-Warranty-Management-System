@@ -100,7 +100,7 @@ const CustomerManagement = () => {
   const navigate = useNavigate();
   const { isAuthenticated, loading: authLoading } = useAuth();
   const {
-    customers, loading: dataLoading, error, pagination, searchTerm, setSearchTerm, 
+    customers, loading: dataLoading, error, pagination, searchTerm, setSearchTerm,
     searchType, setSearchType, handleSearch, handleCreateOrUpdate, handlePageChange
   } = useCustomerManagement();
 
@@ -131,7 +131,7 @@ const CustomerManagement = () => {
         return 'Tìm theo Email...';
       case 'phone':
         return 'Tìm theo Số điện thoại...';
-      case 'general':  
+      case 'general':
       default:
         return 'Tìm theo tên...';
     }
@@ -150,7 +150,7 @@ const CustomerManagement = () => {
             <S.Button $primary onClick={openCreateForm}><FaPlus /> Tạo khách hàng</S.Button>
           </S.HeaderTop>
           <S.SearchContainer>
-            <S.Select 
+            <S.Select
               value={searchType}
               onChange={(e) => {
                 setSearchType(e.target.value);
@@ -161,11 +161,11 @@ const CustomerManagement = () => {
               <option value="email">Tìm chính xác theo Email</option>
               <option value="phone">Tìm chính xác theo SĐT</option>
             </S.Select>
-            <S.Input 
-              placeholder={getSearchPlaceholder()} 
-              value={searchTerm} 
-              onChange={(e) => setSearchTerm(e.target.value)} 
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()} 
+            <S.Input
+              placeholder={getSearchPlaceholder()}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
             />
             <S.Button $small onClick={handleSearch}><FaSearch /> Tìm kiếm</S.Button>
           </S.SearchContainer>
