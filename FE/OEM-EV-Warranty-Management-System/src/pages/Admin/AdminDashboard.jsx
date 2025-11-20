@@ -134,24 +134,7 @@ export default function AdminDashboard() {
         })()}
       </S.ChartContainer>
 
-      <S.RecentActivityContainer>
-        <h3><FaHistory /> Hoạt động gần đây</h3>
-        {dataLoading ? (
-          <p>Đang tải hoạt động...</p>
-        ) : recentActivity.length > 0 ? (
-          <S.ActivityList>
-            {recentActivity.map((activity) => (
-              <S.ActivityItem key={activity.id}>
-                <S.ActivityIcon>{iconMap[activity.icon]}</S.ActivityIcon>
-                <S.ActivityContent>{activity.action}</S.ActivityContent>
-                <S.ActivityTime>{activity.time}</S.ActivityTime>
-              </S.ActivityItem>
-            ))}
-          </S.ActivityList>
-        ) : (
-          <p>Chưa có hoạt động nào</p>
-        )}
-      </S.RecentActivityContainer>
+     
     </S.DashboardWrapper>
   );
 }

@@ -486,7 +486,7 @@ const WarrantyClaimsManagement = () => {
                         {getStatusLabel(claim.status)}
                       </S.StatusBadge>
                     </S.Td>
-                    <S.Td>{new Date(claim.claimDate).toLocaleDateString()}</S.Td>
+                    <S.DateCell>{new Date(claim.claimDate).toLocaleDateString('vi-VN')}</S.DateCell>
                     <S.Td>
                       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                         <S.Button $small onClick={() => handleViewClaim(claim)}>
