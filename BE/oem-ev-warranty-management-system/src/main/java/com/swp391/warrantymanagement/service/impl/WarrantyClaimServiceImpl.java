@@ -33,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -217,6 +218,71 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
         }
 
         WarrantyClaim claim = WarrantyClaimMapper.toEntity(requestDTO, installedPart, vehicle);
+
+        // Auto-calculate warranty fee if isPaidWarranty = true and fee not provided
+        if (Boolean.TRUE.equals(requestDTO.getIsPaidWarranty())) {
+            if (requestDTO.getWarrantyFee() == null || requestDTO.getWarrantyFee().compareTo(BigDecimal.ZERO) <= 0) {
+                // Tự động lấy giá từ part
+                BigDecimal partPrice = part.getPrice();
+                if (partPrice != null && partPrice.compareTo(BigDecimal.ZERO) > 0) {
+                    // Tính phí = giá part + % (nếu có config)
+                    BigDecimal fee = partPrice;
+
+                    // Calculate dynamic markup percentage based on days expired
+                    if (part.getPaidWarrantyFeePercentageMin() != null) {
+                        BigDecimal markupPercentage = part.getPaidWarrantyFeePercentageMin();
+
+                        // If both min and max are defined, calculate dynamic markup
+                        if (part.getPaidWarrantyFeePercentageMax() != null &&
+                            part.getPaidWarrantyFeePercentageMax().compareTo(part.getPaidWarrantyFeePercentageMin()) > 0) {
+
+                            // Calculate how many days warranty has been expired
+                            LocalDate expirationDate = isExtendedPart ?
+                                (Math.min(ChronoUnit.DAYS.between(today, installedPart.getWarrantyExpirationDate()),
+                                         ChronoUnit.DAYS.between(today, vehicle.getWarrantyEndDate())) <= 0 ?
+                                    (ChronoUnit.DAYS.between(today, installedPart.getWarrantyExpirationDate()) <=
+                                     ChronoUnit.DAYS.between(today, vehicle.getWarrantyEndDate()) ?
+                                        installedPart.getWarrantyExpirationDate() : vehicle.getWarrantyEndDate()) : null)
+                                : vehicle.getWarrantyEndDate();
+
+                            if (expirationDate != null && expirationDate.isBefore(today)) {
+                                long daysExpired = ChronoUnit.DAYS.between(expirationDate, today);
+
+                                // Dynamic markup formula: Markup% = Min% + (Max% - Min%) × (DaysExpired / GracePeriod)
+                                // The longer the warranty has been expired, the higher the markup
+                                BigDecimal minPercent = part.getPaidWarrantyFeePercentageMin();
+                                BigDecimal maxPercent = part.getPaidWarrantyFeePercentageMax();
+                                BigDecimal percentRange = maxPercent.subtract(minPercent);
+
+                                // Calculate ratio: daysExpired / gracePeriodDays, capped at 1.0
+                                BigDecimal expiredRatio = BigDecimal.valueOf(daysExpired)
+                                    .divide(BigDecimal.valueOf(gracePeriodDays), 4, BigDecimal.ROUND_HALF_UP);
+                                if (expiredRatio.compareTo(BigDecimal.ONE) > 0) {
+                                    expiredRatio = BigDecimal.ONE; // Cap at 100%
+                                }
+
+                                // Final markup = min + (max - min) × ratio
+                                markupPercentage = minPercent.add(percentRange.multiply(expiredRatio));
+
+                                logger.info("Dynamic markup calculation: daysExpired={}, gracePeriod={}, ratio={}, min={}%, max={}%, calculated={}%",
+                                    daysExpired, gracePeriodDays, expiredRatio, minPercent, maxPercent, markupPercentage);
+                            }
+                        }
+
+                        // Apply markup percentage to calculate final fee
+                        fee = partPrice.multiply(BigDecimal.ONE.add(markupPercentage.divide(BigDecimal.valueOf(100))));
+                        logger.info("Auto-calculated warranty fee: {} for part: {} (markup: {}%)", fee, part.getPartName(), markupPercentage);
+                    } else {
+                        logger.info("Auto-calculated warranty fee: {} for part: {} (no markup)", fee, part.getPartName());
+                    }
+
+                    claim.setWarrantyFee(fee);
+                } else {
+                    throw new IllegalArgumentException("Cannot calculate warranty fee: Part price is not available for part: " + part.getPartName());
+                }
+            }
+        }
+
         WarrantyClaim savedClaim = warrantyClaimRepository.save(claim);
 
         return WarrantyClaimMapper.toResponseDTO(savedClaim);

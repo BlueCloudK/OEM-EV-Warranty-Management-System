@@ -22,6 +22,9 @@ public class InstalledPartResponseDTO {
     private String partNumber;
     private String manufacturer;
     private BigDecimal price;
+    private BigDecimal paidWarrantyFeePercentageMin; // % markup min for paid warranty
+    private BigDecimal paidWarrantyFeePercentageMax; // % markup max for paid warranty
+    private Integer gracePeriodDays; // Grace period in days for paid warranty
 
     // Vehicle information
     private Long vehicleId;

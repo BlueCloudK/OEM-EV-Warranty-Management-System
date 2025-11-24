@@ -78,6 +78,9 @@ public final class InstalledPartMapper {
             responseDTO.setPartNumber(entity.getPart().getPartNumber());
             responseDTO.setManufacturer(entity.getPart().getManufacturer());
             responseDTO.setPrice(entity.getPart().getPrice());
+            responseDTO.setPaidWarrantyFeePercentageMin(entity.getPart().getPaidWarrantyFeePercentageMin());
+            responseDTO.setPaidWarrantyFeePercentageMax(entity.getPart().getPaidWarrantyFeePercentageMax());
+            responseDTO.setGracePeriodDays(entity.getPart().getGracePeriodDays());
         }
 
         // Vehicle information
