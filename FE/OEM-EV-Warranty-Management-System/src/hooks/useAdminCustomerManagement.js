@@ -15,6 +15,9 @@ export const useAdminCustomerManagement = () => {
   const [effectiveSearchTerm, setEffectiveSearchTerm] = useState(''); // New state for search term that actually triggers fetch
   const [searchType, setSearchType] = useState('general'); // New state for search type
 
+  // Sorting State
+  const [sortConfig, setSortConfig] = useState({ key: 'customerId', direction: 'DESC' });
+
   const fetchCustomers = useCallback(async () => {
     try {
       setLoading(true);
@@ -43,12 +46,23 @@ export const useAdminCustomerManagement = () => {
             break;
           case 'general':
           default:
-            response = await dataApi.getAllCustomers({ page, size, search: effectiveSearchTerm });
+            response = await dataApi.getAllCustomers({
+              page,
+              size,
+              search: effectiveSearchTerm,
+              sortBy: sortConfig.key,
+              sortDir: sortConfig.direction
+            });
             break;
         }
       } else {
-        // If no search term, just get all customers with pagination
-        response = await dataApi.getAllCustomers({ page, size });
+        // If no search term, just get all customers with pagination and sorting
+        response = await dataApi.getAllCustomers({
+          page,
+          size,
+          sortBy: sortConfig.key,
+          sortDir: sortConfig.direction
+        });
       }
 
       if (response && response.content) {
@@ -63,7 +77,14 @@ export const useAdminCustomerManagement = () => {
     } finally {
       setLoading(false);
     }
-  }, [pagination.currentPage, pagination.pageSize, effectiveSearchTerm, searchType]); // Add searchType to dependencies
+  }, [pagination.currentPage, pagination.pageSize, effectiveSearchTerm, searchType, sortConfig]);
+
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'ASC' ? 'DESC' : 'ASC'
+    }));
+  };
 
   useEffect(() => {
     fetchCustomers();
@@ -93,19 +114,19 @@ export const useAdminCustomerManagement = () => {
 
   const handleDelete = async (customerId) => {
     if (await window.confirm('Bạn có chắc chắn muốn xóa khách hàng này không? (Admin Only)')) {
-        try {
-            await dataApi.deleteCustomer(customerId);
-            fetchCustomers(); // Refresh list
-        } catch (err) {
-            console.error("Lỗi khi xóa khách hàng:", err); // Log the full error
-            let errorMessage = "Đã xảy ra lỗi khi xóa khách hàng.";
-            if (err.response && err.response.data && err.response.data.message) {
-                errorMessage = err.response.data.message; // Use backend error message
-            } else if (err.message) {
-                errorMessage = err.message;
-            }
-            alert(`Lỗi khi xóa khách hàng: ${errorMessage}`);
+      try {
+        await dataApi.deleteCustomer(customerId);
+        fetchCustomers(); // Refresh list
+      } catch (err) {
+        console.error("Lỗi khi xóa khách hàng:", err); // Log the full error
+        let errorMessage = "Đã xảy ra lỗi khi xóa khách hàng.";
+        if (err.response && err.response.data && err.response.data.message) {
+          errorMessage = err.response.data.message; // Use backend error message
+        } else if (err.message) {
+          errorMessage = err.message;
         }
+        alert(`Lỗi khi xóa khách hàng: ${errorMessage}`);
+      }
     }
   };
 
@@ -118,7 +139,7 @@ export const useAdminCustomerManagement = () => {
     loading,
     error,
     pagination,
-    searchTerm, 
+    searchTerm,
     setSearchTerm,
     handleSearch,
     handleCreateOrUpdate,
@@ -126,5 +147,7 @@ export const useAdminCustomerManagement = () => {
     handlePageChange,
     searchType, // Expose searchType
     setSearchType, // Expose setSearchType
+    sortConfig,
+    handleSort,
   };
 };

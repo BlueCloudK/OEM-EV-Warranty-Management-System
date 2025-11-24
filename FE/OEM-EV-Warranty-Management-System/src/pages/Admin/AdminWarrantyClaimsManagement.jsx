@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAdminWarrantyClaims } from '../../hooks/useAdminWarrantyClaims';
 import RefreshIndicator from '../../components/RefreshIndicator';
 import * as S from './AdminWarrantyClaimsManagement.styles';
-import { FaClipboardCheck, FaSpinner, FaCheck, FaTimes, FaTrash, FaSyncAlt } from 'react-icons/fa';
+import { FaClipboardCheck, FaSpinner, FaCheck, FaTimes, FaTrash, FaSyncAlt, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
 
 const RejectClaimModal = ({ isOpen, onClose, onSubmit }) => {
   const [reason, setReason] = useState('');
@@ -27,10 +27,10 @@ const RejectClaimModal = ({ isOpen, onClose, onSubmit }) => {
         <h2>Nhập lý do từ chối</h2>
         <form onSubmit={handleSubmit}>
           <S.FormGroup>
-            <S.TextArea 
-              rows="4" 
-              value={reason} 
-              onChange={(e) => setReason(e.target.value)} 
+            <S.TextArea
+              rows="4"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
               placeholder="Ví dụ: Hư hỏng do người dùng, không thuộc phạm vi bảo hành..."
             />
           </S.FormGroup>
@@ -49,7 +49,8 @@ const AdminWarrantyClaimsManagement = () => {
     claims, loading, error, pagination, filterStatus,
     handleFilterChange, handleApprove, handleReject, handleDelete, handlePageChange, refreshClaims,
     confirmDialog,
-    lastUpdated, autoRefreshing, getTimeAgo
+    lastUpdated, autoRefreshing, getTimeAgo,
+    sortConfig, handleSort
   } = useAdminWarrantyClaims();
 
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -80,6 +81,12 @@ const AdminWarrantyClaimsManagement = () => {
   };
 
   const isPollingActive = claims.some(c => c.status === 'SUBMITTED' || c.status === 'MANAGER_REVIEW');
+
+  const renderSortIcon = (key) => {
+    if (sortConfig.key !== key) return <FaSort style={{ color: '#ccc', marginLeft: '5px' }} />;
+    if (sortConfig.direction === 'ASC') return <FaSortUp style={{ color: '#3498db', marginLeft: '5px' }} />;
+    return <FaSortDown style={{ color: '#3498db', marginLeft: '5px' }} />;
+  };
 
   return (
     <S.PageContainer>
@@ -123,13 +130,23 @@ const AdminWarrantyClaimsManagement = () => {
           <S.Table>
             <thead>
               <tr>
-                <S.Th>ID</S.Th>
+                <S.Th onClick={() => handleSort('warrantyClaimId')} style={{ cursor: 'pointer' }}>
+                  ID {renderSortIcon('warrantyClaimId')}
+                </S.Th>
                 <S.Th>Khách hàng</S.Th>
-                <S.Th>Xe (VIN)</S.Th>
-                <S.Th>Linh kiện</S.Th>
+                <S.Th onClick={() => handleSort('vehicleVin')} style={{ cursor: 'pointer' }}>
+                  Xe (VIN) {renderSortIcon('vehicleVin')}
+                </S.Th>
+                <S.Th onClick={() => handleSort('partName')} style={{ cursor: 'pointer' }}>
+                  Linh kiện {renderSortIcon('partName')}
+                </S.Th>
                 <S.Th>Mô tả</S.Th>
-                <S.Th>Trạng thái</S.Th>
-                <S.Th>Ngày yêu cầu</S.Th>
+                <S.Th onClick={() => handleSort('status')} style={{ cursor: 'pointer' }}>
+                  Trạng thái {renderSortIcon('status')}
+                </S.Th>
+                <S.Th onClick={() => handleSort('claimDate')} style={{ cursor: 'pointer' }}>
+                  Ngày yêu cầu {renderSortIcon('claimDate')}
+                </S.Th>
                 <S.Th>Hành động</S.Th>
               </tr>
             </thead>

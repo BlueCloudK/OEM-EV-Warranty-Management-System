@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext'; // Import the master auth hook
 import { useCustomerManagement } from '../../hooks/useCustomerManagement';
 import * as S from './CustomerManagement.styles';
-import { FaUsers, FaPlus, FaEdit, FaSearch, FaSpinner, FaUser, FaEnvelope, FaLock, FaMapMarkerAlt, FaPhone, FaAddressBook } from 'react-icons/fa';
+import { FaUsers, FaPlus, FaEdit, FaSearch, FaSpinner, FaUser, FaEnvelope, FaLock, FaMapMarkerAlt, FaPhone, FaAddressBook, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
 
 // Form Modal Component (now includes account creation fields)
 const CustomerFormModal = ({ isOpen, onClose, onSubmit, customer }) => {
@@ -101,7 +101,8 @@ const CustomerManagement = () => {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const {
     customers, loading: dataLoading, error, pagination, searchTerm, setSearchTerm,
-    searchType, setSearchType, handleSearch, handleCreateOrUpdate, handlePageChange
+    searchType, setSearchType, handleSearch, handleCreateOrUpdate, handlePageChange,
+    sortConfig, handleSort
   } = useCustomerManagement();
 
   const [showForm, setShowForm] = useState(false);
@@ -135,6 +136,12 @@ const CustomerManagement = () => {
       default:
         return 'Tìm theo tên...';
     }
+  };
+
+  const renderSortIcon = (key) => {
+    if (sortConfig.key !== key) return <FaSort style={{ color: '#ccc', marginLeft: '5px' }} />;
+    if (sortConfig.direction === 'ASC') return <FaSortUp style={{ color: '#3498db', marginLeft: '5px' }} />;
+    return <FaSortDown style={{ color: '#3498db', marginLeft: '5px' }} />;
   };
 
   if (authLoading || dataLoading) {
@@ -178,7 +185,21 @@ const CustomerManagement = () => {
         ) : (
           <S.TableContainer>
             <S.Table>
-              <thead><tr><S.Th>Tên</S.Th><S.Th>Email</S.Th><S.Th>Điện thoại</S.Th><S.Th>Địa chỉ</S.Th><S.Th>Thao tác</S.Th></tr></thead>
+              <thead>
+                <tr>
+                  <S.Th onClick={() => handleSort('name')} style={{ cursor: 'pointer' }}>
+                    Tên {renderSortIcon('name')}
+                  </S.Th>
+                  <S.Th onClick={() => handleSort('email')} style={{ cursor: 'pointer' }}>
+                    Email {renderSortIcon('email')}
+                  </S.Th>
+                  <S.Th onClick={() => handleSort('phone')} style={{ cursor: 'pointer' }}>
+                    Điện thoại {renderSortIcon('phone')}
+                  </S.Th>
+                  <S.Th>Địa chỉ</S.Th>
+                  <S.Th>Thao tác</S.Th>
+                </tr>
+              </thead>
               <tbody>
                 {customers.map(customer => (
                   <tr key={customer.customerId}>

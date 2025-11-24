@@ -6,6 +6,8 @@ import {
 } from 'react-icons/fa';
 import apiClient from '../../api/apiClient';
 
+import useAutoRefresh from '../../hooks/useAutoRefresh';
+
 const PartsLookup = () => {
   const [searchType, setSearchType] = useState('all'); // 'all', 'id', 'name', or 'manufacturer'
   const [searchValue, setSearchValue] = useState('');
@@ -21,7 +23,7 @@ const PartsLookup = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
 
-  const handleSearch = async (e, page = 0) => {
+  const handleSearch = async (e, page = 0, silent = false) => {
     if (e) e.preventDefault();
 
     // For 'all' and 'id' types, search can be empty
@@ -31,76 +33,80 @@ const PartsLookup = () => {
     }
 
     try {
-      setLoading(true);
-      setError(null);
-      setPart(null);
-      setParts([]);
-      setNotFound(false);
-      setCurrentPage(page);
+      if (!silent) {
+        setLoading(true);
+        setError(null);
+        setPart(null);
+        setParts([]);
+        setNotFound(false);
+      }
+
+      // Update current page if provided
+      if (page !== undefined && page !== null) {
+        setCurrentPage(page);
+      }
+
+      const pageToFetch = page !== undefined && page !== null ? page : currentPage;
 
       let response;
       if (searchType === 'all') {
         // Get all parts with pagination - Backend: GET /api/parts?page={page}&size={size}
-        response = await apiClient(`/api/parts?page=${page}&size=${pageSize}&sortBy=partId&sortDir=ASC`);
-        console.log('🔧 All parts loaded:', response);
+        response = await apiClient(`/api/parts?page=${pageToFetch}&size=${pageSize}&sortBy=partId&sortDir=ASC`);
         if (response.content && response.content.length > 0) {
           setParts(response.content);
           setTotalPages(response.totalPages);
           setTotalElements(response.totalElements);
         } else {
-          setNotFound(true);
+          if (!silent) setNotFound(true);
         }
       } else if (searchType === 'id') {
         if (!searchValue.trim()) {
           // If no ID entered, load all parts
-          response = await apiClient(`/api/parts?page=${page}&size=${pageSize}&sortBy=partId&sortDir=ASC`);
+          response = await apiClient(`/api/parts?page=${pageToFetch}&size=${pageSize}&sortBy=partId&sortDir=ASC`);
           if (response.content && response.content.length > 0) {
             setParts(response.content);
             setTotalPages(response.totalPages);
             setTotalElements(response.totalElements);
           } else {
-            setNotFound(true);
+            if (!silent) setNotFound(true);
           }
         } else {
           // Search by Part ID - Backend: GET /api/parts/{id}
           response = await apiClient(`/api/parts/${encodeURIComponent(searchValue.trim())}`);
-          console.log('🔧 Part found:', response);
           setPart(response);
         }
       } else if (searchType === 'name') {
         // Search by part name - Backend: GET /api/parts?search={keyword}&page={page}&size={size}
-        const searchResponse = await apiClient(`/api/parts?search=${encodeURIComponent(searchValue.trim())}&page=${page}&size=${pageSize}`);
+        const searchResponse = await apiClient(`/api/parts?search=${encodeURIComponent(searchValue.trim())}&page=${pageToFetch}&size=${pageSize}`);
         if (searchResponse.content && searchResponse.content.length > 0) {
-          console.log('🔧 Parts found:', searchResponse.content);
           setParts(searchResponse.content);
           setTotalPages(searchResponse.totalPages);
           setTotalElements(searchResponse.totalElements);
         } else {
-          setNotFound(true);
+          if (!silent) setNotFound(true);
           return;
         }
       } else {
         // Search by manufacturer - Backend: GET /api/parts/by-manufacturer?manufacturer={name}&page={page}&size={size}
-        const searchResponse = await apiClient(`/api/parts/by-manufacturer?manufacturer=${encodeURIComponent(searchValue.trim())}&page=${page}&size=${pageSize}`);
+        const searchResponse = await apiClient(`/api/parts/by-manufacturer?manufacturer=${encodeURIComponent(searchValue.trim())}&page=${pageToFetch}&size=${pageSize}`);
         if (searchResponse.content && searchResponse.content.length > 0) {
-          console.log('🔧 Parts found:', searchResponse.content);
           setParts(searchResponse.content);
           setTotalPages(searchResponse.totalPages);
           setTotalElements(searchResponse.totalElements);
         } else {
-          setNotFound(true);
+          if (!silent) setNotFound(true);
           return;
         }
       }
     } catch (err) {
       console.error('❌ Error searching part:', err);
       if (err.message.includes('404') || err.message.includes('not found')) {
-        setNotFound(true);
+        if (!silent) setNotFound(true);
       } else {
-        setError(err.message || 'Không thể tìm kiếm phụ tùng');
+        if (!silent) setError(err.message || 'Không thể tìm kiếm phụ tùng');
       }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -119,11 +125,11 @@ const PartsLookup = () => {
     handleSearch(null, newPage);
   };
 
-  // Load all parts on mount
-  React.useEffect(() => {
-    handleSearch(null, 0);
-    // eslint-disable-next-line
-  }, []);
+  // Auto-refresh logic
+  const { lastUpdated, isRefreshing } = useAutoRefresh({
+    fetchData: (silent) => handleSearch(null, currentPage, silent),
+    shouldPoll: false // Only refresh on visibility change to avoid interrupting search
+  });
 
   const formatCurrency = (amount) => {
     if (!amount) return 'N/A';
@@ -139,6 +145,12 @@ const PartsLookup = () => {
       <S.Header>
         <S.HeaderTitle>
           <FaCog /> Danh sách Phụ tùng
+          {lastUpdated && (
+            <small style={{ color: '#7f8c8d', fontSize: '12px', marginLeft: '12px', fontWeight: 'normal', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              {isRefreshing && <FaSpinner className="spinner" />}
+              Cập nhật: {lastUpdated.toLocaleTimeString('vi-VN')}
+            </small>
+          )}
         </S.HeaderTitle>
         <S.HeaderSubtitle>
           Xem tất cả phụ tùng hoặc tìm kiếm theo Part ID, Tên phụ tùng, Nhà sản xuất
@@ -200,10 +212,10 @@ const PartsLookup = () => {
                 searchType === 'all'
                   ? 'Nhấn "Tìm kiếm" để xem tất cả phụ tùng'
                   : searchType === 'id'
-                  ? 'Nhập Part ID (ví dụ: 1, 2, 3...)'
-                  : searchType === 'name'
-                  ? 'Nhập tên phụ tùng (ví dụ: Pin, Động cơ...)'
-                  : 'Nhập tên nhà sản xuất (ví dụ: VinFast)'
+                    ? 'Nhập Part ID (ví dụ: 1, 2, 3...)'
+                    : searchType === 'name'
+                      ? 'Nhập tên phụ tùng (ví dụ: Pin, Động cơ...)'
+                      : 'Nhập tên nhà sản xuất (ví dụ: VinFast)'
               }
               disabled={searchType === 'all'}
             />
@@ -264,7 +276,18 @@ const PartsLookup = () => {
 
             <S.InfoItem>
               <S.InfoLabel><FaLayerGroup /> Loại phụ tùng</S.InfoLabel>
-              <S.InfoValue>{part.partCategory || 'N/A'}</S.InfoValue>
+              <S.InfoValue>
+                {part.categoryName ? (
+                  <>
+                    <strong>{part.categoryName}</strong>
+                    <span style={{ color: '#6b7280', fontSize: '12px', marginLeft: '8px' }}>
+                      (Max: {part.maxQuantityPerVehicle} / xe)
+                    </span>
+                  </>
+                ) : (
+                  <span style={{ color: '#9ca3af' }}>Không giới hạn</span>
+                )}
+              </S.InfoValue>
             </S.InfoItem>
 
             <S.InfoItem>
@@ -326,7 +349,18 @@ const PartsLookup = () => {
 
                 <S.InfoItem>
                   <S.InfoLabel><FaLayerGroup /> Loại phụ tùng</S.InfoLabel>
-                  <S.InfoValue>{p.partCategory || 'N/A'}</S.InfoValue>
+                  <S.InfoValue>
+                    {p.categoryName ? (
+                      <>
+                        <strong>{p.categoryName}</strong>
+                        <span style={{ color: '#6b7280', fontSize: '12px', marginLeft: '8px' }}>
+                          (Max: {p.maxQuantityPerVehicle} / xe)
+                        </span>
+                      </>
+                    ) : (
+                      <span style={{ color: '#9ca3af' }}>Không giới hạn</span>
+                    )}
+                  </S.InfoValue>
                 </S.InfoItem>
 
                 <S.InfoItem>

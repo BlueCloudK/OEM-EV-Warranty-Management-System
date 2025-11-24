@@ -16,6 +16,9 @@ export const useCustomerManagement = () => {
   const [pagination, setPagination] = useState({ currentPage: 0, pageSize: 10, totalPages: 0, totalElements: 0 });
   const [searchType, setSearchType] = useState('general');
 
+  // Sorting State
+  const [sortConfig, setSortConfig] = useState({ key: 'customerId', direction: 'DESC' });
+
   const fetchCustomers = useCallback(async () => {
     try {
       setLoading(true);
@@ -48,8 +51,13 @@ export const useCustomerManagement = () => {
             break;
         }
       } else {
-        // If no search term, just get all customers with pagination
-        response = await dataApi.getAllCustomers({ page, size });
+        // If no search term, just get all customers with pagination and sorting
+        response = await dataApi.getAllCustomers({
+          page,
+          size,
+          sortBy: sortConfig.key,
+          sortDir: sortConfig.direction
+        });
       }
 
       if (response && response.content) {
@@ -65,7 +73,14 @@ export const useCustomerManagement = () => {
     } finally {
       setLoading(false);
     }
-  }, [pagination.currentPage, pagination.pageSize, effectiveSearchTerm, searchType]);
+  }, [pagination.currentPage, pagination.pageSize, effectiveSearchTerm, searchType, sortConfig]);
+
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'ASC' ? 'DESC' : 'ASC'
+    }));
+  };
 
   useEffect(() => {
     fetchCustomers();
@@ -108,12 +123,14 @@ export const useCustomerManagement = () => {
     loading,
     error,
     pagination,
-    searchTerm, 
+    searchTerm,
     setSearchTerm,
-    searchType, 
+    searchType,
     setSearchType,
     handleSearch,
     handleCreateOrUpdate,
     handlePageChange,
+    sortConfig,
+    handleSort,
   };
 };

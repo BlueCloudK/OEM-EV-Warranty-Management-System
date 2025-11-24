@@ -15,15 +15,20 @@ export const useAdminVehicleManagement = () => {
   const [effectiveSearchTerm, setEffectiveSearchTerm] = useState(''); // Actual term that triggers search
   const [pagination, setPagination] = useState({ currentPage: 0, pageSize: 10, totalPages: 0, totalElements: 0 });
 
+  // Sorting State
+  const [sortConfig, setSortConfig] = useState({ key: 'vehicleId', direction: 'DESC' });
+
   const fetchVehicles = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const params = { 
-        page: pagination.currentPage, 
-        size: pagination.pageSize, 
+      const params = {
+        page: pagination.currentPage,
+        size: pagination.pageSize,
         search: effectiveSearchTerm,
+        sortBy: sortConfig.key,
+        sortDir: sortConfig.direction
       };
 
       // If the user typed something that looks like a VIN, try the VIN-specific endpoint first
@@ -70,16 +75,23 @@ export const useAdminVehicleManagement = () => {
     } finally {
       setLoading(false);
     }
-  }, [pagination.currentPage, pagination.pageSize, effectiveSearchTerm]);
+  }, [pagination.currentPage, pagination.pageSize, effectiveSearchTerm, sortConfig]);
+
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'ASC' ? 'DESC' : 'ASC'
+    }));
+  };
 
   const fetchCustomers = useCallback(async () => {
     try {
-        const response = await dataApi.getAllCustomers({ size: 1000 }); // Fetch all for dropdown
-        if(response && response.content) {
-            setCustomers(response.content);
-        }
+      const response = await dataApi.getAllCustomers({ size: 1000 }); // Fetch all for dropdown
+      if (response && response.content) {
+        setCustomers(response.content);
+      }
     } catch (err) {
-        console.error("Error fetching customers for dropdown:", err);
+      console.error("Error fetching customers for dropdown:", err);
     }
   }, []);
 
@@ -111,12 +123,12 @@ export const useAdminVehicleManagement = () => {
 
   const handleDelete = async (vehicleId) => {
     if (await window.confirm('Bạn có chắc chắn muốn xóa xe này không? (Admin Only)')) {
-        try {
-            await dataApi.deleteVehicle(vehicleId);
-            fetchVehicles(); // Refresh list
-        } catch (err) {
-            alert(`Lỗi khi xóa xe: ${err.message}`);
-        }
+      try {
+        await dataApi.deleteVehicle(vehicleId);
+        fetchVehicles(); // Refresh list
+      } catch (err) {
+        alert(`Lỗi khi xóa xe: ${err.message}`);
+      }
     }
   };
 
@@ -130,11 +142,13 @@ export const useAdminVehicleManagement = () => {
     loading,
     error,
     pagination,
-    searchTerm, 
+    searchTerm,
     setSearchTerm,
     handleSearch,
     handleCreateOrUpdate,
     handleDelete,
     handlePageChange,
+    sortConfig,
+    handleSort,
   };
 };

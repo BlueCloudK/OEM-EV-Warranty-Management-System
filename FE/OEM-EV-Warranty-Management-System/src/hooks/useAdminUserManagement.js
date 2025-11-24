@@ -13,8 +13,8 @@ const normalizeUserForDisplay = (user) => {
 
   if (user.roles && Array.isArray(user.roles) && user.roles.length > 0) {
     const mainRole = user.roles[0]; // e.g., "ROLE_ADMIN"
-    return { 
-      ...user, 
+    return {
+      ...user,
       id: userId, // Ensure id is always present
       roleName: mainRole.replace('ROLE_', '') // e.g., "ADMIN"
     };
@@ -37,6 +37,9 @@ export const useAdminUserManagement = () => {
   const [effectiveSearchTerm, setEffectiveSearchTerm] = useState(''); // New state for search term that actually triggers fetch
   const [selectedRole, setSelectedRole] = useState(''); // New state for role filter
   const [searchType, setSearchType] = useState('general'); // New state for search type: 'general', 'username', or 'id'
+
+  // Sorting State
+  const [sortConfig, setSortConfig] = useState({ key: 'id', direction: 'DESC' });
 
   // Mapping role name to role ID as per backend expectation
   const roles = [
@@ -74,11 +77,13 @@ export const useAdminUserManagement = () => {
         );
       } else {
         // Call general API with search term and role filter
-        const params = { 
-          page: pagination.currentPage, 
-          size: pagination.pageSize, 
-          search: effectiveSearchTerm, 
-          role: selectedRole, 
+        const params = {
+          page: pagination.currentPage,
+          size: pagination.pageSize,
+          search: effectiveSearchTerm,
+          role: selectedRole,
+          sortBy: sortConfig.key,
+          sortDir: sortConfig.direction
         };
         response = await adminUsersApi.getAllUsers(params);
       }
@@ -96,21 +101,28 @@ export const useAdminUserManagement = () => {
     } finally {
       setLoading(false);
     }
-  }, [pagination.currentPage, pagination.pageSize, effectiveSearchTerm, selectedRole, searchType]); // Add searchType to dependencies
+  }, [pagination.currentPage, pagination.pageSize, effectiveSearchTerm, selectedRole, searchType, sortConfig]); // Add sortConfig to dependencies
+
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'ASC' ? 'DESC' : 'ASC'
+    }));
+  };
 
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
 
   const handleSearch = () => {
-    setPagination(prev => ({ ...prev, currentPage: 0 })); 
-    setEffectiveSearchTerm(searchTerm); 
+    setPagination(prev => ({ ...prev, currentPage: 0 }));
+    setEffectiveSearchTerm(searchTerm);
   };
 
   const handleCreateUser = async (formData) => {
     const roleId = roleNameToIdMap[formData.role];
-    const { role, ...restFormData } = formData; 
-    const payload = { ...restFormData, roleId }; 
+    const { role, ...restFormData } = formData;
+    const payload = { ...restFormData, roleId };
 
     try {
       if (formData.role === 'CUSTOMER') {
@@ -144,7 +156,7 @@ export const useAdminUserManagement = () => {
     if (await window.confirm('Bạn có chắc chắn muốn đặt lại mật khẩu người dùng này không?')) {
       try {
         const response = await adminUsersApi.resetUserPassword(userId);
-        const newPassword = response.newPassword; 
+        const newPassword = response.newPassword;
         alert(`Mật khẩu đã được đặt lại thành công! Mật khẩu mới: ${newPassword || 'Đã gửi đến email người dùng'}`);
         fetchUsers(); // Refresh list (optional)
         return { success: true };
@@ -158,19 +170,19 @@ export const useAdminUserManagement = () => {
 
   const handleDelete = async (userId) => {
     if (await window.confirm('Bạn có chắc chắn muốn xóa người dùng này không?')) {
-        try {
-            await adminUsersApi.deleteUser(userId);
-            fetchUsers(); // Refresh list
-        } catch (err) {
-            console.error("Lỗi khi xóa người dùng:", err); 
-            let errorMessage = "Đã xảy ra lỗi khi xóa người dùng.";
-            if (err.response && err.response.data && err.response.data.message) {
-                errorMessage = err.response.data.message; 
-            } else if (err.message) {
-                errorMessage = err.message;
-            }
-            alert(`Lỗi khi xóa người dùng: ${errorMessage}`);
+      try {
+        await adminUsersApi.deleteUser(userId);
+        fetchUsers(); // Refresh list
+      } catch (err) {
+        console.error("Lỗi khi xóa người dùng:", err);
+        let errorMessage = "Đã xảy ra lỗi khi xóa người dùng.";
+        if (err.response && err.response.data && err.response.data.message) {
+          errorMessage = err.response.data.message;
+        } else if (err.message) {
+          errorMessage = err.message;
         }
+        alert(`Lỗi khi xóa người dùng: ${errorMessage}`);
+      }
     }
   };
 
@@ -183,7 +195,7 @@ export const useAdminUserManagement = () => {
     loading,
     error,
     pagination,
-    searchTerm, 
+    searchTerm,
     setSearchTerm,
     handleSearch,
     handleCreateUser,
@@ -191,10 +203,12 @@ export const useAdminUserManagement = () => {
     handleResetPassword,
     handleDelete,
     handlePageChange,
-    roles, 
-    selectedRole, 
-    setSelectedRole, 
+    roles,
+    selectedRole,
+    setSelectedRole,
     searchType, // Expose searchType
     setSearchType, // Expose setSearchType
+    sortConfig,
+    handleSort,
   };
 };

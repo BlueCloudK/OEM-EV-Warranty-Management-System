@@ -11,6 +11,9 @@ export const useAdminWarrantyClaims = () => {
   const [pagination, setPagination] = useState({ currentPage: 0, pageSize: 10, totalPages: 0, totalElements: 0 });
   const [filterStatus, setFilterStatus] = useState('all');
 
+  // Sorting State
+  const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'DESC' });
+
   const fetchClaims = useCallback(async (silent = false) => {
     try {
       if (!silent) {
@@ -21,6 +24,8 @@ export const useAdminWarrantyClaims = () => {
       const params = {
         page: pagination.currentPage,
         size: pagination.pageSize,
+        sortBy: sortConfig.key,
+        sortDir: sortConfig.direction
       };
 
       let response;
@@ -46,7 +51,14 @@ export const useAdminWarrantyClaims = () => {
         setLoading(false);
       }
     }
-  }, [pagination.currentPage, pagination.pageSize, filterStatus]);
+  }, [pagination.currentPage, pagination.pageSize, filterStatus, sortConfig]);
+
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'ASC' ? 'DESC' : 'ASC'
+    }));
+  };
 
   // Smart refresh: poll when there are claims waiting for admin action
   const { lastUpdated, autoRefreshing, getTimeAgo } = useSmartRefresh(fetchClaims, {
@@ -190,6 +202,9 @@ export const useAdminWarrantyClaims = () => {
     lastUpdated,
     autoRefreshing,
     getTimeAgo,
+    // Sorting props
+    sortConfig,
+    handleSort,
   };
 };
 

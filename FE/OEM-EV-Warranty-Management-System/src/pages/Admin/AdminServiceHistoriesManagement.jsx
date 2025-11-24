@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAdminServiceHistoriesManagement } from '../../hooks/useAdminServiceHistoriesManagement';
 import * as S from './AdminServiceHistoriesManagement.styles';
-import { FaHistory, FaSpinner, FaPlus, FaEdit, FaTrash, FaSearch, FaTimes } from 'react-icons/fa';
+import { FaHistory, FaSpinner, FaPlus, FaEdit, FaTrash, FaSearch, FaTimes, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
 
 const ServiceHistoryFormModal = ({ isOpen, onClose, onSubmit, history }) => {
   const [formData, setFormData] = useState({});
@@ -129,7 +129,8 @@ const ServiceHistoryFormModal = ({ isOpen, onClose, onSubmit, history }) => {
 const AdminServiceHistoriesManagement = () => {
   const {
     serviceHistories, loading, error, pagination, searchTerm, setSearchTerm,
-    searchType, setSearchType, dateRange, setDateRange, handleSearch, handleClearSearch, handleCreateOrUpdate, handleDelete, handlePageChange
+    searchType, setSearchType, dateRange, setDateRange, handleSearch, handleClearSearch, handleCreateOrUpdate, handleDelete, handlePageChange,
+    sortConfig, handleSort
   } = useAdminServiceHistoriesManagement();
 
   const [showForm, setShowForm] = useState(false);
@@ -143,6 +144,12 @@ const AdminServiceHistoriesManagement = () => {
   const openEditForm = (history) => {
     setSelectedHistory(history);
     setShowForm(true);
+  };
+
+  const renderSortIcon = (key) => {
+    if (sortConfig.key !== key) return <FaSort style={{ color: '#ccc', marginLeft: '5px' }} />;
+    if (sortConfig.direction === 'ASC') return <FaSortUp style={{ color: '#3498db', marginLeft: '5px' }} />;
+    return <FaSortDown style={{ color: '#3498db', marginLeft: '5px' }} />;
   };
 
   return (
@@ -162,8 +169,8 @@ const AdminServiceHistoriesManagement = () => {
               type="text"
               placeholder={
                 searchType === 'vehicleName' ? 'Nhập tên xe...' :
-                searchType === 'vehicleVin' ? 'Nhập VIN...' :
-                'Tìm kiếm...'
+                  searchType === 'vehicleVin' ? 'Nhập VIN...' :
+                    'Tìm kiếm...'
               }
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -187,13 +194,21 @@ const AdminServiceHistoriesManagement = () => {
             <S.Table>
               <thead>
                 <tr>
-                  <S.Th>ID</S.Th>
-                  <S.Th>Xe</S.Th>
-                  <S.Th>Vin</S.Th>
+                  <S.Th onClick={() => handleSort('serviceHistoryId')} style={{ cursor: 'pointer' }}>
+                    ID {renderSortIcon('serviceHistoryId')}
+                  </S.Th>
+                  <S.Th onClick={() => handleSort('vehicleName')} style={{ cursor: 'pointer' }}>
+                    Xe {renderSortIcon('vehicleName')}
+                  </S.Th>
+                  <S.Th onClick={() => handleSort('vehicleVin')} style={{ cursor: 'pointer' }}>
+                    Vin {renderSortIcon('vehicleVin')}
+                  </S.Th>
                   {/* <S.Th>Loại dịch vụ</S.Th> */}
                   <S.Th>Phụ tùng</S.Th>
                   <S.Th>Mô tả</S.Th>
-                  <S.Th>Ngày dịch vụ</S.Th>
+                  <S.Th onClick={() => handleSort('serviceDate')} style={{ cursor: 'pointer' }}>
+                    Ngày dịch vụ {renderSortIcon('serviceDate')}
+                  </S.Th>
                   <S.Th>Thao tác</S.Th>
                 </tr>
               </thead>

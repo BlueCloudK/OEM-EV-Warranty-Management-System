@@ -14,14 +14,21 @@ export const useVehicleManagement = () => {
   const [pagination, setPagination] = useState({ currentPage: 0, pageSize: 10, totalPages: 0, totalElements: 0 });
   const [searchType, setSearchType] = useState('general');
 
-  const fetchVehicles = useCallback(async () => {
+  // Sorting State
+  const [sortConfig, setSortConfig] = useState({ key: 'vehicleId', direction: 'DESC' });
+
+  const fetchVehicles = useCallback(async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) {
+        setLoading(true);
+      }
       setError(null);
 
       let response;
       const page = pagination.currentPage;
       const size = pagination.pageSize;
+      const sortBy = sortConfig.key;
+      const sortDir = sortConfig.direction;
 
       if (searchTerm) {
         switch (searchType) {
@@ -34,21 +41,21 @@ export const useVehicleManagement = () => {
             response = { content: vehicleByVin ? [vehicleByVin] : [], totalPages: vehicleByVin ? 1 : 0, totalElements: vehicleByVin ? 1 : 0 };
             break;
           case 'customer':
-            response = await dataApi.getVehiclesByCustomerId(searchTerm, page, size);
+            response = await dataApi.getVehiclesByCustomerId(searchTerm, page, size, sortBy, sortDir);
             break;
           case 'model':
-            response = await dataApi.searchVehicles({ model: searchTerm, page, size });
+            response = await dataApi.searchVehicles({ model: searchTerm, page, size, sortBy, sortDir });
             break;
           case 'brand':
-            response = await dataApi.searchVehicles({ brand: searchTerm, page, size });
+            response = await dataApi.searchVehicles({ brand: searchTerm, page, size, sortBy, sortDir });
             break;
           case 'general':
           default:
-            response = await dataApi.getAllVehicles({ page, size, search: searchTerm });
+            response = await dataApi.getAllVehicles({ page, size, search: searchTerm, sortBy, sortDir });
             break;
         }
       } else {
-        response = await dataApi.getAllVehicles({ page, size });
+        response = await dataApi.getAllVehicles({ page, size, sortBy, sortDir });
       }
 
       if (response && response.content) {
@@ -59,11 +66,22 @@ export const useVehicleManagement = () => {
       }
     } catch (err) {
       console.error("Error fetching vehicles:", err);
-      setError("Không thể tải danh sách xe.");
+      if (!silent) {
+        setError("Không thể tải danh sách xe.");
+      }
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
-  }, [pagination.currentPage, pagination.pageSize, searchTerm, searchType]);
+  }, [pagination.currentPage, pagination.pageSize, searchTerm, searchType, sortConfig]);
+
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'ASC' ? 'DESC' : 'ASC'
+    }));
+  };
 
   const fetchCustomers = useCallback(async () => {
     try {
@@ -196,5 +214,7 @@ export const useVehicleManagement = () => {
     fetchInstalledPartsForVehicle,
     clearInstalledParts, // Expose clear function
     handlePageChange,
+    sortConfig,
+    handleSort,
   };
 };

@@ -1,6 +1,14 @@
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 
+const spin = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+`;
+
+// Reuse từ AdminPartsManagement.styles.js
 export const PageContainer = styled.div`
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
   padding: 20px;
 `;
 
@@ -21,7 +29,6 @@ export const HeaderTop = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
   flex-wrap: wrap;
   gap: 16px;
 `;
@@ -35,7 +42,7 @@ export const HeaderTitle = styled.h1`
 `;
 
 export const Button = styled.button`
-  background: ${({ $primary, $danger, $small }) => ($primary ? '#1d4ed8' : $danger ? '#ef4444' : '#6b7280')};
+  background: ${({ $primary, $danger }) => ($primary ? '#1d4ed8' : $danger ? '#ef4444' : '#6b7280')};
   color: white;
   border: none;
   padding: ${({ $small }) => ($small ? '6px 12px' : '10px 16px')};
@@ -58,31 +65,6 @@ export const Button = styled.button`
   }
 `;
 
-export const SearchContainer = styled.div`
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  flex-wrap: wrap;
-`;
-
-export const SearchSelect = styled.select`
-  padding: 10px 14px;
-  border: 1px solid #d1d5db;
-  border-radius: 10px;
-  background: #fff;
-  font-size: 14px;
-  min-width: 200px;
-  color: #0f172a;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
-  transition: border-color .2s ease, box-shadow .2s ease;
-
-  &:focus {
-    outline: none;
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
-  }
-`;
-
 export const TableContainer = styled.div`
   background: #fff;
   border-radius: 12px;
@@ -93,15 +75,6 @@ export const TableContainer = styled.div`
 export const Table = styled.table`
   width: 100%;
   border-collapse: collapse;
-
-  .expanded-row > td {
-    border-bottom: none;
-  }
-
-  .child-row > td {
-    padding: 0;
-    border: none;
-  }
 `;
 
 export const Th = styled.th`
@@ -130,7 +103,7 @@ export const LoadingState = styled(EmptyState)`
   svg {
     font-size: 24px;
     color: #1d4ed8;
-    animation: spin 1s linear infinite;
+    animation: ${spin} 1s linear infinite;
   }
   p {
     margin-top: 16px;
@@ -148,7 +121,7 @@ export const ModalOverlay = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 9999;
+  z-index: 1000;
 `;
 
 export const ModalContent = styled.div`
@@ -157,6 +130,8 @@ export const ModalContent = styled.div`
   padding: 24px;
   width: 500px;
   max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
 `;
 
 export const FormGroup = styled.div`
@@ -178,22 +153,6 @@ export const Input = styled.input`
   box-sizing: border-box;
 `;
 
-export const Select = styled.select`
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid ${({ $hasError }) => ($hasError ? '#ef4444' : '#d1d5db')};
-  border-radius: 6px;
-  box-sizing: border-box;
-`;
-
-export const TextArea = styled.textarea`
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid ${({ $hasError }) => ($hasError ? '#ef4444' : '#d1d5db')};
-  border-radius: 6px;
-  box-sizing: border-box;
-`;
-
 export const ErrorText = styled.p`
   margin: 4px 0 0 0;
   font-size: 12px;
@@ -204,9 +163,98 @@ export const PaginationContainer = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 20px;
+  margin-top: 20px;
+  padding: 16px;
   background: white;
-  border-radius: 0 0 12px 12px;
-  margin-top: -12px;
+  border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  gap: 12px;
+`;
+
+// New components cho Part Category
+export const CategoryDescription = styled.p`
+  font-size: 12px;
+  color: #6b7280;
+  margin: 4px 0 0 0;
+  line-height: 1.4;
+`;
+
+export const StatusBadge = styled.span`
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  background: ${({ $active }) => ($active ? '#d1fae5' : '#e5e7eb')};
+  color: ${({ $active }) => ($active ? '#065f46' : '#6b7280')};
+`;
+
+export const PartsCountBadge = styled.span`
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: #dbeafe;
+  color: #1e40af;
+  font-size: 12px;
+  font-weight: 500;
+`;
+
+export const Textarea = styled.textarea`
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid ${({ $hasError }) => ($hasError ? '#ef4444' : '#d1d5db')};
+  border-radius: 6px;
+  box-sizing: border-box;
+  min-height: 80px;
+  font-family: inherit;
+  resize: vertical;
+
+  &:focus {
+    outline: none;
+    border-color: #1d4ed8;
+  }
+`;
+
+export const Checkbox = styled.input.attrs({ type: 'checkbox' })`
+  margin-right: 8px;
+  cursor: pointer;
+`;
+
+export const CheckboxLabel = styled.label`
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  font-weight: 400;
+  color: #374151;
+`;
+
+export const HelpText = styled.p`
+  margin: 6px 0 0 0;
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.4;
+`;
+
+export const ModalTitle = styled.h2`
+  margin: 0 0 20px 0;
+  color: #1f2937;
+  font-size: 20px;
+`;
+
+export const ButtonGroup = styled.div`
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 20px;
+`;
+
+export const CategoryNameCell = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
+export const CategoryNameMain = styled.strong`
+  color: #1f2937;
+  font-size: 14px;
 `;

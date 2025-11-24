@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useAdminUserManagement } from '../../hooks/useAdminUserManagement';
 import * as S from './AdminUserManagement.styles';
-import { FaUsers, FaPlus, FaSearch, FaTrash, FaSpinner, FaMapMarkerAlt, FaPhone, FaAddressBook, FaKey } from 'react-icons/fa';
+import { FaUsers, FaPlus, FaSearch, FaTrash, FaSpinner, FaMapMarkerAlt, FaPhone, FaAddressBook, FaKey, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
 
 // Role mapping for display and update
 const roles = [
@@ -22,8 +22,8 @@ const UserFormModal = ({ isOpen, onClose, onSubmit }) => {
     password: '',
     role: 'CUSTOMER',
     address: '',
-    name: '', 
-    phone: ''  
+    name: '',
+    phone: ''
   });
   const [errors, setErrors] = useState({});
 
@@ -51,7 +51,7 @@ const UserFormModal = ({ isOpen, onClose, onSubmit }) => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    if (errors[name]) setErrors(prev => ({...prev, [name]: null}));
+    if (errors[name]) setErrors(prev => ({ ...prev, [name]: null }));
   };
 
   const handleSubmit = async (e) => {
@@ -101,7 +101,7 @@ const UserFormModal = ({ isOpen, onClose, onSubmit }) => {
             <S.Input name="password" type="password" value={formData.password || ''} onChange={handleInputChange} required $hasError={!!errors.password} />
             {errors.password && <S.ErrorText>{errors.password}</S.ErrorText>}
           </S.FormGroup>
-          
+
           {formData.role === 'CUSTOMER' && (
             <>
               <S.FormGroup>
@@ -138,7 +138,8 @@ const AdminUserManagement = () => {
   const {
     users, loading: dataLoading, error, pagination, searchTerm, setSearchTerm,
     handleSearch, handleCreateUser, handleChangeRole, handleResetPassword, handleDelete, handlePageChange,
-    roles, selectedRole, setSelectedRole, searchType, setSearchType 
+    roles, selectedRole, setSelectedRole, searchType, setSearchType,
+    sortConfig, handleSort
   } = useAdminUserManagement();
 
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -159,6 +160,12 @@ const AdminUserManagement = () => {
       default:
         return 'Tìm theo Username hoặc Email...';
     }
+  };
+
+  const renderSortIcon = (key) => {
+    if (sortConfig.key !== key) return <FaSort style={{ color: '#ccc', marginLeft: '5px' }} />;
+    if (sortConfig.direction === 'ASC') return <FaSortUp style={{ color: '#3498db', marginLeft: '5px' }} />;
+    return <FaSortDown style={{ color: '#3498db', marginLeft: '5px' }} />;
   };
 
   if (authLoading || dataLoading) {
@@ -185,14 +192,14 @@ const AdminUserManagement = () => {
         >
           <option value="general">Tìm kiếm chung</option>
           <option value="username">Tìm theo Username</option>
-          <option value="id">Tìm theo ID</option> 
+          <option value="id">Tìm theo ID</option>
         </select>
 
-        <input 
-          placeholder={getSearchPlaceholder()} 
-          value={searchTerm} 
-          onChange={(e) => setSearchTerm(e.target.value)} 
-          onKeyPress={(e) => e.key === 'Enter' && handleSearch()} 
+        <input
+          placeholder={getSearchPlaceholder()}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
         />
         <button className="btn" onClick={handleSearch}><FaSearch /> Tìm kiếm</button>
 
@@ -216,9 +223,15 @@ const AdminUserManagement = () => {
           <S.Table>
             <thead>
               <tr>
-                <S.Th>ID</S.Th>
-                <S.Th>Username</S.Th>
-                <S.Th>Email</S.Th>
+                <S.Th onClick={() => handleSort('id')} style={{ cursor: 'pointer' }}>
+                  ID {renderSortIcon('id')}
+                </S.Th>
+                <S.Th onClick={() => handleSort('username')} style={{ cursor: 'pointer' }}>
+                  Username {renderSortIcon('username')}
+                </S.Th>
+                <S.Th onClick={() => handleSort('email')} style={{ cursor: 'pointer' }}>
+                  Email {renderSortIcon('email')}
+                </S.Th>
                 <S.Th>Role</S.Th>
                 <S.Th>Thao tác</S.Th>
               </tr>
@@ -243,38 +256,40 @@ const AdminUserManagement = () => {
                       <S.Button $small $danger onClick={() => handleDelete(user.id)}><FaTrash /></S.Button>
                     </div>
                   </S.Td>
-                </tr>
+                </tr >
               ))}
-            </tbody>
-          </S.Table>
-        </S.TableContainer>
+            </tbody >
+          </S.Table >
+        </S.TableContainer >
       )}
 
       {/* Pagination Controls */}
-      {pagination && !error && (
-        <S.PaginationContainer>
-          <S.Button
-            $small
-            onClick={() => handlePageChange(pagination.currentPage - 1)}
-            disabled={pagination.currentPage === 0}
-          >
-            Trước
-          </S.Button>
-          <span style={{ margin: '0 15px', fontWeight: 'bold' }}>
-            Trang {pagination.currentPage + 1} / {pagination.totalPages}
-            <span style={{ marginLeft: '10px', color: '#666', fontSize: '0.9em' }}>
-              (Tổng: {pagination.totalElements} người dùng)
+      {
+        pagination && !error && (
+          <S.PaginationContainer>
+            <S.Button
+              $small
+              onClick={() => handlePageChange(pagination.currentPage - 1)}
+              disabled={pagination.currentPage === 0}
+            >
+              Trước
+            </S.Button>
+            <span style={{ margin: '0 15px', fontWeight: 'bold' }}>
+              Trang {pagination.currentPage + 1} / {pagination.totalPages}
+              <span style={{ marginLeft: '10px', color: '#666', fontSize: '0.9em' }}>
+                (Tổng: {pagination.totalElements} người dùng)
+              </span>
             </span>
-          </span>
-          <S.Button
-            $small
-            onClick={() => handlePageChange(pagination.currentPage + 1)}
-            disabled={pagination.currentPage >= pagination.totalPages - 1}
-          >
-            Tiếp
-          </S.Button>
-        </S.PaginationContainer>
-      )}
+            <S.Button
+              $small
+              onClick={() => handlePageChange(pagination.currentPage + 1)}
+              disabled={pagination.currentPage >= pagination.totalPages - 1}
+            >
+              Tiếp
+            </S.Button>
+          </S.PaginationContainer>
+        )
+      }
 
       <UserFormModal
         isOpen={showCreateForm}

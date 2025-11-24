@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useVehicleManagement } from '../../hooks/useVehicleManagement';
+import useAutoRefresh from '../../hooks/useAutoRefresh';
 import * as S from './VehicleManagement.styles';
 import { FaCar, FaPlus, FaEdit, FaSearch, FaSpinner, FaTrash, FaClipboardCheck, FaWrench, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 
@@ -221,6 +222,11 @@ const InstallPartFormModal = ({ isOpen, onClose, onSubmit, vehicle, parts }) => 
     const { success, message } = await onSubmit(payload);
     if (success) {
       onClose();
+      // Trigger refresh of installed parts for this vehicle if it's the currently expanded one or selected one
+      // Since we don't have direct access to fetchInstalledPartsForVehicle here easily without passing it down, 
+      // we rely on the parent component to handle the refresh or we pass a callback.
+      // Actually, the parent component passes `onSubmit` which is `handleInstallPart`.
+      // We should modify the parent component to handle the refresh.
     } else {
       setErrors({ general: message });
     }
@@ -236,7 +242,7 @@ const InstallPartFormModal = ({ isOpen, onClose, onSubmit, vehicle, parts }) => 
           {errors.general && <S.ErrorText>{errors.general}</S.ErrorText>}
           <S.FormGroup>
             <S.Label>Phụ tùng *</S.Label>
-            <S.Select name="partId" value={formData.partId || ''} onChange={handleInputChange} required hasError={!!errors.partId}>
+            <S.Select name="partId" value={formData.partId || ''} onChange={handleInputChange} required $hasError={!!errors.partId}>
               <option value="">Chọn phụ tùng</option>
               {parts.map(p => <option key={p.partId} value={p.partId}>{p.partName}</option>)}
             </S.Select>
@@ -244,12 +250,12 @@ const InstallPartFormModal = ({ isOpen, onClose, onSubmit, vehicle, parts }) => 
           </S.FormGroup>
           <S.FormGroup>
             <S.Label>Ngày lắp đặt *</S.Label>
-            <S.Input name="installationDate" type="date" value={formData.installationDate || ''} onChange={handleInputChange} required hasError={!!errors.installationDate} />
+            <S.Input name="installationDate" type="date" value={formData.installationDate || ''} onChange={handleInputChange} required $hasError={!!errors.installationDate} />
             {errors.installationDate && <S.ErrorText>{errors.installationDate}</S.ErrorText>}
           </S.FormGroup>
           <S.FormGroup>
             <S.Label>Ngày hết hạn bảo hành *</S.Label>
-            <S.Input name="warrantyExpirationDate" type="date" value={formData.warrantyExpirationDate || ''} onChange={handleInputChange} required hasError={!!errors.warrantyExpirationDate} />
+            <S.Input name="warrantyExpirationDate" type="date" value={formData.warrantyExpirationDate || ''} onChange={handleInputChange} required $hasError={!!errors.warrantyExpirationDate} />
             {errors.warrantyExpirationDate && <S.ErrorText>{errors.warrantyExpirationDate}</S.ErrorText>}
           </S.FormGroup>
           <S.FormGroup>
@@ -261,13 +267,14 @@ const InstallPartFormModal = ({ isOpen, onClose, onSubmit, vehicle, parts }) => 
               value={formData.mileageAtInstallation || 0}
               onChange={handleInputChange}
               required
-              hasError={!!errors.mileageAtInstallation}
+              $hasError={!!errors.mileageAtInstallation}
             />
             <small style={{ color: '#666', fontSize: '0.85rem' }}>
               Số km hiện tại của xe: {vehicle?.mileage?.toLocaleString() || 'N/A'} km
             </small>
             {errors.mileageAtInstallation && <S.ErrorText>{errors.mileageAtInstallation}</S.ErrorText>}
           </S.FormGroup>
+
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
             <S.Button type="button" onClick={onClose}>Hủy</S.Button>
             <S.Button primary type="submit">Lắp đặt</S.Button>
@@ -284,8 +291,14 @@ const VehicleManagement = () => {
   const {
     vehicles, customers, parts, installedParts, loading, error, searchTerm, setSearchTerm,
     searchType, setSearchType, handleSearch, handleCreateOrUpdate, handleDelete, handleInstallPart, handleDeleteInstalledPart, fetchInstalledPartsForVehicle, clearInstalledParts,
-    pagination, handlePageChange
+    pagination, handlePageChange, sortConfig, handleSort
   } = useVehicleManagement();
+
+  // Auto-refresh logic (Visibility only, no polling needed for vehicles)
+  const { lastUpdated, isRefreshing } = useAutoRefresh({
+    fetchData: (silent) => handleSearch(silent),
+    shouldPoll: false
+  });
 
   const [showForm, setShowForm] = useState(false);
   const [showInstallPartForm, setShowInstallPartForm] = useState(false);
@@ -337,12 +350,31 @@ const VehicleManagement = () => {
     }
   };
 
+  const onInstallPartSubmit = async (formData) => {
+    const result = await handleInstallPart(formData);
+    if (result.success) {
+      // Refresh installed parts if the vehicle is expanded
+      if (expandedVehicleId === selectedVehicle?.vehicleId) {
+        fetchInstalledPartsForVehicle(selectedVehicle.vehicleId);
+      }
+    }
+    return result;
+  };
+
   return (
     <S.PageContainer>
       <S.ContentWrapper>
         <S.Header>
           <S.HeaderTop>
-            <S.HeaderTitle><FaCar /> Quản lý Xe</S.HeaderTitle>
+            <S.HeaderTitle>
+              <FaCar /> Quản lý Xe
+              {lastUpdated && (
+                <small style={{ color: '#7f8c8d', fontSize: '12px', marginLeft: '12px', fontWeight: 'normal', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  {isRefreshing && <FaSpinner className="spinner" />}
+                  Cập nhật: {lastUpdated.toLocaleTimeString('vi-VN')}
+                </small>
+              )}
+            </S.HeaderTitle>
             <S.Button primary onClick={openCreateForm}><FaPlus /> Tạo xe mới</S.Button>
           </S.HeaderTop>
           <S.SearchContainer>
@@ -352,7 +384,7 @@ const VehicleManagement = () => {
               <option value="model">Tìm theo Model</option>
             </S.SearchSelect>
             <S.Input placeholder={getSearchPlaceholder()} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSearch()} />
-            <S.Button small onClick={handleSearch}><FaSearch /> Tìm kiếm</S.Button>
+            <S.Button $small onClick={handleSearch}><FaSearch /> Tìm kiếm</S.Button>
           </S.SearchContainer>
         </S.Header>
 
@@ -379,11 +411,11 @@ const VehicleManagement = () => {
                       {/* <S.Td>{vehicle.customerId}</S.Td> */}
                       <S.Td>
                         <div style={{ display: 'flex', gap: '8px' }}>
-                          <S.Button small onClick={() => openEditForm(vehicle)}><FaEdit /></S.Button>
-                          <S.Button small danger onClick={() => handleDelete(vehicle.vehicleId)}><FaTrash /></S.Button>
-                          <S.Button small onClick={() => openInstallPartForm(vehicle)}><FaWrench /></S.Button>
-                          <S.Button small primary onClick={() => createWarrantyClaim(vehicle)}><FaClipboardCheck /></S.Button>
-                          <S.Button small onClick={() => toggleInstalledParts(vehicle.vehicleId)}>
+                          <S.Button $small onClick={() => openEditForm(vehicle)}><FaEdit /></S.Button>
+                          <S.Button $small $danger onClick={() => handleDelete(vehicle.vehicleId)}><FaTrash /></S.Button>
+                          <S.Button $small onClick={() => openInstallPartForm(vehicle)}><FaWrench /></S.Button>
+                          <S.Button $small $primary onClick={() => createWarrantyClaim(vehicle)}><FaClipboardCheck /></S.Button>
+                          <S.Button $small onClick={() => toggleInstalledParts(vehicle.vehicleId)}>
                             {expandedVehicleId === vehicle.vehicleId ? <FaChevronUp /> : <FaChevronDown />}
                           </S.Button>
                         </div>
@@ -435,8 +467,8 @@ const VehicleManagement = () => {
                                         </S.Td>
                                         <S.Td>
                                           <S.Button
-                                            small
-                                            danger
+                                            $small
+                                            $danger
                                             onClick={() => handleDeleteInstalledPart(part.installedPartId, vehicle.vehicleId)}
                                           >
                                             <FaTrash /> Ẩn
@@ -465,7 +497,7 @@ const VehicleManagement = () => {
         {!loading && !error && vehicles.length > 0 && pagination.totalPages > 0 && (
           <S.PaginationContainer>
             <S.Button
-              small
+              $small
               onClick={() => handlePageChange(pagination.currentPage - 1)}
               disabled={pagination.currentPage === 0}
             >
@@ -478,7 +510,7 @@ const VehicleManagement = () => {
               </span>
             </span>
             <S.Button
-              small
+              $small
               onClick={() => handlePageChange(pagination.currentPage + 1)}
               disabled={pagination.currentPage >= pagination.totalPages - 1}
             >
@@ -498,7 +530,7 @@ const VehicleManagement = () => {
         <InstallPartFormModal
           isOpen={showInstallPartForm}
           onClose={() => setShowInstallPartForm(false)}
-          onSubmit={handleInstallPart}
+          onSubmit={onInstallPartSubmit}
           vehicle={selectedVehicle}
           parts={parts}
         />

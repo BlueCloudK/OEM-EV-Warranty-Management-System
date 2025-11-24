@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useWarrantyClaimsManagement } from "../../hooks/useWarrantyClaimsManagement";
+import useAutoRefresh from "../../hooks/useAutoRefresh";
 import PaidWarrantyClaimForm from "../../components/PaidWarrantyClaimForm";
 import * as S from "./WarrantyClaimsManagement.styles";
 import {
@@ -10,6 +11,9 @@ import {
   FaEye,
   FaCheck,
   FaTrash,
+  FaSort,
+  FaSortUp,
+  FaSortDown,
 } from "react-icons/fa";
 import styled from "styled-components";
 
@@ -267,9 +271,21 @@ const VehicleSelectionModal = ({
 }) => {
   const [selectedVehicleId, setSelectedVehicleId] = useState("");
   const [selectedInstalledPartId, setSelectedInstalledPartId] = useState("");
+  const [partSearchTerm, setPartSearchTerm] = useState("");
+  const [vehicleSearchTerm, setVehicleSearchTerm] = useState("");
 
-  const handleVehicleChange = (e) => {
-    const vehicleId = e.target.value;
+  // Filter parts based on search term
+  const filteredParts = installedParts.filter(p =>
+    p.partName.toLowerCase().includes(partSearchTerm.toLowerCase())
+  );
+
+  // Filter vehicles based on search term
+  const filteredVehicles = vehicles.filter(v =>
+    v.vehicleName.toLowerCase().includes(vehicleSearchTerm.toLowerCase()) ||
+    v.vehicleVin.toLowerCase().includes(vehicleSearchTerm.toLowerCase())
+  );
+
+  const handleVehicleSelect = (vehicleId) => {
     setSelectedVehicleId(vehicleId);
     setSelectedInstalledPartId("");
     if (vehicleId) {
@@ -296,47 +312,127 @@ const VehicleSelectionModal = ({
         <h2>Chọn Xe và Linh Kiện</h2>
         <S.FormGroup>
           <S.Label>Xe *</S.Label>
-          <S.Select value={selectedVehicleId} onChange={handleVehicleChange}>
-            <option value="">Chọn xe</option>
-            {vehicles.map((v) => (
-              <option key={v.vehicleId} value={v.vehicleId}>
-                {v.vehicleName} ({v.vehicleVin})
-              </option>
-            ))}
-          </S.Select>
+          <S.Input
+            type="text"
+            placeholder="Tìm kiếm xe (nhập tên hoặc VIN...)"
+            value={vehicleSearchTerm}
+            onChange={(e) => setVehicleSearchTerm(e.target.value)}
+            style={{ marginBottom: '10px' }}
+          />
+          <div
+            style={{
+              maxHeight: '200px',
+              overflowY: 'auto',
+              border: '1px solid #d1d5db',
+              borderRadius: '6px',
+              background: 'white',
+              padding: '4px',
+              marginBottom: '10px'
+            }}
+          >
+            {filteredVehicles.length === 0 ? (
+              <div style={{ padding: '12px', color: '#6b7280', textAlign: 'center' }}>
+                Không tìm thấy xe nào phù hợp
+              </div>
+            ) : (
+              filteredVehicles.map((v) => {
+                const isSelected = selectedVehicleId === String(v.vehicleId);
+                return (
+                  <div
+                    key={v.vehicleId}
+                    onClick={() => handleVehicleSelect(String(v.vehicleId))}
+                    style={{
+                      padding: '10px 12px',
+                      cursor: 'pointer',
+                      borderBottom: '1px solid #f3f4f6',
+                      background: isSelected ? '#eff6ff' : 'white',
+                      borderLeft: isSelected ? '4px solid #3b82f6' : '4px solid transparent',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    <div style={{ fontWeight: '600', color: '#1f2937' }}>
+                      {v.vehicleName}
+                    </div>
+                    <div style={{ fontSize: '13px', color: '#6b7280' }}>
+                      VIN: {v.vehicleVin}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
         </S.FormGroup>
         <S.FormGroup>
           <S.Label>Linh kiện đã lắp đặt *</S.Label>
-          <S.Select
-            value={selectedInstalledPartId}
-            onChange={(e) => setSelectedInstalledPartId(e.target.value)}
+          <S.Input
+            type="text"
+            placeholder="Tìm kiếm linh kiện (nhập tên linh kiện...)"
+            value={partSearchTerm}
+            onChange={(e) => setPartSearchTerm(e.target.value)}
             disabled={!selectedVehicleId}
+            style={{ marginBottom: '10px' }}
+          />
+          <div
+            style={{
+              maxHeight: '300px',
+              overflowY: 'auto',
+              border: '1px solid #d1d5db',
+              borderRadius: '6px',
+              background: selectedVehicleId ? 'white' : '#f3f4f6',
+              padding: '4px'
+            }}
           >
-            <option value="">Chọn linh kiện</option>
-            {installedParts.map((p) => {
-              const installDate = new Date(
-                p.installationDate
-              ).toLocaleDateString("vi-VN");
-              const expiryDate = new Date(
-                p.warrantyExpirationDate
-              ).toLocaleDateString("vi-VN");
-              const today = new Date();
-              const expiry = new Date(p.warrantyExpirationDate);
-              const isExpired = today > expiry;
-              const daysRemaining = Math.ceil(
-                (expiry - today) / (1000 * 60 * 60 * 24)
-              );
+            {!selectedVehicleId ? (
+              <div style={{ padding: '12px', color: '#6b7280', textAlign: 'center' }}>
+                Vui lòng chọn xe trước
+              </div>
+            ) : filteredParts.length === 0 ? (
+              <div style={{ padding: '12px', color: '#6b7280', textAlign: 'center' }}>
+                Không tìm thấy linh kiện nào phù hợp
+              </div>
+            ) : (
+              filteredParts.map((p) => {
+                const installDate = new Date(p.installationDate).toLocaleDateString("vi-VN");
+                const expiryDate = new Date(p.warrantyExpirationDate).toLocaleDateString("vi-VN");
+                const today = new Date();
+                const expiry = new Date(p.warrantyExpirationDate);
+                const isExpired = today > expiry;
+                const daysRemaining = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
+                const isSelected = selectedInstalledPartId === String(p.installedPartId);
 
-              return (
-                <option key={p.installedPartId} value={p.installedPartId}>
-                  {p.partName} | Lắp: {installDate} | BH đến: {expiryDate} |
-                  {isExpired
-                    ? ` HẾT HẠN (Ngày) ${Math.abs(daysRemaining)} ngày`
-                    : ` Còn ${daysRemaining} ngày`}
-                </option>
-              );
-            })}
-          </S.Select>
+                return (
+                  <div
+                    key={p.installedPartId}
+                    onClick={() => setSelectedInstalledPartId(String(p.installedPartId))}
+                    style={{
+                      padding: '10px 12px',
+                      cursor: 'pointer',
+                      borderBottom: '1px solid #f3f4f6',
+                      background: isSelected ? '#eff6ff' : 'white',
+                      borderLeft: isSelected ? '4px solid #3b82f6' : '4px solid transparent',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    <div style={{ fontWeight: '600', color: '#1f2937', marginBottom: '4px' }}>
+                      {p.partName}
+                    </div>
+                    <div style={{ fontSize: '13px', color: '#4b5563', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      <span>📅 Lắp: {installDate}</span>
+                      <span>🛡️ BH đến: {expiryDate}</span>
+                      <span style={{
+                        color: isExpired ? '#ef4444' : '#10b981',
+                        fontWeight: '500'
+                      }}>
+                        {isExpired
+                          ? `(HẾT HẠN ${Math.abs(daysRemaining)} ngày)`
+                          : `(Còn ${daysRemaining} ngày)`}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
         </S.FormGroup>
         <div
           style={{
@@ -373,6 +469,8 @@ const WarrantyClaimsManagement = () => {
     handlePageChange,
     fetchInstalledPartsForVehicle,
     fetchClaims,
+    sortConfig,
+    handleSort
   } = useWarrantyClaimsManagement();
 
   const [showVehicleSelection, setShowVehicleSelection] = useState(false);
@@ -383,6 +481,16 @@ const WarrantyClaimsManagement = () => {
   const [selectedClaim, setSelectedClaim] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingClaim, setEditingClaim] = useState(null);
+
+  // Auto-refresh logic
+  const hasPendingClaims = claims.some(c =>
+    ['SUBMITTED', 'PENDING_PAYMENT', 'PROCESSING'].includes(c.status)
+  );
+
+  const { lastUpdated, isRefreshing } = useAutoRefresh({
+    fetchData: (silent) => fetchClaims(silent),
+    shouldPoll: hasPendingClaims
+  });
 
   // Debug state changes
   useEffect(() => {
@@ -534,6 +642,12 @@ const WarrantyClaimsManagement = () => {
     }
   };
 
+  const renderSortIcon = (key) => {
+    if (sortConfig.key !== key) return <FaSort style={{ color: '#ccc', marginLeft: '5px' }} />;
+    if (sortConfig.direction === 'ASC') return <FaSortUp style={{ color: '#3498db', marginLeft: '5px' }} />;
+    return <FaSortDown style={{ color: '#3498db', marginLeft: '5px' }} />;
+  };
+
   return (
     <S.PageContainer>
       <S.ContentWrapper>
@@ -541,6 +655,12 @@ const WarrantyClaimsManagement = () => {
           <S.HeaderTop>
             <S.HeaderTitle>
               <FaClipboardList /> Quản lý Yêu cầu Bảo hành
+              {lastUpdated && (
+                <small style={{ color: '#7f8c8d', fontSize: '12px', marginLeft: '12px', fontWeight: 'normal', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  {isRefreshing && <FaSpinner className="spinner" />}
+                  Cập nhật: {lastUpdated.toLocaleTimeString('vi-VN')}
+                </small>
+              )}
             </S.HeaderTitle>
             <S.Button primary onClick={openCreateForm}>
               <FaPlus /> Tạo Yêu cầu
@@ -578,14 +698,24 @@ const WarrantyClaimsManagement = () => {
             <S.Table>
               <thead>
                 <tr>
-                  <S.Th>ID</S.Th>
+                  <S.Th onClick={() => handleSort('warrantyClaimId')} style={{ cursor: 'pointer' }}>
+                    ID {renderSortIcon('warrantyClaimId')}
+                  </S.Th>
                   <S.Th>Khách hàng</S.Th>
-                  <S.Th>Xe</S.Th>
-                  <S.Th>Linh kiện</S.Th>
+                  <S.Th onClick={() => handleSort('vehicleVin')} style={{ cursor: 'pointer' }}>
+                    Xe {renderSortIcon('vehicleVin')}
+                  </S.Th>
+                  <S.Th onClick={() => handleSort('partName')} style={{ cursor: 'pointer' }}>
+                    Linh kiện {renderSortIcon('partName')}
+                  </S.Th>
                   <S.Th>Loại BH</S.Th>
                   <S.Th>Phí</S.Th>
-                  <S.Th>Trạng thái</S.Th>
-                  <S.Th>Ngày yêu cầu</S.Th>
+                  <S.Th onClick={() => handleSort('status')} style={{ cursor: 'pointer' }}>
+                    Trạng thái {renderSortIcon('status')}
+                  </S.Th>
+                  <S.Th onClick={() => handleSort('createdAt')} style={{ cursor: 'pointer' }}>
+                    Ngày yêu cầu {renderSortIcon('createdAt')}
+                  </S.Th>
                   <S.Th>Thao tác</S.Th>
                 </tr>
               </thead>

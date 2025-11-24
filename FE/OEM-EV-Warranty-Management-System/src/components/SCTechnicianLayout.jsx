@@ -13,6 +13,7 @@ const sidebarItems = [
   { icon: <FaCommentDots />, label: "Phản hồi", path: "/sctechnician/feedbacks" },
   { icon: <FaHistory />, label: "Lịch sử Sửa chữa", path: "/sctechnician/service-history" },
   { icon: <FaCog />, label: "Xem Phụ tùng", path: "/sctechnician/parts" },
+  { icon: <FaTools />, label: "Lắp đặt Phụ tùng", path: "/sctechnician/install-part" },
 ];
 
 export default function SCTechnicianLayout() {

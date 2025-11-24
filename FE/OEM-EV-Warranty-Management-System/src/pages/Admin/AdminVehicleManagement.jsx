@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext'; // Import the master auth hook
 import { useAdminVehicleManagement } from '../../hooks/useAdminVehicleManagement';
 import * as S from './AdminVehicleManagement.styles';
-import { FaCar, FaPlus, FaEdit, FaSearch, FaTrash, FaSpinner } from 'react-icons/fa';
+import { FaCar, FaPlus, FaEdit, FaSearch, FaTrash, FaSpinner, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
 
 // Form Modal Component with ALL required fields
 const VehicleFormModal = ({ isOpen, onClose, onSubmit, vehicle, customers }) => {
@@ -177,7 +177,7 @@ const AdminVehicleManagement = () => {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const {
     vehicles, customers, loading: dataLoading, error, pagination, searchTerm, setSearchTerm,
-    handleSearch, handleCreateOrUpdate, handleDelete, handlePageChange
+    handleSearch, handleCreateOrUpdate, handleDelete, handlePageChange, sortConfig, handleSort
   } = useAdminVehicleManagement();
 
   const [showForm, setShowForm] = useState(false);
@@ -197,6 +197,12 @@ const AdminVehicleManagement = () => {
   const openEditForm = (vehicle) => {
     setSelectedVehicle(vehicle);
     setShowForm(true);
+  };
+
+  const renderSortIcon = (key) => {
+    if (sortConfig.key !== key) return <FaSort style={{ color: '#ccc', marginLeft: '5px' }} />;
+    if (sortConfig.direction === 'ASC') return <FaSortUp style={{ color: '#3498db', marginLeft: '5px' }} />;
+    return <FaSortDown style={{ color: '#3498db', marginLeft: '5px' }} />;
   };
 
   if (authLoading || dataLoading) {
@@ -224,7 +230,24 @@ const AdminVehicleManagement = () => {
         ) : (
           <S.TableContainer>
             <S.Table>
-              <thead><tr><S.Th>Tên xe</S.Th><S.Th>Model</S.Th><S.Th>VIN</S.Th><S.Th>Năm</S.Th><S.Th>Chủ sở hữu</S.Th><S.Th>Thao tác</S.Th></tr></thead>
+              <thead>
+                <tr>
+                  <S.Th onClick={() => handleSort('vehicleName')} style={{ cursor: 'pointer' }}>
+                    Tên xe {renderSortIcon('vehicleName')}
+                  </S.Th>
+                  <S.Th onClick={() => handleSort('vehicleModel')} style={{ cursor: 'pointer' }}>
+                    Model {renderSortIcon('vehicleModel')}
+                  </S.Th>
+                  <S.Th onClick={() => handleSort('vehicleVin')} style={{ cursor: 'pointer' }}>
+                    VIN {renderSortIcon('vehicleVin')}
+                  </S.Th>
+                  <S.Th onClick={() => handleSort('vehicleYear')} style={{ cursor: 'pointer' }}>
+                    Năm {renderSortIcon('vehicleYear')}
+                  </S.Th>
+                  <S.Th>Chủ sở hữu</S.Th>
+                  <S.Th>Thao tác</S.Th>
+                </tr>
+              </thead>
               <tbody>
                 {vehicles.map(vehicle => (
                   <tr key={vehicle.vehicleId}>

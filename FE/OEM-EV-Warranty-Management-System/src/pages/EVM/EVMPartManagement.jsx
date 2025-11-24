@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useEVMPartsManagement } from '../../hooks/useEVMPartsManagement';
 import * as S from './EVMPartManagement.styles';
-import { FaCogs, FaPlus, FaEdit, FaSearch, FaTrash, FaSpinner } from 'react-icons/fa';
+import { FaCogs, FaPlus, FaEdit, FaSearch, FaTrash, FaSpinner, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
 
-const PartFormModal = ({ isOpen, onClose, onSubmit, part }) => {
+const PartFormModal = ({ isOpen, onClose, onSubmit, part, categories }) => {
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
 
@@ -14,6 +14,7 @@ const PartFormModal = ({ isOpen, onClose, onSubmit, part }) => {
         partNumber: '',
         manufacturer: '',
         price: 0,
+        categoryId: '',
         hasExtendedWarranty: false,
         defaultWarrantyMonths: null,
         defaultWarrantyMileage: null,
@@ -30,6 +31,7 @@ const PartFormModal = ({ isOpen, onClose, onSubmit, part }) => {
     if (!formData.partName) newErrors.partName = 'Tên phụ tùng là bắt buộc.';
     if (!formData.partNumber) newErrors.partNumber = 'Mã phụ tùng là bắt buộc.';
     if (!formData.manufacturer) newErrors.manufacturer = 'Nhà sản xuất là bắt buộc.';
+    if (!formData.categoryId) newErrors.categoryId = 'Loại phụ tùng là bắt buộc.';
     if (!formData.price || formData.price <= 0) newErrors.price = 'Giá phải lớn hơn 0.';
 
     // Validate warranty fields nếu hasExtendedWarranty = true
@@ -67,7 +69,7 @@ const PartFormModal = ({ isOpen, onClose, onSubmit, part }) => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
-    if (errors[name]) setErrors(prev => ({...prev, [name]: null}));
+    if (errors[name]) setErrors(prev => ({ ...prev, [name]: null }));
   };
 
   // Pre-fill warranty data when checkbox is checked
@@ -165,6 +167,15 @@ const PartFormModal = ({ isOpen, onClose, onSubmit, part }) => {
               <S.Label>Nhà sản xuất *</S.Label>
               <S.Input name="manufacturer" value={formData.manufacturer || ''} onChange={handleInputChange} required placeholder="VD: CATL" />
               {errors.manufacturer && <S.ErrorText>{errors.manufacturer}</S.ErrorText>}
+            </S.FormGroup>
+
+            <S.FormGroup>
+              <S.Label>Loại phụ tùng *</S.Label>
+              <S.Select name="categoryId" value={formData.categoryId || ''} onChange={handleInputChange} required>
+                <option value="">Chọn loại phụ tùng</option>
+                {categories.map(c => <option key={c.categoryId} value={c.categoryId}>{c.categoryName}</option>)}
+              </S.Select>
+              {errors.categoryId && <S.ErrorText>{errors.categoryId}</S.ErrorText>}
             </S.FormGroup>
 
             <S.FormGroup>
@@ -302,8 +313,13 @@ const PartFormModal = ({ isOpen, onClose, onSubmit, part }) => {
 const EVMPartManagement = () => {
   const {
     parts, loading, error, pagination, searchTerm, setSearchTerm,
-    handleSearch, handleCreateOrUpdate, handleDelete, handlePageChange
+    handleSearch, handleCreateOrUpdate, handleDelete, handlePageChange,
+    sortConfig, handleSort, categories
   } = useEVMPartsManagement();
+
+  // Debug categories
+  console.log('EVM categories loaded:', categories?.length);
+
 
   const [showForm, setShowForm] = useState(false);
   const [selectedPart, setSelectedPart] = useState(null);
@@ -316,6 +332,12 @@ const EVMPartManagement = () => {
   const openEditForm = (part) => {
     setSelectedPart(part);
     setShowForm(true);
+  };
+
+  const renderSortIcon = (key) => {
+    if (sortConfig.key !== key) return <FaSort style={{ color: '#ccc', marginLeft: '5px' }} />;
+    if (sortConfig.direction === 'ASC') return <FaSortUp style={{ color: '#3498db', marginLeft: '5px' }} />;
+    return <FaSortDown style={{ color: '#3498db', marginLeft: '5px' }} />;
   };
 
   return (
@@ -343,11 +365,21 @@ const EVMPartManagement = () => {
             <S.Table>
               <thead>
                 <tr>
-                  <S.Th>ID</S.Th>
-                  <S.Th>Tên</S.Th>
-                  <S.Th>Mã Phụ tùng</S.Th>
-                  <S.Th>Nhà sản xuất</S.Th>
-                  <S.Th>Giá</S.Th>
+                  <S.Th onClick={() => handleSort('partId')} style={{ cursor: 'pointer' }}>
+                    ID {renderSortIcon('partId')}
+                  </S.Th>
+                  <S.Th onClick={() => handleSort('partName')} style={{ cursor: 'pointer' }}>
+                    Tên {renderSortIcon('partName')}
+                  </S.Th>
+                  <S.Th onClick={() => handleSort('partNumber')} style={{ cursor: 'pointer' }}>
+                    Mã Phụ tùng {renderSortIcon('partNumber')}
+                  </S.Th>
+                  <S.Th onClick={() => handleSort('manufacturer')} style={{ cursor: 'pointer' }}>
+                    Nhà sản xuất {renderSortIcon('manufacturer')}
+                  </S.Th>
+                  <S.Th onClick={() => handleSort('price')} style={{ cursor: 'pointer' }}>
+                    Giá {renderSortIcon('price')}
+                  </S.Th>
                   <S.Th>Loại BH</S.Th>
                   <S.Th>BH (tháng/km)</S.Th>
                   <S.Th>Thao tác</S.Th>
@@ -426,6 +458,7 @@ const EVMPartManagement = () => {
           onClose={() => setShowForm(false)}
           onSubmit={handleCreateOrUpdate}
           part={selectedPart}
+          categories={categories}
         />
       </S.ContentWrapper>
     </S.PageContainer>

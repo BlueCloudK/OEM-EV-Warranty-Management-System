@@ -1,4 +1,5 @@
 import apiClient from './apiClient';
+import { partCategoriesApi } from './partCategories';
 
 export const dataApi = {
   // Customers
@@ -92,6 +93,14 @@ export const dataApi = {
   getRecallCampaignProgress: () => apiClient('/api/recalls/progress'),
   getRecallFunnel: () => apiClient('/api/recalls/funnel'),
   getRecallCampaignStatus: () => apiClient('/api/recalls/status'),
+
+  // Part Categories
+  getAllPartCategories: (params = {}) => partCategoriesApi.getAll(params),
+  getActivePartCategories: () => partCategoriesApi.getActive(),
+  getPartCategoryById: (id) => partCategoriesApi.getById(id),
+  createPartCategory: (data) => partCategoriesApi.create(data),
+  updatePartCategory: (id, data) => partCategoriesApi.update(id, data),
+  deletePartCategory: (id) => partCategoriesApi.softDelete(id),
 };
 
 export default dataApi;

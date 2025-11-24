@@ -63,6 +63,14 @@ export const Input = styled.input`
   box-sizing: border-box;
 `;
 
+export const Select = styled.select`
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  box-sizing: border-box;
+`;
+
 export const TableContainer = styled.div`
   background: #fff;
   border-radius: 12px;

@@ -14,6 +14,7 @@ import AdminUserManagement from "./pages/Admin/AdminUserManagement";
 import AdminCustomerManagement from "./pages/Admin/AdminCustomerManagement";
 import AdminVehicleManagement from "./pages/Admin/AdminVehicleManagement";
 import AdminPartsManagement from "./pages/Admin/AdminPartsManagement";
+import AdminPartCategoryManagement from "./pages/Admin/AdminPartCategoryManagement";
 import AdminWarrantyClaimsManagement from "./pages/Admin/AdminWarrantyClaimsManagement";
 import AdminServiceHistoriesManagement from "./pages/Admin/AdminServiceHistoriesManagement";
 import AdminFeedbackManagement from "./pages/Admin/AdminFeedbackManagement";
@@ -57,6 +58,7 @@ import SCTechnicianFeedbacks from "./pages/SCTechnician/SCTechnicianFeedbacks";
 import PartsLookup from "./pages/SCTechnician/PartsLookup";
 import ServiceHistory from "./pages/SCTechnician/ServiceHistory";
 import PartRequests from "./pages/SCTechnician/PartRequests";
+import InstallPart from "./pages/SCTechnician/InstallPart";
 
 // Customer
 import CustomerLayout from "./components/CustomerLayout";
@@ -124,6 +126,7 @@ export default function App() {
           <Route path="customers" element={<AdminCustomerManagement />} />
           <Route path="vehicles" element={<AdminVehicleManagement />} />
           <Route path="parts" element={<AdminPartsManagement />} />
+          <Route path="part-categories" element={<AdminPartCategoryManagement />} />
           <Route path="warranty-claims" element={<AdminWarrantyClaimsManagement />} />
           <Route path="service-histories" element={<AdminServiceHistoriesManagement />} />
           <Route path="work-logs" element={<AdminWorkLogs />} />
@@ -159,6 +162,7 @@ export default function App() {
           <Route path="feedbacks" element={<SCTechnicianFeedbacks />} />
           <Route path="service-history" element={<ServiceHistory />} />
           <Route path="parts" element={<PartsLookup />} />
+          <Route path="install-part" element={<InstallPart />} />
         </Route>
 
         {/* === CUSTOMER ROUTES === */}

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useAdminCustomerManagement } from '../../hooks/useAdminCustomerManagement';
 import * as S from './AdminCustomerManagement.styles';
-import { FaUsers, FaPlus, FaEdit, FaSearch, FaTrash, FaSpinner, FaIdCard } from 'react-icons/fa';
+import { FaUsers, FaPlus, FaEdit, FaSearch, FaTrash, FaSpinner, FaIdCard, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
 
 // Form Modal Component
 const CustomerFormModal = ({ isOpen, onClose, onSubmit, customer }) => {
@@ -30,7 +30,7 @@ const CustomerFormModal = ({ isOpen, onClose, onSubmit, customer }) => {
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
-        if (errors[name]) setErrors(prev => ({...prev, [name]: null}));
+        if (errors[name]) setErrors(prev => ({ ...prev, [name]: null }));
     };
 
     const handleSubmit = async (e) => {
@@ -100,7 +100,7 @@ const AdminCustomerManagement = () => {
     const {
         customers, loading: dataLoading, error, pagination, searchTerm, setSearchTerm,
         handleSearch, handleCreateOrUpdate, handleDelete, handlePageChange,
-        searchType, setSearchType // Get searchType and setSearchType
+        searchType, setSearchType, sortConfig, handleSort
     } = useAdminCustomerManagement();
 
     const [showForm, setShowForm] = useState(false);
@@ -136,6 +136,13 @@ const AdminCustomerManagement = () => {
             default:
                 return 'Tìm theo Tên, Email, SĐT...';
         }
+    };
+
+    // Helper to render sort icon
+    const renderSortIcon = (key) => {
+        if (sortConfig.key !== key) return <FaSort style={{ color: '#ccc', marginLeft: '5px' }} />;
+        if (sortConfig.direction === 'ASC') return <FaSortUp style={{ color: '#3498db', marginLeft: '5px' }} />;
+        return <FaSortDown style={{ color: '#3498db', marginLeft: '5px' }} />;
     };
 
     if (authLoading || dataLoading) {
@@ -182,22 +189,36 @@ const AdminCustomerManagement = () => {
                 ) : (
                     <S.TableContainer>
                         <S.Table>
-                            <thead><tr><S.Th>Tên</S.Th><S.Th>Email</S.Th><S.Th>Điện thoại</S.Th><S.Th>Địa chỉ</S.Th><S.Th>Thao tác</S.Th></tr></thead>
-                            <tbody>
-                            {customers.map(customer => (
-                                <tr key={customer?.customerId || `customer-${Math.random()}`}>
-                                    <S.Td>{customer?.name || ''}</S.Td>
-                                    <S.Td>{customer?.email || ''}</S.Td>
-                                    <S.Td>{customer?.phone || ''}</S.Td>
-                                    <S.Td>{customer?.address || ''}</S.Td>
-                                    <S.Td>
-                                        <div style={{ display: 'flex', gap: '8px' }}>
-                                            <S.Button $small onClick={() => openEditForm(customer)}><FaEdit /></S.Button>
-                                            <S.Button $small $danger onClick={() => handleDelete(customer?.customerId)}><FaTrash /></S.Button>
-                                        </div>
-                                    </S.Td>
+                            <thead>
+                                <tr>
+                                    <S.Th onClick={() => handleSort('name')} style={{ cursor: 'pointer' }}>
+                                        Tên {renderSortIcon('name')}
+                                    </S.Th>
+                                    <S.Th onClick={() => handleSort('email')} style={{ cursor: 'pointer' }}>
+                                        Email {renderSortIcon('email')}
+                                    </S.Th>
+                                    <S.Th onClick={() => handleSort('phone')} style={{ cursor: 'pointer' }}>
+                                        Điện thoại {renderSortIcon('phone')}
+                                    </S.Th>
+                                    <S.Th>Địa chỉ</S.Th>
+                                    <S.Th>Thao tác</S.Th>
                                 </tr>
-                            ))}
+                            </thead>
+                            <tbody>
+                                {customers.map(customer => (
+                                    <tr key={customer?.customerId || `customer-${Math.random()}`}>
+                                        <S.Td>{customer?.name || ''}</S.Td>
+                                        <S.Td>{customer?.email || ''}</S.Td>
+                                        <S.Td>{customer?.phone || ''}</S.Td>
+                                        <S.Td>{customer?.address || ''}</S.Td>
+                                        <S.Td>
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                <S.Button $small onClick={() => openEditForm(customer)}><FaEdit /></S.Button>
+                                                <S.Button $small $danger onClick={() => handleDelete(customer?.customerId)}><FaTrash /></S.Button>
+                                            </div>
+                                        </S.Td>
+                                    </tr>
+                                ))}
                             </tbody>
                         </S.Table>
                     </S.TableContainer>

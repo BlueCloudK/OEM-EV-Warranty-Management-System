@@ -4,7 +4,7 @@ import * as S from "./AdminLayout.styles";
 import {
   FaUsers, FaCar, FaCogs, FaClipboardList, FaHistory,
   FaUserShield, FaTachometerAlt, FaCommentDots, FaClipboard,
-  FaMapMarkerAlt, FaExclamationTriangle, FaBars
+  FaMapMarkerAlt, FaExclamationTriangle, FaBars, FaLayerGroup
 } from "react-icons/fa";
 
 const sidebarItems = [
@@ -13,6 +13,7 @@ const sidebarItems = [
   { path: "/admin/customers", icon: <FaUsers />, label: "Khách hàng" },
   { path: "/admin/vehicles", icon: <FaCar />, label: "Xe điện" },
   { path: "/admin/parts", icon: <FaCogs />, label: "Phụ tùng" },
+  { path: "/admin/part-categories", icon: <FaLayerGroup />, label: "Loại phụ tùng" },
   { path: "/admin/warranty-claims", icon: <FaClipboardList />, label: "Yêu cầu Bảo hành" },
   { path: "/admin/recalls", icon: <FaExclamationTriangle />, label: "Yêu cầu Triệu hồi" },
   { path: "/admin/service-histories", icon: <FaHistory />, label: "Lịch sử dịch vụ" },

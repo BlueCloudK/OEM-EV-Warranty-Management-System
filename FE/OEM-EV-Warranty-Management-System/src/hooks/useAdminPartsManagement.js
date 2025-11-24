@@ -14,16 +14,31 @@ export const useAdminPartsManagement = () => {
   const [effectiveSearchTerm, setEffectiveSearchTerm] = useState('');
   const [pagination, setPagination] = useState({ currentPage: 0, pageSize: 10, totalPages: 0, totalElements: 0 });
 
-  const fetchParts = useCallback(async () => {
+  // Part Categories State (for dropdown in create/edit form)
+  const [categories, setCategories] = useState([]);
+
+  // Sorting State
+  const [sortConfig, setSortConfig] = useState({ key: 'partId', direction: 'DESC' });
+
+  const fetchParts = useCallback(async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) {
+        setLoading(true);
+      }
       setError(null);
 
-      const params = { 
-        page: pagination.currentPage, 
-        size: pagination.pageSize, 
-        search: searchTerm,
+      const params = {
+        page: pagination.currentPage,
+        size: pagination.pageSize,
+        sortBy: sortConfig.key,
+        sortDir: sortConfig.direction
       };
+
+      if (effectiveSearchTerm) {
+        params.search = effectiveSearchTerm;
+      }
+
+      console.log('🔍 Fetching parts with params:', params);
 
       const response = await dataApi.getAllParts(params);
 
@@ -35,20 +50,39 @@ export const useAdminPartsManagement = () => {
       }
     } catch (err) {
       console.error("Error fetching parts:", err);
-      setError("Không thể tải danh sách phụ tùng.");
+      if (!silent) {
+        setError("Không thể tải danh sách phụ tùng.");
+      }
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
-  }, [pagination.currentPage, pagination.pageSize, effectiveSearchTerm]);
+  }, [pagination.currentPage, pagination.pageSize, effectiveSearchTerm, sortConfig]);
 
   useEffect(() => {
     fetchParts();
   }, [fetchParts]);
 
+  // Fetch active categories for dropdown
+  const fetchCategories = useCallback(async () => {
+    try {
+      const data = await dataApi.getActivePartCategories();
+      console.log("useAdminPartsManagement fetched categories:", data); // DEBUG LOG
+      setCategories(data || []);
+    } catch (err) {
+      console.error("Error fetching categories:", err);
+      setCategories([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
+
   const handleSearch = () => {
     setEffectiveSearchTerm(searchTerm);
     setPagination(prev => ({ ...prev, currentPage: 0 }));
-    // fetchParts will be re-triggered by the useEffect dependency change on pagination
   };
 
   const handleCreateOrUpdate = async (formData, selectedPartId) => {
@@ -69,12 +103,12 @@ export const useAdminPartsManagement = () => {
 
   const handleDelete = async (partId) => {
     if (await window.confirm('Bạn có chắc chắn muốn xóa phụ tùng này không? (Admin Only)')) {
-        try {
-            await dataApi.deletePart(partId);
-            fetchParts(); // Refresh list
-        } catch (err) {
-            alert(`Lỗi khi xóa phụ tùng: ${err.message}`);
-        }
+      try {
+        await dataApi.deletePart(partId);
+        fetchParts(); // Refresh list
+      } catch (err) {
+        alert(`Lỗi khi xóa phụ tùng: ${err.message}`);
+      }
     }
   };
 
@@ -82,16 +116,27 @@ export const useAdminPartsManagement = () => {
     setPagination(prev => ({ ...prev, currentPage: newPage }));
   };
 
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'ASC' ? 'DESC' : 'ASC'
+    }));
+  };
+
   return {
     parts,
     loading,
     error,
     pagination,
-    searchTerm, 
+    searchTerm,
     setSearchTerm,
     handleSearch,
     handleCreateOrUpdate,
     handleDelete,
     handlePageChange,
+    categories, // Active categories for dropdown
+    refreshParts: fetchParts,
+    sortConfig,
+    handleSort,
   };
 };

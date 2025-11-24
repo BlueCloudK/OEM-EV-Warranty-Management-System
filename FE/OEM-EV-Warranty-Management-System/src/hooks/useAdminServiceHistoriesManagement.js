@@ -9,11 +9,14 @@ export const useAdminServiceHistoriesManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchType, setSearchType] = useState('general');
 
+  // Sorting State
+  const [sortConfig, setSortConfig] = useState({ key: 'serviceDate', direction: 'DESC' });
+
   const fetchServiceHistories = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       let response;
       const page = pagination.currentPage;
       const size = pagination.pageSize;
@@ -23,23 +26,23 @@ export const useAdminServiceHistoriesManagement = () => {
         switch (searchType) {
           case 'vehicleName':
             try {
-              
+
               // Use getAllVehicles with search parameter
               const vehiclesResponse = await dataApi.getAllVehicles({ search: searchTerm.trim(), size: 10 });
-              
+
               if (vehiclesResponse?.content?.length > 0) {
                 const vehicleId = vehiclesResponse.content[0].vehicleId || vehiclesResponse.content[0].id;
                 response = await dataApi.getServiceHistoriesByVehicle(vehicleId, { page, size });
-                
+
               } else {
 
                 response = await dataApi.getAllServiceHistories({ page, size, search: searchTerm.trim() });
               }
             } catch (err) {
-              
+
               // If all fails, fallback to general search
               response = await dataApi.getAllServiceHistories({ page, size, search: searchTerm.trim() });
-              
+
             }
             break;
           case 'vehicleVin':
@@ -64,8 +67,13 @@ export const useAdminServiceHistoriesManagement = () => {
             break;
         }
       } else {
-        // No search criteria - get all
-        response = await dataApi.getAllServiceHistories({ page, size });
+        // No search criteria - get all with sorting
+        response = await dataApi.getAllServiceHistories({
+          page,
+          size,
+          sortBy: sortConfig.key,
+          sortDir: sortConfig.direction
+        });
       }
 
       if (response && response.content) {
@@ -81,7 +89,14 @@ export const useAdminServiceHistoriesManagement = () => {
     } finally {
       setLoading(false);
     }
-  }, [pagination.currentPage, pagination.pageSize, searchTerm, searchType]);
+  }, [pagination.currentPage, pagination.pageSize, searchTerm, searchType, sortConfig]);
+
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'ASC' ? 'DESC' : 'ASC'
+    }));
+  };
 
   useEffect(() => {
     fetchServiceHistories();
@@ -143,5 +158,7 @@ export const useAdminServiceHistoriesManagement = () => {
     handleCreateOrUpdate,
     handleDelete,
     handlePageChange,
+    sortConfig,
+    handleSort,
   };
 };

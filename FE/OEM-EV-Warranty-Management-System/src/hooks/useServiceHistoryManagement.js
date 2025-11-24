@@ -7,7 +7,7 @@ import { dataApi } from '../api/dataApi';
  */
 export const useServiceHistoryManagement = () => {
   const navigate = useNavigate();
-  
+
   // Data states
   const [histories, setHistories] = useState([]);
   const [vehicles, setVehicles] = useState([]);
@@ -19,19 +19,24 @@ export const useServiceHistoryManagement = () => {
   const [pagination, setPagination] = useState({ currentPage: 0, pageSize: 10, totalPages: 0, totalElements: 0 });
   const [filters, setFilters] = useState({ searchTerm: '', vehicleId: '', partId: '', serviceType: '', startDate: '', endDate: '' });
 
+  // Sorting State
+  const [sortConfig, setSortConfig] = useState({ key: 'serviceDate', direction: 'DESC' });
+
   const fetchHistories = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const params = { 
-        page: pagination.currentPage, 
-        size: pagination.pageSize, 
+      const params = {
+        page: pagination.currentPage,
+        size: pagination.pageSize,
         search: filters.searchTerm,
         vehicleId: filters.vehicleId,
         partId: filters.partId,
         serviceType: filters.serviceType,
         startDate: filters.startDate,
         endDate: filters.endDate,
+        sortBy: sortConfig.key,
+        sortDir: sortConfig.direction
       };
       // Remove null/empty params
       Object.keys(params).forEach(key => (params[key] == null || params[key] === '') && delete params[key]);
@@ -50,7 +55,14 @@ export const useServiceHistoryManagement = () => {
     } finally {
       setLoading(false);
     }
-  }, [pagination.currentPage, pagination.pageSize, filters]);
+  }, [pagination.currentPage, pagination.pageSize, filters, sortConfig]);
+
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'ASC' ? 'DESC' : 'ASC'
+    }));
+  };
 
   const fetchLookups = useCallback(async () => {
     try {
@@ -119,6 +131,7 @@ export const useServiceHistoryManagement = () => {
 
   return {
     histories, vehicles, parts, loading, error, pagination, filters,
-    handleFilterChange, applyFilters, clearFilters, handleCreateOrUpdate, handlePageChange
+    handleFilterChange, applyFilters, clearFilters, handleCreateOrUpdate, handlePageChange,
+    sortConfig, handleSort
   };
 };

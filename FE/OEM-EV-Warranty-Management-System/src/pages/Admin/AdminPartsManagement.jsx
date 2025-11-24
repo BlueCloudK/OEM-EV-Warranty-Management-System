@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext'; // Import the master auth hook
 import { useAdminPartsManagement } from '../../hooks/useAdminPartsManagement';
+import useAutoRefresh from '../../hooks/useAutoRefresh';
 import * as S from './AdminPartsManagement.styles';
-import { FaCogs, FaPlus, FaEdit, FaSearch, FaTrash, FaSpinner, FaFileImport } from 'react-icons/fa';
+import { FaCogs, FaPlus, FaEdit, FaSearch, FaTrash, FaSpinner, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
 
-// Form Modal Component - partId is now auto-generated (Long)
-const PartFormModal = ({ isOpen, onClose, onSubmit, part }) => {
+// Form Modal Component
+const PartFormModal = ({ isOpen, onClose, onSubmit, part, categories }) => {
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
 
@@ -17,14 +17,15 @@ const PartFormModal = ({ isOpen, onClose, onSubmit, part }) => {
         partNumber: '',
         manufacturer: '',
         price: 0,
+        categoryId: '',
         hasExtendedWarranty: false,
-        defaultWarrantyMonths: null,
-        defaultWarrantyMileage: null,
-        gracePeriodDays: null,
-        paidWarrantyFeePercentageMin: null,
-        paidWarrantyFeePercentageMax: null
+        defaultWarrantyMonths: '',
+        defaultWarrantyMileage: '',
+        gracePeriodDays: '',
+        paidWarrantyFeePercentageMin: '',
+        paidWarrantyFeePercentageMax: ''
       });
-      setErrors({}); // Clear errors when modal opens
+      setErrors({});
     }
   }, [part, isOpen]);
 
@@ -34,8 +35,8 @@ const PartFormModal = ({ isOpen, onClose, onSubmit, part }) => {
     if (!formData.partNumber) newErrors.partNumber = 'Mã phụ tùng là bắt buộc.';
     if (!formData.manufacturer) newErrors.manufacturer = 'Nhà sản xuất là bắt buộc.';
     if (!formData.price || formData.price <= 0) newErrors.price = 'Giá phải lớn hơn 0.';
+    if (!formData.categoryId) newErrors.categoryId = 'Loại phụ tùng là bắt buộc.';
 
-    // Validate warranty fields nếu hasExtendedWarranty = true
     if (formData.hasExtendedWarranty) {
       if (!formData.defaultWarrantyMonths || formData.defaultWarrantyMonths <= 0) {
         newErrors.defaultWarrantyMonths = 'Thời hạn bảo hành phải lớn hơn 0.';
@@ -70,34 +71,31 @@ const PartFormModal = ({ isOpen, onClose, onSubmit, part }) => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
-    if (errors[name]) setErrors(prev => ({...prev, [name]: null})); // Clear error when input changes
+    if (errors[name]) setErrors(prev => ({ ...prev, [name]: null }));
   };
 
-  // Pre-fill warranty data when checkbox is checked
   const handleExtendedWarrantyChange = (e) => {
     const checked = e.target.checked;
     setFormData(prev => {
       if (checked && !prev.defaultWarrantyMonths) {
-        // Pre-fill với giá trị mẫu cho phụ tùng quan trọng
         return {
           ...prev,
           hasExtendedWarranty: checked,
-          defaultWarrantyMonths: 96, // 8 năm - mặc định cho Battery
-          defaultWarrantyMileage: 192000, // 192,000 km
-          gracePeriodDays: 365, // 1 năm grace period
-          paidWarrantyFeePercentageMin: 0.20, // 20%
-          paidWarrantyFeePercentageMax: 0.50 // 50%
+          defaultWarrantyMonths: 96,
+          defaultWarrantyMileage: 192000,
+          gracePeriodDays: 365,
+          paidWarrantyFeePercentageMin: 0.20,
+          paidWarrantyFeePercentageMax: 0.50
         };
       } else if (!checked) {
-        // Clear warranty data khi uncheck
         return {
           ...prev,
           hasExtendedWarranty: false,
-          defaultWarrantyMonths: null,
-          defaultWarrantyMileage: null,
-          gracePeriodDays: null,
-          paidWarrantyFeePercentageMin: null,
-          paidWarrantyFeePercentageMax: null
+          defaultWarrantyMonths: '',
+          defaultWarrantyMileage: '',
+          gracePeriodDays: '',
+          paidWarrantyFeePercentageMin: '',
+          paidWarrantyFeePercentageMax: ''
         };
       }
       return { ...prev, hasExtendedWarranty: checked };
@@ -112,10 +110,10 @@ const PartFormModal = ({ isOpen, onClose, onSubmit, part }) => {
       return;
     }
 
-    // Prepare data
     const submitData = {
       ...formData,
       price: parseFloat(formData.price),
+      categoryId: parseInt(formData.categoryId),
       hasExtendedWarranty: formData.hasExtendedWarranty,
       defaultWarrantyMonths: formData.hasExtendedWarranty ? parseInt(formData.defaultWarrantyMonths) : null,
       defaultWarrantyMileage: formData.hasExtendedWarranty ? parseInt(formData.defaultWarrantyMileage) : null,
@@ -148,7 +146,6 @@ const PartFormModal = ({ isOpen, onClose, onSubmit, part }) => {
             </S.FormGroup>
           )}
 
-          {/* Thông tin cơ bản */}
           <div style={{ border: '1px solid #e5e7eb', padding: '16px', borderRadius: '8px', marginBottom: '20px' }}>
             <h3 style={{ marginTop: 0, marginBottom: '16px', fontSize: '16px', color: '#1f2937' }}>Thông tin cơ bản</h3>
 
@@ -175,9 +172,33 @@ const PartFormModal = ({ isOpen, onClose, onSubmit, part }) => {
               <S.Input name="price" type="number" step="0.01" value={formData.price || 0} onChange={handleInputChange} required hasError={!!errors.price} placeholder="VD: 150000000" />
               {errors.price && <S.ErrorText>{errors.price}</S.ErrorText>}
             </S.FormGroup>
+
+            <S.FormGroup>
+              <S.Label>Loại phụ tùng *</S.Label>
+              <select
+                name="categoryId"
+                value={formData.categoryId || ''}
+                onChange={handleInputChange}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  borderRadius: '4px',
+                  border: errors.categoryId ? '1px solid #ef4444' : '1px solid #d1d5db',
+                  fontSize: '14px',
+                  outline: 'none'
+                }}
+              >
+                <option value="">-- Chọn loại phụ tùng --</option>
+                {categories && categories.map(cat => (
+                  <option key={cat.categoryId} value={cat.categoryId}>
+                    {cat.categoryName}
+                  </option>
+                ))}
+              </select>
+              {errors.categoryId && <S.ErrorText>{errors.categoryId}</S.ErrorText>}
+            </S.FormGroup>
           </div>
 
-          {/* Cấu hình bảo hành */}
           <div style={{ border: '1px solid #e5e7eb', padding: '16px', borderRadius: '8px', marginBottom: '20px' }}>
             <h3 style={{ marginTop: 0, marginBottom: '16px', fontSize: '16px', color: '#1f2937' }}>Cấu hình bảo hành</h3>
 
@@ -283,7 +304,7 @@ const PartFormModal = ({ isOpen, onClose, onSubmit, part }) => {
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px' }}>
             <S.Button type="button" onClick={onClose}>Hủy</S.Button>
-            <S.Button $primary type="submit">{part ? 'Cập nhật' : 'Tạo mới'}</S.Button>
+            <S.Button primary type="submit">{part ? 'Cập nhật' : 'Tạo mới'}</S.Button>
           </div>
         </form>
       </S.ModalContent>
@@ -291,26 +312,34 @@ const PartFormModal = ({ isOpen, onClose, onSubmit, part }) => {
   );
 };
 
-
-
-// Main Component with new Authentication Flow
+// Main Page Component
 const AdminPartsManagement = () => {
-  const navigate = useNavigate();
-  const { isAuthenticated, loading: authLoading } = useAuth();
   const {
-    parts, loading: dataLoading, error, pagination, searchTerm, setSearchTerm,
-    handleSearch, handleCreateOrUpdate, handleDelete, handlePageChange,
+    parts,
+    categories,
+    loading,
+    error,
+    pagination,
+    searchTerm,
+    setSearchTerm,
+    handleSearch,
+    handleCreateOrUpdate,
+    handleDelete,
+    handlePageChange,
+    refreshParts,
+    sortConfig,
+    handleSort
   } = useAdminPartsManagement();
 
   const [showForm, setShowForm] = useState(false);
   const [selectedPart, setSelectedPart] = useState(null);
-  const [showImportModal, setShowImportModal] = useState(false);
 
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      navigate("/login");
-    }
-  }, [isAuthenticated, authLoading, navigate]);
+  // Auto-refresh logic
+  const { lastUpdated, isRefreshing } = useAutoRefresh({
+    fetchData: (silent) => refreshParts(silent),
+    shouldPoll: true,
+    pollInterval: 30000
+  });
 
   const openCreateForm = () => {
     setSelectedPart(null);
@@ -322,27 +351,43 @@ const AdminPartsManagement = () => {
     setShowForm(true);
   };
 
-  if (authLoading || dataLoading) {
-    return <S.LoadingState><FaSpinner /> <p>Đang tải...</p></S.LoadingState>;
-  }
+  // Helper to render sort icon
+  const renderSortIcon = (key) => {
+    if (sortConfig.key !== key) return <FaSort style={{ color: '#ccc', marginLeft: '5px' }} />;
+    if (sortConfig.direction === 'ASC') return <FaSortUp style={{ color: '#3498db', marginLeft: '5px' }} />;
+    return <FaSortDown style={{ color: '#3498db', marginLeft: '5px' }} />;
+  };
 
   return (
     <S.PageContainer>
       <S.ContentWrapper>
         <S.Header>
           <S.HeaderTop>
-            <S.HeaderTitle><FaCogs /> Quản lý Phụ tùng (Admin)</S.HeaderTitle>
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-              <S.Button $primary onClick={openCreateForm}><FaPlus /> Tạo Phụ tùng</S.Button>
-            </div>
+            <S.HeaderTitle>
+              <FaCogs /> Quản lý Phụ tùng
+              {lastUpdated && (
+                <small style={{ color: '#7f8c8d', fontSize: '12px', marginLeft: '12px', fontWeight: 'normal', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  {isRefreshing && <FaSpinner className="spinner" />}
+                  Cập nhật: {lastUpdated.toLocaleTimeString('vi-VN')}
+                </small>
+              )}
+            </S.HeaderTitle>
+            <S.Button primary onClick={openCreateForm}><FaPlus /> Thêm phụ tùng</S.Button>
           </S.HeaderTop>
           <S.SearchContainer>
-            <S.Input placeholder="Tìm theo tên, mã phụ tùng, nhà sản xuất..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleSearch()} />
-            <S.Button $small onClick={handleSearch}><FaSearch /> Tìm kiếm</S.Button>
+            <S.Input
+              placeholder="Tìm kiếm phụ tùng..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            />
+            <S.Button small onClick={handleSearch}><FaSearch /> Tìm kiếm</S.Button>
           </S.SearchContainer>
         </S.Header>
 
-        {error ? (
+        {loading ? (
+          <S.LoadingState><FaSpinner /> <p>Đang tải...</p></S.LoadingState>
+        ) : error ? (
           <S.EmptyState>{error}</S.EmptyState>
         ) : parts.length === 0 ? (
           <S.EmptyState><h3>Không tìm thấy phụ tùng</h3></S.EmptyState>
@@ -351,14 +396,28 @@ const AdminPartsManagement = () => {
             <S.Table>
               <thead>
                 <tr>
-                  <S.Th>ID</S.Th>
-                  <S.Th>Tên</S.Th>
-                  <S.Th>Mã Phụ tùng</S.Th>
-                  <S.Th>Nhà sản xuất</S.Th>
-                  <S.Th>Giá</S.Th>
-                  <S.Th>Loại BH</S.Th>
-                  <S.Th>BH (tháng/km)</S.Th>
-                  <S.Th>Thao tác</S.Th>
+                  <th onClick={() => handleSort('partId')} style={{ cursor: 'pointer' }}>
+                    ID {renderSortIcon('partId')}
+                  </th>
+                  <th onClick={() => handleSort('partName')} style={{ cursor: 'pointer' }}>
+                    Tên Phụ tùng {renderSortIcon('partName')}
+                  </th>
+                  <th onClick={() => handleSort('partNumber')} style={{ cursor: 'pointer' }}>
+                    Mã Phụ tùng {renderSortIcon('partNumber')}
+                  </th>
+                  <th>
+                    Loại
+                  </th>
+                  <th onClick={() => handleSort('manufacturer')} style={{ cursor: 'pointer' }}>
+                    Nhà sản xuất {renderSortIcon('manufacturer')}
+                  </th>
+                  <th onClick={() => handleSort('price')} style={{ cursor: 'pointer' }}>
+                    Giá (VNĐ) {renderSortIcon('price')}
+                  </th>
+                  <th>
+                    Tồn kho
+                  </th>
+                  <th>Hành động</th>
                 </tr>
               </thead>
               <tbody>
@@ -367,29 +426,10 @@ const AdminPartsManagement = () => {
                     <S.Td>{part.partId}</S.Td>
                     <S.Td style={{ fontWeight: '500' }}>{part.partName}</S.Td>
                     <S.Td style={{ fontFamily: 'monospace' }}>{part.partNumber}</S.Td>
+                    <S.Td>{part.categoryName || '-'}</S.Td>
                     <S.Td>{part.manufacturer}</S.Td>
                     <S.Td>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(part.price)}</S.Td>
-                    <S.Td>
-                      {part.hasExtendedWarranty ? (
-                        <S.WarrantyBadge style={{ color: '#2563eb', background: '#dbeafe' }}>
-                          BH Mở rộng
-                        </S.WarrantyBadge>
-                      ) : (
-                        <S.WarrantyBadge style={{ color: '#6b7280', background: '#f3f4f6' }}>
-                          BH Xe
-                        </S.WarrantyBadge>
-                      )}
-                    </S.Td>
-                    <S.Td>
-                      {part.hasExtendedWarranty ? (
-                        <div style={{ fontSize: '13px' }}>
-                          <div>{part.defaultWarrantyMonths || 'N/A'} tháng</div>
-                          <div style={{ color: '#6b7280' }}>{part.defaultWarrantyMileage ? part.defaultWarrantyMileage.toLocaleString() : 'N/A'} km</div>
-                        </div>
-                      ) : (
-                        <span style={{ color: '#9ca3af' }}>-</span>
-                      )}
-                    </S.Td>
+                    <S.Td>{part.stockQuantity || 0}</S.Td>
                     <S.Td>
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <S.Button $small onClick={() => openEditForm(part)}><FaEdit /></S.Button>
@@ -404,7 +444,7 @@ const AdminPartsManagement = () => {
         )}
 
         {/* Pagination Controls */}
-        {pagination && !error && (
+        {!loading && !error && parts.length > 0 && pagination.totalPages > 0 && (
           <S.PaginationContainer>
             <S.Button
               $small
@@ -434,9 +474,9 @@ const AdminPartsManagement = () => {
           onClose={() => setShowForm(false)}
           onSubmit={handleCreateOrUpdate}
           part={selectedPart}
+          categories={categories}
         />
 
-        
       </S.ContentWrapper>
     </S.PageContainer>
   );

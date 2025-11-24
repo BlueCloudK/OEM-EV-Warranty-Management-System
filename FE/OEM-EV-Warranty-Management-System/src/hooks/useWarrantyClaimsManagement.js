@@ -11,27 +11,33 @@ export const useWarrantyClaimsManagement = () => {
   const [pagination, setPagination] = useState({ currentPage: 0, pageSize: 10, totalPages: 0, totalElements: 0 });
   const [filterStatus, setFilterStatus] = useState('all');
 
-  const fetchClaims = useCallback(async () => {
+  const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'DESC' });
+
+  const fetchClaims = useCallback(async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) {
+        setLoading(true);
+      }
       setError(null);
 
-      const params = { 
-        page: pagination.currentPage, 
-        size: pagination.pageSize, 
+      const params = {
+        page: pagination.currentPage,
+        size: pagination.pageSize,
+        sortBy: sortConfig.key,
+        sortDir: sortConfig.direction
       };
-      
+
       console.log('🔍 Fetching claims with params:', params);
       console.log('📝 Filter status:', filterStatus);
 
       let response;
-      
+
       // Use specific endpoint for status filtering
       if (filterStatus && filterStatus !== 'all') {
         console.log('🏷️ Using status-specific endpoint for:', filterStatus);
         response = await dataApi.getClaimsByStatus(filterStatus, params);
       } else {
-        console.log('� Using general endpoint (all claims)');
+        console.log(' Using general endpoint (all claims)');
         response = await dataApi.getAllWarrantyClaims(params);
       }
 
@@ -50,11 +56,22 @@ export const useWarrantyClaimsManagement = () => {
       }
     } catch (err) {
       console.error("Error fetching claims:", err);
-      setError("Không thể tải danh sách yêu cầu bảo hành.");
+      if (!silent) {
+        setError("Không thể tải danh sách yêu cầu bảo hành.");
+      }
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
-  }, [pagination.currentPage, pagination.pageSize, filterStatus]);
+  }, [pagination.currentPage, pagination.pageSize, filterStatus, sortConfig]);
+
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'ASC' ? 'DESC' : 'ASC'
+    }));
+  };
 
   const fetchVehicles = useCallback(async () => {
     try {
@@ -136,5 +153,7 @@ export const useWarrantyClaimsManagement = () => {
     handlePageChange,
     fetchInstalledPartsForVehicle, // Expose this function
     fetchClaims, // Expose fetchClaims for manual refresh
+    sortConfig,
+    handleSort,
   };
 };

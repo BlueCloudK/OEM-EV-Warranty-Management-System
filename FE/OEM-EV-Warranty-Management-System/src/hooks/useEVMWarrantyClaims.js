@@ -8,15 +8,20 @@ export const useEVMWarrantyClaims = () => {
   const [pagination, setPagination] = useState({ currentPage: 0, pageSize: 10, totalPages: 0, totalElements: 0 });
   const [filterStatus, setFilterStatus] = useState('SUBMITTED'); // Default to SUBMITTED for approval
 
+  // Sorting State
+  const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'DESC' });
+
   const fetchClaims = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const params = { 
-        page: pagination.currentPage, 
-        size: pagination.pageSize, 
+      const params = {
+        page: pagination.currentPage,
+        size: pagination.pageSize,
         status: filterStatus === 'all' ? '' : filterStatus,
+        sortBy: sortConfig.key,
+        sortDir: sortConfig.direction
       };
 
       const response = await dataApi.getAllWarrantyClaims(params);
@@ -33,7 +38,14 @@ export const useEVMWarrantyClaims = () => {
     } finally {
       setLoading(false);
     }
-  }, [pagination.currentPage, pagination.pageSize, filterStatus]);
+  }, [pagination.currentPage, pagination.pageSize, filterStatus, sortConfig]);
+
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'ASC' ? 'DESC' : 'ASC'
+    }));
+  };
 
   useEffect(() => {
     fetchClaims();
@@ -80,5 +92,7 @@ export const useEVMWarrantyClaims = () => {
     handleApprove,
     handleReject,
     handlePageChange,
+    sortConfig,
+    handleSort,
   };
 };
