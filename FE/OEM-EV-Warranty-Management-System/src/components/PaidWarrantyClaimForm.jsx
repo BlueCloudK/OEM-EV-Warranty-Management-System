@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import warrantyValidationApi from '../api/warrantyValidation';
 import warrantyClaimsApi from '../api/warrantyClaims';
+import installedPartsApi from '../api/installedParts';
 import WarrantyChecker from './WarrantyChecker';
 import { FaCheckCircle, FaExclamationTriangle, FaMoneyBillWave } from 'react-icons/fa';
 
@@ -31,9 +32,52 @@ const PaidWarrantyClaimForm = ({ vehicleId, installedPartId, onSuccess, onCancel
   });
 
   const [warrantyInfo, setWarrantyInfo] = useState(null);
+  const [installedPartInfo, setInstalledPartInfo] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [step, setStep] = useState(1); // 1: Check warranty, 2: Fill form, 3: Confirm
+
+  // Load installed part info để lấy giá part
+  useEffect(() => {
+    const loadInstalledPartInfo = async () => {
+      if (installedPartId) {
+        try {
+          const partInfo = await installedPartsApi.getById(installedPartId);
+          setInstalledPartInfo(partInfo);
+          console.log('[PaidWarrantyClaimForm] Loaded installed part info:', partInfo);
+        } catch (err) {
+          console.error('[PaidWarrantyClaimForm] Error loading installed part:', err);
+        }
+      }
+    };
+    loadInstalledPartInfo();
+  }, [installedPartId]);
+
+  // Tự động tính phí khi có đủ thông tin
+  useEffect(() => {
+    if (formData.isPaidWarranty && installedPartInfo?.price && !formData.estimatedRepairCost) {
+      const partPrice = parseFloat(installedPartInfo.price);
+      const markupPercent = installedPartInfo.paidWarrantyFeePercentageMin
+        ? parseFloat(installedPartInfo.paidWarrantyFeePercentageMin)
+        : 0;
+
+      // Tính phí cuối cùng luôn = giá × (1 + markup%)
+      const finalFee = partPrice * (1 + markupPercent / 100);
+
+      console.log('[PaidWarrantyClaimForm] Auto-calculating fee from part price:', {
+        partPrice,
+        markupPercent,
+        finalFee,
+        partName: installedPartInfo.partName
+      });
+
+      setFormData(prev => ({
+        ...prev,
+        warrantyFee: finalFee,
+        paidWarrantyNote: `${installedPartInfo.partName}: ${partPrice.toLocaleString('vi-VN')} VNĐ${markupPercent > 0 ? ` + ${markupPercent}%` : ''}`
+      }));
+    }
+  }, [installedPartInfo, formData.isPaidWarranty, formData.estimatedRepairCost]);
 
   // Update form khi warranty info được kiểm tra
   const handleWarrantyChecked = (info) => {
@@ -41,13 +85,16 @@ const PaidWarrantyClaimForm = ({ vehicleId, installedPartId, onSuccess, onCancel
     setWarrantyInfo(info);
 
     // Auto-fill form
+    const isPaid = !info.isValidForFreeWarranty && info.canProvidePaidWarranty;
+
     setFormData(prev => ({
       ...prev,
       vehicleId: info.vehicleId,
       installedPartId: info.installedPartId || prev.installedPartId,
-      isPaidWarranty: !info.isValidForFreeWarranty && info.canProvidePaidWarranty,
-      warrantyFee: info.estimatedWarrantyFee || '',
-      paidWarrantyNote: info.feeNote || '',
+      isPaidWarranty: isPaid,
+      // Fee sẽ được tính tự động trong useEffect khi có installedPartInfo
+      warrantyFee: info.estimatedWarrantyFee || prev.warrantyFee || '',
+      paidWarrantyNote: info.feeNote || prev.paidWarrantyNote || '',
     }));
 
     // Move to step 2 if warranty is valid OR can provide paid warranty
@@ -109,12 +156,8 @@ const PaidWarrantyClaimForm = ({ vehicleId, installedPartId, onSuccess, onCancel
       return false;
     }
 
-    if (formData.isPaidWarranty) {
-      if (!formData.warrantyFee || parseFloat(formData.warrantyFee) <= 0) {
-        setError('Phí bảo hành phải lớn hơn 0');
-        return false;
-      }
-    }
+    // BACKEND AUTO-CALCULATES WARRANTY FEE - No need to validate here
+    // Backend will calculate fee from part price when isPaidWarranty = true
 
     return true;
   };
@@ -148,14 +191,25 @@ const PaidWarrantyClaimForm = ({ vehicleId, installedPartId, onSuccess, onCancel
         description: formData.description,
         isPaidWarranty: formData.isPaidWarranty,
         estimatedRepairCost: formData.estimatedRepairCost ? parseFloat(formData.estimatedRepairCost) : null,
-        warrantyFee: formData.warrantyFee ? parseFloat(formData.warrantyFee) : null,
+        // Backend auto-calculates warrantyFee from part price when isPaidWarranty = true
+        // Only send if user manually calculated it via estimatedRepairCost
+        warrantyFee: (formData.warrantyFee && formData.estimatedRepairCost) ? parseFloat(formData.warrantyFee) : null,
         paidWarrantyNote: formData.paidWarrantyNote || null,
       };
 
       const response = await warrantyClaimsApi.createWarrantyClaim(claimData);
 
-      // Show success notification
-      alert('Tạo yêu cầu bảo hành thành công!');
+      // Show success notification with warranty fee details
+      let successMessage = '✅ Tạo yêu cầu bảo hành thành công!';
+      if (formData.isPaidWarranty && response.warrantyFee) {
+        const finalFee = parseFloat(response.warrantyFee);
+        successMessage += `\n\n💰 Phí bảo hành: ${finalFee.toLocaleString('vi-VN')} VNĐ`;
+        if (formData.paidWarrantyNote) {
+          successMessage += `\n(${formData.paidWarrantyNote})`;
+        }
+        successMessage += '\n\n⚠️ Khách hàng cần thanh toán tại quầy trước khi xử lý';
+      }
+      alert(successMessage);
 
       if (onSuccess) {
         onSuccess(response);
@@ -211,7 +265,7 @@ const PaidWarrantyClaimForm = ({ vehicleId, installedPartId, onSuccess, onCancel
         <StepSection>
           <Form onSubmit={handleNextToConfirmation}>
             {/* Warranty Status Summary */}
-            <WarrantySummary isPaid={formData.isPaidWarranty}>
+            <WarrantySummary $isPaid={formData.isPaidWarranty}>
               {formData.isPaidWarranty ? (
                 <>
                   <FaExclamationTriangle />
@@ -223,16 +277,9 @@ const PaidWarrantyClaimForm = ({ vehicleId, installedPartId, onSuccess, onCancel
                         Lý do: {warrantyInfo.expirationReasons}
                       </p>
                     )}
-                    {formData.warrantyFee && (
-                      <p style={{ marginTop: '8px' }}>
-                        💰 <strong>Phí bảo hành: {parseFloat(formData.warrantyFee).toLocaleString('vi-VN')} VNĐ</strong>
-                      </p>
-                    )}
                     <FeeFormulaInfo>
                       <small>
-                        📋 Công thức: Phí = 20%-50% × Chi phí sửa chữa (tăng dần theo số ngày quá hạn)
-                        <br />
-                        💵 Phí tối thiểu: 500,000 VNĐ
+                        💰 Phí sẽ tính tự động từ giá linh kiện khi gửi yêu cầu
                       </small>
                     </FeeFormulaInfo>
                   </div>
@@ -274,7 +321,7 @@ const PaidWarrantyClaimForm = ({ vehicleId, installedPartId, onSuccess, onCancel
                 </PaidWarrantyHeader>
 
                 <FormGroup>
-                  <Label htmlFor="estimatedRepairCost">Chi phí sửa chữa ước tính (VNĐ)</Label>
+                  <Label htmlFor="estimatedRepairCost">Chi phí sửa chữa ước tính (VNĐ) - Tùy chọn</Label>
                   <Input
                     type="number"
                     id="estimatedRepairCost"
@@ -284,40 +331,122 @@ const PaidWarrantyClaimForm = ({ vehicleId, installedPartId, onSuccess, onCancel
                     min="100000"
                     max="1000000000"
                     step="100000"
-                    placeholder="Ví dụ: 5000000"
+                    placeholder="Ví dụ: 5000000 (không bắt buộc)"
                   />
                   <small style={{ color: '#666', marginTop: '4px', display: 'block' }}>
-                    Nhập chi phí sửa chữa để tính phí bảo hành tự động
+                    💡 <strong>Tùy chọn:</strong> Nhập để xem phí ước tính, hoặc để trống - hệ thống sẽ tự động tính từ giá linh kiện
                   </small>
                 </FormGroup>
 
                 <FormGroup>
-                  <Label htmlFor="warrantyFee">Phí bảo hành (VNĐ) *</Label>
-                  <Input
-                    type="number"
-                    id="warrantyFee"
-                    name="warrantyFee"
-                    value={formData.warrantyFee}
-                    required={formData.isPaidWarranty}
-                    readOnly
-                    style={{ background: '#f5f5f5', cursor: 'not-allowed' }}
-                  />
-                  <small style={{ color: '#666', marginTop: '4px', display: 'block' }}>
-                    Phí được tính tự động: 20%-50% của chi phí sửa chữa tùy theo số ngày quá hạn
+                  <Label htmlFor="warrantyFee">Phí Bảo Hành</Label>
+                  {formData.warrantyFee ? (
+                    <>
+                      <FeeDisplayBox>
+                        <div>
+                          <FeeAmount>
+                            {parseFloat(formData.warrantyFee).toLocaleString('vi-VN')} VNĐ
+                          </FeeAmount>
+                          <div style={{ fontSize: '0.85rem', color: '#666', marginTop: '8px' }}>
+                            {installedPartInfo && (
+                              <>
+                                📦 {installedPartInfo.partName}: {parseFloat(installedPartInfo.price).toLocaleString('vi-VN')} VNĐ
+                                {installedPartInfo.paidWarrantyFeePercentageMin > 0 && (
+                                  <> + {parseFloat(installedPartInfo.paidWarrantyFeePercentageMin)}% markup</>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </FeeDisplayBox>
+                      {installedPartInfo && (
+                        <div style={{
+                          marginTop: '8px',
+                          padding: '10px 12px',
+                          background: '#fff3e0',
+                          borderLeft: '3px solid #ff9800',
+                          fontSize: '0.85rem',
+                          color: '#e65100',
+                          lineHeight: '1.6'
+                        }}>
+                          <div style={{ fontWeight: 'bold', marginBottom: '6px' }}>📐 Công thức tính phí:</div>
+                          <div>Phí = Giá linh kiện × (1 + Markup%)</div>
+                          <div style={{ marginTop: '4px' }}>
+                            = {parseFloat(installedPartInfo.price).toLocaleString('vi-VN')} × (1 + {parseFloat(installedPartInfo.paidWarrantyFeePercentageMin || 0)}%)
+                          </div>
+                          <div style={{ marginTop: '4px' }}>
+                            = <strong>{parseFloat(formData.warrantyFee).toLocaleString('vi-VN')} VNĐ</strong>
+                          </div>
+                          {(installedPartInfo.paidWarrantyFeePercentageMin > 0 || installedPartInfo.paidWarrantyFeePercentageMax > 0) && warrantyInfo && (
+                            <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed #ffb74d', fontSize: '0.8rem', color: '#666', lineHeight: '1.5' }}>
+                              <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>📊 Cách tính Markup%:</div>
+                              {installedPartInfo.paidWarrantyFeePercentageMax > installedPartInfo.paidWarrantyFeePercentageMin ? (
+                                <>
+                                  <div>• Markup = Min% + (Max% - Min%) × (Ngày hết hạn / Grace period)</div>
+                                  <div style={{ marginTop: '2px' }}>
+                                    • Range: {installedPartInfo.paidWarrantyFeePercentageMin}% - {installedPartInfo.paidWarrantyFeePercentageMax}%
+                                  </div>
+                                  <div style={{ marginTop: '2px', fontStyle: 'italic' }}>
+                                    → Vừa hết hạn = markup thấp, hết lâu = markup cao
+                                  </div>
+                                  {(() => {
+                                    const today = new Date();
+                                    // Dùng warranty expiration từ warrantyInfo (đã tính đúng vehicle vs part)
+                                    let daysExpired = 0;
+                                    if (warrantyInfo.daysRemaining < 0) {
+                                      daysExpired = Math.abs(warrantyInfo.daysRemaining);
+                                    }
+                                    const gracePeriod = installedPartInfo.gracePeriodDays || warrantyInfo.gracePeriodDays || 30;
+                                    const minPercent = parseFloat(installedPartInfo.paidWarrantyFeePercentageMin);
+                                    const maxPercent = parseFloat(installedPartInfo.paidWarrantyFeePercentageMax);
+
+                                    if (true) { // Always show calculation
+                                      const ratio = Math.min(daysExpired / gracePeriod, 1);
+                                      const calculatedMarkup = minPercent + (maxPercent - minPercent) * ratio;
+
+                                      return (
+                                        <div style={{ marginTop: '6px', padding: '6px', background: '#fff9e6', borderRadius: '4px', fontSize: '0.75rem' }}>
+                                          <div style={{ fontWeight: 'bold', marginBottom: '3px', color: '#e65100' }}>Tính toán cho claim này:</div>
+                                          <div>• Grace period: {gracePeriod} ngày</div>
+                                          <div>• Ngày hết hạn: {daysExpired} ngày</div>
+                                          <div>• Tính toán:</div>
+                                          <div style={{ paddingLeft: '12px' }}>
+                                            <div>- Ratio = {daysExpired} / {gracePeriod} = {ratio.toFixed(2)}</div>
+                                            <div>- Markup = {minPercent}% + ({maxPercent}% - {minPercent}%) × {ratio.toFixed(2)}</div>
+                                            <div>- Markup = {minPercent}% + {(maxPercent - minPercent).toFixed(1)}% × {ratio.toFixed(2)}</div>
+                                            <div style={{ fontWeight: 'bold', color: '#e65100' }}>- Markup = {calculatedMarkup.toFixed(1)}%</div>
+                                          </div>
+                                          <div style={{ marginTop: '3px' }}>• Phí = {parseFloat(installedPartInfo.price).toLocaleString('vi-VN')} × (1 + {calculatedMarkup.toFixed(1)}%)</div>
+                                          <div style={{ fontWeight: 'bold', color: '#e65100' }}>
+                                            • Phí = {parseFloat(formData.warrantyFee).toLocaleString('vi-VN')} VNĐ
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+                                    return null;
+                                  })()}
+                                </>
+                              ) : (
+                                <div>• Markup cố định: {installedPartInfo.paidWarrantyFeePercentageMin || 0}% (không phân biệt ngày hết hạn)</div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <Input
+                      type="text"
+                      readOnly
+                      value=""
+                      style={{ background: '#f5f5f5', cursor: 'not-allowed' }}
+                      placeholder="Đang tải..."
+                    />
+                  )}
+                  <small style={{ color: '#888', marginTop: '4px', display: 'block' }}>
+                    Hoặc nhập chi phí sửa chữa bên trên để tính phí khác
                   </small>
                 </FormGroup>
-
-                {/* Chi tiết tính phí */}
-                {formData.paidWarrantyNote && (
-                  <FeeDetailsBox>
-                    <FeeDetailsHeader>
-                      <strong>Chi Tiết Tính Phí</strong>
-                    </FeeDetailsHeader>
-                    <FeeDetailsContent>
-                      {formData.paidWarrantyNote}
-                    </FeeDetailsContent>
-                  </FeeDetailsBox>
-                )}
 
                 <PaymentNotice>
                   <strong>Lưu ý:</strong> Sau khi tạo claim, bạn cần thanh toán phí bảo hành trước khi claim được xử lý.
@@ -359,7 +488,7 @@ const PaidWarrantyClaimForm = ({ vehicleId, installedPartId, onSuccess, onCancel
                 </DetailValue>
               </DetailRow>
 
-              {formData.isPaidWarranty && (
+              {formData.isPaidWarranty && formData.warrantyFee && (
                 <DetailRow>
                   <DetailLabel>Phí bảo hành:</DetailLabel>
                   <DetailValue style={{ color: '#ff6f00', fontWeight: 'bold', fontSize: '1.2rem' }}>
@@ -383,20 +512,12 @@ const PaidWarrantyClaimForm = ({ vehicleId, installedPartId, onSuccess, onCancel
               )}
             </ConfirmationDetails>
 
-            {formData.isPaidWarranty && formData.paidWarrantyNote && (
-              <FeeDetailsBox style={{ marginTop: '20px' }}>
-                <FeeDetailsHeader>
-                  <strong>Chi Tiết Tính Phí</strong>
-                </FeeDetailsHeader>
-                <FeeDetailsContent>
-                  {formData.paidWarrantyNote}
-                </FeeDetailsContent>
-              </FeeDetailsBox>
-            )}
-
             {formData.isPaidWarranty && (
               <PaymentNotice style={{ marginTop: '20px' }}>
-                <strong>Lưu ý quan trọng:</strong> Sau khi tạo yêu cầu, bạn cần thanh toán phí bảo hành tại quầy trước khi yêu cầu được xử lý.
+                {formData.paidWarrantyNote && (
+                  <div style={{ marginBottom: '8px' }}>📋 {formData.paidWarrantyNote}</div>
+                )}
+                <strong>→ Khách hàng cần thanh toán tại quầy trước khi xử lý</strong>
               </PaymentNotice>
             )}
 
@@ -482,18 +603,18 @@ const WarrantySummary = styled.div`
   padding: 20px;
   border-radius: 8px;
   margin-bottom: 24px;
-  background: ${props => props.isPaid ? '#fff3e0' : '#e8f5e9'};
-  border: 2px solid ${props => props.isPaid ? '#ff9800' : '#4caf50'};
+  background: ${props => props.$isPaid ? '#fff3e0' : '#e8f5e9'};
+  border: 2px solid ${props => props.$isPaid ? '#ff9800' : '#4caf50'};
 
   svg {
     font-size: 2.5rem;
-    color: ${props => props.isPaid ? '#ff9800' : '#4caf50'};
+    color: ${props => props.$isPaid ? '#ff9800' : '#4caf50'};
     flex-shrink: 0;
   }
 
   h4 {
     margin: 0 0 8px 0;
-    color: ${props => props.isPaid ? '#e65100' : '#2e7d32'};
+    color: ${props => props.$isPaid ? '#e65100' : '#2e7d32'};
     font-size: 1.3rem;
   }
 
@@ -504,7 +625,7 @@ const WarrantySummary = styled.div`
   }
 
   strong {
-    color: ${props => props.isPaid ? '#ff6f00' : '#1b5e20'};
+    color: ${props => props.$isPaid ? '#ff6f00' : '#1b5e20'};
     font-size: 1.1rem;
   }
 `;
@@ -655,6 +776,34 @@ const FeeDetailsContent = styled.pre`
   margin: 0;
   line-height: 1.6;
   border: 1px solid #ffe082;
+`;
+
+const FeeDisplayBox = styled.div`
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  border: 2px solid #2196f3;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin: 8px 0;
+`;
+
+const FeeAmount = styled.div`
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #1565c0;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const FeeSource = styled.div`
+  font-size: 0.9rem;
+  color: #555;
+  font-style: italic;
+
+  strong {
+    color: #0d47a1;
+  }
 `;
 
 const FormActions = styled.div`

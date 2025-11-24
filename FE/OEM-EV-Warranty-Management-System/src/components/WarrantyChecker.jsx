@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import warrantyValidationApi from '../api/warrantyValidation';
+import installedPartsApi from '../api/installedParts';
 import { FaCheckCircle, FaTimesCircle, FaExclamationTriangle, FaCar, FaCog, FaCalendarAlt, FaTachometerAlt, FaMoneyBillWave } from 'react-icons/fa';
 
 /**
@@ -19,6 +20,7 @@ const WarrantyChecker = ({ vehicleId, installedPartId, onWarrantyChecked, autoCh
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [warrantyInfo, setWarrantyInfo] = useState(null);
+  const [installedPartInfo, setInstalledPartInfo] = useState(null);
   const [estimatedRepairCost, setEstimatedRepairCost] = useState('');
   const [showFeeCalculation, setShowFeeCalculation] = useState(false);
 
@@ -64,6 +66,22 @@ const WarrantyChecker = ({ vehicleId, installedPartId, onWarrantyChecked, autoCh
       setLoading(false);
     }
   };
+
+  // Load installed part info để lấy giá và markup percentages
+  useEffect(() => {
+    const loadInstalledPartInfo = async () => {
+      if (installedPartId) {
+        try {
+          const partInfo = await installedPartsApi.getById(installedPartId);
+          setInstalledPartInfo(partInfo);
+          console.log('[WarrantyChecker] Loaded installed part info:', partInfo);
+        } catch (err) {
+          console.error('[WarrantyChecker] Error loading installed part:', err);
+        }
+      }
+    };
+    loadInstalledPartInfo();
+  }, [installedPartId]);
 
   // Auto check warranty on mount if autoCheck is true
   useEffect(() => {
@@ -231,13 +249,79 @@ const WarrantyChecker = ({ vehicleId, installedPartId, onWarrantyChecked, autoCh
               <GracePeriodInfo>
                 <strong>📋 Thông tin bảo hành tính phí:</strong>
                 <ul>
-                  <li>✅ Xe/linh kiện đủ điều kiện bảo hành tính phí (trong grace period {warrantyInfo.gracePeriodDays || 180} ngày)</li>
+                  <li>✅ Xe/linh kiện đủ điều kiện bảo hành tính phí (trong grace period {warrantyInfo.gracePeriodDays || 30} ngày)</li>
                   {warrantyInfo.daysRemaining < 0 && (
-                    <li>⏱️ Thời gian quá hạn: <strong>{Math.abs(warrantyInfo.daysRemaining)}</strong> ngày / {warrantyInfo.gracePeriodDays || 180} ngày cho phép</li>
+                    <li>⏱️ Thời gian quá hạn: <strong>{Math.abs(warrantyInfo.daysRemaining)}</strong> ngày / {warrantyInfo.gracePeriodDays || 30} ngày cho phép</li>
                   )}
-                  <li>💰 Phí tính theo công thức: <strong>20%-50%</strong> chi phí sửa chữa (tăng dần theo số ngày quá hạn)</li>
-                  <li>💵 Phí tối thiểu: <strong>500,000 VNĐ</strong></li>
                 </ul>
+                {(() => {
+                  console.log('[WarrantyChecker] Checking render condition:', {
+                    hasInstalledPartInfo: !!installedPartInfo,
+                    hasPrice: !!installedPartInfo?.price,
+                    hasWarrantyExpirationDate: !!installedPartInfo?.warrantyExpirationDate,
+                    installedPartInfo
+                  });
+                  return null;
+                })()}
+                {installedPartInfo && installedPartInfo.price && installedPartInfo.warrantyExpirationDate ? (
+                  <div style={{
+                    marginTop: '12px',
+                    padding: '12px',
+                    background: '#fff9e6',
+                    borderLeft: '3px solid #ff9800',
+                    borderRadius: '4px',
+                    fontSize: '0.85rem',
+                    lineHeight: '1.6'
+                  }}>
+                    <div style={{ fontWeight: 'bold', marginBottom: '6px', color: '#e65100' }}>📐 Tính toán cho claim này:</div>
+                    {(() => {
+                      const today = new Date();
+                      const expirationDate = new Date(installedPartInfo.warrantyExpirationDate);
+                      const daysExpired = Math.max(0, Math.floor((today - expirationDate) / (1000 * 60 * 60 * 24)));
+                      const gracePeriod = installedPartInfo.gracePeriodDays || warrantyInfo.gracePeriodDays || 30;
+                      const minPercent = parseFloat(installedPartInfo.paidWarrantyFeePercentageMin) || 0;
+                      const maxPercent = parseFloat(installedPartInfo.paidWarrantyFeePercentageMax) || minPercent;
+                      const partPrice = parseFloat(installedPartInfo.price);
+
+                      const ratio = Math.min(daysExpired / gracePeriod, 1);
+                      const calculatedMarkup = minPercent + (maxPercent - minPercent) * ratio;
+                      const finalFee = partPrice * (1 + calculatedMarkup / 100);
+
+                      return (
+                        <>
+                          <div>• Grace period: <strong>{gracePeriod} ngày</strong></div>
+                          <div>• Ngày hết hạn: <strong>{daysExpired} ngày</strong></div>
+                          <div style={{ marginTop: '6px' }}>• Tính Markup%:</div>
+                          <div style={{ paddingLeft: '12px', fontSize: '0.8rem' }}>
+                            <div>- Ratio = {daysExpired} / {gracePeriod} = <strong>{ratio.toFixed(2)}</strong></div>
+                            <div>- Markup = {minPercent}% + ({maxPercent}% - {minPercent}%) × {ratio.toFixed(2)}</div>
+                            <div>- Markup = {minPercent}% + {(maxPercent - minPercent).toFixed(1)}% × {ratio.toFixed(2)}</div>
+                            <div style={{ fontWeight: 'bold', color: '#e65100' }}>- Markup = {calculatedMarkup.toFixed(1)}%</div>
+                          </div>
+                          <div style={{ marginTop: '6px' }}>• Tính phí:</div>
+                          <div style={{ paddingLeft: '12px', fontSize: '0.8rem' }}>
+                            <div>- Phí = {partPrice.toLocaleString('vi-VN')} × (1 + {calculatedMarkup.toFixed(1)}%)</div>
+                            <div style={{ fontWeight: 'bold', color: '#e65100', fontSize: '0.9rem' }}>
+                              - Phí = {finalFee.toLocaleString('vi-VN')} VNĐ
+                            </div>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                ) : (
+                  <div style={{
+                    marginTop: '12px',
+                    padding: '12px',
+                    background: '#ffe0e0',
+                    borderLeft: '3px solid #f44336',
+                    borderRadius: '4px',
+                    fontSize: '0.85rem'
+                  }}>
+                    ⚠️ Không thể tải thông tin linh kiện để tính phí chi tiết. Vui lòng thử lại.
+                    {console.log('[WarrantyChecker] Missing data for calculation')}
+                  </div>
+                )}
               </GracePeriodInfo>
 
               {showFeeCalculation && !warrantyInfo.estimatedWarrantyFee && (
