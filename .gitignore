@@ -1,10 +1,11 @@
 api_service_flow.md
 java
-.claude/settings.local.json
-.serena/project.yml
-BE/oem-ev-warranty-management-system/.serena/project.yml
-FE/OEM-EV-Warranty-Management-System/.serena/project.yml
 uvx
 cd
 BE/nul
-BE/.claude/settings.local.json
+
+# Claude Code and Serena folders
+.claude/
+.serena/
+**/.claude/
+**/.serena/
