@@ -52,6 +52,29 @@ public interface InstalledPartRepository extends JpaRepository<InstalledPart, Lo
      */
     List<InstalledPart> findByPart_PartIdAndIsActiveTrue(Long partId);
 
+    /**
+     * Count ACTIVE installed parts by vehicle and part category.
+     * <p>
+     * <strong>Business Logic:</strong> Dùng để validate giới hạn số lượng parts theo category.
+     * <p>
+     * <strong>Example:</strong>
+     * - Category "Động cơ điện" có maxQuantity = 1
+     * - Query này đếm xem xe đã có bao nhiêu động cơ điện (bất kể loại nào)
+     * - Nếu count >= maxQuantity → không cho phép thêm nữa
+     *
+     * @param vehicleId ID của xe
+     * @param categoryId ID của category
+     * @return số lượng active installed parts thuộc category này trên xe
+     */
+    @Query("SELECT COUNT(ip) FROM InstalledPart ip " +
+           "WHERE ip.vehicle.vehicleId = :vehicleId " +
+           "AND ip.part.partCategory.categoryId = :categoryId " +
+           "AND ip.isActive = true")
+    long countByVehicleIdAndPartCategoryIdAndIsActiveTrue(
+            @Param("vehicleId") Long vehicleId,
+            @Param("categoryId") Long categoryId
+    );
+
     // ======= LEGACY METHODS (for backward compatibility with existing code) =======
     // These methods return ALL installed parts (including soft-deleted ones)
     // Kept for specific use cases like recall management where we need ALL parts

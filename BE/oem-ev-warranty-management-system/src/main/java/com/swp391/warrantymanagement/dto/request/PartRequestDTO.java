@@ -32,6 +32,20 @@ public class PartRequestDTO {
     @DecimalMax(value = "99999999.99", message = "Price cannot exceed 99,999,999.99")
     private BigDecimal price;
 
+    // ======= CATEGORY =======
+    /**
+     * ID của category mà part này thuộc về.
+     * <p>
+     * <strong>Optional (nullable):</strong>
+     * - NULL = Part không thuộc category nào → KHÔNG giới hạn số lượng trên xe
+     * - NOT NULL = Part thuộc category cụ thể → Kiểm tra maxQuantityPerVehicle
+     * <p>
+     * <strong>Ví dụ:</strong>
+     * - Motor Type A, Motor Type B → cùng categoryId của "Động cơ điện" (max: 1)
+     * - Xe chỉ được lắp 1 trong 2 loại motor trên
+     */
+    private Long categoryId;
+
     // ======= WARRANTY CONFIGURATION =======
     /**
      * Linh kiện có bảo hành mở rộng riêng hay không.

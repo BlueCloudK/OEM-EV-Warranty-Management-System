@@ -10,6 +10,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -37,13 +39,15 @@ public class VehicleController {
     private VehicleService vehicleService;
 
     /**
-     * Lấy danh sách tất cả các xe trong hệ thống với phân trang và tìm kiếm.
+     * Lấy danh sách tất cả các xe trong hệ thống với phân trang, tìm kiếm và sắp xếp.
      * <p>
      * Endpoint này chỉ dành cho các vai trò quản trị và nhân viên.
      *
-     * @param page   Số trang (mặc định là 0).
-     * @param size   Số lượng phần tử trên mỗi trang (mặc định là 10).
-     * @param search Chuỗi tìm kiếm (có thể là VIN, model, brand, tên khách hàng).
+     * @param page    Số trang (mặc định là 0).
+     * @param size    Số lượng phần tử trên mỗi trang (mặc định là 10).
+     * @param search  Chuỗi tìm kiếm (có thể là VIN, model, brand, tên khách hàng).
+     * @param sortBy  Trường để sắp xếp (mặc định: vehicleId).
+     * @param sortDir Hướng sắp xếp: ASC hoặc DESC (mặc định: DESC).
      * @return {@link ResponseEntity} chứa một {@link PagedResponse} các xe.
      */
     @GetMapping
@@ -51,11 +55,16 @@ public class VehicleController {
     public ResponseEntity<PagedResponse<VehicleResponseDTO>> getAllVehicles(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String search) {
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "vehicleId") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDir) {
 
-        logger.info("Get all vehicles request: page={}, size={}, search={}", page, size, search);
-        PagedResponse<VehicleResponseDTO> vehiclesPage = vehicleService.getAllVehiclesPage(
-            PageRequest.of(page, size), search);
+        logger.info("Get all vehicles request: page={}, size={}, search={}, sortBy={}, sortDir={}", page, size, search, sortBy, sortDir);
+
+        Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        PagedResponse<VehicleResponseDTO> vehiclesPage = vehicleService.getAllVehiclesPage(pageable, search);
         logger.info("Get all vehicles success, totalElements={}", vehiclesPage.getTotalElements());
         return ResponseEntity.ok(vehiclesPage);
     }
@@ -149,6 +158,8 @@ public class VehicleController {
      * @param customerId ID của khách hàng.
      * @param page       Số trang.
      * @param size       Số lượng phần tử trên trang.
+     * @param sortBy     Trường để sắp xếp (mặc định: purchaseDate).
+     * @param sortDir    Hướng sắp xếp: ASC hoặc DESC (mặc định: DESC).
      * @return {@link ResponseEntity} chứa một {@link PagedResponse} các xe của khách hàng đó.
      */
     @GetMapping("/by-customer/{customerId}")
@@ -156,10 +167,15 @@ public class VehicleController {
     public ResponseEntity<PagedResponse<VehicleResponseDTO>> getVehiclesByCustomer(
             @PathVariable UUID customerId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        logger.info("Get vehicles by customer: {}, page={}, size={}", customerId, page, size);
-        PagedResponse<VehicleResponseDTO> vehiclesPage = vehicleService.getVehiclesByCustomerId(
-            customerId, PageRequest.of(page, size));
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "purchaseDate") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDir) {
+        logger.info("Get vehicles by customer: {}, page={}, size={}, sortBy={}, sortDir={}", customerId, page, size, sortBy, sortDir);
+
+        Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        PagedResponse<VehicleResponseDTO> vehiclesPage = vehicleService.getVehiclesByCustomerId(customerId, pageable);
         logger.info("Get vehicles by customer success, totalElements={}", vehiclesPage.getTotalElements());
         return ResponseEntity.ok(vehiclesPage);
     }
@@ -169,24 +185,30 @@ public class VehicleController {
      * <p>
      * Hệ thống sẽ tự động lấy thông tin người dùng đang đăng nhập từ Security Context.
      *
-     * @param page Số trang.
-     * @param size Số lượng phần tử trên trang.
+     * @param page    Số trang.
+     * @param size    Số lượng phần tử trên trang.
+     * @param sortBy  Trường để sắp xếp (mặc định: purchaseDate).
+     * @param sortDir Hướng sắp xếp: ASC hoặc DESC (mặc định: DESC).
      * @return {@link ResponseEntity} chứa một {@link PagedResponse} các xe của người dùng hiện tại.
      */
     @GetMapping("/my-vehicles")
     @PreAuthorize("hasRole('CUSTOMER')")
     public ResponseEntity<PagedResponse<VehicleResponseDTO>> getMyVehicles(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        logger.info("Get my vehicles request: page={}, size={}", page, size);
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "purchaseDate") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDir) {
+        logger.info("Get my vehicles request: page={}, size={}, sortBy={}, sortDir={}", page, size, sortBy, sortDir);
         try {
             // Lấy username từ SecurityContext (đã được xác thực bởi JWT filter)
             String username = SecurityUtil.getCurrentUsername()
                     .orElseThrow(() -> new RuntimeException("User not authenticated"));
             logger.info("Current authenticated user: {}", username);
 
-            PagedResponse<VehicleResponseDTO> vehiclesPage = vehicleService.getVehiclesByCurrentUser(
-                username, PageRequest.of(page, size));
+            Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+            Pageable pageable = PageRequest.of(page, size, sort);
+
+            PagedResponse<VehicleResponseDTO> vehiclesPage = vehicleService.getVehiclesByCurrentUser(username, pageable);
             logger.info("Get my vehicles success, totalElements={}", vehiclesPage.getTotalElements());
             return ResponseEntity.ok(vehiclesPage);
         } catch (RuntimeException e) {

@@ -10,6 +10,8 @@ import com.swp391.warrantymanagement.util.SecurityUtil;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -52,20 +54,28 @@ public class WarrantyClaimController {
     private final WarrantyClaimService warrantyClaimService;
 
     /**
-     * Lấy danh sách tất cả các yêu cầu bảo hành trong hệ thống, hỗ trợ phân trang.
+     * Lấy danh sách tất cả các yêu cầu bảo hành trong hệ thống, hỗ trợ phân trang và sắp xếp.
      * Endpoint này dành cho các vai trò quản trị và nhân viên để có cái nhìn tổng quan.
      *
      * @param page Số trang (mặc định là 0).
      * @param size Số lượng phần tử trên mỗi trang (mặc định là 10).
+     * @param sortBy Trường để sắp xếp (mặc định: warrantyClaimId).
+     * @param sortDir Hướng sắp xếp: ASC hoặc DESC (mặc định: DESC).
      * @return {@link ResponseEntity} chứa một {@link PagedResponse} các yêu cầu bảo hành.
      */
     @GetMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('SC_STAFF') or hasRole('EVM_STAFF') or hasRole('SC_TECHNICIAN')")
     public ResponseEntity<PagedResponse<WarrantyClaimResponseDTO>> getAllClaims(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        logger.info("Get all warranty claims request: page={}, size={}", page, size);
-        PagedResponse<WarrantyClaimResponseDTO> claimsPage = warrantyClaimService.getAllClaimsPage(PageRequest.of(page, size));
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "warrantyClaimId") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDir) {
+        logger.info("Get all warranty claims request: page={}, size={}, sortBy={}, sortDir={}", page, size, sortBy, sortDir);
+
+        Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        PagedResponse<WarrantyClaimResponseDTO> claimsPage = warrantyClaimService.getAllClaimsPage(pageable);
         logger.info("Get all warranty claims success, totalElements={}", claimsPage.getTotalElements());
         return ResponseEntity.ok(claimsPage);
     }
@@ -259,11 +269,13 @@ public class WarrantyClaimController {
     }
 
     /**
-     * Lấy danh sách các yêu cầu bảo hành theo một trạng thái cụ thể.
+     * Lấy danh sách các yêu cầu bảo hành theo một trạng thái cụ thể, hỗ trợ sắp xếp.
      *
      * @param status Trạng thái cần lọc.
      * @param page   Số trang.
      * @param size   Số lượng phần tử trên trang.
+     * @param sortBy Trường để sắp xếp (mặc định: claimDate).
+     * @param sortDir Hướng sắp xếp: ASC hoặc DESC (mặc định: DESC).
      * @return {@link ResponseEntity} chứa một {@link PagedResponse} các yêu cầu phù hợp.
      */
     @GetMapping("/by-status/{status}")
@@ -271,9 +283,15 @@ public class WarrantyClaimController {
     public ResponseEntity<PagedResponse<WarrantyClaimResponseDTO>> getClaimsByStatus(
             @PathVariable String status,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        logger.info("Get claims by status: status={}, page={}, size={}", status, page, size);
-        PagedResponse<WarrantyClaimResponseDTO> claimsPage = warrantyClaimService.getClaimsByStatus(status, PageRequest.of(page, size));
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "claimDate") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDir) {
+        logger.info("Get claims by status: status={}, page={}, size={}, sortBy={}, sortDir={}", status, page, size, sortBy, sortDir);
+
+        Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        PagedResponse<WarrantyClaimResponseDTO> claimsPage = warrantyClaimService.getClaimsByStatus(status, pageable);
         logger.info("Get claims by status success, totalElements={}", claimsPage.getTotalElements());
         return ResponseEntity.ok(claimsPage);
     }
@@ -286,9 +304,15 @@ public class WarrantyClaimController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PagedResponse<WarrantyClaimResponseDTO>> getAdminPendingClaims(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        logger.info("Get Admin pending claims: page={}, size={}", page, size);
-        PagedResponse<WarrantyClaimResponseDTO> claimsPage = warrantyClaimService.getClaimsByStatus("SUBMITTED", PageRequest.of(page, size));
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "claimDate") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDir) {
+        logger.info("Get Admin pending claims: page={}, size={}, sortBy={}, sortDir={}", page, size, sortBy, sortDir);
+
+        Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        PagedResponse<WarrantyClaimResponseDTO> claimsPage = warrantyClaimService.getClaimsByStatus("SUBMITTED", pageable);
         logger.info("Get Admin pending claims success, totalElements={}", claimsPage.getTotalElements());
         return ResponseEntity.ok(claimsPage);
     }
@@ -301,9 +325,15 @@ public class WarrantyClaimController {
     @PreAuthorize("hasRole('SC_TECHNICIAN')")
     public ResponseEntity<PagedResponse<WarrantyClaimResponseDTO>> getTechPendingClaims(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        logger.info("Get technician pending claims: page={}, size={}", page, size);
-        PagedResponse<WarrantyClaimResponseDTO> claimsPage = warrantyClaimService.getTechPendingClaims(PageRequest.of(page, size));
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "claimDate") String sortBy,
+            @RequestParam(defaultValue = "ASC") String sortDir) {
+        logger.info("Get technician pending claims: page={}, size={}, sortBy={}, sortDir={}", page, size, sortBy, sortDir);
+
+        Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        PagedResponse<WarrantyClaimResponseDTO> claimsPage = warrantyClaimService.getTechPendingClaims(pageable);
         logger.info("Get technician pending claims success, totalElements={}", claimsPage.getTotalElements());
         return ResponseEntity.ok(claimsPage);
     }
@@ -335,6 +365,8 @@ public class WarrantyClaimController {
      *
      * @param page Số trang.
      * @param size Số lượng phần tử trên trang.
+     * @param sortBy Trường để sắp xếp (mặc định: claimDate).
+     * @param sortDir Hướng sắp xếp: ASC hoặc DESC (mặc định: DESC).
      * @return {@link ResponseEntity} chứa một {@link PagedResponse} các yêu cầu đã được gán.
      */
     @GetMapping("/my-assigned-claims")
@@ -342,13 +374,19 @@ public class WarrantyClaimController {
     public ResponseEntity<PagedResponse<WarrantyClaimResponseDTO>> getMyAssignedClaims(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "claimDate") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDir,
             @RequestParam(required = false) Long userId) { // Giữ lại để tương thích, nhưng không sử dụng
         // Thiết kế bảo mật: Lấy username từ Security Context để đảm bảo Admin chỉ xem được các claim của chính mình.
         String username = SecurityUtil.getCurrentUsername()
                 .orElseThrow(() -> new AuthenticationRequiredException("Authentication is required to view assigned claims"));
-        logger.info("Get my assigned claims: user={}, page={}, size={}", username, page, size);
+        logger.info("Get my assigned claims: user={}, page={}, size={}, sortBy={}, sortDir={}", username, page, size, sortBy, sortDir);
+
+        Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
         PagedResponse<WarrantyClaimResponseDTO> claimsPage =
-            warrantyClaimService.getMyAssignedClaims(username, PageRequest.of(page, size));
+            warrantyClaimService.getMyAssignedClaims(username, pageable);
         logger.info("Get my assigned claims success, totalElements={}", claimsPage.getTotalElements());
         return ResponseEntity.ok(claimsPage);
     }
@@ -363,14 +401,20 @@ public class WarrantyClaimController {
     @PreAuthorize("hasRole('CUSTOMER')")
     public ResponseEntity<PagedResponse<WarrantyClaimResponseDTO>> getMyWarrantyClaims(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "claimDate") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDir) {
         // Thiết kế bảo mật: Lấy username từ Security Context để xác thực quyền sở hữu.
         // Tầng Service sẽ sử dụng username này để tìm Customer ID và chỉ truy vấn các claim
         // thuộc về khách hàng đó, đảm bảo một khách hàng không thể xem claim của người khác.
         String username = SecurityUtil.getCurrentUsername().orElseThrow(() -> new AuthenticationRequiredException("Authentication is required"));
-        logger.info("Customer get my warranty claims: page={}, size={}", page, size);
+        logger.info("Customer get my warranty claims: page={}, size={}, sortBy={}, sortDir={}", page, size, sortBy, sortDir);
+
+        Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
         PagedResponse<WarrantyClaimResponseDTO> claimsPage =
-            warrantyClaimService.getMyWarrantyClaims(username, PageRequest.of(page, size));
+            warrantyClaimService.getMyWarrantyClaims(username, pageable);
         logger.info("Customer get my warranty claims success, totalElements={}", claimsPage.getTotalElements());
         return ResponseEntity.ok(claimsPage);
     }

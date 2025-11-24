@@ -28,7 +28,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true) // Best practice: Chỉ so sánh dựa trên ID
-@ToString(exclude = {"installedParts", "serviceHistoryDetails"}) // Tránh lỗi đệ quy và LazyInitializationException
+@ToString(exclude = {"partCategory", "installedParts", "serviceHistoryDetails"}) // Tránh lỗi đệ quy và LazyInitializationException
 public class Part {
 
     // ======= PRIMARY KEY =======
@@ -149,6 +149,26 @@ public class Part {
     private BigDecimal paidWarrantyFeePercentageMax;
 
     // ======= RELATIONSHIPS =======
+
+    /**
+     * Danh mục (category) mà phụ tùng này thuộc về.
+     * <p>
+     * <strong>Business Logic:</strong>
+     * <ul>
+     *     <li>{@code NULL}: Phụ tùng không thuộc category nào → KHÔNG GIỚI HẠN số lượng trên xe</li>
+     *     <li>{@code NOT NULL}: Phụ tùng thuộc category cụ thể → Kiểm tra {@code maxQuantityPerVehicle}</li>
+     * </ul>
+     * <p>
+     * <strong>Ví dụ:</strong>
+     * <ul>
+     *     <li>Động cơ điện loại A → category = "Động cơ điện" (max: 1)</li>
+     *     <li>Động cơ điện loại B → category = "Động cơ điện" (max: 1)</li>
+     *     <li>→ Một xe chỉ được lắp 1 trong 2 loại động cơ trên</li>
+     * </ul>
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private PartCategory partCategory;
 
     /**
      * Danh sách các lần linh kiện này được lắp đặt ({@link InstalledPart}).

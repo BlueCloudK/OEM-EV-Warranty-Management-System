@@ -3,6 +3,7 @@ package com.swp391.warrantymanagement.mapper;
 import com.swp391.warrantymanagement.dto.request.PartRequestDTO;
 import com.swp391.warrantymanagement.dto.response.PartResponseDTO;
 import com.swp391.warrantymanagement.entity.Part;
+import com.swp391.warrantymanagement.entity.PartCategory;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -16,6 +17,7 @@ public final class PartMapper {
 
     // Request DTO -> Entity (for create operations)
     // partId is auto-generated, no need to set it
+    // NOTE: partCategory must be set separately in service layer after fetching from DB
     public static Part toEntity(PartRequestDTO requestDTO) {
         if (requestDTO == null) return null;
 
@@ -25,6 +27,9 @@ public final class PartMapper {
         entity.setPartNumber(requestDTO.getPartNumber());
         entity.setManufacturer(requestDTO.getManufacturer());
         entity.setPrice(requestDTO.getPrice());
+
+        // Category is set in service layer (need to fetch from DB first)
+        // entity.setPartCategory(category) - handled in PartServiceImpl
 
         // Warranty configuration
         entity.setHasExtendedWarranty(requestDTO.getHasExtendedWarranty() != null ? requestDTO.getHasExtendedWarranty() : false);
@@ -38,6 +43,7 @@ public final class PartMapper {
     }
 
     // Update existing entity from request DTO
+    // NOTE: partCategory must be set separately in service layer after fetching from DB
     public static void updateEntity(Part entity, PartRequestDTO requestDTO) {
         if (entity == null || requestDTO == null) return;
 
@@ -46,6 +52,9 @@ public final class PartMapper {
         entity.setPartNumber(requestDTO.getPartNumber());
         entity.setManufacturer(requestDTO.getManufacturer());
         entity.setPrice(requestDTO.getPrice());
+
+        // Category is set in service layer (need to fetch from DB first)
+        // entity.setPartCategory(category) - handled in PartServiceImpl
 
         // Warranty configuration
         entity.setHasExtendedWarranty(requestDTO.getHasExtendedWarranty() != null ? requestDTO.getHasExtendedWarranty() : false);
@@ -66,6 +75,14 @@ public final class PartMapper {
         responseDTO.setPartNumber(entity.getPartNumber());
         responseDTO.setManufacturer(entity.getManufacturer());
         responseDTO.setPrice(entity.getPrice());
+
+        // Category information (if exists)
+        PartCategory category = entity.getPartCategory();
+        if (category != null) {
+            responseDTO.setCategoryId(category.getCategoryId());
+            responseDTO.setCategoryName(category.getCategoryName());
+            responseDTO.setMaxQuantityPerVehicle(category.getMaxQuantityPerVehicle());
+        }
 
         // Warranty configuration
         responseDTO.setHasExtendedWarranty(entity.getHasExtendedWarranty());

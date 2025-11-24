@@ -4,11 +4,13 @@ import com.swp391.warrantymanagement.dto.request.PartRequestDTO;
 import com.swp391.warrantymanagement.dto.response.PartResponseDTO;
 import com.swp391.warrantymanagement.dto.response.PagedResponse;
 import com.swp391.warrantymanagement.entity.Part;
+import com.swp391.warrantymanagement.entity.PartCategory;
 import com.swp391.warrantymanagement.exception.DuplicateResourceException;
 import com.swp391.warrantymanagement.exception.ResourceInUseException;
 import com.swp391.warrantymanagement.exception.ResourceNotFoundException;
 import com.swp391.warrantymanagement.mapper.PartMapper;
 import com.swp391.warrantymanagement.repository.InstalledPartRepository;
+import com.swp391.warrantymanagement.repository.PartCategoryRepository;
 import com.swp391.warrantymanagement.repository.PartRepository;
 import com.swp391.warrantymanagement.service.PartService;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,7 @@ public class PartServiceImpl implements PartService {
 
     private final PartRepository partRepository;
     private final InstalledPartRepository installedPartRepository;
+    private final PartCategoryRepository partCategoryRepository;
 
     /**
      * Lấy danh sách parts với pagination và search
@@ -77,6 +80,7 @@ public class PartServiceImpl implements PartService {
      * @param requestDTO chứa thông tin part
      * @return PartResponseDTO
      * @throws DuplicateResourceException nếu partNumber đã tồn tại
+     * @throws ResourceNotFoundException nếu categoryId không tồn tại
      */
     @Override
     @Transactional
@@ -86,6 +90,14 @@ public class PartServiceImpl implements PartService {
         });
 
         Part part = PartMapper.toEntity(requestDTO);
+
+        // Set category nếu có categoryId
+        if (requestDTO.getCategoryId() != null) {
+            PartCategory category = partCategoryRepository.findById(requestDTO.getCategoryId())
+                    .orElseThrow(() -> new ResourceNotFoundException("PartCategory", "id", requestDTO.getCategoryId()));
+            part.setPartCategory(category);
+        }
+
         Part savedPart = partRepository.save(part);
 
         return PartMapper.toResponseDTO(savedPart);
@@ -113,6 +125,17 @@ public class PartServiceImpl implements PartService {
         }
 
         PartMapper.updateEntity(existingPart, requestDTO);
+
+        // Update category nếu có thay đổi
+        if (requestDTO.getCategoryId() != null) {
+            PartCategory category = partCategoryRepository.findById(requestDTO.getCategoryId())
+                    .orElseThrow(() -> new ResourceNotFoundException("PartCategory", "id", requestDTO.getCategoryId()));
+            existingPart.setPartCategory(category);
+        } else {
+            // Nếu categoryId = null trong request → remove category
+            existingPart.setPartCategory(null);
+        }
+
         Part updatedPart = partRepository.save(existingPart);
 
         return PartMapper.toResponseDTO(updatedPart);

@@ -16,6 +16,11 @@ public class PartResponseDTO {
     private String manufacturer;
     private BigDecimal price;
 
+    // Category information
+    private Long categoryId;
+    private String categoryName;
+    private Integer maxQuantityPerVehicle;
+
     // Warranty configuration
     private Boolean hasExtendedWarranty;
     private Integer defaultWarrantyMonths;

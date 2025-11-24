@@ -5,13 +5,15 @@ import com.swp391.warrantymanagement.dto.response.InstalledPartResponseDTO;
 import com.swp391.warrantymanagement.dto.response.PagedResponse;
 import com.swp391.warrantymanagement.entity.InstalledPart;
 import com.swp391.warrantymanagement.entity.Part;
+import com.swp391.warrantymanagement.entity.PartCategory;
 import com.swp391.warrantymanagement.entity.Vehicle;
 import com.swp391.warrantymanagement.exception.ResourceNotFoundException;
 import com.swp391.warrantymanagement.mapper.InstalledPartMapper;
 import com.swp391.warrantymanagement.repository.InstalledPartRepository;
 import com.swp391.warrantymanagement.repository.PartRepository;
 import com.swp391.warrantymanagement.repository.VehicleRepository;
-import com.swp391.warrantymanagement.service.InstalledPartService;import lombok.RequiredArgsConstructor;
+import com.swp391.warrantymanagement.service.InstalledPartService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -98,6 +100,9 @@ public class InstalledPartServiceImpl implements InstalledPartService {
             throw new IllegalArgumentException("Warranty expiration date must be after installation date");
         }
 
+        // Validate part category limit (if part has category)
+        validatePartCategoryLimit(vehicle.getVehicleId(), part);
+
         InstalledPart installedPart = InstalledPartMapper.toEntity(requestDTO, part, vehicle);
         InstalledPart savedInstalledPart = installedPartRepository.save(installedPart);
 
@@ -127,6 +132,14 @@ public class InstalledPartServiceImpl implements InstalledPartService {
 
         if (!requestDTO.getWarrantyExpirationDate().isAfter(requestDTO.getInstallationDate())) {
             throw new IllegalArgumentException("Warranty expiration date must be after installation date");
+        }
+
+        // Validate category limit nếu đổi part hoặc vehicle
+        boolean isChangingPart = !existingInstalledPart.getPart().getPartId().equals(part.getPartId());
+        boolean isChangingVehicle = !existingInstalledPart.getVehicle().getVehicleId().equals(vehicle.getVehicleId());
+
+        if (isChangingPart || isChangingVehicle) {
+            validatePartCategoryLimit(vehicle.getVehicleId(), part);
         }
 
         InstalledPartMapper.updateEntity(existingInstalledPart, requestDTO, part, vehicle);
@@ -242,5 +255,62 @@ public class InstalledPartServiceImpl implements InstalledPartService {
             installedPartPage.isFirst(),
             installedPartPage.isLast()
         );
+    }
+
+    /**
+     * Validate giới hạn số lượng parts theo category trước khi lắp đặt.
+     * <p>
+     * <strong>Business Logic:</strong>
+     * <ul>
+     *     <li>Nếu part KHÔNG có category (partCategory = NULL) → Không giới hạn, cho phép thêm</li>
+     *     <li>Nếu part CÓ category → Kiểm tra số lượng đã lắp đặt của category đó trên xe</li>
+     *     <li>Nếu đã đạt giới hạn {@code maxQuantityPerVehicle} → Throw exception</li>
+     * </ul>
+     * <p>
+     * <strong>Example:</strong>
+     * <pre>
+     * Category "Động cơ điện" có maxQuantity = 1
+     * Xe đã lắp: Motor Type A (category = "Động cơ điện")
+     * → Không thể lắp thêm Motor Type B (cùng category)
+     * </pre>
+     *
+     * @param vehicleId ID của xe
+     * @param part Part cần kiểm tra
+     * @throws IllegalArgumentException nếu vượt quá giới hạn category
+     */
+    private void validatePartCategoryLimit(Long vehicleId, Part part) {
+        PartCategory category = part.getPartCategory();
+
+        // Nếu part không có category → không giới hạn số lượng
+        if (category == null) {
+            return;
+        }
+
+        // Kiểm tra category có active không
+        if (!category.getIsActive()) {
+            throw new IllegalArgumentException(
+                String.format("Part category '%s' is not active and cannot be used",
+                    category.getCategoryName())
+            );
+        }
+
+        // Đếm số lượng parts cùng category đã lắp trên xe (chỉ đếm active parts)
+        long currentCount = installedPartRepository.countByVehicleIdAndPartCategoryIdAndIsActiveTrue(
+            vehicleId,
+            category.getCategoryId()
+        );
+
+        // Kiểm tra giới hạn
+        int maxQuantity = category.getMaxQuantityPerVehicle();
+        if (currentCount >= maxQuantity) {
+            throw new IllegalArgumentException(
+                String.format("Xe đã đạt giới hạn cho loại phụ tùng '%s'. " +
+                        "Số lượng tối đa: %d, Hiện tại: %d. " +
+                        "Vui lòng xóa phụ tùng cũ trước khi lắp phụ tùng mới cùng loại.",
+                    category.getCategoryName(),
+                    maxQuantity,
+                    currentCount)
+            );
+        }
     }
 }

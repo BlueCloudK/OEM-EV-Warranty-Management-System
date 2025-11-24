@@ -9,6 +9,8 @@ import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -47,12 +49,14 @@ public class PartController {
     private final PartService partService;
 
     /**
-     * Lấy danh sách tất cả các linh kiện, hỗ trợ phân trang và tìm kiếm.
+     * Lấy danh sách tất cả các linh kiện, hỗ trợ phân trang, tìm kiếm và sắp xếp.
      * Endpoint này dành cho các vai trò quản trị và nhân viên để xem danh mục linh kiện.
      *
-     * @param page   Số trang (mặc định là 0).
-     * @param size   Số lượng phần tử trên mỗi trang (mặc định là 10).
-     * @param search Từ khóa tìm kiếm (tên hoặc nhà sản xuất của linh kiện).
+     * @param page    Số trang (mặc định là 0).
+     * @param size    Số lượng phần tử trên mỗi trang (mặc định là 10).
+     * @param search  Từ khóa tìm kiếm (tên hoặc nhà sản xuất của linh kiện).
+     * @param sortBy  Trường để sắp xếp (mặc định: partId).
+     * @param sortDir Hướng sắp xếp: ASC hoặc DESC (mặc định: DESC).
      * @return {@link ResponseEntity} chứa một {@link PagedResponse} các linh kiện.
      */
     @GetMapping
@@ -60,13 +64,15 @@ public class PartController {
     public ResponseEntity<PagedResponse<PartResponseDTO>> getAllParts(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String search) {
-        logger.info("Get all parts request: page={}, size={}, search={}", page, size, search);
-        // Thiết kế: Controller chỉ chịu trách nhiệm nhận các tham số tìm kiếm và phân trang,
-        // sau đó ủy thác hoàn toàn cho tầng Service để thực hiện logic truy vấn phức tạp.
-        // Kết quả (kể cả khi không tìm thấy) sẽ được đóng gói trong PagedResponse.
-        PagedResponse<PartResponseDTO> partsPage = partService.getAllPartsPage(
-                PageRequest.of(page, size), search);
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "partId") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDir) {
+        logger.info("Get all parts request: page={}, size={}, search={}, sortBy={}, sortDir={}", page, size, search, sortBy, sortDir);
+
+        Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        PagedResponse<PartResponseDTO> partsPage = partService.getAllPartsPage(pageable, search);
         logger.info("Get all parts success, totalElements={}", partsPage.getTotalElements());
         return ResponseEntity.ok(partsPage);
     }
