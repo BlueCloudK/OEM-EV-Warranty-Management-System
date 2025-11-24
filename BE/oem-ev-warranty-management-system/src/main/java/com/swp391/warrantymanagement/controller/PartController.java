@@ -160,6 +160,8 @@ public class PartController {
      * @param manufacturer Tên nhà sản xuất.
      * @param page         Số trang.
      * @param size         Số lượng phần tử trên trang.
+     * @param sortBy       Trường để sắp xếp (mặc định: partName).
+     * @param sortDir      Hướng sắp xếp: ASC hoặc DESC (mặc định: ASC).
      * @return {@link ResponseEntity} chứa một {@link PagedResponse} các linh kiện phù hợp.
      */
     @GetMapping("/by-manufacturer")
@@ -167,10 +169,15 @@ public class PartController {
     public ResponseEntity<PagedResponse<PartResponseDTO>> getPartsByManufacturer(
             @RequestParam String manufacturer,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        logger.info("Get parts by manufacturer: {}, page={}, size={}", manufacturer, page, size);
-        PagedResponse<PartResponseDTO> partsPage = partService.getPartsByManufacturer(
-                manufacturer, PageRequest.of(page, size));
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "partName") String sortBy,
+            @RequestParam(defaultValue = "ASC") String sortDir) {
+        logger.info("Get parts by manufacturer: {}, page={}, size={}, sortBy={}, sortDir={}", manufacturer, page, size, sortBy, sortDir);
+
+        Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        PagedResponse<PartResponseDTO> partsPage = partService.getPartsByManufacturer(manufacturer, pageable);
         logger.info("Get parts by manufacturer success, totalElements={}", partsPage.getTotalElements());
         return ResponseEntity.ok(partsPage);
     }
