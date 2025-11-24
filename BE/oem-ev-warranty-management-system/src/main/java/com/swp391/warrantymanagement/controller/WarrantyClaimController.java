@@ -54,6 +54,20 @@ public class WarrantyClaimController {
     private final WarrantyClaimService warrantyClaimService;
 
     /**
+     * Helper method to map frontend sort fields to actual entity field paths
+     */
+    private String mapSortField(String sortBy) {
+        if ("createdAt".equalsIgnoreCase(sortBy)) {
+            return "claimDate";
+        } else if ("vehicleVin".equalsIgnoreCase(sortBy)) {
+            return "vehicle.vehicleVin";
+        } else if ("partName".equalsIgnoreCase(sortBy)) {
+            return "installedPart.part.partName";
+        }
+        return sortBy;
+    }
+
+    /**
      * Lấy danh sách tất cả các yêu cầu bảo hành trong hệ thống, hỗ trợ phân trang và sắp xếp.
      * Endpoint này dành cho các vai trò quản trị và nhân viên để có cái nhìn tổng quan.
      *
@@ -72,7 +86,8 @@ public class WarrantyClaimController {
             @RequestParam(defaultValue = "DESC") String sortDir) {
         logger.info("Get all warranty claims request: page={}, size={}, sortBy={}, sortDir={}", page, size, sortBy, sortDir);
 
-        Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        String actualSortField = mapSortField(sortBy);
+        Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(actualSortField).ascending() : Sort.by(actualSortField).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
 
         PagedResponse<WarrantyClaimResponseDTO> claimsPage = warrantyClaimService.getAllClaimsPage(pageable);
@@ -288,7 +303,8 @@ public class WarrantyClaimController {
             @RequestParam(defaultValue = "DESC") String sortDir) {
         logger.info("Get claims by status: status={}, page={}, size={}, sortBy={}, sortDir={}", status, page, size, sortBy, sortDir);
 
-        Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        String actualSortField = mapSortField(sortBy);
+        Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(actualSortField).ascending() : Sort.by(actualSortField).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
 
         PagedResponse<WarrantyClaimResponseDTO> claimsPage = warrantyClaimService.getClaimsByStatus(status, pageable);
@@ -309,7 +325,8 @@ public class WarrantyClaimController {
             @RequestParam(defaultValue = "DESC") String sortDir) {
         logger.info("Get Admin pending claims: page={}, size={}, sortBy={}, sortDir={}", page, size, sortBy, sortDir);
 
-        Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        String actualSortField = mapSortField(sortBy);
+        Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(actualSortField).ascending() : Sort.by(actualSortField).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
 
         PagedResponse<WarrantyClaimResponseDTO> claimsPage = warrantyClaimService.getClaimsByStatus("SUBMITTED", pageable);
@@ -330,7 +347,8 @@ public class WarrantyClaimController {
             @RequestParam(defaultValue = "ASC") String sortDir) {
         logger.info("Get technician pending claims: page={}, size={}, sortBy={}, sortDir={}", page, size, sortBy, sortDir);
 
-        Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        String actualSortField = mapSortField(sortBy);
+        Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(actualSortField).ascending() : Sort.by(actualSortField).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
 
         PagedResponse<WarrantyClaimResponseDTO> claimsPage = warrantyClaimService.getTechPendingClaims(pageable);

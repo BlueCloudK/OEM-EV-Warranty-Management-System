@@ -28,4 +28,7 @@ public class PartResponseDTO {
     private Integer gracePeriodDays;
     private BigDecimal paidWarrantyFeePercentageMin;
     private BigDecimal paidWarrantyFeePercentageMax;
+
+    // Inventory - number of installed parts in vehicles
+    private Long installedCount;
 }

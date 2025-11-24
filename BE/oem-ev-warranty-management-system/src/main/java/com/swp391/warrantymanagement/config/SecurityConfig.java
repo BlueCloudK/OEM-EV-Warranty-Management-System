@@ -84,6 +84,10 @@ public class SecurityConfig {
                 .requestMatchers("/api/vehicles/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF", "SC_TECHNICIAN", "CUSTOMER")
                 .requestMatchers("/api/parts/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF", "SC_TECHNICIAN")
 
+                // Part Categories - All staff can view, only Admin can modify
+                .requestMatchers(HttpMethod.GET, "/api/part-categories/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF", "SC_TECHNICIAN")
+                .requestMatchers("/api/part-categories/**").hasRole("ADMIN")
+
                 // Installed Parts
                 .requestMatchers("/api/installed-parts/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF", "SC_TECHNICIAN", "CUSTOMER")
 
@@ -112,6 +116,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PATCH, "/api/recall-responses/*/confirm").hasRole("CUSTOMER")
                 .requestMatchers("/api/recall-responses/campaign/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF")
                 .requestMatchers("/api/recall-responses/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF", "CUSTOMER")
+
+                // Recall Dashboard - Statistics for Admin dashboard
+                .requestMatchers("/api/recalls/status", "/api/recalls/progress").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF")
 
                 // SC_TECHNICIAN - Kỹ thuật viên: xem và cập nhật service histories, warranty claims
                 // (Quyền đã được định nghĩa ở trên cùng với SC_STAFF)

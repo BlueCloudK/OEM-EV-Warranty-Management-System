@@ -9,6 +9,8 @@ import com.swp391.warrantymanagement.util.SecurityUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -56,12 +58,14 @@ public class CustomerController {
     private final CustomerService customerService;
 
     /**
-     * Lấy danh sách tất cả khách hàng, hỗ trợ phân trang và tìm kiếm.
+     * Lấy danh sách tất cả khách hàng, hỗ trợ phân trang, tìm kiếm và sắp xếp.
      * Endpoint này dành cho các vai trò quản trị và nhân viên.
      *
-     * @param page   Số trang (mặc định là 0).
-     * @param size   Số lượng phần tử trên mỗi trang (mặc định là 10).
-     * @param search Từ khóa tìm kiếm (tên hoặc email của khách hàng).
+     * @param page    Số trang (mặc định là 0).
+     * @param size    Số lượng phần tử trên mỗi trang (mặc định là 10).
+     * @param search  Từ khóa tìm kiếm (tên hoặc email của khách hàng).
+     * @param sortBy  Trường để sắp xếp (mặc định: name).
+     * @param sortDir Hướng sắp xếp: ASC hoặc DESC (mặc định: ASC).
      * @return {@link ResponseEntity} chứa một {@link PagedResponse} các khách hàng.
      */
     @GetMapping
@@ -69,10 +73,21 @@ public class CustomerController {
     public ResponseEntity<PagedResponse<CustomerResponseDTO>> getAllCustomers(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String search) {
-        logger.info("Get all customers request: page={}, size={}, search={}", page, size, search);
-        PagedResponse<CustomerResponseDTO> customersPage = customerService.getAllCustomersPage(
-                PageRequest.of(page, size), search);
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "name") String sortBy,
+            @RequestParam(defaultValue = "ASC") String sortDir) {
+        logger.info("Get all customers request: page={}, size={}, search={}, sortBy={}, sortDir={}", page, size, search, sortBy, sortDir);
+
+        // Map email sort field to nested user.email path
+        String actualSortField = sortBy;
+        if ("email".equalsIgnoreCase(sortBy)) {
+            actualSortField = "user.email";
+        }
+
+        Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(actualSortField).ascending() : Sort.by(actualSortField).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        PagedResponse<CustomerResponseDTO> customersPage = customerService.getAllCustomersPage(pageable, search);
         logger.info("Get all customers success, totalElements={}", customersPage.getTotalElements());
         return ResponseEntity.ok(customersPage);
     }
@@ -157,9 +172,11 @@ public class CustomerController {
     /**
      * Tìm kiếm khách hàng theo tên.
      *
-     * @param name Tên khách hàng cần tìm.
-     * @param page Số trang.
-     * @param size Số lượng phần tử trên trang.
+     * @param name    Tên khách hàng cần tìm.
+     * @param page    Số trang.
+     * @param size    Số lượng phần tử trên trang.
+     * @param sortBy  Trường để sắp xếp (mặc định: name).
+     * @param sortDir Hướng sắp xếp: ASC hoặc DESC (mặc định: ASC).
      * @return {@link ResponseEntity} chứa một {@link PagedResponse} các khách hàng phù hợp.
      */
     @GetMapping("/search")
@@ -167,13 +184,15 @@ public class CustomerController {
     public ResponseEntity<PagedResponse<CustomerResponseDTO>> searchCustomers(
             @RequestParam String name,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        logger.info("Search customers by name: {}, page={}, size={}", name, page, size);
-        // Thiết kế: Controller chỉ chịu trách nhiệm nhận các tham số tìm kiếm và phân trang,
-        // sau đó ủy thác hoàn toàn cho tầng Service để thực hiện logic truy vấn.
-        // Kết quả (kể cả khi không tìm thấy khách hàng nào) sẽ được đóng gói trong PagedResponse.
-        PagedResponse<CustomerResponseDTO> customersPage = customerService.searchCustomersByName(
-                name, PageRequest.of(page, size));
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "name") String sortBy,
+            @RequestParam(defaultValue = "ASC") String sortDir) {
+        logger.info("Search customers by name: {}, page={}, size={}, sortBy={}, sortDir={}", name, page, size, sortBy, sortDir);
+
+        Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        PagedResponse<CustomerResponseDTO> customersPage = customerService.searchCustomersByName(name, pageable);
         logger.info("Search customers by name success, totalElements={}", customersPage.getTotalElements());
         return ResponseEntity.ok(customersPage);
     }
@@ -216,9 +235,11 @@ public class CustomerController {
     /**
      * Lấy danh sách khách hàng được liên kết với một ID người dùng (User ID).
      *
-     * @param userId ID của người dùng.
-     * @param page   Số trang.
-     * @param size   Số lượng phần tử trên trang.
+     * @param userId  ID của người dùng.
+     * @param page    Số trang.
+     * @param size    Số lượng phần tử trên trang.
+     * @param sortBy  Trường để sắp xếp (mặc định: name).
+     * @param sortDir Hướng sắp xếp: ASC hoặc DESC (mặc định: ASC).
      * @return {@link ResponseEntity} chứa một {@link PagedResponse} các khách hàng.
      */
     @GetMapping("/by-user/{userId}")
@@ -226,10 +247,15 @@ public class CustomerController {
     public ResponseEntity<PagedResponse<CustomerResponseDTO>> getCustomersByUserId(
             @PathVariable Long userId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        logger.info("Get customers by userId: {}, page={}, size={}", userId, page, size);
-        PagedResponse<CustomerResponseDTO> customersPage = customerService.getCustomersByUserId(
-                userId, PageRequest.of(page, size));
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "name") String sortBy,
+            @RequestParam(defaultValue = "ASC") String sortDir) {
+        logger.info("Get customers by userId: {}, page={}, size={}, sortBy={}, sortDir={}", userId, page, size, sortBy, sortDir);
+
+        Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        PagedResponse<CustomerResponseDTO> customersPage = customerService.getCustomersByUserId(userId, pageable);
         logger.info("Get customers by userId success, totalElements={}", customersPage.getTotalElements());
         return ResponseEntity.ok(customersPage);
     }

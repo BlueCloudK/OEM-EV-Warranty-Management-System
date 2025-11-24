@@ -92,6 +92,15 @@ public final class PartMapper {
         responseDTO.setPaidWarrantyFeePercentageMin(entity.getPaidWarrantyFeePercentageMin());
         responseDTO.setPaidWarrantyFeePercentageMax(entity.getPaidWarrantyFeePercentageMax());
 
+        // Inventory count - number of active installed parts
+        responseDTO.setInstalledCount(
+            entity.getInstalledParts() != null
+                ? entity.getInstalledParts().stream()
+                    .filter(ip -> ip.getIsActive() != null && ip.getIsActive())
+                    .count()
+                : 0L
+        );
+
         return responseDTO;
     }
 

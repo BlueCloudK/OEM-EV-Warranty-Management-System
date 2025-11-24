@@ -4,8 +4,11 @@ import com.swp391.warrantymanagement.dto.request.InstalledPartRequestDTO;
 import com.swp391.warrantymanagement.dto.response.InstalledPartResponseDTO;
 import com.swp391.warrantymanagement.dto.response.PagedResponse;
 import com.swp391.warrantymanagement.service.InstalledPartService;
-import jakarta.validation.Valid;import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -49,16 +52,24 @@ public class InstalledPartController {
      * Lấy danh sách tất cả các linh kiện đã được lắp đặt, hỗ trợ phân trang.
      * @param page Số trang (mặc định là 0).
      * @param size Số lượng phần tử trên mỗi trang (mặc định là 10).
+     * @param sortBy  Trường để sắp xếp (mặc định: installedPartId).
+     * @param sortDir Hướng sắp xếp: ASC hoặc DESC (mặc định: DESC).
      * @return {@link ResponseEntity} chứa một {@link PagedResponse} các linh kiện đã lắp đặt.
      */
     @GetMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('EVM_STAFF') or hasRole('SC_STAFF') or hasRole('SC_TECHNICIAN')")
     public ResponseEntity<PagedResponse<InstalledPartResponseDTO>> getAllInstalledParts(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        logger.info("Get all installed parts request: page={}, size={}", page, size);
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "installedPartId") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDir) {
+        logger.info("Get all installed parts request: page={}, size={}, sortBy={}, sortDir={}", page, size, sortBy, sortDir);
+
+        Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
         PagedResponse<InstalledPartResponseDTO> installedPartsPage =
-            installedPartService.getAllInstalledParts(PageRequest.of(page, size));
+            installedPartService.getAllInstalledParts(pageable);
         logger.info("Get all installed parts success, totalElements={}", installedPartsPage.getTotalElements());
         return ResponseEntity.ok(installedPartsPage);
     }
@@ -145,6 +156,8 @@ public class InstalledPartController {
      * @param vehicleId ID của xe.
      * @param page Số trang.
      * @param size Số lượng phần tử trên trang.
+     * @param sortBy  Trường để sắp xếp (mặc định: installedDate).
+     * @param sortDir Hướng sắp xếp: ASC hoặc DESC (mặc định: DESC).
      * @return {@link ResponseEntity} chứa một {@link PagedResponse} các linh kiện đã lắp đặt.
      */
     @GetMapping("/by-vehicle/{vehicleId}")
@@ -152,10 +165,22 @@ public class InstalledPartController {
     public ResponseEntity<PagedResponse<InstalledPartResponseDTO>> getInstalledPartsByVehicle(
             @PathVariable Long vehicleId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        logger.info("Get installed parts by vehicleId: {}, page={}, size={}", vehicleId, page, size);
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "installedDate") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDir) {
+        logger.info("Get installed parts by vehicleId: {}, page={}, size={}, sortBy={}, sortDir={}", vehicleId, page, size, sortBy, sortDir);
+
+        // Map installedDate to installationDate (actual field name in InstalledPart entity)
+        String actualSortField = sortBy;
+        if ("installedDate".equalsIgnoreCase(sortBy)) {
+            actualSortField = "installationDate";
+        }
+
+        Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(actualSortField).ascending() : Sort.by(actualSortField).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
         PagedResponse<InstalledPartResponseDTO> installedPartsPage =
-            installedPartService.getInstalledPartsByVehicle(vehicleId, PageRequest.of(page, size));
+            installedPartService.getInstalledPartsByVehicle(vehicleId, pageable);
         logger.info("Get installed parts by vehicleId success, totalElements={}", installedPartsPage.getTotalElements());
         return ResponseEntity.ok(installedPartsPage);
     }
@@ -165,6 +190,8 @@ public class InstalledPartController {
      * @param partId ID của loại linh kiện (Part).
      * @param page Số trang.
      * @param size Số lượng phần tử trên trang.
+     * @param sortBy  Trường để sắp xếp (mặc định: installedDate).
+     * @param sortDir Hướng sắp xếp: ASC hoặc DESC (mặc định: DESC).
      * @return {@link ResponseEntity} chứa một {@link PagedResponse} các lần lắp đặt.
      */
     @GetMapping("/by-part/{partId}")
@@ -172,10 +199,16 @@ public class InstalledPartController {
     public ResponseEntity<PagedResponse<InstalledPartResponseDTO>> getInstalledPartsByPart(
             @PathVariable Long partId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        logger.info("Get installed parts by partId: {}, page={}, size={}", partId, page, size);
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "installedDate") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDir) {
+        logger.info("Get installed parts by partId: {}, page={}, size={}, sortBy={}, sortDir={}", partId, page, size, sortBy, sortDir);
+
+        Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
         PagedResponse<InstalledPartResponseDTO> installedPartsPage =
-            installedPartService.getInstalledPartsByPart(partId, PageRequest.of(page, size));
+            installedPartService.getInstalledPartsByPart(partId, pageable);
         logger.info("Get installed parts by partId success, totalElements={}", installedPartsPage.getTotalElements());
         return ResponseEntity.ok(installedPartsPage);
     }
@@ -185,6 +218,8 @@ public class InstalledPartController {
      * @param daysFromNow Khoảng thời gian (tính bằng ngày) để kiểm tra (ví dụ: sắp hết hạn trong 30 ngày tới).
      * @param page Số trang.
      * @param size Số lượng phần tử trên trang.
+     * @param sortBy  Trường để sắp xếp (mặc định: installedDate).
+     * @param sortDir Hướng sắp xếp: ASC hoặc DESC (mặc định: DESC).
      * @return {@link ResponseEntity} chứa một {@link PagedResponse} các linh kiện sắp hết hạn.
      */
     @GetMapping("/warranty-expiring")
@@ -192,11 +227,17 @@ public class InstalledPartController {
     public ResponseEntity<PagedResponse<InstalledPartResponseDTO>> getInstalledPartsWithExpiringWarranty(
             @RequestParam(defaultValue = "30") int daysFromNow,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        logger.info("Get installed parts with expiring warranty: days={}, page={}, size={}",
-            daysFromNow, page, size);
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "installedDate") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDir) {
+        logger.info("Get installed parts with expiring warranty: days={}, page={}, size={}, sortBy={}, sortDir={}",
+            daysFromNow, page, size, sortBy, sortDir);
+
+        Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
         PagedResponse<InstalledPartResponseDTO> installedPartsPage =
-            installedPartService.getInstalledPartsWithExpiringWarranty(daysFromNow, PageRequest.of(page, size));
+            installedPartService.getInstalledPartsWithExpiringWarranty(daysFromNow, pageable);
         logger.info("Get installed parts with expiring warranty success, totalElements={}", installedPartsPage.getTotalElements());
         return ResponseEntity.ok(installedPartsPage);
     }

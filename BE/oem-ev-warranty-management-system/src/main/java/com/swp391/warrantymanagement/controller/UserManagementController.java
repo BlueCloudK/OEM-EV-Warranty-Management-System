@@ -12,6 +12,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -62,6 +64,8 @@ public class UserManagementController {
      * @param size   Số lượng phần tử trên mỗi trang (mặc định là 10).
      * @param search Từ khóa tìm kiếm chung (trong username hoặc email).
      * @param role   Tên vai trò để lọc.
+     * @param sortBy  Trường để sắp xếp (mặc định: userId).
+     * @param sortDir Hướng sắp xếp: ASC hoặc DESC (mặc định: DESC).
      * @return {@link ResponseEntity} chứa một Map với dữ liệu người dùng và thông tin phân trang.
      */
     @GetMapping
@@ -69,17 +73,29 @@ public class UserManagementController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String search,
-            @RequestParam(required = false) String role) {
+            @RequestParam(required = false) String role,
+            @RequestParam(defaultValue = "userId") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDir) {
 
         logger.info("========================================");
         logger.info("GET ALL USERS REQUEST");
         logger.info("Page: {}, Size: {}", page, size);
         logger.info("Search: {}, Role: {}", search, role);
+        logger.info("SortBy: {}, SortDir: {}", sortBy, sortDir);
         logger.info("========================================");
+
+        // Map role sort field to nested role.roleName path
+        String actualSortField = sortBy;
+        if ("role".equalsIgnoreCase(sortBy) || "roleName".equalsIgnoreCase(sortBy)) {
+            actualSortField = "role.roleName";
+        }
+
+        Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(actualSortField).ascending() : Sort.by(actualSortField).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
 
         // Thiết kế: Controller ủy thác hoàn toàn logic tìm kiếm và lọc cho tầng Service.
         // Tầng Service sẽ trả về một đối tượng `Page<User>`.
-        Page<User> userPage = userService.getAllUsers(PageRequest.of(page, size), search, role);
+        Page<User> userPage = userService.getAllUsers(pageable, search, role);
 
         // Thiết kế: Controller chịu trách nhiệm chuyển đổi (map) từ `Page<User>` (Entity)
         // sang một cấu trúc JSON thân thiện với client, bao gồm danh sách người dùng (đã được chuyển thành DTO)
@@ -126,17 +142,24 @@ public class UserManagementController {
      * @param username Từ khóa tìm kiếm trong username.
      * @param page     Số trang.
      * @param size     Số lượng phần tử trên trang.
+     * @param sortBy   Trường để sắp xếp (mặc định: username).
+     * @param sortDir  Hướng sắp xếp: ASC hoặc DESC (mặc định: ASC).
      * @return {@link ResponseEntity} chứa một Map với dữ liệu người dùng và thông tin phân trang.
      */
     @GetMapping("/search")
     public ResponseEntity<Map<String, Object>> searchUsers(
             @RequestParam String username,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "username") String sortBy,
+            @RequestParam(defaultValue = "ASC") String sortDir) {
 
-        logger.info(">>> SEARCH USERS: username={}, page={}, size={}", username, page, size);
+        logger.info(">>> SEARCH USERS: username={}, page={}, size={}, sortBy={}, sortDir={}", username, page, size, sortBy, sortDir);
 
-        Page<User> userPage = userService.searchByUsername(username, PageRequest.of(page, size));
+        Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<User> userPage = userService.searchByUsername(username, pageable);
 
         List<UserResponseDTO> userList = UserMapper.toResponseDTOList(userPage.getContent());
 
@@ -159,17 +182,24 @@ public class UserManagementController {
      * @param roleName Tên vai trò cần lọc.
      * @param page     Số trang.
      * @param size     Số lượng phần tử trên trang.
+     * @param sortBy   Trường để sắp xếp (mặc định: username).
+     * @param sortDir  Hướng sắp xếp: ASC hoặc DESC (mặc định: ASC).
      * @return {@link ResponseEntity} chứa một Map với dữ liệu người dùng và thông tin phân trang.
      */
     @GetMapping("/by-role/{roleName}")
     public ResponseEntity<Map<String, Object>> getUsersByRole(
             @PathVariable String roleName,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "username") String sortBy,
+            @RequestParam(defaultValue = "ASC") String sortDir) {
 
-        logger.info(">>> GET USERS BY ROLE: {}, page={}, size={}", roleName, page, size);
+        logger.info(">>> GET USERS BY ROLE: {}, page={}, size={}, sortBy={}, sortDir={}", roleName, page, size, sortBy, sortDir);
 
-        Page<User> userPage = userService.getUsersByRole(roleName, PageRequest.of(page, size));
+        Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<User> userPage = userService.getUsersByRole(roleName, pageable);
 
         List<UserResponseDTO> userList = UserMapper.toResponseDTOList(userPage.getContent());
 

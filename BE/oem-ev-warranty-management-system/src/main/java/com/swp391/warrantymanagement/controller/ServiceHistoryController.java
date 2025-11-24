@@ -8,6 +8,8 @@ import com.swp391.warrantymanagement.service.ServiceHistoryService;
 import com.swp391.warrantymanagement.util.SecurityUtil;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -55,6 +57,8 @@ public class ServiceHistoryController {
      * @param page   Số trang (mặc định là 0).
      * @param size   Số lượng phần tử trên mỗi trang (mặc định là 10).
      * @param search Từ khóa tìm kiếm (trong mô tả hoặc loại dịch vụ).
+     * @param sortBy  Trường để sắp xếp (mặc định: serviceDate).
+     * @param sortDir Hướng sắp xếp: ASC hoặc DESC (mặc định: DESC).
      * @return {@link ResponseEntity} chứa một {@link PagedResponse} các lịch sử bảo dưỡng.
      */
     @GetMapping
@@ -62,10 +66,16 @@ public class ServiceHistoryController {
     public ResponseEntity<PagedResponse<ServiceHistoryResponseDTO>> getAllServiceHistories(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String search) {
-        logger.info("Get all service histories request: page={}, size={}, search={}", page, size, search);
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "serviceDate") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDir) {
+        logger.info("Get all service histories request: page={}, size={}, search={}, sortBy={}, sortDir={}", page, size, search, sortBy, sortDir);
+
+        Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
         PagedResponse<ServiceHistoryResponseDTO> historiesPage = serviceHistoryService.getAllServiceHistoriesPage(
-            PageRequest.of(page, size), search);
+            pageable, search);
         logger.info("Get all service histories success, totalElements={}", historiesPage.getTotalElements());
         return ResponseEntity.ok(historiesPage);
     }
@@ -151,6 +161,8 @@ public class ServiceHistoryController {
      * @param vehicleId ID của xe.
      * @param page      Số trang.
      * @param size      Số lượng phần tử trên trang.
+     * @param sortBy    Trường để sắp xếp (mặc định: serviceDate).
+     * @param sortDir   Hướng sắp xếp: ASC hoặc DESC (mặc định: DESC).
      * @return {@link ResponseEntity} chứa một {@link PagedResponse} các lịch sử bảo dưỡng.
      */
     @GetMapping("/by-vehicle/{vehicleId}")
@@ -158,10 +170,16 @@ public class ServiceHistoryController {
     public ResponseEntity<PagedResponse<ServiceHistoryResponseDTO>> getServiceHistoriesByVehicle(
             @PathVariable Long vehicleId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        logger.info("Get service histories by vehicleId: {}, page={}, size={}", vehicleId, page, size);
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "serviceDate") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDir) {
+        logger.info("Get service histories by vehicleId: {}, page={}, size={}, sortBy={}, sortDir={}", vehicleId, page, size, sortBy, sortDir);
+
+        Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
         PagedResponse<ServiceHistoryResponseDTO> historiesPage = serviceHistoryService.getServiceHistoriesByVehicleId(
-            vehicleId, PageRequest.of(page, size));
+            vehicleId, pageable);
         logger.info("Get service histories by vehicleId success, totalElements={}", historiesPage.getTotalElements());
         return ResponseEntity.ok(historiesPage);
     }
@@ -172,6 +190,8 @@ public class ServiceHistoryController {
      * @param partId ID của loại linh kiện.
      * @param page   Số trang.
      * @param size   Số lượng phần tử trên trang.
+     * @param sortBy  Trường để sắp xếp (mặc định: serviceDate).
+     * @param sortDir Hướng sắp xếp: ASC hoặc DESC (mặc định: DESC).
      * @return {@link ResponseEntity} chứa một {@link PagedResponse} các lịch sử bảo dưỡng.
      */
     @GetMapping("/by-part/{partId}")
@@ -179,10 +199,16 @@ public class ServiceHistoryController {
     public ResponseEntity<PagedResponse<ServiceHistoryResponseDTO>> getServiceHistoriesByPart(
             @PathVariable String partId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        logger.info("Get service histories by partId: {}, page={}, size={}", partId, page, size);
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "serviceDate") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDir) {
+        logger.info("Get service histories by partId: {}, page={}, size={}, sortBy={}, sortDir={}", partId, page, size, sortBy, sortDir);
+
+        Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
         PagedResponse<ServiceHistoryResponseDTO> historiesPage = serviceHistoryService.getServiceHistoriesByPartId(
-            partId, PageRequest.of(page, size));
+            partId, pageable);
         logger.info("Get service histories by partId success, totalElements={}", historiesPage.getTotalElements());
         return ResponseEntity.ok(historiesPage);
     }
@@ -192,6 +218,8 @@ public class ServiceHistoryController {
      *
      * @param page Số trang.
      * @param size Số lượng phần tử trên trang.
+     * @param sortBy  Trường để sắp xếp (mặc định: serviceDate).
+     * @param sortDir Hướng sắp xếp: ASC hoặc DESC (mặc định: DESC).
      * @return {@link ResponseEntity} chứa một {@link PagedResponse} các lịch sử bảo dưỡng của người dùng.
      */
     @GetMapping("/my-services")
@@ -199,15 +227,21 @@ public class ServiceHistoryController {
     public ResponseEntity<PagedResponse<ServiceHistoryResponseDTO>> getMyServiceHistories(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "serviceDate") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDir,
             @RequestHeader(name = "Authorization", required = false) String authorizationHeader) { // Giữ lại để tương thích, nhưng không sử dụng
-        logger.info("Get my service histories request: page={}, size={}", page, size);
+        logger.info("Get my service histories request: page={}, size={}, sortBy={}, sortDir={}", page, size, sortBy, sortDir);
+
+        Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
         // Thiết kế bảo mật: Luôn lấy định danh của người dùng từ một nguồn đáng tin cậy là Security Context,
         // không bao giờ tin tưởng vào ID do client gửi lên. `SecurityUtil` là một lớp tiện ích
         // giúp truy cập Security Context một cách an toàn và tập trung.
         String username = SecurityUtil.getCurrentUsername()
                 .orElseThrow(() -> new AuthenticationRequiredException("Authentication is required to view your service histories"));
         PagedResponse<ServiceHistoryResponseDTO> historiesPage = serviceHistoryService.getServiceHistoriesByCurrentUser(
-            username, PageRequest.of(page, size));
+            username, pageable);
         logger.info("Get my service histories success, totalElements={}", historiesPage.getTotalElements());
         return ResponseEntity.ok(historiesPage);
     }
@@ -219,6 +253,8 @@ public class ServiceHistoryController {
      * @param endDate   Ngày kết thúc (định dạng yyyy-MM-dd).
      * @param page      Số trang.
      * @param size      Số lượng phần tử trên trang.
+     * @param sortBy    Trường để sắp xếp (mặc định: serviceDate).
+     * @param sortDir   Hướng sắp xếp: ASC hoặc DESC (mặc định: DESC).
      * @return {@link ResponseEntity} chứa một {@link PagedResponse} các lịch sử bảo dưỡng phù hợp.
      */
     @GetMapping("/by-date-range")
@@ -227,13 +263,19 @@ public class ServiceHistoryController {
             @RequestParam String startDate,
             @RequestParam String endDate,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        logger.info("Get service histories by date range: startDate={}, endDate={}, page={}, size={}", startDate, endDate, page, size);
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "serviceDate") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDir) {
+        logger.info("Get service histories by date range: startDate={}, endDate={}, page={}, size={}, sortBy={}, sortDir={}", startDate, endDate, page, size, sortBy, sortDir);
+
+        Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
         // Thiết kế: Việc xác thực và chuyển đổi định dạng ngày tháng được ủy thác cho tầng Service.
         // Nếu định dạng ngày tháng không hợp lệ, service sẽ ném `IllegalArgumentException`,
         // và `GlobalExceptionHandler` sẽ bắt lỗi này để trả về HTTP status 400 Bad Request.
         PagedResponse<ServiceHistoryResponseDTO> historiesPage = serviceHistoryService.getServiceHistoriesByDateRange(
-            startDate, endDate, PageRequest.of(page, size));
+            startDate, endDate, pageable);
         logger.info("Get service histories by date range success, totalElements={}", historiesPage.getTotalElements());
         return ResponseEntity.ok(historiesPage);
     }
