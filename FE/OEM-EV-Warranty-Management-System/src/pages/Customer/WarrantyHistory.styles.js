@@ -83,6 +83,40 @@ export const StatBadge = styled.div`
   font-weight: 600;
 `;
 
+export const SortContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e6edf3;
+  flex-wrap: wrap;
+`;
+
+export const SortButton = styled.button`
+  background: ${({ active }) => (active ? '#4facfe' : '#f3f4f6')};
+  color: ${({ active }) => (active ? '#ffffff' : '#1f2937')};
+  border: 2px solid ${({ active }) => (active ? '#4facfe' : '#e5e7eb')};
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+
+  svg {
+    font-size: 12px;
+  }
+
+  &:hover {
+    background: ${({ active }) => (active ? '#3b8fd9' : '#e5e7eb')};
+    transform: translateY(-2px);
+  }
+`;
+
 export const ErrorMessage = styled.div`
   background: #fef2f2;
   border: 1px solid #fecaca;
@@ -328,4 +362,127 @@ export const PageInfo = styled.div`
   color: #1f2937;
   font-size: 14px;
   font-weight: 600;
+`;
+
+// Feedback Section Styles
+export const FeedbackSection = styled.div`
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 2px dashed #e5e7eb;
+`;
+
+export const FeedbackDisplay = styled.div`
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 2px solid #fbbf24;
+  border-radius: 12px;
+  padding: 16px;
+`;
+
+export const FeedbackHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+`;
+
+export const EditFeedbackButton = styled.button`
+  background: white;
+  color: #4facfe;
+  border: 2px solid #4facfe;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #4facfe;
+    color: white;
+    transform: translateY(-2px);
+  }
+`;
+
+export const FeedbackRating = styled.div`
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+`;
+
+export const FeedbackComment = styled.div`
+  background: white;
+  padding: 12px;
+  border-radius: 8px;
+  color: #374151;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin-bottom: 8px;
+
+  strong {
+    color: #1f2937;
+    margin-right: 4px;
+  }
+`;
+
+export const FeedbackDate = styled.div`
+  font-size: 0.85rem;
+  color: #6b7280;
+  font-style: italic;
+`;
+
+export const FeedbackLoading = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: center;
+  padding: 20px;
+  color: #6b7280;
+
+  svg {
+    font-size: 1.2rem;
+  }
+`;
+
+export const FeedbackPrompt = styled.div`
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border: 2px solid #93c5fd;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    text-align: center;
+  }
+`;
+
+export const RateButton = styled.button`
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.2s;
+  white-space: nowrap;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(79, 172, 254, 0.4);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
 `;

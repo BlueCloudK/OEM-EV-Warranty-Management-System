@@ -14,12 +14,15 @@ export const useCustomerWarrantyHistory = () => {
   // Pagination State
   const [pagination, setPagination] = useState({ pageNumber: 0, pageSize: 10, totalElements: 0, totalPages: 0 });
 
-  const fetchWarrantyHistory = useCallback(async (page = 0, size = 10) => {
+  // Sorting State
+  const [sortConfig, setSortConfig] = useState({ sortBy: 'claimDate', sortDir: 'DESC' });
+
+  const fetchWarrantyHistory = useCallback(async (page = 0, size = 10, sortBy = 'claimDate', sortDir = 'DESC') => {
     try {
       setLoading(true);
       setError(null);
-      
-      const response = await customerApi.getMyWarrantyClaims({ page, size });
+
+      const response = await customerApi.getMyWarrantyClaims({ page, size, sortBy, sortDir });
 
       if (response && response.content) {
         setWarrantyRequests(response.content);
@@ -45,18 +48,33 @@ export const useCustomerWarrantyHistory = () => {
 
   useEffect(() => {
     // No need for localStorage check here, AuthContext handles it.
-    fetchWarrantyHistory(pagination.pageNumber, pagination.pageSize);
-  }, [fetchWarrantyHistory, pagination.pageNumber, pagination.pageSize]);
+    fetchWarrantyHistory(pagination.pageNumber, pagination.pageSize, sortConfig.sortBy, sortConfig.sortDir);
+  }, [fetchWarrantyHistory, pagination.pageNumber, pagination.pageSize, sortConfig.sortBy, sortConfig.sortDir]);
 
   const handlePageChange = (newPage) => {
     setPagination(prev => ({ ...prev, pageNumber: newPage }));
   };
+
+  const handleSort = (field) => {
+    setSortConfig(prev => ({
+      sortBy: field,
+      sortDir: prev.sortBy === field && prev.sortDir === 'ASC' ? 'DESC' : 'ASC'
+    }));
+    setPagination(prev => ({ ...prev, pageNumber: 0 })); // Reset to first page
+  };
+
+  const refetch = useCallback(() => {
+    fetchWarrantyHistory(pagination.pageNumber, pagination.pageSize, sortConfig.sortBy, sortConfig.sortDir);
+  }, [fetchWarrantyHistory, pagination.pageNumber, pagination.pageSize, sortConfig.sortBy, sortConfig.sortDir]);
 
   return {
     warrantyRequests,
     loading,
     error,
     pagination,
+    sortConfig,
     handlePageChange,
+    handleSort,
+    refetch,
   };
 };

@@ -3,7 +3,7 @@ import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import * as S from "./CustomerLayout.styles";
 import {
   FaTachometerAlt, FaCar, FaHistory, FaClipboardList,
-  FaBars, FaUser, FaCommentDots, FaExclamationTriangle
+  FaBars, FaUser, FaExclamationTriangle
 } from "react-icons/fa";
 
 const sidebarItems = [
@@ -13,7 +13,6 @@ const sidebarItems = [
   // { icon: <FaClipboardList />, label: "Yêu cầu Bảo hành", path: "/customer/warranty-claims" },
   { icon: <FaExclamationTriangle />, label: "Thông báo Triệu hồi", path: "/customer/recalls" },
   { icon: <FaClipboardList />, label: "Trung tâm Dịch vụ", path: "/customer/service-centers" },
-  { icon: <FaCommentDots />, label: "Phản hồi", path: "/customer/feedback" },
   { icon: <FaUser />, label: "Thông tin cá nhân", path: "/customer/profile" },
 ];
 

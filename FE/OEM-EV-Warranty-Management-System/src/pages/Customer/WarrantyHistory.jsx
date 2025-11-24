@@ -1,26 +1,84 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useCustomerWarrantyHistory } from '../../hooks/useCustomerWarrantyHistory';
+import FeedbackModal from '../../components/FeedbackModal';
+import { customerApi } from '../../api/customerApi';
 import * as S from './WarrantyHistory.styles';
 import {
   FaShieldAlt, FaClock, FaCalendar, FaSpinner, FaArrowLeft,
   FaCheckCircle, FaExclamationCircle, FaTimesCircle, FaHourglassHalf,
-  FaFileAlt, FaWrench
+  FaFileAlt, FaWrench, FaSort, FaSortUp, FaSortDown, FaStar, FaEdit
 } from 'react-icons/fa';
 
 const WarrantyHistory = () => {
   const navigate = useNavigate();
   const { isAuthenticated, loading: authLoading } = useAuth();
   const {
-    warrantyRequests, loading: dataLoading, error, pagination, handlePageChange
+    warrantyRequests, loading: dataLoading, error, pagination, sortConfig, handlePageChange, handleSort, refetch
   } = useCustomerWarrantyHistory();
+
+  // Feedback modal state
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
+  const [selectedClaim, setSelectedClaim] = useState(null);
+  const [feedbacks, setFeedbacks] = useState({});
+  const [loadingFeedbacks, setLoadingFeedbacks] = useState({});
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       navigate("/login");
     }
   }, [isAuthenticated, authLoading, navigate]);
+
+  // Fetch feedback details for claims that have feedback
+  useEffect(() => {
+    const fetchFeedbacks = async () => {
+      const claimsWithFeedback = warrantyRequests.filter(req => req.hasFeedback);
+
+      for (const claim of claimsWithFeedback) {
+        if (!feedbacks[claim.warrantyClaimId] && !loadingFeedbacks[claim.warrantyClaimId]) {
+          setLoadingFeedbacks(prev => ({ ...prev, [claim.warrantyClaimId]: true }));
+          try {
+            const feedback = await customerApi.getFeedbackByClaim(claim.warrantyClaimId);
+            setFeedbacks(prev => ({ ...prev, [claim.warrantyClaimId]: feedback }));
+          } catch (err) {
+            console.error(`Error fetching feedback for claim ${claim.warrantyClaimId}:`, err);
+          } finally {
+            setLoadingFeedbacks(prev => ({ ...prev, [claim.warrantyClaimId]: false }));
+          }
+        }
+      }
+    };
+
+    if (warrantyRequests.length > 0) {
+      fetchFeedbacks();
+    }
+  }, [warrantyRequests]);
+
+  const handleOpenFeedbackModal = (claim) => {
+    setSelectedClaim(claim);
+    setFeedbackModalOpen(true);
+  };
+
+  const handleCloseFeedbackModal = () => {
+    setFeedbackModalOpen(false);
+    setSelectedClaim(null);
+  };
+
+  const handleFeedbackSubmitted = () => {
+    // Refetch warranty history to update hasFeedback status
+    if (refetch) {
+      refetch();
+    }
+    // Clear cached feedback for this claim so it gets refetched
+    if (selectedClaim) {
+      setFeedbacks(prev => {
+        const updated = { ...prev };
+        delete updated[selectedClaim.warrantyClaimId];
+        return updated;
+      });
+    }
+  };
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -76,6 +134,18 @@ const WarrantyHistory = () => {
               )}
             </S.StatsContainer>
           </S.HeaderTop>
+
+          <S.SortContainer>
+            <span style={{ fontSize: '0.9rem', color: '#718096' }}>Sắp xếp:</span>
+            <S.SortButton onClick={() => handleSort('claimDate')} active={sortConfig.sortBy === 'claimDate'}>
+              Ngày tạo {sortConfig.sortBy === 'claimDate' && (sortConfig.sortDir === 'ASC' ? <FaSortUp /> : <FaSortDown />)}
+              {sortConfig.sortBy !== 'claimDate' && <FaSort />}
+            </S.SortButton>
+            <S.SortButton onClick={() => handleSort('status')} active={sortConfig.sortBy === 'status'}>
+              Trạng thái {sortConfig.sortBy === 'status' && (sortConfig.sortDir === 'ASC' ? <FaSortUp /> : <FaSortDown />)}
+              {sortConfig.sortBy !== 'status' && <FaSort />}
+            </S.SortButton>
+          </S.SortContainer>
         </S.Header>
 
         {error && (
@@ -129,7 +199,13 @@ const WarrantyHistory = () => {
                       <S.InfoItem>
                         <S.DetailTitle><FaWrench /> Thông tin xử lý</S.DetailTitle>
                         <div>
-                          <span>Trung tâm: </span><strong>{request.serviceCenter?.name || 'Chưa cập nhật'}</strong>
+                          <span>Trung tâm: </span><strong>{request.serviceCenterName || 'Chưa phân công'}</strong>
+                        </div>
+                        <div style={{ marginTop: '4px' }}>
+                          <span>Đánh giá: </span>
+                          <strong style={{ color: request.hasFeedback ? '#22c55e' : '#f59e0b' }}>
+                            {request.hasFeedback ? '✓ Đã đánh giá' : '⏱ Chưa đánh giá'}
+                          </strong>
                         </div>
                       </S.InfoItem>
                     </S.InfoGrid>
@@ -139,6 +215,69 @@ const WarrantyHistory = () => {
                         <div><FaTimesCircle /><span>Lý do từ chối</span></div>
                         <p>{request.rejectionReason}</p>
                       </S.RejectionReasonContainer>
+                    )}
+
+                    {/* Feedback Section */}
+                    {request.status === 'COMPLETED' && (
+                      <S.FeedbackSection>
+                        {request.hasFeedback ? (
+                          feedbacks[request.warrantyClaimId] ? (
+                            <S.FeedbackDisplay>
+                              <S.FeedbackHeader>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <FaStar style={{ color: '#fbbf24' }} />
+                                  <span style={{ fontWeight: '600', color: '#1f2937' }}>Đánh giá của bạn</span>
+                                </div>
+                                <S.EditFeedbackButton onClick={() => handleOpenFeedbackModal(request)}>
+                                  <FaEdit /> Chỉnh sửa
+                                </S.EditFeedbackButton>
+                              </S.FeedbackHeader>
+                              <S.FeedbackRating>
+                                {[...Array(5)].map((_, i) => (
+                                  <FaStar
+                                    key={i}
+                                    style={{
+                                      color: i < feedbacks[request.warrantyClaimId].rating ? '#fbbf24' : '#d1d5db',
+                                      fontSize: '1.2rem'
+                                    }}
+                                  />
+                                ))}
+                                <span style={{ marginLeft: '8px', fontWeight: '600', color: '#374151' }}>
+                                  {feedbacks[request.warrantyClaimId].rating}/5
+                                </span>
+                              </S.FeedbackRating>
+                              {feedbacks[request.warrantyClaimId].comment && (
+                                <S.FeedbackComment>
+                                  <strong>Nhận xét:</strong> {feedbacks[request.warrantyClaimId].comment}
+                                </S.FeedbackComment>
+                              )}
+                              <S.FeedbackDate>
+                                Đánh giá lúc: {formatDate(feedbacks[request.warrantyClaimId].createdAt)}
+                              </S.FeedbackDate>
+                            </S.FeedbackDisplay>
+                          ) : (
+                            <S.FeedbackLoading>
+                              <FaSpinner style={{ animation: 'spin 1s linear infinite' }} />
+                              <span>Đang tải đánh giá...</span>
+                            </S.FeedbackLoading>
+                          )
+                        ) : (
+                          <S.FeedbackPrompt>
+                            <div>
+                              <FaStar style={{ color: '#fbbf24', fontSize: '1.5rem', marginBottom: '8px' }} />
+                              <p style={{ margin: '0 0 8px', fontWeight: '600', color: '#1f2937' }}>
+                                Dịch vụ đã hoàn thành
+                              </p>
+                              <p style={{ margin: 0, color: '#6b7280', fontSize: '0.9rem' }}>
+                                Chia sẻ trải nghiệm của bạn để giúp chúng tôi cải thiện dịch vụ
+                              </p>
+                            </div>
+                            <S.RateButton onClick={() => handleOpenFeedbackModal(request)}>
+                              <FaStar /> Đánh giá ngay
+                            </S.RateButton>
+                          </S.FeedbackPrompt>
+                        )}
+                      </S.FeedbackSection>
                     )}
                   </S.ClaimDetails>
                 </S.ClaimCard>
@@ -155,6 +294,17 @@ const WarrantyHistory = () => {
           </S.PaginationContainer>
         )}
       </S.ContentWrapper>
+
+      {/* Feedback Modal */}
+      {selectedClaim && (
+        <FeedbackModal
+          isOpen={feedbackModalOpen}
+          onClose={handleCloseFeedbackModal}
+          claim={selectedClaim}
+          existingFeedback={feedbacks[selectedClaim.warrantyClaimId]}
+          onFeedbackSubmitted={handleFeedbackSubmitted}
+        />
+      )}
     </S.PageContainer>
   );
 };
