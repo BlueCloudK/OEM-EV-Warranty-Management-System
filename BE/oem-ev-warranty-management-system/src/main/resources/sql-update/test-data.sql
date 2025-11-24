@@ -19,17 +19,44 @@
 # ('CUSTOMER');
 
 -- =====================================================
--- 2. SERVICE CENTERS
+-- 2. PART CATEGORIES (Master Data - Must be created BEFORE parts)
 -- =====================================================
--- Table: service_centers
--- Columns: service_center_id, name, address, phone, opening_hours, latitude, longitude
-INSERT INTO service_centers (name, address, phone, opening_hours, latitude, longitude) VALUES
-(N'Trung tâm Bảo hành VinFast Hà Nội', N'123 Phạm Văn Đồng, Bắc Từ Liêm, Hà Nội', '024-3838-8888', N'08:00 - 18:00 (T2-T7)', 21.0285, 105.8542),
-(N'Trung tâm Bảo hành VinFast TP.HCM', N'456 Nguyễn Văn Linh, Quận 7, TP.HCM', '028-3838-9999', N'08:00 - 18:00 (T2-CN)', 10.7769, 106.7009),
-(N'Trung tâm Bảo hành VinFast Đà Nẵng', N'789 Ngô Quyền, Sơn Trà, Đà Nẵng', '0236-3838-7777', N'08:00 - 17:30 (T2-T7)', 16.0544, 108.2022);
+-- Table: part_categories
+-- Columns: category_id, category_name, max_quantity_per_vehicle, is_active
+-- Purpose: Limit the number of parts per category that can be installed on a vehicle
+INSERT INTO part_categories (category_name, max_quantity_per_vehicle, is_active) VALUES
+(N'Động cơ điện', 1, TRUE),           -- 1: Electric Motor (max 1 per vehicle)
+(N'Pin/Ắc quy', 1, TRUE),             -- 2: Battery (max 1 per vehicle)
+(N'Bánh xe', 4, TRUE),                -- 3: Wheels (max 4 per vehicle)
+(N'Má phanh', 4, TRUE),               -- 4: Brake pads (max 4 per vehicle)
+(N'Đèn pha', 2, TRUE),                -- 5: Headlights (max 2 per vehicle)
+(N'Đèn hậu', 2, TRUE),                -- 6: Tail lights (max 2 per vehicle)
+(N'Bảng điều khiển', 1, TRUE),       -- 7: Dashboard (max 1 per vehicle)
+(N'Màn hình giải trí', 1, TRUE),     -- 8: Entertainment display (max 1 per vehicle)
+(N'Ghế ngồi', 5, TRUE),               -- 9: Seats (max 5 per vehicle)
+(N'Cửa xe', 4, TRUE),                 -- 10: Doors (max 4 per vehicle)
+(N'Kính chắn gió', 1, TRUE),         -- 11: Windshield (max 1 per vehicle)
+(N'Điều hòa', 1, TRUE),               -- 12: Air conditioning (max 1 per vehicle)
+(N'Túi khí', 8, TRUE),                -- 13: Airbags (max 8 per vehicle)
+(N'Camera', 4, TRUE),                 -- 14: Cameras (max 4 per vehicle)
+(N'Cảm biến', 12, TRUE),              -- 15: Sensors (max 12 per vehicle)
+(N'Bộ sạc', 1, TRUE),                 -- 16: Charger (max 1 per vehicle)
+(N'Inverter', 1, TRUE),               -- 17: Inverter (max 1 per vehicle)
+(N'Hộp số', 1, TRUE),                 -- 18: Transmission (max 1 per vehicle)
+(N'Giảm xóc', 4, TRUE);               -- 19: Shock absorbers (max 4 per vehicle)
 
 -- =====================================================
--- 3. USERS
+-- 3. SERVICE CENTERS
+-- =====================================================
+-- Table: service_centers
+-- Columns: service_center_id, name, address, phone, opening_hours, latitude, longitude, daily_claim_limit_per_tech
+INSERT INTO service_centers (name, address, phone, opening_hours, latitude, longitude, daily_claim_limit_per_tech) VALUES
+(N'Trung tâm Bảo hành VinFast Hà Nội', N'123 Phạm Văn Đồng, Bắc Từ Liêm, Hà Nội', '02438388888', N'08:00 - 18:00 (T2-T7)', 21.0285, 105.8542, 5),
+(N'Trung tâm Bảo hành VinFast TP.HCM', N'456 Nguyễn Văn Linh, Quận 7, TP.HCM', '02838389999', N'08:00 - 18:00 (T2-CN)', 10.7769, 106.7009, 5),
+(N'Trung tâm Bảo hành VinFast Đà Nẵng', N'789 Ngô Quyền, Sơn Trà, Đà Nẵng', '023638387777', N'08:00 - 17:30 (T2-T7)', 16.0544, 108.2022, 3);
+
+-- =====================================================
+-- 4. USERS
 -- =====================================================
 -- Table: users
 -- Columns: username, email, password, address, created_at, role_id, service_center_id
@@ -65,96 +92,132 @@ INSERT INTO users (username, email, password, address, created_at, role_id, serv
 ('customer5', 'hoangvane@gmail.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', N'234 Lê Lợi, Quận 3, TP.HCM', '2024-02-15 16:20:00', 5, NULL);
 
 -- =====================================================
--- 4. CUSTOMERS
+-- 5. CUSTOMERS
 -- =====================================================
 -- Table: customers
 -- Columns: customer_id (UUID), name, phone, user_id
 INSERT INTO customers (customer_id, name, phone, user_id) VALUES
-('c1111111-1111-1111-1111-111111111111', N'Nguyễn Văn A', '0912-345-678', 10),
-('c2222222-2222-2222-2222-222222222222', N'Trần Thị B', '0923-456-789', 11),
-('c3333333-3333-3333-3333-333333333333', N'Lê Văn C', '0934-567-890', 12),
-('c4444444-4444-4444-4444-444444444444', N'Phạm Thị D', '0945-678-901', 13),
-('c5555555-5555-5555-5555-555555555555', N'Hoàng Văn E', '0956-789-012', 14);
+('c1111111-1111-1111-1111-111111111111', N'Nguyễn Văn A', '0912345678', 10),
+('c2222222-2222-2222-2222-222222222222', N'Trần Thị B', '0923456789', 11),
+('c3333333-3333-3333-3333-333333333333', N'Lê Văn C', '0934567890', 12),
+('c4444444-4444-4444-4444-444444444444', N'Phạm Thị D', '0945678901', 13),
+('c5555555-5555-5555-5555-555555555555', N'Hoàng Văn E', '0956789012', 14);
 
 -- =====================================================
--- 5. VEHICLES
+-- 6. VEHICLES
 -- =====================================================
 -- Table: vehicles
 -- Columns: vehicle_name, vehicle_model, vehicle_year, vehicle_vin, purchase_date,
 --          warranty_start_date, warranty_end_date, mileage, customer_id
+-- NOTE: vehicle_vin must follow electric vehicle format: XX-MĐ-YYY.ZZ (e.g., 87-MĐ-892.34)
 INSERT INTO vehicles (vehicle_name, vehicle_model, vehicle_year, vehicle_vin, purchase_date, warranty_start_date, warranty_end_date, mileage, customer_id) VALUES
 (N'VF5 Plus', 'VF5', 2023, '87-MĐ-892.34', '2023-06-15', '2023-06-15', '2033-06-15', 15000, 'c1111111-1111-1111-1111-111111111111'),
-(N'VF8 Eco', 'VF8', 2023, '29-A1-234.56', '2023-07-20', '2023-07-20', '2033-07-20', 8500, 'c2222222-2222-2222-2222-222222222222'),
-(N'VF9 Plus', 'VF9', 2024, '30-B2-345.67', '2024-01-10', '2024-01-10', '2034-01-10', 3200, 'c3333333-3333-3333-3333-333333333333'),
-(N'VF e34', 'VF e34', 2023, '51-C3-456.78', '2023-09-05', '2023-09-05', '2033-09-05', 12000, 'c4444444-4444-4444-4444-444444444444'),
-(N'VF5 Plus', 'VF5', 2024, '92-D4-567.89', '2024-03-15', '2024-03-15', '2034-03-15', 1500, 'c5555555-5555-5555-5555-555555555555');
+(N'VF8 Eco', 'VF8', 2023, '29-MĐ-234.56', '2023-07-20', '2023-07-20', '2033-07-20', 8500, 'c2222222-2222-2222-2222-222222222222'),
+(N'VF9 Plus', 'VF9', 2024, '30-MĐ-345.67', '2024-01-10', '2024-01-10', '2034-01-10', 3200, 'c3333333-3333-3333-3333-333333333333'),
+(N'VF e34', 'VF e34', 2023, '51-MĐ-456.78', '2023-09-05', '2023-09-05', '2033-09-05', 12000, 'c4444444-4444-4444-4444-444444444444'),
+(N'VF5 Plus', 'VF5', 2024, '92-MĐ-567.89', '2024-03-15', '2024-03-15', '2034-03-15', 1500, 'c5555555-5555-5555-5555-555555555555');
 
 -- =====================================================
--- 6. PARTS
+-- 7. PARTS (with Part Categories)
 -- =====================================================
 -- Table: parts
--- Columns: part_name, part_number, manufacturer, price, has_extended_warranty,
+-- Columns: part_name, part_number, manufacturer, price, category_id, has_extended_warranty,
 --          default_warranty_months, default_warranty_mileage, grace_period_days,
 --          paid_warranty_fee_percentage_min, paid_warranty_fee_percentage_max
-INSERT INTO parts (part_name, part_number, manufacturer, price, has_extended_warranty, default_warranty_months, default_warranty_mileage, grace_period_days, paid_warranty_fee_percentage_min, paid_warranty_fee_percentage_max) VALUES
--- Critical parts with extended warranty
-(N'Pin Lithium-ion 60kWh', 'BAT-VF5-60KWH-V1', 'VinFast', 85000000.00, TRUE, 96, 192000, 365, 0.20, 0.50),
-(N'Động cơ điện 150kW', 'MTR-VF8-150KW-V1', 'VinFast', 65000000.00, TRUE, 48, 100000, 180, 0.25, 0.60),
-(N'Pin Lithium-ion 87kWh', 'BAT-VF8-87KWH-V1', 'VinFast', 95000000.00, TRUE, 96, 192000, 365, 0.20, 0.50),
-(N'Động cơ điện 300kW', 'MTR-VF9-300KW-V1', 'VinFast', 78000000.00, TRUE, 48, 100000, 180, 0.25, 0.60),
-(N'Hệ thống BMS (Battery Management)', 'BMS-VF-001', 'VinFast', 45000000.00, TRUE, 36, 80000, 90, 0.30, 0.70),
+--
+-- NOTE: category_id references part_categories table (seeded in V1_add_part_category.sql)
+-- Category mapping:
+-- 1 = Động cơ điện (max: 1)
+-- 2 = Pin/Ắc quy (max: 1)
+-- 3 = Bánh xe (max: 4)
+-- 4 = Má phanh (max: 4)
+-- 5 = Đèn pha (max: 2)
+-- 6 = Đèn hậu (max: 2)
+-- 7 = Bảng điều khiển (max: 1)
+-- 8 = Màn hình giải trí (max: 1)
+-- 9 = Ghế ngồi (max: 5)
+-- 10 = Cửa xe (max: 4)
+-- 11 = Kính chắn gió (max: 1)
+-- 12 = Điều hòa (max: 1)
+-- 13 = Túi khí (max: 8)
+-- 14 = Camera (max: 4)
+-- 15 = Cảm biến (max: 12)
+-- 16 = Bộ sạc (max: 1)
+-- 17 = Inverter (max: 1)
+-- 18 = Hộp số (max: 1)
+-- 19 = Giảm xóc (max: 4)
+
+INSERT INTO parts (part_name, part_number, manufacturer, price, category_id, has_extended_warranty, default_warranty_months, default_warranty_mileage, grace_period_days, paid_warranty_fee_percentage_min, paid_warranty_fee_percentage_max) VALUES
+-- Critical parts with extended warranty + category
+(N'Pin Lithium-ion 60kWh', 'BAT-VF5-60KWH-V1', 'VinFast', 85000000.00, 2, TRUE, 96, 192000, 365, 0.20, 0.50),       -- Battery
+(N'Động cơ điện 150kW', 'MTR-VF8-150KW-V1', 'VinFast', 65000000.00, 1, TRUE, 48, 100000, 180, 0.25, 0.60),          -- Motor
+(N'Pin Lithium-ion 87kWh', 'BAT-VF8-87KWH-V1', 'VinFast', 95000000.00, 2, TRUE, 96, 192000, 365, 0.20, 0.50),       -- Battery
+(N'Động cơ điện 300kW', 'MTR-VF9-300KW-V1', 'VinFast', 78000000.00, 1, TRUE, 48, 100000, 180, 0.25, 0.60),          -- Motor
+(N'Hệ thống BMS (Battery Management)', 'BMS-VF-001', 'VinFast', 45000000.00, NULL, TRUE, 36, 80000, 90, 0.30, 0.70), -- No category (không giới hạn)
 
 -- Regular parts (no extended warranty - follow vehicle warranty)
-(N'Màn hình cảm ứng 10 inch', 'DSP-10INCH-V1', 'VinFast', 15000000.00, FALSE, NULL, NULL, NULL, NULL, NULL),
-(N'Camera 360 độ', 'CAM-360-V1', 'VinFast', 8000000.00, FALSE, NULL, NULL, NULL, NULL, NULL),
-(N'Đèn LED trước', 'LED-FRONT-V1', 'VinFast', 5000000.00, FALSE, NULL, NULL, NULL, NULL, NULL),
-(N'Đèn LED sau', 'LED-REAR-V1', 'VinFast', 4500000.00, FALSE, NULL, NULL, NULL, NULL, NULL),
-(N'Ghế da cao cấp (bộ)', 'SEAT-LEATHER-SET', 'VinFast', 25000000.00, FALSE, NULL, NULL, NULL, NULL, NULL),
+(N'Màn hình cảm ứng 10 inch', 'DSP-10INCH-V1', 'VinFast', 15000000.00, 8, FALSE, NULL, NULL, NULL, NULL, NULL),     -- Màn hình giải trí
+(N'Camera 360 độ', 'CAM-360-V1', 'VinFast', 8000000.00, 14, FALSE, NULL, NULL, NULL, NULL, NULL),                  -- Camera
+(N'Đèn LED trước', 'LED-FRONT-V1', 'VinFast', 5000000.00, 5, FALSE, NULL, NULL, NULL, NULL, NULL),                 -- Đèn pha
+(N'Đèn LED sau', 'LED-REAR-V1', 'VinFast', 4500000.00, 6, FALSE, NULL, NULL, NULL, NULL, NULL),                    -- Đèn hậu
+(N'Ghế da cao cấp (bộ)', 'SEAT-LEATHER-SET', 'VinFast', 25000000.00, 9, FALSE, NULL, NULL, NULL, NULL, NULL),     -- Ghế ngồi
 
 -- Additional critical parts
-(N'Inverter điện tử', 'INV-VF-001', 'VinFast', 48000000.00, TRUE, 36, 80000, 90, 0.30, 0.70),
-(N'Bộ sạc nhanh DC', 'CHG-DC-FAST-V1', 'VinFast', 35000000.00, TRUE, 24, 50000, 60, 0.35, 0.75),
-(N'Hệ thống treo khí nén', 'SUS-AIR-V1', 'VinFast', 55000000.00, TRUE, 36, 80000, 90, 0.30, 0.70),
-(N'Hệ thống phanh ABS', 'BRK-ABS-V1', 'VinFast', 28000000.00, TRUE, 24, 60000, 60, 0.35, 0.75);
+(N'Inverter điện tử', 'INV-VF-001', 'VinFast', 48000000.00, 17, TRUE, 36, 80000, 90, 0.30, 0.70),                  -- Inverter
+(N'Bộ sạc nhanh DC', 'CHG-DC-FAST-V1', 'VinFast', 35000000.00, 16, TRUE, 24, 50000, 60, 0.35, 0.75),              -- Bộ sạc
+(N'Hệ thống treo khí nén', 'SUS-AIR-V1', 'VinFast', 55000000.00, 19, TRUE, 36, 80000, 90, 0.30, 0.70),            -- Giảm xóc
+(N'Hệ thống phanh ABS', 'BRK-ABS-V1', 'VinFast', 28000000.00, NULL, TRUE, 24, 60000, 60, 0.35, 0.75);             -- No category (không giới hạn)
 
 -- =====================================================
 -- 7. INSTALLED PARTS
 -- =====================================================
 -- Table: installed_parts
 -- Columns: installation_date, warranty_expiration_date, mileage_at_installation,
---          warranty_period_months, warranty_mileage_limit, part_id, vehicle_id
+--          warranty_period_months, warranty_mileage_limit, is_active, part_id, vehicle_id
+--
+-- NOTE: Category constraint validation
+-- Backend validates that each vehicle cannot exceed maxQuantityPerVehicle for each category.
+-- Example: category_id=1 (Động cơ điện) has max=1, so each vehicle can only have 1 motor (any type).
+--
+-- ✅ Valid: Vehicle 1 has Motor 150kW (part_id=2, category_id=1)
+-- ❌ Invalid: Vehicle 1 CANNOT have Motor 300kW (part_id=4, category_id=1) because it already has 1 motor
 
 -- Vehicle 1 (VF5 Plus - VIN: 87-MĐ-892.34) - customer_id: c1111111...
-INSERT INTO installed_parts (installation_date, warranty_expiration_date, mileage_at_installation, warranty_period_months, warranty_mileage_limit, part_id, vehicle_id) VALUES
-('2023-06-15', '2031-06-15', 0, 96, 192000, 1, 1), -- Battery 60kWh
-('2023-06-15', '2027-06-15', 0, 48, 100000, 2, 1), -- Motor 150kW
-('2023-06-15', '2026-06-15', 0, 36, 80000, 5, 1),  -- BMS
-('2024-08-20', '2024-08-20', 14000, NULL, NULL, 6, 1); -- Display (replaced)
+-- Parts: Battery(1) + Motor(1) + BMS(no limit) + Display(1) ✅ No constraint violation
+INSERT INTO installed_parts (installation_date, warranty_expiration_date, mileage_at_installation, warranty_period_months, warranty_mileage_limit, is_active, part_id, vehicle_id) VALUES
+('2023-06-15', '2031-06-15', 0, 96, 192000, TRUE, 1, 1), -- Battery 60kWh (category: Pin/Ắc quy, max: 1)
+('2023-06-15', '2027-06-15', 0, 48, 100000, TRUE, 2, 1), -- Motor 150kW (category: Động cơ điện, max: 1)
+('2023-06-15', '2026-06-15', 0, 36, 80000, TRUE, 5, 1),  -- BMS (category: NULL - không giới hạn)
+('2024-08-20', '2024-08-20', 14000, NULL, NULL, TRUE, 6, 1); -- Display (category: Màn hình giải trí, max: 1)
 
 -- Vehicle 2 (VF8 Eco - VIN: 29-A1-234.56) - customer_id: c2222222...
-INSERT INTO installed_parts (installation_date, warranty_expiration_date, mileage_at_installation, warranty_period_months, warranty_mileage_limit, part_id, vehicle_id) VALUES
-('2023-07-20', '2031-07-20', 0, 96, 192000, 3, 2), -- Battery 87kWh
-('2023-07-20', '2027-07-20', 0, 48, 100000, 2, 2), -- Motor 150kW
-('2023-07-20', '2026-07-20', 0, 36, 80000, 11, 2), -- Inverter
-('2024-10-15', '2024-10-15', 8000, NULL, NULL, 7, 2); -- Camera 360 (replaced)
+-- Parts: Battery(1) + Motor(1) + Inverter(1) + Camera(1) ✅ No constraint violation
+INSERT INTO installed_parts (installation_date, warranty_expiration_date, mileage_at_installation, warranty_period_months, warranty_mileage_limit, is_active, part_id, vehicle_id) VALUES
+('2023-07-20', '2031-07-20', 0, 96, 192000, TRUE, 3, 2), -- Battery 87kWh (category: Pin/Ắc quy, max: 1)
+('2023-07-20', '2027-07-20', 0, 48, 100000, TRUE, 2, 2), -- Motor 150kW (category: Động cơ điện, max: 1)
+('2023-07-20', '2026-07-20', 0, 36, 80000, TRUE, 11, 2), -- Inverter (category: Inverter, max: 1)
+('2024-10-15', '2024-10-15', 8000, NULL, NULL, TRUE, 7, 2); -- Camera 360 (category: Camera, max: 4)
 
 -- Vehicle 3 (VF9 Plus - VIN: 30-B2-345.67) - customer_id: c3333333...
-INSERT INTO installed_parts (installation_date, warranty_expiration_date, mileage_at_installation, warranty_period_months, warranty_mileage_limit, part_id, vehicle_id) VALUES
-('2024-01-10', '2032-01-10', 0, 96, 192000, 3, 3), -- Battery 87kWh
-('2024-01-10', '2028-01-10', 0, 48, 100000, 4, 3), -- Motor 300kW
-('2024-01-10', '2027-01-10', 0, 36, 80000, 13, 3); -- Air suspension
+-- Parts: Battery(1) + Motor(1) + Air suspension(1) ✅ No constraint violation
+INSERT INTO installed_parts (installation_date, warranty_expiration_date, mileage_at_installation, warranty_period_months, warranty_mileage_limit, is_active, part_id, vehicle_id) VALUES
+('2024-01-10', '2032-01-10', 0, 96, 192000, TRUE, 3, 3), -- Battery 87kWh (category: Pin/Ắc quy, max: 1)
+('2024-01-10', '2028-01-10', 0, 48, 100000, TRUE, 4, 3), -- Motor 300kW (category: Động cơ điện, max: 1)
+('2024-01-10', '2027-01-10', 0, 36, 80000, TRUE, 13, 3); -- Air suspension (category: Giảm xóc, max: 4)
 
 -- Vehicle 4 (VF e34 - VIN: 51-C3-456.78) - customer_id: c4444444...
-INSERT INTO installed_parts (installation_date, warranty_expiration_date, mileage_at_installation, warranty_period_months, warranty_mileage_limit, part_id, vehicle_id) VALUES
-('2023-09-05', '2031-09-05', 0, 96, 192000, 1, 4), -- Battery 60kWh
-('2023-09-05', '2027-09-05', 0, 48, 100000, 2, 4), -- Motor 150kW
-('2023-09-05', '2025-09-05', 0, 24, 50000, 12, 4); -- DC Fast Charger
+-- Parts: Battery(1) + Motor(1) + Charger(1) ✅ No constraint violation
+INSERT INTO installed_parts (installation_date, warranty_expiration_date, mileage_at_installation, warranty_period_months, warranty_mileage_limit, is_active, part_id, vehicle_id) VALUES
+('2023-09-05', '2031-09-05', 0, 96, 192000, TRUE, 1, 4), -- Battery 60kWh (category: Pin/Ắc quy, max: 1)
+('2023-09-05', '2027-09-05', 0, 48, 100000, TRUE, 2, 4), -- Motor 150kW (category: Động cơ điện, max: 1)
+('2023-09-05', '2025-09-05', 0, 24, 50000, TRUE, 12, 4); -- DC Fast Charger (category: Bộ sạc, max: 1)
 
 -- Vehicle 5 (VF5 Plus - VIN: 92-D4-567.89) - customer_id: c5555555...
-INSERT INTO installed_parts (installation_date, warranty_expiration_date, mileage_at_installation, warranty_period_months, warranty_mileage_limit, part_id, vehicle_id) VALUES
-('2024-03-15', '2032-03-15', 0, 96, 192000, 1, 5), -- Battery 60kWh
-('2024-03-15', '2028-03-15', 0, 48, 100000, 2, 5), -- Motor 150kW
-('2024-03-15', '2027-03-15', 0, 36, 80000, 5, 5);  -- BMS
+-- Parts: Battery(1) + Motor(1) + BMS(no limit) ✅ No constraint violation
+INSERT INTO installed_parts (installation_date, warranty_expiration_date, mileage_at_installation, warranty_period_months, warranty_mileage_limit, is_active, part_id, vehicle_id) VALUES
+('2024-03-15', '2032-03-15', 0, 96, 192000, TRUE, 1, 5), -- Battery 60kWh (category: Pin/Ắc quy, max: 1)
+('2024-03-15', '2028-03-15', 0, 48, 100000, TRUE, 2, 5), -- Motor 150kW (category: Động cơ điện, max: 1)
+('2024-03-15', '2027-03-15', 0, 36, 80000, TRUE, 5, 5);  -- BMS (category: NULL - không giới hạn)
 
 -- =====================================================
 -- 8. WARRANTY CLAIMS
