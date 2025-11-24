@@ -84,9 +84,9 @@ public class SecurityConfig {
                 .requestMatchers("/api/vehicles/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF", "SC_TECHNICIAN", "CUSTOMER")
                 .requestMatchers("/api/parts/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF", "SC_TECHNICIAN")
 
-                // Part Categories - All staff can view, only Admin can modify
+                // Part Categories - All staff can view, Admin and EVM_STAFF can modify
                 .requestMatchers(HttpMethod.GET, "/api/part-categories/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF", "SC_TECHNICIAN")
-                .requestMatchers("/api/part-categories/**").hasRole("ADMIN")
+                .requestMatchers("/api/part-categories/**").hasAnyRole("ADMIN", "EVM_STAFF")
 
                 // Installed Parts
                 .requestMatchers("/api/installed-parts/**").hasAnyRole("ADMIN", "EVM_STAFF", "SC_STAFF", "SC_TECHNICIAN", "CUSTOMER")
