@@ -23,6 +23,7 @@ import com.swp391.warrantymanagement.repository.InstalledPartRepository;
 import com.swp391.warrantymanagement.repository.PartRepository;
 import com.swp391.warrantymanagement.repository.ServiceHistoryRepository;
 import com.swp391.warrantymanagement.repository.VehicleRepository;
+import com.swp391.warrantymanagement.repository.FeedbackRepository;
 import com.swp391.warrantymanagement.service.WarrantyClaimService;
 import com.swp391.warrantymanagement.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
@@ -62,6 +63,7 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
     private final UserRepository userRepository;
     private final ServiceHistoryRepository serviceHistoryRepository;
     private final com.swp391.warrantymanagement.repository.WorkLogRepository workLogRepository;
+    private final FeedbackRepository feedbackRepository;
 
     /**
      * Lấy tất cả warranty claims với phân trang cho Admin/EVM Staff.
@@ -1044,6 +1046,14 @@ public class WarrantyClaimServiceImpl implements WarrantyClaimService {
             .findByVehicleCustomerCustomerId(customer.getCustomerId(), pageable);
 
         List<WarrantyClaimResponseDTO> responseDTOs = WarrantyClaimMapper.toResponseDTOList(claimPage.getContent());
+
+        // Check feedback status for each claim
+        responseDTOs.forEach(dto -> {
+            boolean hasFeedback = feedbackRepository
+                .findByWarrantyClaimWarrantyClaimId(dto.getWarrantyClaimId())
+                .isPresent();
+            dto.setHasFeedback(hasFeedback);
+        });
 
         return new PagedResponse<>(
             responseDTOs,

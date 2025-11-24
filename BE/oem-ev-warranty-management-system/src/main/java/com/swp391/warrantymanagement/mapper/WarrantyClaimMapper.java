@@ -94,6 +94,12 @@ public final class WarrantyClaimMapper {
             responseDTO.setAssignedToEmail(entity.getAssignedTo().getEmail());
         }
 
+        // Service Center information
+        if (entity.getServiceCenter() != null) {
+            responseDTO.setServiceCenterId(entity.getServiceCenter().getServiceCenterId());
+            responseDTO.setServiceCenterName(entity.getServiceCenter().getName());
+        }
+
         // Paid warranty fields
         responseDTO.setIsPaidWarranty(entity.getIsPaidWarranty() != null ? entity.getIsPaidWarranty() : false);
         // estimatedRepairCost không lưu trong Entity - để null ở response

@@ -41,6 +41,10 @@ public class WarrantyClaimResponseDTO {
     private String assignedToUsername;
     private String assignedToEmail;
 
+    // Service Center information - trung tâm xử lý claim
+    private Long serviceCenterId;
+    private String serviceCenterName;
+
     // Audit information - track thông tin cập nhật
     private String comments; // Comments khi approve/reject
     private String updatedBy; // Staff đã cập nhật status
@@ -66,4 +70,9 @@ public class WarrantyClaimResponseDTO {
      * Ghi chú về phí bảo hành
      */
     private String paidWarrantyNote;
+
+    /**
+     * Claim đã có feedback chưa (để customer biết đã đánh giá hay chưa)
+     */
+    private Boolean hasFeedback;
 }
