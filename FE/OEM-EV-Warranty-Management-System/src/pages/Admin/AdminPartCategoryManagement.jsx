@@ -294,8 +294,8 @@ const AdminPartCategoryManagement = () => {
                                     <S.Th onClick={() => handleSort('maxQuantityPerVehicle')} style={{ textAlign: 'center', cursor: 'pointer' }}>
                                         Max Qty / Xe {renderSortIcon('maxQuantityPerVehicle')}
                                     </S.Th>
-                                    <S.Th onClick={() => handleSort('partCount')} style={{ textAlign: 'center', cursor: 'pointer' }}>
-                                        Số Parts {renderSortIcon('partCount')}
+                                    <S.Th style={{ textAlign: 'center' }}>
+                                        Số Parts
                                     </S.Th>
                                     <S.Th onClick={() => handleSort('isActive')} style={{ textAlign: 'center', cursor: 'pointer' }}>
                                         Trạng thái {renderSortIcon('isActive')}
@@ -333,7 +333,7 @@ const AdminPartCategoryManagement = () => {
                                             </S.Button>
                                             {' '}
                                             <S.Button $small $danger onClick={() => handleDeleteCategory(category.categoryId)}>
-                                                <FaTrash /> Xóa
+                                                <FaTrash /> Vô hiệu hóa
                                             </S.Button>
                                         </S.Td>
                                     </tr>
