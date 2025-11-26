@@ -1,500 +1,237 @@
-import React, { useState } from 'react';
-import * as S from './PartsLookup.styles';
-import {
-  FaCog, FaSearch, FaSpinner, FaInfoCircle, FaBarcode,
-  FaIndustry, FaDollarSign, FaClock, FaLayerGroup
-} from 'react-icons/fa';
-import apiClient from '../../api/apiClient';
-
+import React, { useState, useEffect, useCallback } from 'react';
+import { dataApi } from '../../api/dataApi';
 import useAutoRefresh from '../../hooks/useAutoRefresh';
+import * as S from './PartsLookup.styles';
+import { FaCogs, FaSearch, FaSpinner, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
 
-const PartsLookup = () => {
-  const [searchType, setSearchType] = useState('all'); // 'all', 'id', 'name', or 'manufacturer'
-  const [searchValue, setSearchValue] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [part, setPart] = useState(null);
+/**
+ * @description Custom Hook for Parts Management logic (Inline for SC Technician - Read Only).
+ */
+const usePartsManagement = () => {
   const [parts, setParts] = useState([]);
-  const [notFound, setNotFound] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(0);
-  const [pageSize, setPageSize] = useState(20);
-  const [totalPages, setTotalPages] = useState(0);
-  const [totalElements, setTotalElements] = useState(0);
+  // Search and Pagination State
+  const [searchTerm, setSearchTerm] = useState('');
+  const [effectiveSearchTerm, setEffectiveSearchTerm] = useState('');
+  const [pagination, setPagination] = useState({ currentPage: 0, pageSize: 10, totalPages: 0, totalElements: 0 });
 
-  const handleSearch = async (e, page = 0, silent = false) => {
-    if (e) e.preventDefault();
+  // Sorting State
+  const [sortConfig, setSortConfig] = useState({ key: 'partId', direction: 'DESC' });
 
-    // For 'all' and 'id' types, search can be empty
-    if (searchType !== 'all' && searchType !== 'id' && !searchValue.trim()) {
-      setError('Vui lòng nhập thông tin tìm kiếm');
-      return;
-    }
-
+  const fetchParts = useCallback(async (silent = false) => {
     try {
       if (!silent) {
         setLoading(true);
-        setError(null);
-        setPart(null);
-        setParts([]);
-        setNotFound(false);
+      }
+      setError(null);
+
+      const params = {
+        page: pagination.currentPage,
+        size: pagination.pageSize,
+        sortBy: sortConfig.key,
+        sortDir: sortConfig.direction
+      };
+
+      if (effectiveSearchTerm) {
+        params.search = effectiveSearchTerm;
       }
 
-      // Update current page if provided
-      if (page !== undefined && page !== null) {
-        setCurrentPage(page);
-      }
+      console.log('🔍 Fetching parts with params:', params);
 
-      const pageToFetch = page !== undefined && page !== null ? page : currentPage;
+      const response = await dataApi.getAllParts(params);
 
-      let response;
-      if (searchType === 'all') {
-        // Get all parts with pagination - Backend: GET /api/parts?page={page}&size={size}
-        response = await apiClient(`/api/parts?page=${pageToFetch}&size=${pageSize}&sortBy=partId&sortDir=ASC`);
-        if (response.content && response.content.length > 0) {
-          setParts(response.content);
-          setTotalPages(response.totalPages);
-          setTotalElements(response.totalElements);
-        } else {
-          if (!silent) setNotFound(true);
-        }
-      } else if (searchType === 'id') {
-        if (!searchValue.trim()) {
-          // If no ID entered, load all parts
-          response = await apiClient(`/api/parts?page=${pageToFetch}&size=${pageSize}&sortBy=partId&sortDir=ASC`);
-          if (response.content && response.content.length > 0) {
-            setParts(response.content);
-            setTotalPages(response.totalPages);
-            setTotalElements(response.totalElements);
-          } else {
-            if (!silent) setNotFound(true);
-          }
-        } else {
-          // Search by Part ID - Backend: GET /api/parts/{id}
-          response = await apiClient(`/api/parts/${encodeURIComponent(searchValue.trim())}`);
-          setPart(response);
-        }
-      } else if (searchType === 'name') {
-        // Search by part name - Backend: GET /api/parts?search={keyword}&page={page}&size={size}
-        const searchResponse = await apiClient(`/api/parts?search=${encodeURIComponent(searchValue.trim())}&page=${pageToFetch}&size=${pageSize}`);
-        if (searchResponse.content && searchResponse.content.length > 0) {
-          setParts(searchResponse.content);
-          setTotalPages(searchResponse.totalPages);
-          setTotalElements(searchResponse.totalElements);
-        } else {
-          if (!silent) setNotFound(true);
-          return;
-        }
+      if (response && response.content) {
+        setParts(response.content);
+        setPagination(prev => ({ ...prev, totalPages: response.totalPages, totalElements: response.totalElements }));
       } else {
-        // Search by manufacturer - Backend: GET /api/parts/by-manufacturer?manufacturer={name}&page={page}&size={size}
-        const searchResponse = await apiClient(`/api/parts/by-manufacturer?manufacturer=${encodeURIComponent(searchValue.trim())}&page=${pageToFetch}&size=${pageSize}`);
-        if (searchResponse.content && searchResponse.content.length > 0) {
-          setParts(searchResponse.content);
-          setTotalPages(searchResponse.totalPages);
-          setTotalElements(searchResponse.totalElements);
-        } else {
-          if (!silent) setNotFound(true);
-          return;
-        }
+        setParts([]);
       }
     } catch (err) {
-      console.error('❌ Error searching part:', err);
-      if (err.message.includes('404') || err.message.includes('not found')) {
-        if (!silent) setNotFound(true);
-      } else {
-        if (!silent) setError(err.message || 'Không thể tìm kiếm phụ tùng');
+      console.error("Error fetching parts:", err);
+      if (!silent) {
+        setError("Không thể tải danh sách phụ tùng.");
       }
     } finally {
-      if (!silent) setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
-  };
+  }, [pagination.currentPage, pagination.pageSize, effectiveSearchTerm, sortConfig]);
 
-  const handleReset = () => {
-    setSearchValue('');
-    setPart(null);
-    setParts([]);
-    setError(null);
-    setNotFound(false);
-    setCurrentPage(0);
-    setTotalPages(0);
-    setTotalElements(0);
+  useEffect(() => {
+    fetchParts();
+  }, [fetchParts]);
+
+  const handleSearch = () => {
+    setEffectiveSearchTerm(searchTerm);
+    setPagination(prev => ({ ...prev, currentPage: 0 }));
   };
 
   const handlePageChange = (newPage) => {
-    handleSearch(null, newPage);
+    setPagination(prev => ({ ...prev, currentPage: newPage }));
   };
+
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'ASC' ? 'DESC' : 'ASC'
+    }));
+  };
+
+  return {
+    parts,
+    loading,
+    error,
+    pagination,
+    searchTerm,
+    setSearchTerm,
+    handleSearch,
+    handlePageChange,
+    refreshParts: fetchParts,
+    sortConfig,
+    handleSort,
+  };
+};
+
+// Main Page Component
+const PartsLookup = () => {
+  const {
+    parts,
+    loading,
+    error,
+    pagination,
+    searchTerm,
+    setSearchTerm,
+    handleSearch,
+    handlePageChange,
+    refreshParts,
+    sortConfig,
+    handleSort
+  } = usePartsManagement();
 
   // Auto-refresh logic
   const { lastUpdated, isRefreshing } = useAutoRefresh({
-    fetchData: (silent) => handleSearch(null, currentPage, silent),
-    shouldPoll: false // Only refresh on visibility change to avoid interrupting search
+    fetchData: (silent) => refreshParts(silent),
+    shouldPoll: true,
+    pollInterval: 30000
   });
 
-  const formatCurrency = (amount) => {
-    if (!amount) return 'N/A';
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
-    }).format(amount);
+  // Helper to render sort icon
+  const renderSortIcon = (key) => {
+    if (sortConfig.key !== key) return <FaSort style={{ color: '#ccc', marginLeft: '5px' }} />;
+    if (sortConfig.direction === 'ASC') return <FaSortUp style={{ color: '#3498db', marginLeft: '5px' }} />;
+    return <FaSortDown style={{ color: '#3498db', marginLeft: '5px' }} />;
   };
-
 
   return (
     <S.PageContainer>
-      <S.Header>
-        <S.HeaderTitle>
-          <FaCog /> Danh sách Phụ tùng
-          {lastUpdated && (
-            <small style={{ color: '#7f8c8d', fontSize: '12px', marginLeft: '12px', fontWeight: 'normal', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              {isRefreshing && <FaSpinner className="spinner" />}
-              Cập nhật: {lastUpdated.toLocaleTimeString('vi-VN')}
-            </small>
-          )}
-        </S.HeaderTitle>
-        <S.HeaderSubtitle>
-          Xem tất cả phụ tùng hoặc tìm kiếm theo Part ID, Tên phụ tùng, Nhà sản xuất
-        </S.HeaderSubtitle>
-      </S.Header>
-
-      {/* Search Form */}
-      <S.SearchCard>
-        <form onSubmit={handleSearch}>
-          <S.SearchTypeSelector>
-            <S.RadioLabel $active={searchType === 'all'}>
-              <input
-                type="radio"
-                name="searchType"
-                value="all"
-                checked={searchType === 'all'}
-                onChange={(e) => setSearchType(e.target.value)}
-              />
-              Xem tất cả
-            </S.RadioLabel>
-            <S.RadioLabel $active={searchType === 'id'}>
-              <input
-                type="radio"
-                name="searchType"
-                value="id"
-                checked={searchType === 'id'}
-                onChange={(e) => setSearchType(e.target.value)}
-              />
-              Tìm theo Part ID
-            </S.RadioLabel>
-            <S.RadioLabel $active={searchType === 'name'}>
-              <input
-                type="radio"
-                name="searchType"
-                value="name"
-                checked={searchType === 'name'}
-                onChange={(e) => setSearchType(e.target.value)}
-              />
-              Tìm theo Tên phụ tùng
-            </S.RadioLabel>
-            <S.RadioLabel $active={searchType === 'manufacturer'}>
-              <input
-                type="radio"
-                name="searchType"
-                value="manufacturer"
-                checked={searchType === 'manufacturer'}
-                onChange={(e) => setSearchType(e.target.value)}
-              />
-              Tìm theo Nhà sản xuất
-            </S.RadioLabel>
-          </S.SearchTypeSelector>
-
-          <S.SearchInputGroup>
-            <S.SearchInput
-              type="text"
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-              placeholder={
-                searchType === 'all'
-                  ? 'Nhấn "Tìm kiếm" để xem tất cả phụ tùng'
-                  : searchType === 'id'
-                    ? 'Nhập Part ID (ví dụ: 1, 2, 3...)'
-                    : searchType === 'name'
-                      ? 'Nhập tên phụ tùng (ví dụ: Pin, Động cơ...)'
-                      : 'Nhập tên nhà sản xuất (ví dụ: VinFast)'
-              }
-              disabled={searchType === 'all'}
+      <S.ContentWrapper>
+        <S.Header>
+          <S.HeaderTop>
+            <S.HeaderTitle>
+              <FaCogs /> Tra cứu Phụ tùng
+              {lastUpdated && (
+                <small style={{ color: '#7f8c8d', fontSize: '12px', marginLeft: '12px', fontWeight: 'normal', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  {isRefreshing && <FaSpinner className="spinner" />}
+                  Cập nhật: {lastUpdated.toLocaleTimeString('vi-VN')}
+                </small>
+              )}
+            </S.HeaderTitle>
+            {/* Removed Add Button */}
+          </S.HeaderTop>
+          <S.SearchContainer>
+            <S.Input
+              placeholder="Tìm kiếm phụ tùng..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             />
-            <S.SearchButton type="submit" disabled={loading}>
-              {loading ? <FaSpinner className="spin" /> : <FaSearch />}
-              {loading ? 'Đang tải...' : searchType === 'all' ? 'Xem tất cả' : 'Tìm kiếm'}
-            </S.SearchButton>
-            {(part || parts.length > 0 || notFound || error) && (
-              <S.ResetButton type="button" onClick={handleReset}>
-                Làm mới
-              </S.ResetButton>
-            )}
-          </S.SearchInputGroup>
-        </form>
-      </S.SearchCard>
+            <S.Button small onClick={handleSearch}><FaSearch /> Tìm kiếm</S.Button>
+          </S.SearchContainer>
+        </S.Header>
 
-      {/* Error Message */}
-      {error && (
-        <S.ErrorMessage>
-          <FaInfoCircle />
-          {error}
-        </S.ErrorMessage>
-      )}
+        {loading ? (
+          <S.LoadingState><FaSpinner /> <p>Đang tải...</p></S.LoadingState>
+        ) : error ? (
+          <S.EmptyState>{error}</S.EmptyState>
+        ) : parts.length === 0 ? (
+          <S.EmptyState><h3>Không tìm thấy phụ tùng</h3></S.EmptyState>
+        ) : (
+          <S.TableContainer>
+            <S.Table>
+              <thead>
+                <tr>
+                  <th onClick={() => handleSort('partId')} style={{ cursor: 'pointer' }}>
+                    ID {renderSortIcon('partId')}
+                  </th>
+                  <th onClick={() => handleSort('partName')} style={{ cursor: 'pointer' }}>
+                    Tên Phụ tùng {renderSortIcon('partName')}
+                  </th>
+                  <th onClick={() => handleSort('partNumber')} style={{ cursor: 'pointer' }}>
+                    Mã Phụ tùng {renderSortIcon('partNumber')}
+                  </th>
+                  <th>
+                    Loại
+                  </th>
+                  <th onClick={() => handleSort('manufacturer')} style={{ cursor: 'pointer' }}>
+                    Nhà sản xuất {renderSortIcon('manufacturer')}
+                  </th>
+                  <th onClick={() => handleSort('price')} style={{ cursor: 'pointer' }}>
+                    Giá (VNĐ) {renderSortIcon('price')}
+                  </th>
+                  <th>
+                    Tồn kho
+                  </th>
+                  {/* Removed Actions Column */}
+                </tr>
+              </thead>
+              <tbody>
+                {parts.map(part => (
+                  <tr key={part.partId}>
+                    <S.Td>{part.partId}</S.Td>
+                    <S.Td style={{ fontWeight: '500' }}>{part.partName}</S.Td>
+                    <S.Td style={{ fontFamily: 'monospace' }}>{part.partNumber}</S.Td>
+                    <S.Td>{part.categoryName || '-'}</S.Td>
+                    <S.Td>{part.manufacturer}</S.Td>
+                    <S.Td>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(part.price)}</S.Td>
+                    <S.Td>{part.stockQuantity || 0}</S.Td>
+                    {/* Removed Actions Cell */}
+                  </tr>
+                ))}
+              </tbody>
+            </S.Table>
+          </S.TableContainer>
+        )}
 
-      {/* Not Found Message */}
-      {notFound && (
-        <S.NotFoundMessage>
-          <FaCog />
-          <h3>Không tìm thấy phụ tùng</h3>
-          <p>Không có phụ tùng nào với {searchType === 'id' ? 'Part ID' : searchType === 'name' ? 'tên' : 'nhà sản xuất'}: <strong>{searchValue}</strong></p>
-        </S.NotFoundMessage>
-      )}
+        {/* Pagination Controls */}
+        {!loading && !error && parts.length > 0 && pagination.totalPages > 0 && (
+          <S.PaginationContainer>
+            <S.Button
+              $small
+              onClick={() => handlePageChange(pagination.currentPage - 1)}
+              disabled={pagination.currentPage === 0}
+            >
+              Trước
+            </S.Button>
+            <span style={{ margin: '0 15px', fontWeight: 'bold' }}>
+              Trang {pagination.currentPage + 1} / {pagination.totalPages}
+              <span style={{ marginLeft: '10px', color: '#666', fontSize: '0.9em' }}>
+                (Tổng: {pagination.totalElements} phụ tùng)
+              </span>
+            </span>
+            <S.Button
+              $small
+              onClick={() => handlePageChange(pagination.currentPage + 1)}
+              disabled={pagination.currentPage >= pagination.totalPages - 1}
+            >
+              Tiếp
+            </S.Button>
+          </S.PaginationContainer>
+        )}
 
-      {/* Single Part Details (by ID) */}
-      {part && (
-        <S.PartCard>
-          <S.PartHeader>
-            <S.PartTitle>
-              <FaCog /> {part.partName || 'N/A'}
-            </S.PartTitle>
-          </S.PartHeader>
-
-          <S.PartGrid>
-            <S.InfoItem>
-              <S.InfoLabel><FaBarcode /> Part ID</S.InfoLabel>
-              <S.InfoValue>{part.partId || 'N/A'}</S.InfoValue>
-            </S.InfoItem>
-
-            <S.InfoItem>
-              <S.InfoLabel><FaBarcode /> Part Number</S.InfoLabel>
-              <S.InfoValue>{part.partNumber || 'N/A'}</S.InfoValue>
-            </S.InfoItem>
-
-            <S.InfoItem>
-              <S.InfoLabel><FaIndustry /> Nhà sản xuất</S.InfoLabel>
-              <S.InfoValue>{part.manufacturer || 'N/A'}</S.InfoValue>
-            </S.InfoItem>
-
-            <S.InfoItem>
-              <S.InfoLabel><FaLayerGroup /> Loại phụ tùng</S.InfoLabel>
-              <S.InfoValue>
-                {part.categoryName ? (
-                  <>
-                    <strong>{part.categoryName}</strong>
-                    <span style={{ color: '#6b7280', fontSize: '12px', marginLeft: '8px' }}>
-                      (Max: {part.maxQuantityPerVehicle} / xe)
-                    </span>
-                  </>
-                ) : (
-                  <span style={{ color: '#9ca3af' }}>Không giới hạn</span>
-                )}
-              </S.InfoValue>
-            </S.InfoItem>
-
-            <S.InfoItem>
-              <S.InfoLabel><FaClock /> Thời hạn bảo hành</S.InfoLabel>
-              <S.InfoValue>
-                {part.warrantyDurationMonths ? `${part.warrantyDurationMonths} tháng` : 'N/A'}
-              </S.InfoValue>
-            </S.InfoItem>
-
-            <S.InfoItem>
-              <S.InfoLabel><FaDollarSign /> Giá</S.InfoLabel>
-              <S.InfoValue>{formatCurrency(part.price)}</S.InfoValue>
-            </S.InfoItem>
-          </S.PartGrid>
-        </S.PartCard>
-      )}
-
-      {/* Multiple Parts List (by manufacturer) */}
-      {parts.length > 0 && (
-        <div style={{ display: 'grid', gap: '16px' }}>
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            margin: '16px 0'
-          }}>
-            <h3 style={{ margin: '0', fontSize: '20px', fontWeight: '600', color: '#1f2937' }}>
-              {searchType === 'all' ? 'Danh sách phụ tùng' : `Tìm thấy ${totalElements || parts.length} phụ tùng`}
-            </h3>
-            {totalElements > 0 && (
-              <div style={{ color: '#6c757d', fontSize: '14px' }}>
-                Hiển thị {currentPage * pageSize + 1} - {Math.min((currentPage + 1) * pageSize, totalElements)} / {totalElements}
-              </div>
-            )}
-          </div>
-          {parts.map((p, index) => (
-            <S.PartCard key={index}>
-              <S.PartHeader>
-                <S.PartTitle>
-                  <FaCog /> {p.partName || 'N/A'}
-                </S.PartTitle>
-              </S.PartHeader>
-
-              <S.PartGrid>
-                <S.InfoItem>
-                  <S.InfoLabel><FaBarcode /> Part ID</S.InfoLabel>
-                  <S.InfoValue>{p.partId || 'N/A'}</S.InfoValue>
-                </S.InfoItem>
-
-                <S.InfoItem>
-                  <S.InfoLabel><FaBarcode /> Part Number</S.InfoLabel>
-                  <S.InfoValue>{p.partNumber || 'N/A'}</S.InfoValue>
-                </S.InfoItem>
-
-                <S.InfoItem>
-                  <S.InfoLabel><FaIndustry /> Nhà sản xuất</S.InfoLabel>
-                  <S.InfoValue>{p.manufacturer || 'N/A'}</S.InfoValue>
-                </S.InfoItem>
-
-                <S.InfoItem>
-                  <S.InfoLabel><FaLayerGroup /> Loại phụ tùng</S.InfoLabel>
-                  <S.InfoValue>
-                    {p.categoryName ? (
-                      <>
-                        <strong>{p.categoryName}</strong>
-                        <span style={{ color: '#6b7280', fontSize: '12px', marginLeft: '8px' }}>
-                          (Max: {p.maxQuantityPerVehicle} / xe)
-                        </span>
-                      </>
-                    ) : (
-                      <span style={{ color: '#9ca3af' }}>Không giới hạn</span>
-                    )}
-                  </S.InfoValue>
-                </S.InfoItem>
-
-                <S.InfoItem>
-                  <S.InfoLabel><FaClock /> Thời hạn bảo hành</S.InfoLabel>
-                  <S.InfoValue>
-                    {p.warrantyDurationMonths ? `${p.warrantyDurationMonths} tháng` : 'N/A'}
-                  </S.InfoValue>
-                </S.InfoItem>
-
-                <S.InfoItem>
-                  <S.InfoLabel><FaDollarSign /> Giá</S.InfoLabel>
-                  <S.InfoValue>{formatCurrency(p.price)}</S.InfoValue>
-                </S.InfoItem>
-              </S.PartGrid>
-            </S.PartCard>
-          ))}
-
-          {/* Pagination Controls */}
-          {totalPages > 1 && (
-            <div style={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              gap: '8px',
-              margin: '24px 0',
-              padding: '16px',
-              background: 'white',
-              borderRadius: '8px',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-            }}>
-              <button
-                onClick={() => handlePageChange(0)}
-                disabled={currentPage === 0}
-                style={{
-                  padding: '8px 12px',
-                  border: '1px solid #dee2e6',
-                  borderRadius: '4px',
-                  background: currentPage === 0 ? '#f8f9fa' : 'white',
-                  color: currentPage === 0 ? '#6c757d' : '#007bff',
-                  cursor: currentPage === 0 ? 'not-allowed' : 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '500'
-                }}
-              >
-                Đầu
-              </button>
-              <button
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 0}
-                style={{
-                  padding: '8px 12px',
-                  border: '1px solid #dee2e6',
-                  borderRadius: '4px',
-                  background: currentPage === 0 ? '#f8f9fa' : 'white',
-                  color: currentPage === 0 ? '#6c757d' : '#007bff',
-                  cursor: currentPage === 0 ? 'not-allowed' : 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '500'
-                }}
-              >
-                ← Trước
-              </button>
-
-              <div style={{ display: 'flex', gap: '4px' }}>
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  let pageNum;
-                  if (totalPages <= 5) {
-                    pageNum = i;
-                  } else if (currentPage < 3) {
-                    pageNum = i;
-                  } else if (currentPage >= totalPages - 3) {
-                    pageNum = totalPages - 5 + i;
-                  } else {
-                    pageNum = currentPage - 2 + i;
-                  }
-
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => handlePageChange(pageNum)}
-                      style={{
-                        padding: '8px 12px',
-                        border: '1px solid #dee2e6',
-                        borderRadius: '4px',
-                        background: currentPage === pageNum ? '#007bff' : 'white',
-                        color: currentPage === pageNum ? 'white' : '#007bff',
-                        cursor: 'pointer',
-                        fontSize: '14px',
-                        fontWeight: currentPage === pageNum ? '600' : '500',
-                        minWidth: '40px'
-                      }}
-                    >
-                      {pageNum + 1}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <button
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage >= totalPages - 1}
-                style={{
-                  padding: '8px 12px',
-                  border: '1px solid #dee2e6',
-                  borderRadius: '4px',
-                  background: currentPage >= totalPages - 1 ? '#f8f9fa' : 'white',
-                  color: currentPage >= totalPages - 1 ? '#6c757d' : '#007bff',
-                  cursor: currentPage >= totalPages - 1 ? 'not-allowed' : 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '500'
-                }}
-              >
-                Sau →
-              </button>
-              <button
-                onClick={() => handlePageChange(totalPages - 1)}
-                disabled={currentPage >= totalPages - 1}
-                style={{
-                  padding: '8px 12px',
-                  border: '1px solid #dee2e6',
-                  borderRadius: '4px',
-                  background: currentPage >= totalPages - 1 ? '#f8f9fa' : 'white',
-                  color: currentPage >= totalPages - 1 ? '#6c757d' : '#007bff',
-                  cursor: currentPage >= totalPages - 1 ? 'not-allowed' : 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '500'
-                }}
-              >
-                Cuối
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+      </S.ContentWrapper>
     </S.PageContainer>
   );
 };

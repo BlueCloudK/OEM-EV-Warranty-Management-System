@@ -27,22 +27,36 @@ const InstallPart = () => {
     });
 
     // Refactored fetch function for auto-refresh
+    // Refactored fetch function for auto-refresh
     const fetchData = async (silent = false) => {
         if (!silent) setLoading(true);
         try {
-            const [vehiclesRes, partsRes] = await Promise.all([
-                dataApi.getAllVehicles({ size: 100 }), // Get first 100 vehicles for now
-                dataApi.getAllParts({ size: 100 })
-            ]);
+            console.log("🚀 Starting data fetch in InstallPart...");
+
+            // Fetch vehicles
+            console.log("🚗 Fetching vehicles...");
+            const vehiclesRes = await dataApi.getAllVehicles({ size: 100 });
+            console.log("✅ Vehicles fetched:", vehiclesRes);
             setVehicles(vehiclesRes.content || []);
+
+            // Fetch parts
+            console.log("🔧 Fetching parts...");
+            const partsRes = await dataApi.getAllParts({ size: 100 });
+            console.log("✅ Parts fetched:", partsRes);
             setParts(partsRes.content || []);
+
         } catch (error) {
-            console.error("Error loading data:", error);
+            console.error("❌ Error loading data in InstallPart:", error);
             if (!silent) alert("Không thể tải danh sách xe và phụ tùng. Vui lòng thử lại.");
         } finally {
             if (!silent) setLoading(false);
         }
     };
+
+    // Initial fetch
+    useEffect(() => {
+        fetchData();
+    }, []);
 
     // Auto-refresh logic (Visibility only)
     const { lastUpdated, isRefreshing } = useAutoRefresh({

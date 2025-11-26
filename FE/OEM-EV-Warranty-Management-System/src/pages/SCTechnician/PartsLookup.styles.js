@@ -5,262 +5,184 @@ const spin = keyframes`
   to { transform: rotate(360deg); }
 `;
 
-const fadeIn = keyframes`
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+export const PageContainer = styled.div`
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  padding: 20px;
 `;
 
-export const PageContainer = styled.div`
-  padding: 24px;
-  max-width: 1200px;
-  margin: 0 auto;
+export const ContentWrapper = styled.div`
+  max-width: 1400px;
+  margin: auto;
 `;
 
 export const Header = styled.div`
-  margin-bottom: 32px;
-`;
-
-export const HeaderTitle = styled.h1`
-  font-size: 32px;
-  font-weight: 700;
-  color: #1f2937;
-  margin: 0 0 8px 0;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-
-  svg {
-    color: #f59e0b;
-  }
-`;
-
-export const HeaderSubtitle = styled.p`
-  font-size: 16px;
-  color: #6b7280;
-  margin: 0;
-`;
-
-export const SearchCard = styled.div`
-  background: white;
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  margin-bottom: 24px;
-  animation: ${fadeIn} 0.3s ease;
-`;
-
-export const SearchTypeSelector = styled.div`
-  display: flex;
-  gap: 16px;
-  margin-bottom: 20px;
-`;
-
-export const RadioLabel = styled.label`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  border: 2px solid ${({ $active }) => $active ? '#f59e0b' : '#d1d5db'};
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-  color: ${({ $active }) => $active ? '#f59e0b' : '#6b7280'};
-  background: ${({ $active }) => $active ? '#fef3c7' : 'white'};
-  transition: all 0.2s ease;
-
-  &:hover {
-    border-color: #f59e0b;
-  }
-
-  input {
-    cursor: pointer;
-  }
-`;
-
-export const SearchInputGroup = styled.div`
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-`;
-
-export const SearchInput = styled.input`
-  flex: 1;
-  min-width: 250px;
-  padding: 12px 16px;
-  border: 2px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 16px;
-  transition: all 0.2s ease;
-
-  &:focus {
-    outline: none;
-    border-color: #f59e0b;
-    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
-  }
-`;
-
-export const SearchButton = styled.button`
-  background: #f59e0b;
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: all 0.2s ease;
-
-  &:hover:not(:disabled) {
-    background: #d97706;
-    transform: translateY(-1px);
-  }
-
-  &:disabled {
-    background: #d1d5db;
-    cursor: not-allowed;
-  }
-
-  .spin {
-    animation: ${spin} 1s linear infinite;
-  }
-`;
-
-export const ResetButton = styled.button`
-  background: #6b7280;
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-
-  &:hover {
-    background: #4b5563;
-    transform: translateY(-1px);
-  }
-`;
-
-export const ErrorMessage = styled.div`
-  background: #fee2e2;
-  border: 1px solid #fecaca;
+  background: #fff;
   border-radius: 12px;
-  padding: 16px 20px;
-  margin-bottom: 24px;
-  color: #991b1b;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 14px;
-  font-weight: 500;
-  animation: ${fadeIn} 0.3s ease;
-
-  svg {
-    font-size: 20px;
-  }
-`;
-
-export const NotFoundMessage = styled.div`
-  background: white;
-  border-radius: 16px;
-  padding: 60px 40px;
-  text-align: center;
-  color: #6b7280;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-  animation: ${fadeIn} 0.3s ease;
-
-  svg {
-    font-size: 80px;
-    opacity: 0.5;
-    margin-bottom: 20px;
-    color: #f59e0b;
-  }
-
-  h3 {
-    margin: 16px 0 8px 0;
-    color: #1f2937;
-    font-size: 24px;
-  }
-
-  p {
-    margin: 8px 0;
-    font-size: 16px;
-  }
-`;
-
-export const PartCard = styled.div`
-  background: white;
-  border-radius: 16px;
   padding: 24px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  border-left: 4px solid #f59e0b;
-  animation: ${fadeIn} 0.3s ease;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 `;
 
-export const PartHeader = styled.div`
+export const HeaderTop = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 2px solid #e5e7eb;
+  margin-bottom: 20px;
   flex-wrap: wrap;
   gap: 16px;
 `;
 
-export const PartTitle = styled.h2`
+export const HeaderTitle = styled.h1`
   margin: 0;
-  font-size: 24px;
-  font-weight: 700;
   color: #1f2937;
   display: flex;
   align-items: center;
   gap: 12px;
+`;
 
-  svg {
-    color: #f59e0b;
+export const Button = styled.button`
+  background: ${({ $primary, $danger }) => ($primary ? '#1d4ed8' : $danger ? '#ef4444' : '#6b7280')};
+  color: white;
+  border: none;
+  padding: ${({ $small }) => ($small ? '6px 12px' : '10px 16px')};
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    opacity: 0.9;
+  }
+
+  &:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
   }
 `;
 
-export const StockBadge = styled.div`
+export const SearchContainer = styled.div`
   display: flex;
+  gap: 12px;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border-radius: 8px;
+  flex-wrap: wrap;
+`;
+
+export const TableContainer = styled.div`
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+`;
+
+export const Table = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+`;
+
+export const Th = styled.th`
+  padding: 12px 15px;
+  text-align: left;
   font-weight: 600;
-  font-size: 14px;
-  background: ${({ $color }) => `${$color}20`};
-  color: ${({ $color }) => $color};
-  border: 2px solid ${({ $color }) => $color};
+  color: #374151;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  cursor: pointer;
 `;
 
-export const PartGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
+export const Td = styled.td`
+  padding: 12px 15px;
+  border-bottom: 1px solid #f3f4f6;
 `;
 
-export const InfoItem = styled.div`
-  ${({ $fullWidth }) => $fullWidth && 'grid-column: 1 / -1;'}
+export const EmptyState = styled.div`
+  background: white;
+  border-radius: 12px;
+  padding: 40px;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 `;
 
-export const InfoLabel = styled.div`
-  font-size: 13px;
-  color: #6b7280;
-  margin-bottom: 4px;
+export const LoadingState = styled(EmptyState)`
+  svg {
+    font-size: 24px;
+    color: #1d4ed8;
+    animation: ${spin} 1s linear infinite;
+  }
+  p {
+    margin-top: 16px;
+    color: #6b7280;
+  }
+`;
+
+export const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
+  justify-content: center;
   align-items: center;
-  gap: 6px;
-  font-weight: 600;
+  z-index: 1000;
 `;
 
-export const InfoValue = styled.div`
-  font-size: 16px;
-  color: #1f2937;
+export const ModalContent = styled.div`
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  width: 500px;
+  max-width: 90vw;
+`;
+
+export const FormGroup = styled.div`
+  margin-bottom: 16px;
+`;
+
+export const Label = styled.label`
+  display: block;
+  margin-bottom: 6px;
   font-weight: 500;
+  color: #374151;
+`;
+
+export const Input = styled.input`
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid ${({ $hasError }) => ($hasError ? '#ef4444' : '#d1d5db')};
+  border-radius: 6px;
+  box-sizing: border-box;
+`;
+
+export const ErrorText = styled.p`
+  margin: 4px 0 0 0;
+  font-size: 12px;
+  color: #ef4444;
+`;
+
+export const PaginationContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+  padding: 16px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+`;
+
+export const WarrantyBadge = styled.span`
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  min-width: 80px;
+  text-align: center;
+  white-space: nowrap;
 `;

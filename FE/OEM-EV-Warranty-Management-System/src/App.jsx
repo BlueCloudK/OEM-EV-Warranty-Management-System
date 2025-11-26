@@ -58,7 +58,7 @@ import SCTechnicianFeedbacks from "./pages/SCTechnician/SCTechnicianFeedbacks";
 import PartsLookup from "./pages/SCTechnician/PartsLookup";
 import ServiceHistory from "./pages/SCTechnician/ServiceHistory";
 import PartRequests from "./pages/SCTechnician/PartRequests";
-import InstallPart from "./pages/SCTechnician/InstallPart";
+
 
 // Customer
 import CustomerLayout from "./components/CustomerLayout";
@@ -162,7 +162,7 @@ export default function App() {
           <Route path="feedbacks" element={<SCTechnicianFeedbacks />} />
           <Route path="service-history" element={<ServiceHistory />} />
           <Route path="parts" element={<PartsLookup />} />
-          <Route path="install-part" element={<InstallPart />} />
+
         </Route>
 
         {/* === CUSTOMER ROUTES === */}
