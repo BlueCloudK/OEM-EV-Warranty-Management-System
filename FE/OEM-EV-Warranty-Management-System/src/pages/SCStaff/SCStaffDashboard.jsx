@@ -4,7 +4,7 @@ import { useAuth } from "../../context/AuthContext"; // Import the master auth h
 import { useSCStaffDashboard } from "../../hooks/useSCStaffDashboard";
 import * as S from "./SCStaffDashboard.styles";
 import {
-  FaUsers, FaCar, FaClipboardList, FaHistory, FaArrowRight, 
+  FaUsers, FaCar, FaClipboardList, FaHistory, FaArrowRight,
   FaUserCog, FaTachometerAlt, FaUserPlus, FaExclamationTriangle, FaCommentDots
 } from "react-icons/fa";
 
@@ -21,7 +21,7 @@ const StatCard = ({ value, label, icon, color, bgGradient, loading }) => (
 
 const ManagementCard = ({ card, onNavigate }) => (
   <S.Card $bgGradient={card.bgGradient} $color={card.color} onClick={() => onNavigate(card.path)}>
-     <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 16 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 16 }}>
       <div style={{ width: 56, height: 56, borderRadius: 14, background: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", color: card.color, boxShadow: `0 8px 16px ${card.color}20` }}>{card.icon}</div>
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: 18, fontWeight: 700, color: "#1e293b", marginBottom: 4 }}>{card.title}</div>
@@ -39,7 +39,7 @@ const ManagementCard = ({ card, onNavigate }) => (
 export default function SCStaffDashboard() {
   const navigate = useNavigate();
   const { isAuthenticated, loading: authLoading } = useAuth();
-  
+
   // Data-fetching hook is now separate from auth logic
   const { stats, loading: dataLoading } = useSCStaffDashboard();
 
@@ -51,7 +51,7 @@ export default function SCStaffDashboard() {
 
   // Render a loading screen while the AuthContext is verifying the user.
   if (authLoading) {
-    return <div>Đang kiểm tra xác thực...</div>; 
+    return <div>Đang kiểm tra xác thực...</div>;
   }
 
   // Data for cards
@@ -80,10 +80,6 @@ export default function SCStaffDashboard() {
         </div>
       </S.DashboardHeader>
 
-      <S.ManagementCardGrid>
-        {managementCards.map((card) => <ManagementCard key={card.id} card={card} onNavigate={navigate} />)}
-      </S.ManagementCardGrid>
-
       <S.StatsContainer>
         <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20 }}>
           <div style={{ width: 44, height: 44, borderRadius: 10, background: "#111827", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}><FaTachometerAlt size={18} /></div>
@@ -96,6 +92,10 @@ export default function SCStaffDashboard() {
           {statItems.map((s, idx) => <StatCard key={idx} {...s} loading={dataLoading} />)}
         </S.StatsGrid>
       </S.StatsContainer>
+
+      <S.ManagementCardGrid>
+        {managementCards.map((card) => <ManagementCard key={card.id} card={card} onNavigate={navigate} />)}
+      </S.ManagementCardGrid>
     </>
   );
 }
