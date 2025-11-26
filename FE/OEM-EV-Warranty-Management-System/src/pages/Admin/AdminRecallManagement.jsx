@@ -3,7 +3,7 @@ import * as S from "./AdminRecallManagement.styles";
 import {
   FaExclamationTriangle, FaCheckCircle, FaTimesCircle, FaClock,
   FaHourglassHalf, FaUserCheck, FaFileAlt, FaSearch, FaFilter,
-  FaSpinner, FaEye, FaList
+  FaSpinner, FaEye, FaList, FaSort, FaSortUp, FaSortDown
 } from "react-icons/fa";
 import { recallRequestsApi } from "../../api/recallRequests";
 import { recallResponsesApi } from "../../api/recallResponses";
@@ -32,13 +32,15 @@ export default function AdminRecallManagement() {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [autoRefreshing, setAutoRefreshing] = useState(false);
 
+  const [sortConfig, setSortConfig] = useState({ key: 'recallRequestId', direction: 'DESC' });
+
   useEffect(() => {
     fetchRecalls();
   }, []);
 
   useEffect(() => {
     applyFilters();
-  }, [recalls, searchTerm, statusFilter]);
+  }, [recalls, searchTerm, statusFilter, sortConfig]);
 
   // Auto-refresh when user returns to tab
   useEffect(() => {
@@ -115,7 +117,38 @@ export default function AdminRecallManagement() {
       );
     }
 
+    // Apply sorting
+    filtered.sort((a, b) => {
+      let aValue = a[sortConfig.key];
+      let bValue = b[sortConfig.key];
+
+      // Handle null/undefined
+      if (aValue == null) return 1;
+      if (bValue == null) return -1;
+
+      // Convert to lowercase for string comparison
+      if (typeof aValue === 'string') aValue = aValue.toLowerCase();
+      if (typeof bValue === 'string') bValue = bValue.toLowerCase();
+
+      if (aValue < bValue) return sortConfig.direction === 'ASC' ? -1 : 1;
+      if (aValue > bValue) return sortConfig.direction === 'ASC' ? 1 : -1;
+      return 0;
+    });
+
     setFilteredRecalls(filtered);
+  };
+
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'ASC' ? 'DESC' : 'ASC'
+    }));
+  };
+
+  const renderSortIcon = (key) => {
+    if (sortConfig.key !== key) return <FaSort style={{ color: '#ccc', marginLeft: '5px' }} />;
+    if (sortConfig.direction === 'ASC') return <FaSortUp style={{ color: '#3498db', marginLeft: '5px' }} />;
+    return <FaSortDown style={{ color: '#3498db', marginLeft: '5px' }} />;
   };
 
   const handleApprove = async (e) => {
@@ -397,12 +430,24 @@ export default function AdminRecallManagement() {
         <S.Table>
           <S.TableHeader>
             <tr>
-              <S.TableHeaderCell>ID</S.TableHeaderCell>
-              <S.TableHeaderCell>Phụ tùng bị lỗi</S.TableHeaderCell>
-              <S.TableHeaderCell>Lý do Recall</S.TableHeaderCell>
-              <S.TableHeaderCell>Người tạo</S.TableHeaderCell>
-              <S.TableHeaderCell>Ngày tạo</S.TableHeaderCell>
-              <S.TableHeaderCell>Trạng thái</S.TableHeaderCell>
+              <S.TableHeaderCell onClick={() => handleSort('recallRequestId')} style={{ cursor: 'pointer' }}>
+                ID {renderSortIcon('recallRequestId')}
+              </S.TableHeaderCell>
+              <S.TableHeaderCell onClick={() => handleSort('partName')} style={{ cursor: 'pointer' }}>
+                Phụ tùng bị lỗi {renderSortIcon('partName')}
+              </S.TableHeaderCell>
+              <S.TableHeaderCell onClick={() => handleSort('reason')} style={{ cursor: 'pointer' }}>
+                Lý do Recall {renderSortIcon('reason')}
+              </S.TableHeaderCell>
+              <S.TableHeaderCell onClick={() => handleSort('createdByUsername')} style={{ cursor: 'pointer' }}>
+                Người tạo {renderSortIcon('createdByUsername')}
+              </S.TableHeaderCell>
+              <S.TableHeaderCell onClick={() => handleSort('createdAt')} style={{ cursor: 'pointer' }}>
+                Ngày tạo {renderSortIcon('createdAt')}
+              </S.TableHeaderCell>
+              <S.TableHeaderCell onClick={() => handleSort('status')} style={{ cursor: 'pointer' }}>
+                Trạng thái {renderSortIcon('status')}
+              </S.TableHeaderCell>
               <S.TableHeaderCell>Hành động</S.TableHeaderCell>
             </tr>
           </S.TableHeader>

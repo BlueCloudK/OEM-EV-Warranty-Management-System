@@ -18,7 +18,10 @@ import {
   FaSearch,
   FaTrash,
   FaSyncAlt,
-  FaList
+  FaList,
+  FaSort,
+  FaSortUp,
+  FaSortDown
 } from 'react-icons/fa';
 
 const EVMRecallRequests = () => {
@@ -35,6 +38,8 @@ const EVMRecallRequests = () => {
 
   const [lastUpdated, setLastUpdated] = useState(null);
   const [autoRefreshing, setAutoRefreshing] = useState(false);
+
+  const [sortConfig, setSortConfig] = useState({ key: 'recallRequestId', direction: 'DESC' });
 
   // Form state
   const [formData, setFormData] = useState({
@@ -281,17 +286,47 @@ const EVMRecallRequests = () => {
     return statusConfig[status] || statusConfig.PENDING;
   };
 
-  // Filter and search
-  const filteredRecalls = recalls.filter(recall => {
-    const matchesStatus = filterStatus === 'ALL' || recall.status === filterStatus;
-    const matchesSearch = searchKeyword === '' ||
-      recall.recallRequestId?.toString().includes(searchKeyword) ||
-      recall.partName?.toLowerCase().includes(searchKeyword.toLowerCase()) ||
-      recall.partNumber?.toLowerCase().includes(searchKeyword.toLowerCase()) ||
-      recall.reason?.toLowerCase().includes(searchKeyword.toLowerCase());
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'ASC' ? 'DESC' : 'ASC'
+    }));
+  };
 
-    return matchesStatus && matchesSearch;
-  });
+  const renderSortIcon = (key) => {
+    if (sortConfig.key !== key) return <FaSort style={{ color: '#ccc', marginLeft: '5px' }} />;
+    if (sortConfig.direction === 'ASC') return <FaSortUp style={{ color: '#3498db', marginLeft: '5px' }} />;
+    return <FaSortDown style={{ color: '#3498db', marginLeft: '5px' }} />;
+  };
+
+  // Filter, search and sort
+  const filteredRecalls = recalls
+    .filter(recall => {
+      const matchesStatus = filterStatus === 'ALL' || recall.status === filterStatus;
+      const matchesSearch = searchKeyword === '' ||
+        recall.recallRequestId?.toString().includes(searchKeyword) ||
+        recall.partName?.toLowerCase().includes(searchKeyword.toLowerCase()) ||
+        recall.partNumber?.toLowerCase().includes(searchKeyword.toLowerCase()) ||
+        recall.reason?.toLowerCase().includes(searchKeyword.toLowerCase());
+
+      return matchesStatus && matchesSearch;
+    })
+    .sort((a, b) => {
+      let aValue = a[sortConfig.key];
+      let bValue = b[sortConfig.key];
+
+      // Handle null/undefined
+      if (aValue == null) return 1;
+      if (bValue == null) return -1;
+
+      // Convert to lowercase for string comparison
+      if (typeof aValue === 'string') aValue = aValue.toLowerCase();
+      if (typeof bValue === 'string') bValue = bValue.toLowerCase();
+
+      if (aValue < bValue) return sortConfig.direction === 'ASC' ? -1 : 1;
+      if (aValue > bValue) return sortConfig.direction === 'ASC' ? 1 : -1;
+      return 0;
+    });
 
   if (loading) {
     return (
@@ -425,11 +460,21 @@ const EVMRecallRequests = () => {
         <S.Table>
           <S.TableHeader>
             <S.TableRow>
-              <S.TableHeaderCell>ID</S.TableHeaderCell>
-              <S.TableHeaderCell>Phụ tùng bị lỗi</S.TableHeaderCell>
-              <S.TableHeaderCell>Lý do Recall</S.TableHeaderCell>
-              <S.TableHeaderCell>Ngày tạo</S.TableHeaderCell>
-              <S.TableHeaderCell>Trạng thái</S.TableHeaderCell>
+              <S.TableHeaderCell onClick={() => handleSort('recallRequestId')} style={{ cursor: 'pointer' }}>
+                ID {renderSortIcon('recallRequestId')}
+              </S.TableHeaderCell>
+              <S.TableHeaderCell onClick={() => handleSort('partName')} style={{ cursor: 'pointer' }}>
+                Phụ tùng bị lỗi {renderSortIcon('partName')}
+              </S.TableHeaderCell>
+              <S.TableHeaderCell onClick={() => handleSort('reason')} style={{ cursor: 'pointer' }}>
+                Lý do Recall {renderSortIcon('reason')}
+              </S.TableHeaderCell>
+              <S.TableHeaderCell onClick={() => handleSort('createdAt')} style={{ cursor: 'pointer' }}>
+                Ngày tạo {renderSortIcon('createdAt')}
+              </S.TableHeaderCell>
+              <S.TableHeaderCell onClick={() => handleSort('status')} style={{ cursor: 'pointer' }}>
+                Trạng thái {renderSortIcon('status')}
+              </S.TableHeaderCell>
               <S.TableHeaderCell>Thao tác</S.TableHeaderCell>
             </S.TableRow>
           </S.TableHeader>
