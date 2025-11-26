@@ -23,14 +23,15 @@ public class PartCategoryServiceImpl implements PartCategoryService {
     private final PartCategoryRepository partCategoryRepository;
 
     /**
-     * Lấy danh sách tất cả categories (active + inactive), sắp xếp theo active và tên.
+     * Lấy danh sách tất cả categories (active + inactive) với pagination và sort.
      *
-     * @return danh sách tất cả categories
+     * @param pageable Thông tin phân trang (page, size, sort)
+     * @return Page chứa danh sách categories
      */
     @Override
-    public List<PartCategoryResponseDTO> getAllCategories() {
-        List<PartCategory> categories = partCategoryRepository.findAllOrderedByActiveAndName();
-        return PartCategoryMapper.toResponseDTOList(categories);
+    public org.springframework.data.domain.Page<PartCategoryResponseDTO> getAllCategories(org.springframework.data.domain.Pageable pageable) {
+        org.springframework.data.domain.Page<PartCategory> categoryPage = partCategoryRepository.findAll(pageable);
+        return categoryPage.map(PartCategoryMapper::toResponseDTO);
     }
 
     /**

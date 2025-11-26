@@ -11,11 +11,12 @@ import java.util.List;
 public interface PartCategoryService {
 
     /**
-     * Lấy danh sách tất cả categories (bao gồm cả inactive).
+     * Lấy danh sách tất cả categories (bao gồm cả inactive) với pagination và sort.
      *
-     * @return danh sách tất cả categories
+     * @param pageable Thông tin phân trang (page, size, sort)
+     * @return Page chứa danh sách categories
      */
-    List<PartCategoryResponseDTO> getAllCategories();
+    org.springframework.data.domain.Page<PartCategoryResponseDTO> getAllCategories(org.springframework.data.domain.Pageable pageable);
 
     /**
      * Lấy danh sách categories đang hoạt động (isActive = true).

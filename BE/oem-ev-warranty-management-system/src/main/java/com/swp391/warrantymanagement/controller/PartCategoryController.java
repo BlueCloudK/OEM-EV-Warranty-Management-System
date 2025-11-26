@@ -36,12 +36,37 @@ public class PartCategoryController {
      * <p>
      * <strong>Use case:</strong> Admin xem tất cả categories để quản lý
      *
-     * @return danh sách tất cả categories
+     * @param page   Số trang (mặc định là 0).
+     * @param size   Số lượng phần tử trên mỗi trang (mặc định là 10).
+     * @param sortBy Trường để sắp xếp (mặc định: categoryId).
+     * @param sortDir Hướng sắp xếp: ASC hoặc DESC (mặc định: DESC).
+     * @return paginated danh sách categories
      */
     @GetMapping
-    public ResponseEntity<List<PartCategoryResponseDTO>> getAllCategories() {
-        List<PartCategoryResponseDTO> categories = partCategoryService.getAllCategories();
-        return ResponseEntity.ok(categories);
+    public ResponseEntity<java.util.Map<String, Object>> getAllCategories(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "categoryId") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDir) {
+        
+        org.springframework.data.domain.Sort sort = sortDir.equalsIgnoreCase("ASC") 
+            ? org.springframework.data.domain.Sort.by(sortBy).ascending() 
+            : org.springframework.data.domain.Sort.by(sortBy).descending();
+        
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, sort);
+        
+        org.springframework.data.domain.Page<PartCategoryResponseDTO> categoryPage = partCategoryService.getAllCategories(pageable);
+        
+        java.util.Map<String, Object> response = new java.util.HashMap<>();
+        response.put("content", categoryPage.getContent());
+        response.put("pageNumber", page);
+        response.put("pageSize", size);
+        response.put("totalElements", categoryPage.getTotalElements());
+        response.put("totalPages", categoryPage.getTotalPages());
+        response.put("first", categoryPage.isFirst());
+        response.put("last", categoryPage.isLast());
+        
+        return ResponseEntity.ok(response);
     }
 
     /**
