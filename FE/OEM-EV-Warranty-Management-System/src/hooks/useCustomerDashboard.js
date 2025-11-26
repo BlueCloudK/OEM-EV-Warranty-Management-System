@@ -45,53 +45,56 @@ export const useCustomerDashboard = () => {
 
       // Fetch vehicles
       const vehiclesResponse = await apiClient('/api/vehicles/my-vehicles');
-      const vehiclesData = Array.isArray(vehiclesResponse) ? vehiclesResponse : [];
-      setVehicles(vehiclesData);
+      const vehiclesData = vehiclesResponse?.content || vehiclesResponse || [];
+      setVehicles(Array.isArray(vehiclesData) ? vehiclesData : []);
 
       // Fetch warranty claims
       const claimsResponse = await apiClient('/api/warranty-claims/my-claims');
-      const claimsData = Array.isArray(claimsResponse) ? claimsResponse : [];
-      setRecentClaims(claimsData.slice(0, 5)); // Get latest 5 claims
+      const claimsData = claimsResponse?.content || claimsResponse || [];
+      const claimsArray = Array.isArray(claimsData) ? claimsData : [];
+      setRecentClaims(claimsArray.slice(0, 5)); // Get latest 5 claims
 
-      // Fetch recalls
+      // Fetch recall responses (not recall requests)
       let recallsData = [];
       try {
-        const recallsResponse = await apiClient('/api/recall-requests/my-recalls');
-        recallsData = Array.isArray(recallsResponse) ? recallsResponse : [];
+        const recallsResponse = await apiClient('/api/recall-responses/my-responses');
+        recallsData = recallsResponse?.content || recallsResponse || [];
+        recallsData = Array.isArray(recallsData) ? recallsData : [];
       } catch (err) {
-        console.warn('Could not fetch recalls:', err);
+        console.warn('Could not fetch recall responses:', err);
       }
 
       // Calculate stats
-      const activeWarranties = vehiclesData.filter(v => {
+      const vehiclesArray = Array.isArray(vehiclesData) ? vehiclesData : [];
+      const activeWarranties = vehiclesArray.filter(v => {
         if (!v.warrantyEndDate) return false;
         const endDate = new Date(v.warrantyEndDate);
         return endDate > new Date();
       }).length;
 
-      const pendingClaims = claimsData.filter(c =>
+      const pendingClaims = claimsArray.filter(c =>
         c.status === 'SUBMITTED' || c.status === 'APPROVED_BY_SC'
       ).length;
 
-      const completedServices = claimsData.filter(c =>
+      const completedServices = claimsArray.filter(c =>
         c.status === 'COMPLETED'
       ).length;
 
-      const rejectedClaims = claimsData.filter(c =>
+      const rejectedClaims = claimsArray.filter(c =>
         c.status === 'REJECTED_BY_SC' || c.status === 'REJECTED_BY_EVM'
       ).length;
 
       const pendingRecalls = recallsData.filter(r =>
-        r.status === 'WAITING_CUSTOMER_CONFIRM'
+        r.status === 'PENDING'
       ).length;
 
       setStats({
-        totalVehicles: vehiclesData.length,
+        totalVehicles: vehiclesArray.length,
         activeWarranties,
         pendingClaims,
         completedServices,
         pendingRecalls,
-        totalClaims: claimsData.length,
+        totalClaims: claimsArray.length,
         rejectedClaims,
       });
 
@@ -99,7 +102,7 @@ export const useCustomerDashboard = () => {
       const activities = [];
 
       // Add recent claims
-      claimsData.slice(0, 3).forEach(claim => {
+      claimsArray.slice(0, 3).forEach(claim => {
         const statusText = {
           'SUBMITTED': 'đã được gửi',
           'APPROVED_BY_SC': 'đã được SC duyệt',
@@ -121,9 +124,9 @@ export const useCustomerDashboard = () => {
       // Add recent recalls
       recallsData.slice(0, 2).forEach(recall => {
         activities.push({
-          id: `recall-${recall.recallRequestId}`,
+          id: `recall-${recall.recallResponseId}`,
           icon: 'FaExclamationTriangle',
-          action: `Thông báo thu hồi phụ tùng: ${recall.installedPart?.part?.partName || 'N/A'}`,
+          action: `Thông báo thu hồi phụ tùng: ${recall.partName || 'N/A'}`,
           time: formatTimeAgo(recall.createdAt)
         });
       });
@@ -145,7 +148,7 @@ export const useCustomerDashboard = () => {
       }
 
       // Alert for expiring warranties
-      const expiringWarranties = vehiclesData.filter(v => {
+      const expiringWarranties = vehiclesArray.filter(v => {
         if (!v.warrantyEndDate) return false;
         const endDate = new Date(v.warrantyEndDate);
         const daysUntilExpiry = Math.ceil((endDate - new Date()) / (1000 * 60 * 60 * 24));
