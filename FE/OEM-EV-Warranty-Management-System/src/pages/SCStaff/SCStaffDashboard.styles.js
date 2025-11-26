@@ -139,6 +139,7 @@ export const StatsContainer = styled.div`
   border-radius: 12px;
   border: 1px solid #e5e7eb;
   box-shadow: 0 6px 24px rgba(16, 24, 40, 0.04);
+  margin-bottom: 32px;
 `;
 
 export const StatsGrid = styled.div`
