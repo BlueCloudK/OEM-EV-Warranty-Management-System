@@ -6,6 +6,9 @@ services:
     container_name: mysql-container
     env_file:
       - ./BE/oem-ev-warranty-management-system/.env
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
+    command: --default-time-zone=+07:00
     ports:
       - "3308:3306"
     volumes:
