@@ -5,11 +5,13 @@ import com.swp391.warrantymanagement.dto.response.PagedResponse;
 import com.swp391.warrantymanagement.dto.response.PartRequestResponseDTO;
 import com.swp391.warrantymanagement.entity.*;
 import com.swp391.warrantymanagement.enums.PartRequestStatus;
+import com.swp391.warrantymanagement.exception.AuthenticationRequiredException;
 import com.swp391.warrantymanagement.exception.ResourceNotFoundException;
 import com.swp391.warrantymanagement.mapper.PartRequestMapper;
 import com.swp391.warrantymanagement.repository.*;
 import com.swp391.warrantymanagement.service.JwtService;
 import com.swp391.warrantymanagement.service.PartRequestService;
+import com.swp391.warrantymanagement.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -486,6 +488,58 @@ public class PartRequestServiceImpl implements PartRequestService {
 
         logger.info("Part request cancelled: {}", requestId);
         return PartRequestMapper.toResponseDTO(updated);
+    }
+
+    /**
+     * Xóa yêu cầu đã bị hủy.
+     * <p>
+     * <strong>Quy trình nghiệp vụ & Bảo mật:</strong>
+     * <ol>
+     *     <li><b>Xác thực quyền sở hữu:</b> Kiểm tra để đảm bảo người dùng đang thực hiện hành động này
+     *     chính là người đã tạo ra yêu cầu. Nếu không, ném ra {@link AccessDeniedException}.</li>
+     *     <li><b>Xác thực trạng thái:</b> Chỉ cho phép xóa các yêu cầu đang ở trạng thái {@code CANCELLED}.
+     *     Nếu yêu cầu đang ở trạng thái khác, ném ra {@link IllegalStateException}.</li>
+     *     <li><b>Hành động:</b> Xóa vĩnh viễn yêu cầu khỏi database.</li>
+     * </ol>
+     *
+     * @param requestId ID của yêu cầu cần xóa.
+     * @param authorizationHeader Authorization header chứa JWT token (không sử dụng, giữ lại để tương thích).
+     * @throws ResourceNotFoundException nếu không tìm thấy yêu cầu hoặc user.
+     * @throws AccessDeniedException nếu user không phải là người tạo yêu cầu.
+     * @throws IllegalStateException nếu yêu cầu không ở trạng thái CANCELLED.
+     */
+    @Override
+    public void deletePartRequest(Long requestId, String authorizationHeader) {
+        logger.info("Deleting part request: {}", requestId);
+
+        // BƯỚC 1: Lấy User từ Security Context
+        String deleterUsername = SecurityUtil.getCurrentUsername()
+                .orElseThrow(() -> new AuthenticationRequiredException("Authentication is required to delete a part request"));
+        User user = userRepository.findByUsername(deleterUsername)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + deleterUsername));
+
+        // BƯỚC 2: Tìm PartRequest
+        PartRequest partRequest = partRequestRepository.findById(requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("Part request not found: " + requestId));
+
+        // BƯỚC 3: Xác thực quyền sở hữu - AUTHORIZATION CHECK
+        // Thiết kế bảo mật: Đây là bước kiểm tra quyền sở hữu ở tầng nghiệp vụ, đảm bảo một người dùng
+        // không thể thực hiện hành động trên dữ liệu của người dùng khác.
+        if (!partRequest.getRequestedBy().getUserId().equals(user.getUserId())) {
+            throw new AccessDeniedException("You can only delete your own requests");
+        }
+
+        // BƯỚC 4: Xác thực trạng thái
+        // CHỈ delete CANCELLED requests
+        // Request ở trạng thái khác không thể xóa
+        if (partRequest.getStatus() != PartRequestStatus.CANCELLED) {
+            throw new IllegalStateException("Can only delete CANCELLED requests");
+        }
+
+        // BƯỚC 5: Xóa request
+        partRequestRepository.delete(partRequest);
+
+        logger.info("Part request deleted: {}", requestId);
     }
 
     /**

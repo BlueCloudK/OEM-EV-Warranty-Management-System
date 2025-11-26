@@ -431,3 +431,56 @@ export const DetailValue = styled.div`
   color: #2c3e50;
   font-size: 14px;
 `;
+
+export const TableContainer = styled.div`
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow-x: auto;
+  margin-bottom: 24px;
+`;
+
+export const Table = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1000px;
+`;
+
+export const Thead = styled.thead`
+  background: #f8f9fa;
+  border-bottom: 2px solid #e9ecef;
+`;
+
+export const Tbody = styled.tbody`
+  & > tr:last-child td {
+    border-bottom: none;
+  }
+`;
+
+export const Tr = styled.tr`
+  &:hover {
+    background-color: #f8f9fa;
+  }
+`;
+
+export const Th = styled.th`
+  padding: 16px;
+  text-align: left;
+  font-weight: 600;
+  color: #495057;
+  font-size: 14px;
+  white-space: nowrap;
+`;
+
+export const Td = styled.td`
+  padding: 16px;
+  border-bottom: 1px solid #e9ecef;
+  color: #2c3e50;
+  font-size: 14px;
+  vertical-align: middle;
+`;
+
+export const ActionButtons = styled.div`
+  display: flex;
+  gap: 8px;
+`;

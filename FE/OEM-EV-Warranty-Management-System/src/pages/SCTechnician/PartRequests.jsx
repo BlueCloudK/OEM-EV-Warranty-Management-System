@@ -13,7 +13,8 @@ import {
   FaTruck,
   FaBoxOpen,
   FaFilter,
-  FaSyncAlt
+  FaSyncAlt,
+  FaTrash
 } from 'react-icons/fa';
 
 const PartRequests = () => {
@@ -25,6 +26,11 @@ const PartRequests = () => {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [deliveryNotes, setDeliveryNotes] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  // Custom confirm modal
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState({ message: '', onConfirm: null, type: '' });
 
   // Form state
   const [formData, setFormData] = useState({
@@ -75,7 +81,9 @@ const PartRequests = () => {
     try {
       // Use tech-pending endpoint for SC_TECHNICIAN to get claims they can work on
       const response = await apiClient('/api/warranty-claims/tech-pending?page=0&size=100');
-      setClaims(response.content || []);
+      // Filter out CANCELLED claims - cannot create part requests for cancelled claims
+      const activeClaims = (response.content || []).filter(claim => claim.status !== 'CANCELLED');
+      setClaims(activeClaims);
     } catch (error) {
       console.error('Error fetching claims:', error);
     }
@@ -150,23 +158,52 @@ const PartRequests = () => {
     }
   };
 
-  const handleCancelRequest = async (requestId) => {
-    if (!confirm('Bạn có chắc muốn hủy yêu cầu này không?')) {
-      return;
-    }
+  const handleCancelRequest = (requestId) => {
+    setConfirmConfig({
+      message: 'Bạn có chắc muốn hủy yêu cầu này không?',
+      type: 'cancel',
+      onConfirm: async () => {
+        setShowConfirmModal(false);
+        setIsProcessing(true);
+        try {
+          await apiClient(`/api/part-requests/${requestId}/cancel`, {
+            method: 'PATCH'
+          });
+          fetchMyRequests();
+          setShowDetailModal(false);
+        } catch (error) {
+          console.error('Error cancelling request:', error);
+          alert('Không thể hủy yêu cầu: ' + (error.message || 'Lỗi không xác định'));
+        } finally {
+          setIsProcessing(false);
+        }
+      }
+    });
+    setShowConfirmModal(true);
+  };
 
-    try {
-      await apiClient(`/api/part-requests/${requestId}/cancel`, {
-        method: 'PATCH'
-      });
-
-      alert('Hủy yêu cầu thành công!');
-      fetchMyRequests();
-      setShowDetailModal(false);
-    } catch (error) {
-      console.error('Error cancelling request:', error);
-      alert('Không thể hủy yêu cầu: ' + (error.message || 'Lỗi không xác định'));
-    }
+  const handleDeleteRequest = (requestId) => {
+    setConfirmConfig({
+      message: 'Bạn có chắc muốn xóa yêu cầu này không? Hành động này không thể hoàn tác.',
+      type: 'delete',
+      onConfirm: async () => {
+        setShowConfirmModal(false);
+        setIsProcessing(true);
+        try {
+          await apiClient(`/api/part-requests/${requestId}`, {
+            method: 'DELETE'
+          });
+          fetchMyRequests();
+          setShowDetailModal(false);
+        } catch (error) {
+          console.error('Error deleting request:', error);
+          alert('Không thể xóa yêu cầu: ' + (error.message || 'Lỗi không xác định'));
+        } finally {
+          setIsProcessing(false);
+        }
+      }
+    });
+    setShowConfirmModal(true);
   };
 
   const handleConfirmDelivered = async (e) => {
@@ -285,62 +322,98 @@ const PartRequests = () => {
           <p>Không có yêu cầu linh kiện nào</p>
         </S.EmptyState>
       ) : (
-        <S.RequestsGrid>
-          {filteredRequests.map((request) => {
-            const statusBadge = getStatusBadge(request.status);
-            return (
-              <S.RequestCard key={request.requestId}>
-                <S.CardHeader>
-                  <S.RequestId>#{request.requestId}</S.RequestId>
-                  <S.StatusBadge color={statusBadge.color}>
-                    {statusBadge.icon} {statusBadge.label}
-                  </S.StatusBadge>
-                </S.CardHeader>
-
-                <S.CardBody>
-                  <S.InfoRow>
-                    <S.InfoLabel>Claim ID:</S.InfoLabel>
-                    <S.InfoValue>#{request.warrantyClaimId}</S.InfoValue>
-                  </S.InfoRow>
-                  <S.InfoRow>
-                    <S.InfoLabel>Linh kiện lỗi:</S.InfoLabel>
-                    <S.InfoValue>{request.faultyPartName || request.faultyPartId}</S.InfoValue>
-                  </S.InfoRow>
-                  <S.InfoRow>
-                    <S.InfoLabel>Số lượng:</S.InfoLabel>
-                    <S.InfoValue>{request.quantity}</S.InfoValue>
-                  </S.InfoRow>
-                  <S.InfoRow>
-                    <S.InfoLabel>Ngày tạo:</S.InfoLabel>
-                    <S.InfoValue>{new Date(request.requestDate).toLocaleDateString('vi-VN')}</S.InfoValue>
-                  </S.InfoRow>
-                  {request.trackingNumber && (
-                    <S.InfoRow>
-                      <S.InfoLabel>Mã vận đơn:</S.InfoLabel>
-                      <S.InfoValue><strong>{request.trackingNumber}</strong></S.InfoValue>
-                    </S.InfoRow>
-                  )}
-                </S.CardBody>
-
-                <S.CardFooter>
-                  <S.Button onClick={() => { setSelectedRequest(request); setShowDetailModal(true); }}>
-                    <FaEye /> Chi tiết
-                  </S.Button>
-                  {request.status === 'PENDING' && (
-                    <S.Button danger onClick={() => handleCancelRequest(request.requestId)}>
-                      <FaTimes /> Hủy
-                    </S.Button>
-                  )}
-                  {request.status === 'SHIPPED' && (
-                    <S.Button primary onClick={() => { setSelectedRequest(request); setShowConfirmDeliveredModal(true); }}>
-                      <FaCheckCircle /> Xác nhận đã nhận
-                    </S.Button>
-                  )}
-                </S.CardFooter>
-              </S.RequestCard>
-            );
-          })}
-        </S.RequestsGrid>
+        <S.TableContainer>
+          <S.Table>
+            <S.Thead>
+              <S.Tr>
+                <S.Th>ID</S.Th>
+                <S.Th>Claim ID</S.Th>
+                <S.Th>Linh kiện</S.Th>
+                <S.Th>Số lượng</S.Th>
+                <S.Th>Service Center</S.Th>
+                <S.Th>Ngày tạo</S.Th>
+                <S.Th>Trạng thái</S.Th>
+                <S.Th>Hành động</S.Th>
+              </S.Tr>
+            </S.Thead>
+            <S.Tbody>
+              {filteredRequests.map((request) => {
+                const statusBadge = getStatusBadge(request.status);
+                return (
+                  <S.Tr key={request.requestId}>
+                    <S.Td>#{request.requestId}</S.Td>
+                    <S.Td>#{request.warrantyClaimId}</S.Td>
+                    <S.Td>
+                      <div style={{ fontWeight: 500 }}>{request.faultyPartName || request.faultyPartId}</div>
+                      {request.trackingNumber && (
+                        <div style={{ fontSize: '12px', color: '#17a2b8', marginTop: '4px' }}>
+                          <FaTruck size={10} /> {request.trackingNumber}
+                        </div>
+                      )}
+                    </S.Td>
+                    <S.Td>{request.quantity}</S.Td>
+                    <S.Td title={request.serviceCenterAddress}>
+                      {request.serviceCenterName}
+                    </S.Td>
+                    <S.Td>{new Date(request.requestDate).toLocaleDateString('vi-VN')}</S.Td>
+                    <S.Td>
+                      <S.StatusBadge color={statusBadge.color}>
+                        {statusBadge.icon} {statusBadge.label}
+                      </S.StatusBadge>
+                    </S.Td>
+                    <S.Td>
+                      <S.ActionButtons>
+                        <S.Button
+                          onClick={() => { setSelectedRequest(request); setShowDetailModal(true); }}
+                          title="Xem chi tiết"
+                          style={{ padding: '6px 10px' }}
+                        >
+                          <FaEye />
+                        </S.Button>
+                        {request.status === 'PENDING' && (
+                          <S.Button
+                            danger
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCancelRequest(request.requestId);
+                            }}
+                            title="Hủy yêu cầu"
+                            style={{ padding: '6px 10px' }}
+                          >
+                            <FaTimes />
+                          </S.Button>
+                        )}
+                        {request.status === 'CANCELLED' && (
+                          <S.Button
+                            danger
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteRequest(request.requestId);
+                            }}
+                            title="Xóa yêu cầu"
+                            style={{ padding: '6px 10px' }}
+                          >
+                            <FaTrash />
+                          </S.Button>
+                        )}
+                        {request.status === 'SHIPPED' && (
+                          <S.Button
+                            primary
+                            onClick={() => { setSelectedRequest(request); setShowConfirmDeliveredModal(true); }}
+                            title="Xác nhận đã nhận"
+                            style={{ padding: '6px 10px' }}
+                          >
+                            <FaCheckCircle />
+                          </S.Button>
+                        )}
+                      </S.ActionButtons>
+                    </S.Td>
+                  </S.Tr>
+                );
+              })}
+            </S.Tbody>
+          </S.Table>
+        </S.TableContainer>
       )}
 
       {/* Create Modal */}
@@ -354,7 +427,7 @@ const PartRequests = () => {
 
             <S.Form onSubmit={handleCreateRequest}>
               <S.FormGroup>
-                <S.Label>Warranty Claim <span style={{color: 'red'}}>*</span></S.Label>
+                <S.Label>Warranty Claim <span style={{ color: 'red' }}>*</span></S.Label>
                 <S.Select
                   value={formData.warrantyClaimId}
                   onChange={(e) => {
@@ -380,10 +453,10 @@ const PartRequests = () => {
               </S.FormGroup>
 
               <S.FormGroup>
-                <S.Label>Linh Kiện Lỗi <span style={{color: 'red'}}>*</span></S.Label>
+                <S.Label>Linh Kiện Lỗi <span style={{ color: 'red' }}>*</span></S.Label>
                 <S.Select
                   value={formData.faultyPartId}
-                  onChange={(e) => setFormData({...formData, faultyPartId: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, faultyPartId: e.target.value })}
                   required
                   disabled={!formData.warrantyClaimId}
                 >
@@ -449,10 +522,10 @@ const PartRequests = () => {
               </S.FormGroup>
 
               <S.FormGroup>
-                <S.Label>Service Center <span style={{color: 'red'}}>*</span></S.Label>
+                <S.Label>Service Center <span style={{ color: 'red' }}>*</span></S.Label>
                 <S.Select
                   value={formData.serviceCenterId}
-                  onChange={(e) => setFormData({...formData, serviceCenterId: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, serviceCenterId: e.target.value })}
                   required
                 >
                   <option value="">-- Chọn Service Center --</option>
@@ -465,23 +538,23 @@ const PartRequests = () => {
               </S.FormGroup>
 
               <S.FormGroup>
-                <S.Label>Số Lượng <span style={{color: 'red'}}>*</span></S.Label>
+                <S.Label>Số Lượng <span style={{ color: 'red' }}>*</span></S.Label>
                 <S.Input
                   type="number"
                   min="1"
                   max="100"
                   value={formData.quantity}
-                  onChange={(e) => setFormData({...formData, quantity: parseInt(e.target.value)})}
+                  onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) })}
                   required
                 />
               </S.FormGroup>
 
               <S.FormGroup>
-                <S.Label>Mô Tả Vấn Đề <span style={{color: 'red'}}>*</span></S.Label>
+                <S.Label>Mô Tả Vấn Đề <span style={{ color: 'red' }}>*</span></S.Label>
                 <S.TextArea
                   rows="4"
                   value={formData.issueDescription}
-                  onChange={(e) => setFormData({...formData, issueDescription: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, issueDescription: e.target.value })}
                   placeholder="Mô tả chi tiết vấn đề của linh kiện (tối thiểu 10 ký tự)"
                   required
                   minLength="10"
@@ -560,7 +633,7 @@ const PartRequests = () => {
               {selectedRequest.rejectionReason && (
                 <S.DetailItem fullWidth>
                   <S.DetailLabel>Lý do từ chối:</S.DetailLabel>
-                  <S.DetailValue style={{color: '#dc3545'}}>{selectedRequest.rejectionReason}</S.DetailValue>
+                  <S.DetailValue style={{ color: '#dc3545' }}>{selectedRequest.rejectionReason}</S.DetailValue>
                 </S.DetailItem>
               )}
 
@@ -719,6 +792,43 @@ const PartRequests = () => {
                 </S.Button>
               </S.ModalFooter>
             </S.Form>
+          </S.ModalContent>
+        </S.ModalOverlay>
+      )}
+
+      {/* Custom Confirm Modal */}
+      {showConfirmModal && (
+        <S.ModalOverlay onClick={() => setShowConfirmModal(false)}>
+          <S.ModalContent onClick={(e) => e.stopPropagation()} style={{ maxWidth: '450px' }}>
+            <S.ModalHeader>
+              <h2>
+                {confirmConfig.type === 'delete' ? '🗑️ Xác nhận xóa' : '⚠️ Xác nhận hủy'}
+              </h2>
+              <S.CloseButton onClick={() => setShowConfirmModal(false)}>×</S.CloseButton>
+            </S.ModalHeader>
+
+            <div style={{ padding: '24px' }}>
+              <p style={{ fontSize: '1rem', lineHeight: '1.6', margin: 0 }}>
+                {confirmConfig.message}
+              </p>
+            </div>
+
+            <S.ModalFooter>
+              <S.Button onClick={() => setShowConfirmModal(false)}>
+                Không
+              </S.Button>
+              <S.Button
+                danger
+                onClick={() => {
+                  if (confirmConfig.onConfirm) {
+                    confirmConfig.onConfirm();
+                  }
+                }}
+                disabled={isProcessing}
+              >
+                {confirmConfig.type === 'delete' ? 'Xóa' : 'Hủy yêu cầu'}
+              </S.Button>
+            </S.ModalFooter>
           </S.ModalContent>
         </S.ModalOverlay>
       )}

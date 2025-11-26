@@ -347,6 +347,23 @@ public class PartRequestController {
     }
 
     /**
+     * Cho phép Kỹ thuật viên (Technician) xóa một yêu cầu đã bị hủy.
+     *
+     * @param id ID của yêu cầu cần xóa.
+     * @return {@link ResponseEntity} với HTTP status 204 No Content.
+     */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SC_TECHNICIAN')")
+    public ResponseEntity<Void> deletePartRequest(
+            @PathVariable Long id,
+            @RequestHeader(name = "Authorization") String authorizationHeader) {
+
+        logger.info("Delete part request: {}", id);
+        partRequestService.deletePartRequest(id, authorizationHeader);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
      * Lấy thống kê số lượng các yêu cầu linh kiện theo từng trạng thái.
      *
      * @return {@link ResponseEntity} chứa một Map với key là tên trạng thái và value là số lượng.

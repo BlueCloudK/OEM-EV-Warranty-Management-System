@@ -78,6 +78,11 @@ public interface PartRequestService {
      */
     PartRequestResponseDTO cancelPartRequest(Long requestId, String authorizationHeader);
 
+    /**
+     * Xóa yêu cầu đã bị hủy (chỉ khi status = CANCELLED)
+     */
+    void deletePartRequest(Long requestId, String authorizationHeader);
+
     // ============= Statistics =============
 
     /**
