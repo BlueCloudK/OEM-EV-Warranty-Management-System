@@ -16,8 +16,8 @@ export const adminUsersApi = {
   },
 
   // SEARCH USERS BY USERNAME - Tìm kiếm user theo username
-  searchUsersByUsername: (username, page = 0, size = 10) => {
-    const queryParams = new URLSearchParams({ username, page, size }).toString();
+  searchUsersByUsername: (username, page = 0, size = 10, sortBy = 'id', sortDir = 'DESC') => {
+    const queryParams = new URLSearchParams({ username, page, size, sortBy, sortDir }).toString();
     return apiClient(`/api/admin/users/search?${queryParams}`);
   },
 

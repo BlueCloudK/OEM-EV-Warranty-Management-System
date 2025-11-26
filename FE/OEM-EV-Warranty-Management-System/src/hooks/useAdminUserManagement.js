@@ -39,7 +39,7 @@ export const useAdminUserManagement = () => {
   const [searchType, setSearchType] = useState('general'); // New state for search type: 'general', 'username', or 'id'
 
   // Sorting State
-  const [sortConfig, setSortConfig] = useState({ key: 'id', direction: 'DESC' });
+  const [sortConfig, setSortConfig] = useState({ key: 'userId', direction: 'DESC' });
 
   // Mapping role name to role ID as per backend expectation
   const roles = [
@@ -63,17 +63,27 @@ export const useAdminUserManagement = () => {
       setLoading(true);
       setError(null);
 
+      console.log('🔍 Fetching users with sort:', sortConfig);
+
       let response;
       if (searchType === 'id' && effectiveSearchTerm) {
         // Call specific API for ID search
         const user = await adminUsersApi.getUserById(effectiveSearchTerm);
         response = { content: user ? [user] : [], totalPages: user ? 1 : 0, totalElements: user ? 1 : 0 };
       } else if (searchType === 'username' && effectiveSearchTerm) {
-        // Call specific API for username search
+        // Call specific API for username search with sort
+        const params = {
+          page: pagination.currentPage,
+          size: pagination.pageSize,
+          sortBy: sortConfig.key,
+          sortDir: sortConfig.direction
+        };
         response = await adminUsersApi.searchUsersByUsername(
           effectiveSearchTerm,
-          pagination.currentPage,
-          pagination.pageSize
+          params.page,
+          params.size,
+          params.sortBy,
+          params.sortDir
         );
       } else {
         // Call general API with search term and role filter
@@ -85,6 +95,7 @@ export const useAdminUserManagement = () => {
           sortBy: sortConfig.key,
           sortDir: sortConfig.direction
         };
+        console.log('📤 Sending API params (general):', params);
         response = await adminUsersApi.getAllUsers(params);
       }
 
@@ -104,10 +115,16 @@ export const useAdminUserManagement = () => {
   }, [pagination.currentPage, pagination.pageSize, effectiveSearchTerm, selectedRole, searchType, sortConfig]); // Add sortConfig to dependencies
 
   const handleSort = (key) => {
-    setSortConfig(prev => ({
-      key,
-      direction: prev.key === key && prev.direction === 'ASC' ? 'DESC' : 'ASC'
-    }));
+    console.log('🎯 handleSort called with key:', key);
+    setSortConfig(prev => {
+      const newConfig = {
+        key,
+        direction: prev.key === key && prev.direction === 'ASC' ? 'DESC' : 'ASC'
+      };
+      console.log('📊 Previous sort config:', prev);
+      console.log('📊 New sort config:', newConfig);
+      return newConfig;
+    });
   };
 
   useEffect(() => {

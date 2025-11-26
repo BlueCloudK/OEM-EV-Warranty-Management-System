@@ -223,8 +223,8 @@ const AdminUserManagement = () => {
           <S.Table>
             <thead>
               <tr>
-                <S.Th onClick={() => handleSort('id')} style={{ cursor: 'pointer' }}>
-                  ID {renderSortIcon('id')}
+                <S.Th onClick={() => handleSort('userId')} style={{ cursor: 'pointer' }}>
+                  ID {renderSortIcon('userId')}
                 </S.Th>
                 <S.Th onClick={() => handleSort('username')} style={{ cursor: 'pointer' }}>
                   Username {renderSortIcon('username')}

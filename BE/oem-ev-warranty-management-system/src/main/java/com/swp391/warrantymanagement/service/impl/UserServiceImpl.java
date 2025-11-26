@@ -59,9 +59,9 @@ public class UserServiceImpl implements UserService {
     /**
      * Lấy danh sách users với phân trang, search và role filter.
      * <p>
-     * Kết quả luôn được sort theo createdAt DESC (newest first).
+     * Kết quả được sort theo sort parameter từ pageable (hoặc mặc định theo createdAt DESC nếu không có sort).
      *
-     * @param pageable Thông tin phân trang (page, size)
+     * @param pageable Thông tin phân trang (page, size, sort)
      * @param search Từ khóa tìm kiếm chung trong username hoặc email (optional)
      * @param role Filter theo role name (optional)
      * @return Page chứa danh sách User
@@ -69,19 +69,14 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public Page<User> getAllUsers(Pageable pageable, String search, String role) {
-        logger.info("Getting all users with search: {}, role: {}", search, role);
+        logger.info("Getting all users with search: {}, role: {}, sort: {}", search, role, pageable.getSort());
 
-        Pageable sortedPageable = PageRequest.of(
-                pageable.getPageNumber(),
-                pageable.getPageSize(),
-                Sort.by(Sort.Direction.DESC, "createdAt")
-        );
-
+        // Use the sort from pageable parameter instead of overriding it
         if ((search != null && !search.trim().isEmpty()) || (role != null && !role.trim().isEmpty())) {
-            return getUsersWithFilter(search, role, sortedPageable);
+            return getUsersWithFilter(search, role, pageable);
         }
 
-        return userRepository.findAll(sortedPageable);
+        return userRepository.findAll(pageable);
     }
 
     /**
