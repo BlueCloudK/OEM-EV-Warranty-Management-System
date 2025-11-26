@@ -6,6 +6,7 @@ import {
   FaThumbsUp, FaThumbsDown
 } from "react-icons/fa";
 import { recallResponsesApi } from "../../api/recallResponses";
+import { customerApi } from "../../api/customerApi";
 
 export default function CustomerRecalls() {
   const [recallResponses, setRecallResponses] = useState([]);
@@ -17,6 +18,8 @@ export default function CustomerRecalls() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedResponse, setSelectedResponse] = useState(null);
+  const [vehicleDetails, setVehicleDetails] = useState(null);
+  const [loadingVehicle, setLoadingVehicle] = useState(false);
 
   const [customerNote, setCustomerNote] = useState("");
   const [acceptRecall, setAcceptRecall] = useState(true);
@@ -74,9 +77,9 @@ export default function CustomerRecalls() {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(r =>
         r.recallResponseId?.toString().includes(term) ||
-        r.recallRequest?.part?.partName?.toLowerCase().includes(term) ||
-        r.vehicle?.vehicleVin?.toLowerCase().includes(term) ||
-        r.recallRequest?.reason?.toLowerCase().includes(term)
+        r.partName?.toLowerCase().includes(term) ||
+        r.vehicleVin?.toLowerCase().includes(term) ||
+        r.recallReason?.toLowerCase().includes(term)
       );
     }
 
@@ -121,9 +124,28 @@ export default function CustomerRecalls() {
     setShowConfirmModal(true);
   };
 
-  const openDetailModal = (response) => {
+  const openDetailModal = async (response) => {
     setSelectedResponse(response);
     setShowDetailModal(true);
+
+    // Fetch vehicle details if vehicleId is available
+    if (response.vehicleId) {
+      setLoadingVehicle(true);
+      try {
+        // Get all my vehicles and find the matching one
+        const vehiclesData = await customerApi.getMyVehicles({ page: 0, size: 100 });
+        const vehicles = vehiclesData?.content || vehiclesData || [];
+        const vehicle = vehicles.find(v => v.vehicleId === response.vehicleId);
+        setVehicleDetails(vehicle || null);
+      } catch (error) {
+        console.error("Error fetching vehicle details:", error);
+        setVehicleDetails(null);
+      } finally {
+        setLoadingVehicle(false);
+      }
+    } else {
+      setVehicleDetails(null);
+    }
   };
 
   const getStatusBadge = (status) => {
@@ -272,12 +294,12 @@ export default function CustomerRecalls() {
           </S.TableHeader>
           <S.TableBody>
             {filteredResponses.map((response) => {
-              // Safe data extraction with fallbacks
-              const vehicleModel = response.vehicle?.vehicleModel || response.vehicleName || 'Xe không xác định';
-              const vehicleVin = response.vehicle?.vehicleVin || response.vehicleVin || 'VIN không có';
-              const partName = response.recallRequest?.part?.partName || response.partName || 'Phụ tùng không xác định';
-              const partNumber = response.recallRequest?.part?.partNumber || response.partNumber || 'Mã không có';
-              const reason = response.recallRequest?.reason || response.reason || 'Chưa có thông tin lý do';
+              // Data extraction - backend returns flat DTO (RecallResponseResponseDTO)
+              const vehicleModel = response.vehicleModel || 'Xe không xác định';
+              const vehicleVin = response.vehicleVin || 'VIN không có';
+              const partName = response.partName || 'Phụ tùng không xác định';
+              const partNumber = response.partNumber || 'Mã không có';
+              const reason = response.recallReason || 'Chưa có thông tin lý do';
 
               return (
                 <S.TableRow key={response.recallResponseId}>
@@ -323,13 +345,13 @@ export default function CustomerRecalls() {
 
       {/* Confirm Modal */}
       {showConfirmModal && selectedResponse && (() => {
-        // Safe data extraction
-        const vehicleModel = selectedResponse.vehicle?.vehicleModel || selectedResponse.vehicleName || 'Xe không xác định';
-        const vehicleVin = selectedResponse.vehicle?.vehicleVin || selectedResponse.vehicleVin || 'VIN không có';
-        const partName = selectedResponse.recallRequest?.part?.partName || selectedResponse.partName || 'Phụ tùng không xác định';
-        const partNumber = selectedResponse.recallRequest?.part?.partNumber || selectedResponse.partNumber || 'Mã không có';
-        const reason = selectedResponse.recallRequest?.reason || selectedResponse.reason || 'Chưa có thông tin lý do';
-        const adminNote = selectedResponse.recallRequest?.adminNote || selectedResponse.adminNote;
+        // Data extraction - backend returns flat DTO
+        const vehicleModel = selectedResponse.vehicleModel || 'Xe không xác định';
+        const vehicleVin = selectedResponse.vehicleVin || 'VIN không có';
+        const partName = selectedResponse.partName || 'Phụ tùng không xác định';
+        const partNumber = selectedResponse.partNumber || 'Mã không có';
+        const reason = selectedResponse.recallReason || 'Chưa có thông tin lý do';
+        const adminNote = selectedResponse.adminNote;
 
         return (
           <S.ModalOverlay onClick={() => !submitting && setShowConfirmModal(false)}>
@@ -444,15 +466,15 @@ export default function CustomerRecalls() {
 
       {/* Detail Modal */}
       {showDetailModal && selectedResponse && (() => {
-        // Safe data extraction
-        const vehicleModel = selectedResponse.vehicle?.vehicleModel || selectedResponse.vehicleName || 'Xe không xác định';
-        const vehicleVin = selectedResponse.vehicle?.vehicleVin || selectedResponse.vehicleVin || 'VIN không có';
-        const vehicleYear = selectedResponse.vehicle?.year || selectedResponse.year || 'N/A';
-        const partName = selectedResponse.recallRequest?.part?.partName || selectedResponse.partName || 'Phụ tùng không xác định';
-        const partNumber = selectedResponse.recallRequest?.part?.partNumber || selectedResponse.partNumber || 'Mã không có';
-        const reason = selectedResponse.recallRequest?.reason || selectedResponse.reason || 'Chưa có thông tin lý do';
-        const adminNote = selectedResponse.recallRequest?.adminNote || selectedResponse.adminNote;
-        const recallRequestId = selectedResponse.recallRequest?.recallRequestId || selectedResponse.recallRequestId;
+        // Data extraction - backend returns flat DTO
+        const vehicleModel = vehicleDetails?.vehicleModel || selectedResponse.vehicleModel || 'Xe không xác định';
+        const vehicleVin = selectedResponse.vehicleVin || 'VIN không có';
+        const vehicleYear = vehicleDetails?.vehicleYear || 'N/A';
+        const partName = selectedResponse.partName || 'Phụ tùng không xác định';
+        const partNumber = selectedResponse.partNumber || 'Mã không có';
+        const reason = selectedResponse.recallReason || 'Chưa có thông tin lý do';
+        const adminNote = selectedResponse.adminNote;
+        const recallRequestId = selectedResponse.recallRequestId;
 
         return (
           <S.ModalOverlay onClick={() => setShowDetailModal(false)}>
