@@ -6,7 +6,7 @@ import * as S from './CustomerDashboard.styles';
 import {
   FaCar, FaShieldAlt, FaClipboardList, FaHistory, FaExclamationTriangle,
   FaBell, FaArrowRight, FaSpinner, FaMapMarkerAlt,
-  FaCheckCircle, FaClock, FaUser, FaCommentDots
+  FaCheckCircle, FaClock, FaUser
 } from 'react-icons/fa';
 
 const StatCard = ({ icon, value, label, color, bgGradient, loading, onClick, clickable = false }) => (
@@ -139,7 +139,7 @@ export default function CustomerDashboard() {
     {
       icon: <FaHistory size={24} />,
       title: 'Lịch sử Bảo hành',
-      description: 'Theo dõi các yêu cầu bảo hành của bạn',
+      description: 'Theo dõi và đánh giá các yêu cầu bảo hành',
       color: '#10b981',
       bgGradient: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)',
       onClick: () => navigate('/customer/warranty-history')
@@ -159,14 +159,6 @@ export default function CustomerDashboard() {
       color: '#f59e0b',
       bgGradient: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
       onClick: () => navigate('/customer/service-centers')
-    },
-    {
-      icon: <FaCommentDots size={24} />,
-      title: 'Phản hồi',
-      description: 'Đánh giá và phản hồi về dịch vụ',
-      color: '#8b5cf6',
-      bgGradient: 'linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%)',
-      onClick: () => navigate('/customer/feedback')
     },
     {
       icon: <FaUser size={24} />,
