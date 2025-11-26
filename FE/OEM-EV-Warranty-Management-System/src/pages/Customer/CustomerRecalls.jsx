@@ -3,7 +3,7 @@ import * as S from "./CustomerRecalls.styles";
 import {
   FaExclamationTriangle, FaCheckCircle, FaTimesCircle, FaClock,
   FaHourglassHalf, FaFileAlt, FaSearch, FaFilter, FaSpinner, FaEye,
-  FaThumbsUp, FaThumbsDown
+  FaThumbsUp, FaThumbsDown, FaSort, FaSortUp, FaSortDown, FaSyncAlt
 } from "react-icons/fa";
 import { recallResponsesApi } from "../../api/recallResponses";
 import { customerApi } from "../../api/customerApi";
@@ -25,13 +25,15 @@ export default function CustomerRecalls() {
   const [acceptRecall, setAcceptRecall] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
+  const [sortConfig, setSortConfig] = useState({ key: 'recallResponseId', direction: 'DESC' });
+
   useEffect(() => {
     fetchRecallResponses();
   }, []);
 
   useEffect(() => {
     applyFilters();
-  }, [recallResponses, searchTerm, statusFilter]);
+  }, [recallResponses, searchTerm, statusFilter, sortConfig]);
 
   const fetchRecallResponses = async () => {
     try {
@@ -83,7 +85,38 @@ export default function CustomerRecalls() {
       );
     }
 
+    // Apply sorting
+    filtered.sort((a, b) => {
+      let aValue = a[sortConfig.key];
+      let bValue = b[sortConfig.key];
+
+      // Handle null/undefined
+      if (aValue == null) return 1;
+      if (bValue == null) return -1;
+
+      // Convert to lowercase for string comparison
+      if (typeof aValue === 'string') aValue = aValue.toLowerCase();
+      if (typeof bValue === 'string') bValue = bValue.toLowerCase();
+
+      if (aValue < bValue) return sortConfig.direction === 'ASC' ? -1 : 1;
+      if (aValue > bValue) return sortConfig.direction === 'ASC' ? 1 : -1;
+      return 0;
+    });
+
     setFilteredResponses(filtered);
+  };
+
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'ASC' ? 'DESC' : 'ASC'
+    }));
+  };
+
+  const renderSortIcon = (key) => {
+    if (sortConfig.key !== key) return <FaSort style={{ color: '#ccc', marginLeft: '5px' }} />;
+    if (sortConfig.direction === 'ASC') return <FaSortUp style={{ color: '#3498db', marginLeft: '5px' }} />;
+    return <FaSortDown style={{ color: '#3498db', marginLeft: '5px' }} />;
   };
 
   const handleConfirmRecall = async (e) => {
@@ -190,10 +223,15 @@ export default function CustomerRecalls() {
   return (
     <S.Container>
       <S.Header>
-        <h1>
-          <FaExclamationTriangle /> Thông báo Recall
-        </h1>
-        <p>Các thông báo thu hồi phụ tùng cho xe của bạn</p>
+        <div>
+          <h1>
+            <FaExclamationTriangle /> Thông báo Recall
+          </h1>
+          <p>Các thông báo thu hồi phụ tùng cho xe của bạn</p>
+        </div>
+        <S.Button onClick={fetchRecallResponses} disabled={loading} title="Làm mới dữ liệu">
+          <FaSyncAlt className={loading ? 'spinner' : ''} /> Làm mới
+        </S.Button>
       </S.Header>
 
       <S.StatsGrid>
@@ -283,12 +321,24 @@ export default function CustomerRecalls() {
         <S.Table>
           <S.TableHeader>
             <tr>
-              <S.TableHeaderCell>ID</S.TableHeaderCell>
-              <S.TableHeaderCell>Xe</S.TableHeaderCell>
-              <S.TableHeaderCell>Phụ tùng</S.TableHeaderCell>
-              <S.TableHeaderCell>Lý do Recall</S.TableHeaderCell>
-              <S.TableHeaderCell>Ngày tạo</S.TableHeaderCell>
-              <S.TableHeaderCell>Trạng thái</S.TableHeaderCell>
+              <S.TableHeaderCell onClick={() => handleSort('recallResponseId')} style={{ cursor: 'pointer' }}>
+                ID {renderSortIcon('recallResponseId')}
+              </S.TableHeaderCell>
+              <S.TableHeaderCell>
+                Xe
+              </S.TableHeaderCell>
+              <S.TableHeaderCell onClick={() => handleSort('partName')} style={{ cursor: 'pointer' }}>
+                Phụ tùng {renderSortIcon('partName')}
+              </S.TableHeaderCell>
+              <S.TableHeaderCell onClick={() => handleSort('recallReason')} style={{ cursor: 'pointer' }}>
+                Lý do Recall {renderSortIcon('recallReason')}
+              </S.TableHeaderCell>
+              <S.TableHeaderCell onClick={() => handleSort('createdAt')} style={{ cursor: 'pointer' }}>
+                Ngày tạo {renderSortIcon('createdAt')}
+              </S.TableHeaderCell>
+              <S.TableHeaderCell onClick={() => handleSort('status')} style={{ cursor: 'pointer' }}>
+                Trạng thái {renderSortIcon('status')}
+              </S.TableHeaderCell>
               <S.TableHeaderCell>Hành động</S.TableHeaderCell>
             </tr>
           </S.TableHeader>
@@ -392,75 +442,75 @@ export default function CustomerRecalls() {
                   </S.FormGroup>
                 )}
 
-              <S.FormGroup>
-                <S.Label>Quyết định của bạn: *</S.Label>
-                <S.RadioGroup>
-                  <S.RadioLabel>
-                    <input
-                      type="radio"
-                      name="decision"
-                      checked={acceptRecall}
-                      onChange={() => setAcceptRecall(true)}
-                      disabled={submitting}
-                    />
-                    <FaThumbsUp style={{ color: "#27ae60" }} />
-                    <span>Chấp nhận - Hệ thống sẽ tự động tạo yêu cầu bảo hành</span>
-                  </S.RadioLabel>
-                  <S.RadioLabel>
-                    <input
-                      type="radio"
-                      name="decision"
-                      checked={!acceptRecall}
-                      onChange={() => setAcceptRecall(false)}
-                      disabled={submitting}
-                    />
-                    <FaThumbsDown style={{ color: "#e74c3c" }} />
-                    <span>Từ chối - Bạn sẽ không được bảo hành cho phụ tùng này</span>
-                  </S.RadioLabel>
-                </S.RadioGroup>
-              </S.FormGroup>
+                <S.FormGroup>
+                  <S.Label>Quyết định của bạn: *</S.Label>
+                  <S.RadioGroup>
+                    <S.RadioLabel>
+                      <input
+                        type="radio"
+                        name="decision"
+                        checked={acceptRecall}
+                        onChange={() => setAcceptRecall(true)}
+                        disabled={submitting}
+                      />
+                      <FaThumbsUp style={{ color: "#27ae60" }} />
+                      <span>Chấp nhận - Hệ thống sẽ tự động tạo yêu cầu bảo hành</span>
+                    </S.RadioLabel>
+                    <S.RadioLabel>
+                      <input
+                        type="radio"
+                        name="decision"
+                        checked={!acceptRecall}
+                        onChange={() => setAcceptRecall(false)}
+                        disabled={submitting}
+                      />
+                      <FaThumbsDown style={{ color: "#e74c3c" }} />
+                      <span>Từ chối - Bạn sẽ không được bảo hành cho phụ tùng này</span>
+                    </S.RadioLabel>
+                  </S.RadioGroup>
+                </S.FormGroup>
 
-              <S.FormGroup>
-                <S.Label>Ghi chú của bạn (tùy chọn):</S.Label>
-                <S.TextArea
-                  value={customerNote}
-                  onChange={(e) => setCustomerNote(e.target.value)}
-                  placeholder="Nhập ghi chú nếu bạn muốn..."
-                  disabled={submitting}
-                />
-              </S.FormGroup>
+                <S.FormGroup>
+                  <S.Label>Ghi chú của bạn (tùy chọn):</S.Label>
+                  <S.TextArea
+                    value={customerNote}
+                    onChange={(e) => setCustomerNote(e.target.value)}
+                    placeholder="Nhập ghi chú nếu bạn muốn..."
+                    disabled={submitting}
+                  />
+                </S.FormGroup>
 
-              {!acceptRecall && (
-                <S.WarningBox>
-                  <FaExclamationTriangle />
-                  <div>
-                    <strong>Cảnh báo:</strong> Nếu bạn từ chối yêu cầu recall này, bạn sẽ không được bảo hành miễn phí cho phụ tùng này trong tương lai.
-                  </div>
-                </S.WarningBox>
-              )}
+                {!acceptRecall && (
+                  <S.WarningBox>
+                    <FaExclamationTriangle />
+                    <div>
+                      <strong>Cảnh báo:</strong> Nếu bạn từ chối yêu cầu recall này, bạn sẽ không được bảo hành miễn phí cho phụ tùng này trong tương lai.
+                    </div>
+                  </S.WarningBox>
+                )}
 
-              <S.ModalFooter>
-                <S.Button type="button" onClick={() => setShowConfirmModal(false)} disabled={submitting}>
-                  Hủy
-                </S.Button>
-                <S.Button
-                  primary={acceptRecall}
-                  danger={!acceptRecall}
-                  type="submit"
-                  disabled={submitting}
-                >
-                  {submitting ? (
-                    <><FaSpinner className="spinner" /> Đang xử lý...</>
-                  ) : acceptRecall ? (
-                    <><FaThumbsUp /> Chấp nhận Recall</>
-                  ) : (
-                    <><FaThumbsDown /> Từ chối Recall</>
-                  )}
-                </S.Button>
-              </S.ModalFooter>
-            </S.Form>
-          </S.ModalContent>
-        </S.ModalOverlay>
+                <S.ModalFooter>
+                  <S.Button type="button" onClick={() => setShowConfirmModal(false)} disabled={submitting}>
+                    Hủy
+                  </S.Button>
+                  <S.Button
+                    primary={acceptRecall}
+                    danger={!acceptRecall}
+                    type="submit"
+                    disabled={submitting}
+                  >
+                    {submitting ? (
+                      <><FaSpinner className="spinner" /> Đang xử lý...</>
+                    ) : acceptRecall ? (
+                      <><FaThumbsUp /> Chấp nhận Recall</>
+                    ) : (
+                      <><FaThumbsDown /> Từ chối Recall</>
+                    )}
+                  </S.Button>
+                </S.ModalFooter>
+              </S.Form>
+            </S.ModalContent>
+          </S.ModalOverlay>
         );
       })()}
 
@@ -570,23 +620,23 @@ export default function CustomerRecalls() {
                     </S.InfoBox>
                   </S.DetailSection>
                 )}
-            </S.DetailGrid>
-            <S.ModalFooter>
-              {selectedResponse.status === "PENDING" && (
-                <S.Button
-                  primary
-                  onClick={() => {
-                    setShowDetailModal(false);
-                    openConfirmModal(selectedResponse);
-                  }}
-                >
-                  <FaThumbsUp /> Xác nhận ngay
-                </S.Button>
-              )}
-              <S.Button onClick={() => setShowDetailModal(false)}>Đóng</S.Button>
-            </S.ModalFooter>
-          </S.ModalContent>
-        </S.ModalOverlay>
+              </S.DetailGrid>
+              <S.ModalFooter>
+                {selectedResponse.status === "PENDING" && (
+                  <S.Button
+                    primary
+                    onClick={() => {
+                      setShowDetailModal(false);
+                      openConfirmModal(selectedResponse);
+                    }}
+                  >
+                    <FaThumbsUp /> Xác nhận ngay
+                  </S.Button>
+                )}
+                <S.Button onClick={() => setShowDetailModal(false)}>Đóng</S.Button>
+              </S.ModalFooter>
+            </S.ModalContent>
+          </S.ModalOverlay>
         );
       })()}
     </S.Container>
