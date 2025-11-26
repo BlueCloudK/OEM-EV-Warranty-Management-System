@@ -12,7 +12,8 @@ import {
   FaBoxOpen,
   FaFilter,
   FaSearch,
-  FaChartBar
+  FaChartBar,
+  FaSyncAlt
 } from 'react-icons/fa';
 
 const EVMPartRequests = () => {
@@ -51,6 +52,7 @@ const EVMPartRequests = () => {
       setLoading(true);
       const response = await apiClient('/api/part-requests?page=0&size=500&sortBy=requestDate&sortDir=DESC');
       setRequests(response.content || []);
+      setFilterStatus('ALL');
       calculateStats(response.content || []);
     } catch (error) {
       console.error('Error fetching part requests:', error);
@@ -185,7 +187,7 @@ const EVMPartRequests = () => {
       request.requestId.toString().includes(searchKeyword) ||
       request.faultyPartName?.toLowerCase().includes(searchKeyword.toLowerCase()) ||
       request.serviceCenterName?.toLowerCase().includes(searchKeyword.toLowerCase()) ||
-      request.requestedByFullName?.toLowerCase().includes(searchKeyword.toLowerCase());
+      request.requestedByUsername?.toLowerCase().includes(searchKeyword.toLowerCase());
 
     return matchesStatus && matchesSearch;
   });
@@ -206,6 +208,14 @@ const EVMPartRequests = () => {
           <h1><FaTools /> Quản Lý Yêu Cầu Linh Kiện</h1>
           <p>Duyệt và quản lý yêu cầu linh kiện từ technicians</p>
         </div>
+        <S.Button
+          primary
+          onClick={fetchAllRequests}
+          disabled={loading}
+          title="Tải lại dữ liệu"
+        >
+          <FaSyncAlt /> Làm mới
+        </S.Button>
       </S.Header>
 
       {/* Statistics */}
@@ -318,7 +328,7 @@ const EVMPartRequests = () => {
                     <small style={{color: '#7f8c8d'}}>{request.faultyPartNumber}</small>
                   </S.TableCell>
                   <S.TableCell>{request.quantity}</S.TableCell>
-                  <S.TableCell>{request.requestedByFullName}</S.TableCell>
+                  <S.TableCell>{request.requestedByUsername || 'N/A'}</S.TableCell>
                   <S.TableCell>{request.serviceCenterName}</S.TableCell>
                   <S.TableCell>{new Date(request.requestDate).toLocaleDateString('vi-VN')}</S.TableCell>
                   <S.TableCell>
