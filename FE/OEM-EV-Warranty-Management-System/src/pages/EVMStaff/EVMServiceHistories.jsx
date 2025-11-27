@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { dataApi } from '../../api/dataApi';
 import * as S from './EVMServiceHistories.styles';
-import { FaHistory, FaSpinner, FaSearch, FaTimes, FaEye } from 'react-icons/fa';
+import { FaHistory, FaSpinner, FaSearch, FaTimes, FaEye, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
 
 const ServiceHistoryDetailModal = ({ isOpen, onClose, history }) => {
   if (!isOpen || !history) return null;
@@ -65,6 +65,7 @@ const EVMServiceHistories = () => {
   const [dateRange, setDateRange] = useState({ startDate: '', endDate: '' });
   const [selectedHistory, setSelectedHistory] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [sortConfig, setSortConfig] = useState({ key: 'serviceDate', direction: 'DESC' });
 
   const fetchServiceHistories = useCallback(async () => {
     try {
@@ -73,6 +74,8 @@ const EVMServiceHistories = () => {
       const params = {
         page: pagination.currentPage,
         size: pagination.pageSize,
+        sortBy: sortConfig.key,
+        sortDir: sortConfig.direction
       };
       let response;
 
@@ -127,7 +130,7 @@ const EVMServiceHistories = () => {
     } finally {
       setLoading(false);
     }
-  }, [pagination.currentPage, pagination.pageSize, searchTerm, searchType, dateRange]);
+  }, [pagination.currentPage, pagination.pageSize, searchTerm, searchType, dateRange, sortConfig]);
 
   useEffect(() => {
     fetchServiceHistories();
@@ -147,6 +150,19 @@ const EVMServiceHistories = () => {
 
   const handlePageChange = (newPage) => {
     setPagination(prev => ({ ...prev, currentPage: newPage }));
+  };
+
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'ASC' ? 'DESC' : 'ASC'
+    }));
+  };
+
+  const renderSortIcon = (key) => {
+    if (sortConfig.key !== key) return <FaSort style={{ color: '#ccc', marginLeft: '5px' }} />;
+    if (sortConfig.direction === 'ASC') return <FaSortUp style={{ color: '#3498db', marginLeft: '5px' }} />;
+    return <FaSortDown style={{ color: '#3498db', marginLeft: '5px' }} />;
   };
 
   const openDetailModal = (history) => {
@@ -211,13 +227,21 @@ const EVMServiceHistories = () => {
               <S.Table>
                 <thead>
                   <tr>
-                    <S.Th>ID</S.Th>
-                    <S.Th>Xe (VIN)</S.Th>
-                    <S.Th>Tên xe</S.Th>
+                    <S.Th onClick={() => handleSort('serviceHistoryId')} style={{ cursor: 'pointer' }}>
+                      ID {renderSortIcon('serviceHistoryId')}
+                    </S.Th>
+                    <S.Th onClick={() => handleSort('vehicleVin')} style={{ cursor: 'pointer' }}>
+                      Xe (VIN) {renderSortIcon('vehicleVin')}
+                    </S.Th>
+                    <S.Th onClick={() => handleSort('vehicleName')} style={{ cursor: 'pointer' }}>
+                      Tên xe {renderSortIcon('vehicleName')}
+                    </S.Th>
                     <S.Th>Loại dịch vụ</S.Th>
                     <S.Th>Phụ tùng</S.Th>
                     <S.Th>Mô tả</S.Th>
-                    <S.Th>Ngày dịch vụ</S.Th>
+                    <S.Th onClick={() => handleSort('serviceDate')} style={{ cursor: 'pointer' }}>
+                      Ngày dịch vụ {renderSortIcon('serviceDate')}
+                    </S.Th>
                     <S.Th>Thao tác</S.Th>
                   </tr>
                 </thead>

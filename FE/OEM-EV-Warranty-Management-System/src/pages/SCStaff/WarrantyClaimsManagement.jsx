@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useWarrantyClaimsManagement } from "../../hooks/useWarrantyClaimsManagement";
 import useAutoRefresh from "../../hooks/useAutoRefresh";
 import PaidWarrantyClaimForm from "../../components/PaidWarrantyClaimForm";
+import apiClient from "../../api/apiClient";
 import * as S from "./WarrantyClaimsManagement.styles";
 import {
   FaClipboardList,
@@ -162,29 +163,19 @@ const EditClaimModal = ({ isOpen, onClose, claim, onUpdate }) => {
     setError(null);
 
     try {
-      const token = localStorage.getItem("accessToken");
-      const response = await fetch(
-        `http://localhost:8080/api/warranty-claims/${claim.warrantyClaimId}`,
+      const response = await apiClient(
+        `/api/warranty-claims/${claim.warrantyClaimId}`,
         {
           method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
+          body: {
             vehicleId: claim.vehicleId,
             installedPartId: claim.installedPartId,
             description: description.trim(),
-          }),
+          },
         }
       );
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.message || "Không thể cập nhật yêu cầu bảo hành"
-        );
-      }
+      // apiClient automatically throws on error, so we don't need to check response.ok
 
       alert("Đã cập nhật yêu cầu bảo hành thành công!");
       onUpdate();
@@ -587,21 +578,14 @@ const WarrantyClaimsManagement = () => {
     }
 
     try {
-      const token = localStorage.getItem("accessToken");
-      const response = await fetch(
-        `http://localhost:8080/api/warranty-claims/${claimId}/confirm-payment`,
+      await apiClient(
+        `/api/warranty-claims/${claimId}/confirm-payment`,
         {
           method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
         }
       );
 
-      if (!response.ok) {
-        throw new Error("Không thể xác nhận thanh toán");
-      }
+      // apiClient automatically throws on error
 
       alert("Đã xác nhận thanh toán thành công!");
       await fetchClaims(); // Refresh list
@@ -619,20 +603,14 @@ const WarrantyClaimsManagement = () => {
     }
 
     try {
-      const token = localStorage.getItem("accessToken");
-      const response = await fetch(
-        `http://localhost:8080/api/warranty-claims/${claimId}`,
+      await apiClient(
+        `/api/warranty-claims/${claimId}`,
         {
           method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
         }
       );
 
-      if (!response.ok) {
-        throw new Error("Không thể xóa yêu cầu bảo hành");
-      }
+      // apiClient automatically throws on error
 
       alert("Đã xóa yêu cầu bảo hành thành công!");
       await fetchClaims(); // Refresh list

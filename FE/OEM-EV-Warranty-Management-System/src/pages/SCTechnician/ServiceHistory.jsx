@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import * as S from './ServiceHistory.styles';
 import {
   FaHistory, FaSearch, FaSpinner, FaInfoCircle, FaCalendar,
-  FaCar, FaCog, FaPlus, FaEdit, FaFilter
+  FaCar, FaCog, FaPlus, FaEdit, FaFilter, FaSort, FaSortUp, FaSortDown
 } from 'react-icons/fa';
 import apiClient from '../../api/apiClient';
 
@@ -18,17 +18,18 @@ const ServiceHistory = () => {
   const [vehicleId, setVehicleId] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [sortConfig, setSortConfig] = useState({ key: 'serviceDate', direction: 'DESC' });
 
   useEffect(() => {
     fetchServiceHistories();
-  }, [page]);
+  }, [page, sortConfig]);
 
   const fetchServiceHistories = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      let endpoint = `/api/service-histories?page=${page}&size=10`;
+      let endpoint = `/api/service-histories?page=${page}&size=10&sortBy=${sortConfig.key}&sortDir=${sortConfig.direction}`;
       if (searchValue.trim()) {
         endpoint += `&search=${encodeURIComponent(searchValue.trim())}`;
       }
@@ -128,6 +129,19 @@ const ServiceHistory = () => {
       month: '2-digit',
       day: '2-digit'
     });
+  };
+
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'ASC' ? 'DESC' : 'ASC'
+    }));
+  };
+
+  const renderSortIcon = (key) => {
+    if (sortConfig.key !== key) return <FaSort style={{ color: '#ccc', marginLeft: '5px' }} />;
+    if (sortConfig.direction === 'ASC') return <FaSortUp style={{ color: '#3498db', marginLeft: '5px' }} />;
+    return <FaSortDown style={{ color: '#3498db', marginLeft: '5px' }} />;
   };
 
   return (
@@ -271,11 +285,19 @@ const ServiceHistory = () => {
             <S.Table>
               <thead>
                 <tr>
-                  <S.Th>ID</S.Th>
-                  <S.Th>Ngày sửa chữa</S.Th>
+                  <S.Th onClick={() => handleSort('serviceHistoryId')} style={{ cursor: 'pointer' }}>
+                    ID {renderSortIcon('serviceHistoryId')}
+                  </S.Th>
+                  <S.Th onClick={() => handleSort('serviceDate')} style={{ cursor: 'pointer' }}>
+                    Ngày sửa chữa {renderSortIcon('serviceDate')}
+                  </S.Th>
                   <S.Th>Loại dịch vụ</S.Th>
-                  <S.Th>Xe</S.Th>
-                  <S.Th>VIN</S.Th>
+                  <S.Th onClick={() => handleSort('vehicleName')} style={{ cursor: 'pointer' }}>
+                    Xe {renderSortIcon('vehicleName')}
+                  </S.Th>
+                  <S.Th onClick={() => handleSort('vehicleVin')} style={{ cursor: 'pointer' }}>
+                    VIN {renderSortIcon('vehicleVin')}
+                  </S.Th>
                   <S.Th>Phụ tùng</S.Th>
                   <S.Th>Mô tả</S.Th>
                 </tr>
