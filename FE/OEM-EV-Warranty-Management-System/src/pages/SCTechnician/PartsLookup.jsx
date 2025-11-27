@@ -181,9 +181,6 @@ const PartsLookup = () => {
                   <th onClick={() => handleSort('price')} style={{ cursor: 'pointer' }}>
                     Giá (VNĐ) {renderSortIcon('price')}
                   </th>
-                  <th>
-                    Tồn kho
-                  </th>
                   {/* Removed Actions Column */}
                 </tr>
               </thead>
@@ -196,7 +193,6 @@ const PartsLookup = () => {
                     <S.Td>{part.categoryName || '-'}</S.Td>
                     <S.Td>{part.manufacturer}</S.Td>
                     <S.Td>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(part.price)}</S.Td>
-                    <S.Td>{part.stockQuantity || 0}</S.Td>
                     {/* Removed Actions Cell */}
                   </tr>
                 ))}

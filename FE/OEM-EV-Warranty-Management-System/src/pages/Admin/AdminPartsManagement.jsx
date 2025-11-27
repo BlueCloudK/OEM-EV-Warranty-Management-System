@@ -414,9 +414,6 @@ const AdminPartsManagement = () => {
                   <th onClick={() => handleSort('price')} style={{ cursor: 'pointer' }}>
                     Giá (VNĐ) {renderSortIcon('price')}
                   </th>
-                  <th>
-                    Tồn kho
-                  </th>
                   <th>Hành động</th>
                 </tr>
               </thead>
@@ -429,7 +426,6 @@ const AdminPartsManagement = () => {
                     <S.Td>{part.categoryName || '-'}</S.Td>
                     <S.Td>{part.manufacturer}</S.Td>
                     <S.Td>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(part.price)}</S.Td>
-                    <S.Td>{part.stockQuantity || 0}</S.Td>
                     <S.Td>
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <S.Button $small onClick={() => openEditForm(part)}><FaEdit /></S.Button>
