@@ -15,6 +15,7 @@ import {
   FaSort,
   FaSortUp,
   FaSortDown,
+  FaSyncAlt,
 } from "react-icons/fa";
 import styled from "styled-components";
 
@@ -640,9 +641,15 @@ const WarrantyClaimsManagement = () => {
                 </small>
               )}
             </S.HeaderTitle>
-            <S.Button primary onClick={openCreateForm}>
-              <FaPlus /> Tạo Yêu cầu
-            </S.Button>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <S.Button onClick={() => fetchClaims()} disabled={loading}>
+                <FaSyncAlt style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
+                Làm mới
+              </S.Button>
+              <S.Button primary onClick={openCreateForm}>
+                <FaPlus /> Tạo Yêu cầu
+              </S.Button>
+            </div>
           </S.HeaderTop>
           <S.FilterContainer>
             <S.Select

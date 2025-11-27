@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useVehicleManagement } from '../../hooks/useVehicleManagement';
 import useAutoRefresh from '../../hooks/useAutoRefresh';
 import * as S from './VehicleManagement.styles';
-import { FaCar, FaPlus, FaEdit, FaSearch, FaSpinner, FaTrash, FaClipboardCheck, FaWrench, FaChevronDown, FaChevronUp, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
+import { FaCar, FaPlus, FaEdit, FaSearch, FaSpinner, FaTrash, FaClipboardCheck, FaWrench, FaChevronDown, FaChevronUp, FaSort, FaSortUp, FaSortDown, FaSyncAlt } from 'react-icons/fa';
 
 // Form Modal Component with ALL required fields
 const VehicleFormModal = ({ isOpen, onClose, onSubmit, vehicle, customers }) => {
@@ -375,7 +375,13 @@ const VehicleManagement = () => {
                 </small>
               )}
             </S.HeaderTitle>
-            <S.Button primary onClick={openCreateForm}><FaPlus /> Tạo xe mới</S.Button>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <S.Button onClick={() => handleSearch()} disabled={loading}>
+                <FaSyncAlt style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
+                Làm mới
+              </S.Button>
+              <S.Button primary onClick={openCreateForm}><FaPlus /> Tạo xe mới</S.Button>
+            </div>
           </S.HeaderTop>
           <S.SearchContainer>
             <S.SearchSelect value={searchType} onChange={(e) => setSearchType(e.target.value)}>

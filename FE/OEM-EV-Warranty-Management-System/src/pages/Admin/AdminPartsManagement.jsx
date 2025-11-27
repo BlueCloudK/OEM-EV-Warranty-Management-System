@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAdminPartsManagement } from '../../hooks/useAdminPartsManagement';
 import useAutoRefresh from '../../hooks/useAutoRefresh';
 import * as S from './AdminPartsManagement.styles';
-import { FaCogs, FaPlus, FaEdit, FaSearch, FaTrash, FaSpinner, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
+import { FaCogs, FaPlus, FaEdit, FaSearch, FaTrash, FaSpinner, FaSort, FaSortUp, FaSortDown, FaSyncAlt } from 'react-icons/fa';
 
 // Form Modal Component
 const PartFormModal = ({ isOpen, onClose, onSubmit, part, categories }) => {
@@ -372,7 +372,13 @@ const AdminPartsManagement = () => {
                 </small>
               )}
             </S.HeaderTitle>
-            <S.Button primary onClick={openCreateForm}><FaPlus /> Thêm phụ tùng</S.Button>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <S.Button onClick={() => refreshParts()} disabled={loading}>
+                <FaSyncAlt style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
+                Làm mới
+              </S.Button>
+              <S.Button primary onClick={openCreateForm}><FaPlus /> Thêm phụ tùng</S.Button>
+            </div>
           </S.HeaderTop>
           <S.SearchContainer>
             <S.Input

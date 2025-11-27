@@ -227,5 +227,6 @@ export const useAdminUserManagement = () => {
     setSearchType, // Expose setSearchType
     sortConfig,
     handleSort,
+    refreshUsers: fetchUsers, // Export refresh function
   };
 };

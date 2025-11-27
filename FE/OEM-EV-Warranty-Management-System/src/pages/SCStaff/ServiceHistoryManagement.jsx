@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useServiceHistoryManagement } from '../../hooks/useServiceHistoryManagement';
 import * as S from './ServiceHistoryManagement.styles';
-import { FaHistory, FaPlus, FaEdit, FaSearch, FaArrowLeft, FaSpinner, FaFilter, FaTimes, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
+import { FaHistory, FaPlus, FaEdit, FaSearch, FaArrowLeft, FaSpinner, FaFilter, FaTimes, FaSort, FaSortUp, FaSortDown, FaSyncAlt } from 'react-icons/fa';
 
 // Form Modal Component
 const HistoryFormModal = ({ isOpen, onClose, onSubmit, history, vehicles, parts }) => {
@@ -81,7 +81,7 @@ const ServiceHistoryManagement = () => {
   const {
     histories, vehicles, parts, loading, error, pagination, filters,
     handleFilterChange, applyFilters, clearFilters, handleCreateOrUpdate, handlePageChange,
-    sortConfig, handleSort
+    sortConfig, handleSort, refreshServiceHistories
   } = useServiceHistoryManagement();
 
   const [showForm, setShowForm] = useState(false);
@@ -117,6 +117,10 @@ const ServiceHistoryManagement = () => {
             <S.Select value={filters.serviceType} onChange={(e) => handleFilterChange('serviceType', e.target.value)}><option value="">Tất cả loại DV</option><option value="REPAIR">Sửa chữa</option><option value="REPLACEMENT">Thay thế</option><option value="MAINTENANCE">Bảo dưỡng</option><option value="INSPECTION">Kiểm tra</option></S.Select>
             <S.Button secondary onClick={applyFilters}><FaFilter /> Lọc</S.Button>
             <S.Button onClick={clearFilters}><FaTimes /> Xóa lọc</S.Button> */}
+            <S.Button onClick={refreshServiceHistories} disabled={loading}>
+              <FaSyncAlt style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
+              Làm mới
+            </S.Button>
           </S.FilterContainer>
         </S.Header>
 

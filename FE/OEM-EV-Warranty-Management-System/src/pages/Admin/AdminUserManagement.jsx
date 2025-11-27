@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useAdminUserManagement } from '../../hooks/useAdminUserManagement';
 import * as S from './AdminUserManagement.styles';
-import { FaUsers, FaPlus, FaSearch, FaTrash, FaSpinner, FaMapMarkerAlt, FaPhone, FaAddressBook, FaKey, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
+import { FaUsers, FaPlus, FaSearch, FaTrash, FaSpinner, FaMapMarkerAlt, FaPhone, FaAddressBook, FaKey, FaSort, FaSortUp, FaSortDown, FaSyncAlt } from 'react-icons/fa';
 
 // Role mapping for display and update
 const roles = [
@@ -139,7 +139,7 @@ const AdminUserManagement = () => {
     users, loading: dataLoading, error, pagination, searchTerm, setSearchTerm,
     handleSearch, handleCreateUser, handleChangeRole, handleResetPassword, handleDelete, handlePageChange,
     roles, selectedRole, setSelectedRole, searchType, setSearchType,
-    sortConfig, handleSort
+    sortConfig, handleSort, refreshUsers
   } = useAdminUserManagement();
 
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -212,6 +212,11 @@ const AdminUserManagement = () => {
           <option value="">Tất cả vai trò</option>
           {roles.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
         </select>
+
+        <button className="btn" onClick={refreshUsers} disabled={dataLoading}>
+          <FaSyncAlt style={{ animation: dataLoading ? 'spin 1s linear infinite' : 'none' }} />
+          Làm mới
+        </button>
       </div>
 
       {error ? (

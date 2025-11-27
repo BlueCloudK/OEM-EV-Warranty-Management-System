@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { usePartCategoryManagement } from '../../hooks/usePartCategoryManagement';
 import useAutoRefresh from '../../hooks/useAutoRefresh';
 import * as S from './AdminPartCategoryManagement.styles';
-import { FaLayerGroup, FaPlus, FaEdit, FaTrash, FaSpinner, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
+import { FaLayerGroup, FaPlus, FaEdit, FaTrash, FaSpinner, FaSort, FaSortUp, FaSortDown, FaSyncAlt } from 'react-icons/fa';
 
 /**
  * Modal Form Component cho tạo/sửa Part Category
@@ -267,9 +267,15 @@ const AdminPartCategoryManagement = () => {
                                 </small>
                             )}
                         </S.HeaderTitle>
-                        <S.Button $primary onClick={openCreateModal}>
-                            <FaPlus /> Tạo Category mới
-                        </S.Button>
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <S.Button onClick={() => refreshCategories()} disabled={loading}>
+                                <FaSyncAlt style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
+                                Làm mới
+                            </S.Button>
+                            <S.Button $primary onClick={openCreateModal}>
+                                <FaPlus /> Tạo Category mới
+                            </S.Button>
+                        </div>
                     </S.HeaderTop>
                     <p style={{ color: '#6b7280', marginTop: '8px', marginBottom: 0 }}>
                         Quản lý các loại phụ tùng và giới hạn số lượng trên mỗi xe
