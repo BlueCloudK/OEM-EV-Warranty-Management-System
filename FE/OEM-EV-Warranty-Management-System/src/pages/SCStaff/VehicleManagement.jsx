@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useVehicleManagement } from '../../hooks/useVehicleManagement';
 import useAutoRefresh from '../../hooks/useAutoRefresh';
 import * as S from './VehicleManagement.styles';
-import { FaCar, FaPlus, FaEdit, FaSearch, FaSpinner, FaTrash, FaClipboardCheck, FaWrench, FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import { FaCar, FaPlus, FaEdit, FaSearch, FaSpinner, FaTrash, FaClipboardCheck, FaWrench, FaChevronDown, FaChevronUp, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
 
 // Form Modal Component with ALL required fields
 const VehicleFormModal = ({ isOpen, onClose, onSubmit, vehicle, customers }) => {
@@ -397,7 +397,32 @@ const VehicleManagement = () => {
         ) : (
           <S.TableContainer>
             <S.Table>
-              <thead><tr><S.Th>ID Xe</S.Th><S.Th>Tên xe</S.Th><S.Th>Model</S.Th><S.Th>VIN</S.Th><S.Th>Năm</S.Th><S.Th>Chủ sở hữu</S.Th><S.Th>Thao tác</S.Th></tr></thead>
+              <thead>
+                <tr>
+                  <S.Th onClick={() => handleSort('vehicleId')} style={{ cursor: 'pointer' }}>
+                    ID Xe {sortConfig.key === 'vehicleId' && (sortConfig.direction === 'ASC' ? <FaSortUp /> : <FaSortDown />)}
+                    {sortConfig.key !== 'vehicleId' && <FaSort style={{ opacity: 0.3 }} />}
+                  </S.Th>
+                  <S.Th onClick={() => handleSort('vehicleName')} style={{ cursor: 'pointer' }}>
+                    Tên xe {sortConfig.key === 'vehicleName' && (sortConfig.direction === 'ASC' ? <FaSortUp /> : <FaSortDown />)}
+                    {sortConfig.key !== 'vehicleName' && <FaSort style={{ opacity: 0.3 }} />}
+                  </S.Th>
+                  <S.Th onClick={() => handleSort('vehicleModel')} style={{ cursor: 'pointer' }}>
+                    Model {sortConfig.key === 'vehicleModel' && (sortConfig.direction === 'ASC' ? <FaSortUp /> : <FaSortDown />)}
+                    {sortConfig.key !== 'vehicleModel' && <FaSort style={{ opacity: 0.3 }} />}
+                  </S.Th>
+                  <S.Th onClick={() => handleSort('vehicleVin')} style={{ cursor: 'pointer' }}>
+                    VIN {sortConfig.key === 'vehicleVin' && (sortConfig.direction === 'ASC' ? <FaSortUp /> : <FaSortDown />)}
+                    {sortConfig.key !== 'vehicleVin' && <FaSort style={{ opacity: 0.3 }} />}
+                  </S.Th>
+                  <S.Th onClick={() => handleSort('vehicleYear')} style={{ cursor: 'pointer' }}>
+                    Năm {sortConfig.key === 'vehicleYear' && (sortConfig.direction === 'ASC' ? <FaSortUp /> : <FaSortDown />)}
+                    {sortConfig.key !== 'vehicleYear' && <FaSort style={{ opacity: 0.3 }} />}
+                  </S.Th>
+                  <S.Th>Chủ sở hữu</S.Th>
+                  <S.Th>Thao tác</S.Th>
+                </tr>
+              </thead>
               <tbody>
                 {vehicles.map(vehicle => (
                   <React.Fragment key={vehicle.vehicleId}>

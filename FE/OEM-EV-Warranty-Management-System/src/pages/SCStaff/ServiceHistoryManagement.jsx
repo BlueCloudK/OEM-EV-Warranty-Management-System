@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useServiceHistoryManagement } from '../../hooks/useServiceHistoryManagement';
 import * as S from './ServiceHistoryManagement.styles';
-import { FaHistory, FaPlus, FaEdit, FaSearch, FaArrowLeft, FaSpinner, FaFilter, FaTimes } from 'react-icons/fa';
+import { FaHistory, FaPlus, FaEdit, FaSearch, FaArrowLeft, FaSpinner, FaFilter, FaTimes, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
 
 // Form Modal Component
 const HistoryFormModal = ({ isOpen, onClose, onSubmit, history, vehicles, parts }) => {
@@ -80,7 +80,8 @@ const ServiceHistoryManagement = () => {
   const navigate = useNavigate();
   const {
     histories, vehicles, parts, loading, error, pagination, filters,
-    handleFilterChange, applyFilters, clearFilters, handleCreateOrUpdate, handlePageChange
+    handleFilterChange, applyFilters, clearFilters, handleCreateOrUpdate, handlePageChange,
+    sortConfig, handleSort
   } = useServiceHistoryManagement();
 
   const [showForm, setShowForm] = useState(false);
@@ -94,6 +95,12 @@ const ServiceHistoryManagement = () => {
   const openEditForm = (history) => {
     setSelectedHistory(history);
     setShowForm(true);
+  };
+
+  const renderSortIcon = (key) => {
+    if (sortConfig.key !== key) return <FaSort style={{ color: '#ccc', marginLeft: '5px' }} />;
+    if (sortConfig.direction === 'ASC') return <FaSortUp style={{ color: '#3498db', marginLeft: '5px' }} />;
+    return <FaSortDown style={{ color: '#3498db', marginLeft: '5px' }} />;
   };
 
   return (
@@ -124,12 +131,17 @@ const ServiceHistoryManagement = () => {
             <S.Table>
               <thead>
                 <tr>
-                  {/* <S.Th>Loại DV</S.Th> */}
-                  <S.Th>Xe</S.Th>
-                  <S.Th>Vin</S.Th>
+                  <S.Th onClick={() => handleSort('vehicleName')} style={{ cursor: 'pointer' }}>
+                    Xe {renderSortIcon('vehicleName')}
+                  </S.Th>
+                  <S.Th onClick={() => handleSort('vehicleVin')} style={{ cursor: 'pointer' }}>
+                    Vin {renderSortIcon('vehicleVin')}
+                  </S.Th>
                   <S.Th>Linh kiện</S.Th>
                   <S.Th>Mô tả</S.Th>
-                  <S.Th>Ngày</S.Th>
+                  <S.Th onClick={() => handleSort('serviceDate')} style={{ cursor: 'pointer' }}>
+                    Ngày {renderSortIcon('serviceDate')}
+                  </S.Th>
                   <S.Th>Thao tác</S.Th>
                 </tr>
               </thead>
