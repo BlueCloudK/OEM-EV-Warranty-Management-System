@@ -132,5 +132,6 @@ export const useCustomerManagement = () => {
     handlePageChange,
     sortConfig,
     handleSort,
+    refreshCustomers: fetchCustomers, // Export refresh function
   };
 };

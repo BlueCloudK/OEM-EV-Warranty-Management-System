@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import * as S from './AdminFeedbackManagement.styles';
 import {
   FaCommentDots, FaSpinner, FaStar, FaFilter, FaChartBar,
-  FaUser, FaCar, FaShieldAlt, FaCalendar, FaTrash
+  FaUser, FaCar, FaShieldAlt, FaCalendar, FaTrash, FaSyncAlt
 } from 'react-icons/fa';
 import apiClient from '../../api/apiClient';
 
@@ -195,6 +195,10 @@ const AdminFeedbackManagement = () => {
             </S.FilterButton>
           ))}
         </S.FilterButtons>
+        <S.FilterButton onClick={fetchFeedbacks} disabled={loading}>
+          <FaSyncAlt style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
+          Làm mới
+        </S.FilterButton>
       </S.FilterSection>
 
       {/* Feedbacks List */}

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useAdminCustomerManagement } from '../../hooks/useAdminCustomerManagement';
 import * as S from './AdminCustomerManagement.styles';
-import { FaUsers, FaPlus, FaEdit, FaSearch, FaTrash, FaSpinner, FaIdCard, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
+import { FaUsers, FaPlus, FaEdit, FaSearch, FaTrash, FaSpinner, FaIdCard, FaSort, FaSortUp, FaSortDown, FaSyncAlt } from 'react-icons/fa';
 
 // Form Modal Component
 const CustomerFormModal = ({ isOpen, onClose, onSubmit, customer }) => {
@@ -100,7 +100,7 @@ const AdminCustomerManagement = () => {
     const {
         customers, loading: dataLoading, error, pagination, searchTerm, setSearchTerm,
         handleSearch, handleCreateOrUpdate, handleDelete, handlePageChange,
-        searchType, setSearchType, sortConfig, handleSort
+        searchType, setSearchType, sortConfig, handleSort, refreshCustomers
     } = useAdminCustomerManagement();
 
     const [showForm, setShowForm] = useState(false);
@@ -179,6 +179,10 @@ const AdminCustomerManagement = () => {
                             onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                         />
                         <S.Button $small onClick={handleSearch}><FaSearch /> Tìm kiếm</S.Button>
+                        <S.Button onClick={refreshCustomers} disabled={dataLoading}>
+                            <FaSyncAlt style={{ animation: dataLoading ? 'spin 1s linear infinite' : 'none' }} />
+                            Làm mới
+                        </S.Button>
                     </S.SearchContainer>
                 </S.Header>
 

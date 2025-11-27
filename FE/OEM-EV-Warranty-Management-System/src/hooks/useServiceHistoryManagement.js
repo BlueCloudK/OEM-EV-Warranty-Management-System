@@ -132,6 +132,7 @@ export const useServiceHistoryManagement = () => {
   return {
     histories, vehicles, parts, loading, error, pagination, filters,
     handleFilterChange, applyFilters, clearFilters, handleCreateOrUpdate, handlePageChange,
-    sortConfig, handleSort
+    sortConfig, handleSort,
+    refreshServiceHistories: fetchHistories, // Export refresh function
   };
 };

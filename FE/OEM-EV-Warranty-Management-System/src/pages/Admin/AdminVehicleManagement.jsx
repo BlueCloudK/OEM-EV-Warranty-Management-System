@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext'; // Import the master auth hook
 import { useAdminVehicleManagement } from '../../hooks/useAdminVehicleManagement';
 import * as S from './AdminVehicleManagement.styles';
-import { FaCar, FaPlus, FaEdit, FaSearch, FaTrash, FaSpinner, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
+import { FaCar, FaPlus, FaEdit, FaSearch, FaTrash, FaSpinner, FaSort, FaSortUp, FaSortDown, FaSyncAlt } from 'react-icons/fa';
 
 // Form Modal Component with ALL required fields
 const VehicleFormModal = ({ isOpen, onClose, onSubmit, vehicle, customers }) => {
@@ -177,7 +177,7 @@ const AdminVehicleManagement = () => {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const {
     vehicles, customers, loading: dataLoading, error, pagination, searchTerm, setSearchTerm,
-    handleSearch, handleCreateOrUpdate, handleDelete, handlePageChange, sortConfig, handleSort
+    handleSearch, handleCreateOrUpdate, handleDelete, handlePageChange, sortConfig, handleSort, refreshVehicles
   } = useAdminVehicleManagement();
 
   const [showForm, setShowForm] = useState(false);
@@ -215,7 +215,13 @@ const AdminVehicleManagement = () => {
         <S.Header>
           <S.HeaderTop>
             <S.HeaderTitle><FaCar /> Quản lý Xe (Admin)</S.HeaderTitle>
-            <S.Button $primary onClick={openCreateForm}><FaPlus /> Tạo xe mới</S.Button>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <S.Button onClick={refreshVehicles} disabled={dataLoading}>
+                <FaSyncAlt style={{ animation: dataLoading ? 'spin 1s linear infinite' : 'none' }} />
+                Làm mới
+              </S.Button>
+              <S.Button $primary onClick={openCreateForm}><FaPlus /> Tạo xe mới</S.Button>
+            </div>
           </S.HeaderTop>
           <S.SearchContainer>
             <S.Input placeholder="Tìm theo tên, model, VIN..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleSearch()} />

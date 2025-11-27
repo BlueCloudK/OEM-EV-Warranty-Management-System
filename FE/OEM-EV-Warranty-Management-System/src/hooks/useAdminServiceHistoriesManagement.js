@@ -160,5 +160,6 @@ export const useAdminServiceHistoriesManagement = () => {
     handlePageChange,
     sortConfig,
     handleSort,
+    refreshServiceHistories: fetchServiceHistories, // Export refresh function
   };
 };

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useEVMPartsManagement } from '../../hooks/useEVMPartsManagement';
 import * as S from './EVMPartManagement.styles';
-import { FaCogs, FaPlus, FaEdit, FaSearch, FaTrash, FaSpinner, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
+import { FaCogs, FaPlus, FaEdit, FaSearch, FaTrash, FaSpinner, FaSort, FaSortUp, FaSortDown, FaSyncAlt } from 'react-icons/fa';
 
 const PartFormModal = ({ isOpen, onClose, onSubmit, part, categories }) => {
   const [formData, setFormData] = useState({});
@@ -314,7 +314,7 @@ const EVMPartManagement = () => {
   const {
     parts, loading, error, pagination, searchTerm, setSearchTerm,
     handleSearch, handleCreateOrUpdate, handleDelete, handlePageChange,
-    sortConfig, handleSort, categories
+    sortConfig, handleSort, categories, refreshParts
   } = useEVMPartsManagement();
 
   // Debug categories
@@ -346,7 +346,13 @@ const EVMPartManagement = () => {
         <S.Header>
           <S.HeaderTop>
             <S.HeaderTitle><FaCogs /> Quản lý Phụ tùng</S.HeaderTitle>
-            <S.Button $primary onClick={openCreateForm}><FaPlus /> Tạo Phụ tùng</S.Button>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <S.Button onClick={refreshParts} disabled={loading}>
+                <FaSyncAlt style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
+                Làm mới
+              </S.Button>
+              <S.Button $primary onClick={openCreateForm}><FaPlus /> Tạo Phụ tùng</S.Button>
+            </div>
           </S.HeaderTop>
           <S.SearchContainer>
             <S.Input placeholder="Tìm theo tên, mã, nhà sản xuất..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleSearch()} />

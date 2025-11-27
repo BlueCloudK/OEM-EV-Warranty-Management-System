@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext'; // Import the master auth hook
 import { useCustomerManagement } from '../../hooks/useCustomerManagement';
 import * as S from './CustomerManagement.styles';
-import { FaUsers, FaPlus, FaEdit, FaSearch, FaSpinner, FaUser, FaEnvelope, FaLock, FaMapMarkerAlt, FaPhone, FaAddressBook, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
+import { FaUsers, FaPlus, FaEdit, FaSearch, FaSpinner, FaUser, FaEnvelope, FaLock, FaMapMarkerAlt, FaPhone, FaAddressBook, FaSort, FaSortUp, FaSortDown, FaSyncAlt } from 'react-icons/fa';
 
 // Form Modal Component (now includes account creation fields)
 const CustomerFormModal = ({ isOpen, onClose, onSubmit, customer }) => {
@@ -102,7 +102,7 @@ const CustomerManagement = () => {
   const {
     customers, loading: dataLoading, error, pagination, searchTerm, setSearchTerm,
     searchType, setSearchType, handleSearch, handleCreateOrUpdate, handlePageChange,
-    sortConfig, handleSort
+    sortConfig, handleSort, refreshCustomers
   } = useCustomerManagement();
 
   const [showForm, setShowForm] = useState(false);
@@ -154,7 +154,13 @@ const CustomerManagement = () => {
         <S.Header>
           <S.HeaderTop>
             <S.HeaderTitle><FaUsers /> Quản lý Khách hàng</S.HeaderTitle>
-            <S.Button $primary onClick={openCreateForm}><FaPlus /> Tạo khách hàng</S.Button>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <S.Button onClick={refreshCustomers} disabled={dataLoading}>
+                <FaSyncAlt style={{ animation: dataLoading ? 'spin 1s linear infinite' : 'none' }} />
+                Làm mới
+              </S.Button>
+              <S.Button $primary onClick={openCreateForm}><FaPlus /> Tạo khách hàng</S.Button>
+            </div>
           </S.HeaderTop>
           <S.SearchContainer>
             <S.Select

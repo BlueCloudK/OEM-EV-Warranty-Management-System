@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAdminServiceHistoriesManagement } from '../../hooks/useAdminServiceHistoriesManagement';
 import * as S from './AdminServiceHistoriesManagement.styles';
-import { FaHistory, FaSpinner, FaPlus, FaEdit, FaTrash, FaSearch, FaTimes, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
+import { FaHistory, FaSpinner, FaPlus, FaEdit, FaTrash, FaSearch, FaTimes, FaSort, FaSortUp, FaSortDown, FaSyncAlt } from 'react-icons/fa';
 
 const ServiceHistoryFormModal = ({ isOpen, onClose, onSubmit, history }) => {
   const [formData, setFormData] = useState({});
@@ -130,7 +130,7 @@ const AdminServiceHistoriesManagement = () => {
   const {
     serviceHistories, loading, error, pagination, searchTerm, setSearchTerm,
     searchType, setSearchType, dateRange, setDateRange, handleSearch, handleClearSearch, handleCreateOrUpdate, handleDelete, handlePageChange,
-    sortConfig, handleSort
+    sortConfig, handleSort, refreshServiceHistories
   } = useAdminServiceHistoriesManagement();
 
   const [showForm, setShowForm] = useState(false);
@@ -180,6 +180,10 @@ const AdminServiceHistoriesManagement = () => {
             {searchTerm && (
               <S.Button small onClick={handleClearSearch}><FaTimes /> Xóa</S.Button>
             )}
+            <S.Button onClick={refreshServiceHistories} disabled={loading}>
+              <FaSyncAlt style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
+              Làm mới
+            </S.Button>
           </S.SearchContainer>
         </S.Header>
 

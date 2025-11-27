@@ -124,5 +124,6 @@ export const useEVMPartsManagement = () => {
     sortConfig,
     handleSort,
     categories,
+    refreshParts: fetchParts, // Export refresh function
   };
 };

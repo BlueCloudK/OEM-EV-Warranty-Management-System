@@ -3,7 +3,7 @@ import * as S from "./AdminRecallManagement.styles";
 import {
   FaExclamationTriangle, FaCheckCircle, FaTimesCircle, FaClock,
   FaHourglassHalf, FaUserCheck, FaFileAlt, FaSearch, FaFilter,
-  FaSpinner, FaEye, FaList, FaSort, FaSortUp, FaSortDown
+  FaSpinner, FaEye, FaList, FaSort, FaSortUp, FaSortDown, FaSyncAlt
 } from "react-icons/fa";
 import { recallRequestsApi } from "../../api/recallRequests";
 import { recallResponsesApi } from "../../api/recallResponses";
@@ -415,6 +415,11 @@ export default function AdminRecallManagement() {
             <option value="COMPLETED">Đã hoàn thành</option>
           </S.FilterSelect>
         </S.FilterGroup>
+
+        <S.Button onClick={() => fetchRecalls()} disabled={loading}>
+          <FaSyncAlt style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
+          Làm mới
+        </S.Button>
       </S.FilterBar>
 
       <S.ResultsInfo>
