@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaStar, FaTimes, FaSpinner } from 'react-icons/fa';
+import { FaStar, FaRegStar, FaTimes, FaSpinner } from 'react-icons/fa';
 import * as S from './FeedbackModal.styles';
 import { customerApi } from '../api/customerApi';
 
@@ -79,28 +79,31 @@ const FeedbackModal = ({ isOpen, onClose, claim, existingFeedback, onFeedbackSub
         <S.ModalBody>
           <form onSubmit={handleSubmit}>
             <S.FormGroup>
-              <S.Label>Đánh giá của bạn *</S.Label>
+              <S.Label>Đánh giá của bạn * {(hoveredRating || rating) > 0 && `- ${hoveredRating || rating} sao`}</S.Label>
               <S.StarContainer>
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <S.StarButton
-                    key={star}
-                    type="button"
-                    onClick={() => setRating(star)}
-                    onMouseEnter={() => setHoveredRating(star)}
-                    onMouseLeave={() => setHoveredRating(0)}
-                    $filled={star <= (hoveredRating || rating)}
-                  >
-                    <FaStar />
-                  </S.StarButton>
-                ))}
+                {[1, 2, 3, 4, 5].map((star) => {
+                  const isFilled = star <= (hoveredRating || rating);
+                  return (
+                    <S.StarButton
+                      key={star}
+                      type="button"
+                      onClick={() => setRating(star)}
+                      onMouseEnter={() => setHoveredRating(star)}
+                      onMouseLeave={() => setHoveredRating(0)}
+                      $filled={isFilled}
+                    >
+                      {isFilled ? <FaStar /> : <FaRegStar />}
+                    </S.StarButton>
+                  );
+                })}
               </S.StarContainer>
               <S.RatingText>
-                {rating === 0 && 'Chọn số sao để đánh giá'}
-                {rating === 1 && 'Rất không hài lòng'}
-                {rating === 2 && 'Không hài lòng'}
-                {rating === 3 && 'Bình thường'}
-                {rating === 4 && 'Hài lòng'}
-                {rating === 5 && 'Rất hài lòng'}
+                {(hoveredRating || rating) === 0 && 'Chọn số sao để đánh giá'}
+                {(hoveredRating || rating) === 1 && 'Rất không hài lòng'}
+                {(hoveredRating || rating) === 2 && 'Không hài lòng'}
+                {(hoveredRating || rating) === 3 && 'Bình thường'}
+                {(hoveredRating || rating) === 4 && 'Hài lòng'}
+                {(hoveredRating || rating) === 5 && 'Rất hài lòng'}
               </S.RatingText>
             </S.FormGroup>
 
