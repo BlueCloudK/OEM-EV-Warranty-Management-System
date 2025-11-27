@@ -126,6 +126,10 @@ export const StarButton = styled.button`
   &:active {
     transform: scale(0.95);
   }
+
+  svg {
+    color: ${props => props.$filled ? '#fbbf24' : '#d1d5db'};
+  }
 `;
 
 export const RatingText = styled.p`
