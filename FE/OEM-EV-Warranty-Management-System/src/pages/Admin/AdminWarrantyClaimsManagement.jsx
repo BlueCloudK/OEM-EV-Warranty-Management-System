@@ -80,7 +80,7 @@ const AdminWarrantyClaimsManagement = () => {
     return await handleReject(selectedClaim.warrantyClaimId, reason);
   };
 
-  const isPollingActive = claims.some(c => c.status === 'SUBMITTED' || c.status === 'MANAGER_REVIEW');
+  const isPollingActive = claims.some(c => c.status === 'SUBMITTED' || c.status === 'PAYMENT_CONFIRMED' || c.status === 'MANAGER_REVIEW');
 
   const renderSortIcon = (key) => {
     if (sortConfig.key !== key) return <FaSort style={{ color: '#ccc', marginLeft: '5px' }} />;
@@ -162,7 +162,7 @@ const AdminWarrantyClaimsManagement = () => {
                   <S.Td>{new Date(claim.claimDate).toLocaleDateString()}</S.Td>
                   <S.Td>
                     <div style={{ display: 'flex', gap: '8px' }}>
-                      {claim.status === 'SUBMITTED' && (
+                      {(claim.status === 'SUBMITTED' || claim.status === 'PAYMENT_CONFIRMED') && (
                         <>
                           <S.Button $small $success onClick={() => handleApprove(claim.warrantyClaimId)}><FaCheck /> Duyệt</S.Button>
                           <S.Button $small $danger onClick={() => openRejectModal(claim)}><FaTimes /> Từ chối</S.Button>
