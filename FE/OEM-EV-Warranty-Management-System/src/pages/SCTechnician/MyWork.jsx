@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { dataApi } from '../../api/dataApi';
 import * as S from './MyWork.styles';
-import { FaClipboardCheck, FaSpinner, FaClock, FaCheckCircle, FaTasks, FaExclamationCircle, FaChartLine, FaCalendarDay, FaEye, FaPlay, FaFilter, FaExclamationTriangle } from 'react-icons/fa';
+import { FaClipboardCheck, FaSpinner, FaClock, FaCheckCircle, FaTasks, FaExclamationCircle, FaChartLine, FaCalendarDay, FaEye, FaPlay, FaFilter, FaExclamationTriangle, FaSyncAlt } from 'react-icons/fa';
 
 // Function to convert status to Vietnamese
 const getStatusLabel = (status) => {
@@ -71,7 +71,7 @@ const ClaimDetailModal = ({ isOpen, onClose, claim, onStartProcessing, onComplet
           <S.DetailItem>
             <S.DetailLabel>Xe:</S.DetailLabel>
             <S.DetailValue>{claim.vehicleName || 'N/A'}</S.DetailValue>
-          </S.DetailItem>        
+          </S.DetailItem>
           <S.DetailItem>
             <S.DetailLabel>Phụ tùng:</S.DetailLabel>
             <S.DetailValue>{claim.partName || claim.installedPartId || 'N/A'}</S.DetailValue>
@@ -176,6 +176,7 @@ const MyWork = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [dailyStats, setDailyStats] = useState(null);
   const [statsLoading, setStatsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const fetchDailyStats = useCallback(async () => {
     try {
@@ -297,6 +298,15 @@ const MyWork = () => {
     setPagination(prev => ({ ...prev, currentPage: newPage }));
   };
 
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.all([fetchData(), fetchDailyStats()]);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   const openDetailModal = (claim) => {
     setSelectedClaim(claim);
     setShowDetailModal(true);
@@ -328,12 +338,18 @@ const MyWork = () => {
     <S.PageContainer>
       <S.ContentWrapper>
         <S.Header>
-          <S.HeaderTitle>
-            <FaClipboardCheck /> Công việc của tôi
-          </S.HeaderTitle>
-          <S.HeaderSubtitle>
-            Quản lý yêu cầu bảo hành
-          </S.HeaderSubtitle>
+          <div>
+            <S.HeaderTitle>
+              <FaClipboardCheck /> Công việc của tôi
+            </S.HeaderTitle>
+            <S.HeaderSubtitle>
+              Quản lý yêu cầu bảo hành
+            </S.HeaderSubtitle>
+          </div>
+          <S.RefreshButton onClick={handleRefresh} disabled={isRefreshing}>
+            <FaSyncAlt style={{ animation: isRefreshing ? 'spin 1s linear infinite' : 'none' }} />
+            {isRefreshing ? 'Đang tải...' : 'Làm mới'}
+          </S.RefreshButton>
         </S.Header>
 
         <S.StatsGrid>

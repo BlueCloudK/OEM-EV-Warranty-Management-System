@@ -23,6 +23,10 @@ export const Header = styled.div`
   margin-bottom: 32px;
   box-shadow: 0 10px 15px -3px rgba(20, 184, 166, 0.3);
   color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
 `;
 
 export const HeaderTitle = styled.h1`
@@ -38,6 +42,41 @@ export const HeaderSubtitle = styled.p`
   margin: 0;
   font-size: 16px;
   opacity: 0.9;
+`;
+
+export const RefreshButton = styled.button`
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+
+  &:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-2px);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
 `;
 
 export const StatsGrid = styled.div`
