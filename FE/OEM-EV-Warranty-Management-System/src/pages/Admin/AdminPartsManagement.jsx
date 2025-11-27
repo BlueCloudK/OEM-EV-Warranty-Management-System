@@ -383,87 +383,91 @@ const AdminPartsManagement = () => {
             />
             <S.Button small onClick={handleSearch}><FaSearch /> Tìm kiếm</S.Button>
           </S.SearchContainer>
-        </S.Header>
+        </S.Header >
 
-        {loading ? (
-          <S.LoadingState><FaSpinner /> <p>Đang tải...</p></S.LoadingState>
-        ) : error ? (
-          <S.EmptyState>{error}</S.EmptyState>
-        ) : parts.length === 0 ? (
-          <S.EmptyState><h3>Không tìm thấy phụ tùng</h3></S.EmptyState>
-        ) : (
-          <S.TableContainer>
-            <S.Table>
-              <thead>
-                <tr>
-                  <th onClick={() => handleSort('partId')} style={{ cursor: 'pointer' }}>
-                    ID {renderSortIcon('partId')}
-                  </th>
-                  <th onClick={() => handleSort('partName')} style={{ cursor: 'pointer' }}>
-                    Tên Phụ tùng {renderSortIcon('partName')}
-                  </th>
-                  <th onClick={() => handleSort('partNumber')} style={{ cursor: 'pointer' }}>
-                    Mã Phụ tùng {renderSortIcon('partNumber')}
-                  </th>
-                  <th>
-                    Loại
-                  </th>
-                  <th onClick={() => handleSort('manufacturer')} style={{ cursor: 'pointer' }}>
-                    Nhà sản xuất {renderSortIcon('manufacturer')}
-                  </th>
-                  <th onClick={() => handleSort('price')} style={{ cursor: 'pointer' }}>
-                    Giá (VNĐ) {renderSortIcon('price')}
-                  </th>
-                  <th>Hành động</th>
-                </tr>
-              </thead>
-              <tbody>
-                {parts.map(part => (
-                  <tr key={part.partId}>
-                    <S.Td>{part.partId}</S.Td>
-                    <S.Td style={{ fontWeight: '500' }}>{part.partName}</S.Td>
-                    <S.Td style={{ fontFamily: 'monospace' }}>{part.partNumber}</S.Td>
-                    <S.Td>{part.categoryName || '-'}</S.Td>
-                    <S.Td>{part.manufacturer}</S.Td>
-                    <S.Td>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(part.price)}</S.Td>
-                    <S.Td>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <S.Button $small onClick={() => openEditForm(part)}><FaEdit /></S.Button>
-                        <S.Button $small $danger onClick={() => handleDelete(part.partId)}><FaTrash /></S.Button>
-                      </div>
-                    </S.Td>
+        {
+          loading ? (
+            <S.LoadingState ><FaSpinner /> <p>Đang tải...</p></S.LoadingState >
+          ) : error ? (
+            <S.EmptyState > {error}</S.EmptyState >
+          ) : parts.length === 0 ? (
+            <S.EmptyState><h3>Không tìm thấy phụ tùng</h3></S.EmptyState>
+          ) : (
+            <S.TableContainer>
+              <S.Table>
+                <thead>
+                  <tr>
+                    <th onClick={() => handleSort('partId')} style={{ cursor: 'pointer' }}>
+                      ID {renderSortIcon('partId')}
+                    </th>
+                    <th onClick={() => handleSort('partName')} style={{ cursor: 'pointer' }}>
+                      Tên Phụ tùng {renderSortIcon('partName')}
+                    </th>
+                    <th onClick={() => handleSort('partNumber')} style={{ cursor: 'pointer' }}>
+                      Mã Phụ tùng {renderSortIcon('partNumber')}
+                    </th>
+                    <th>
+                      Loại
+                    </th>
+                    <th onClick={() => handleSort('manufacturer')} style={{ cursor: 'pointer' }}>
+                      Nhà sản xuất {renderSortIcon('manufacturer')}
+                    </th>
+                    <th onClick={() => handleSort('price')} style={{ cursor: 'pointer' }}>
+                      Giá (VNĐ) {renderSortIcon('price')}
+                    </th>
+                    <th>Hành động</th>
                   </tr>
-                ))}
-              </tbody>
-            </S.Table>
-          </S.TableContainer>
-        )}
+                </thead>
+                <tbody>
+                  {parts.map(part => (
+                    <tr key={part.partId}>
+                      <S.Td>{part.partId}</S.Td>
+                      <S.Td style={{ fontWeight: '500' }}>{part.partName}</S.Td>
+                      <S.Td style={{ fontFamily: 'monospace' }}>{part.partNumber}</S.Td>
+                      <S.Td>{part.categoryName || '-'}</S.Td>
+                      <S.Td>{part.manufacturer}</S.Td>
+                      <S.Td>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(part.price)}</S.Td>
+                      <S.Td>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <S.Button $small onClick={() => openEditForm(part)}><FaEdit /></S.Button>
+                          <S.Button $small $danger onClick={() => handleDelete(part.partId)}><FaTrash /></S.Button>
+                        </div>
+                      </S.Td>
+                    </tr>
+                  ))}
+                </tbody>
+              </S.Table>
+            </S.TableContainer>
+          )
+        }
 
         {/* Pagination Controls */}
-        {!loading && !error && parts.length > 0 && pagination.totalPages > 0 && (
-          <S.PaginationContainer>
-            <S.Button
-              $small
-              onClick={() => handlePageChange(pagination.currentPage - 1)}
-              disabled={pagination.currentPage === 0}
-            >
-              Trước
-            </S.Button>
-            <span style={{ margin: '0 15px', fontWeight: 'bold' }}>
-              Trang {pagination.currentPage + 1} / {pagination.totalPages}
-              <span style={{ marginLeft: '10px', color: '#666', fontSize: '0.9em' }}>
-                (Tổng: {pagination.totalElements} phụ tùng)
+        {
+          !loading && !error && parts.length > 0 && pagination.totalPages > 0 && (
+            <S.PaginationContainer>
+              <S.Button
+                $small
+                onClick={() => handlePageChange(pagination.currentPage - 1)}
+                disabled={pagination.currentPage === 0}
+              >
+                Trước
+              </S.Button>
+              <span style={{ margin: '0 15px', fontWeight: 'bold' }}>
+                Trang {pagination.currentPage + 1} / {pagination.totalPages}
+                <span style={{ marginLeft: '10px', color: '#666', fontSize: '0.9em' }}>
+                  (Tổng: {pagination.totalElements} phụ tùng)
+                </span>
               </span>
-            </span>
-            <S.Button
-              $small
-              onClick={() => handlePageChange(pagination.currentPage + 1)}
-              disabled={pagination.currentPage >= pagination.totalPages - 1}
-            >
-              Tiếp
-            </S.Button>
-          </S.PaginationContainer>
-        )}
+              <S.Button
+                $small
+                onClick={() => handlePageChange(pagination.currentPage + 1)}
+                disabled={pagination.currentPage >= pagination.totalPages - 1}
+              >
+                Tiếp
+              </S.Button>
+            </S.PaginationContainer>
+          )
+        }
 
         <PartFormModal
           isOpen={showForm}
@@ -473,8 +477,8 @@ const AdminPartsManagement = () => {
           categories={categories}
         />
 
-      </S.ContentWrapper>
-    </S.PageContainer>
+      </S.ContentWrapper >
+    </S.PageContainer >
   );
 };
 
