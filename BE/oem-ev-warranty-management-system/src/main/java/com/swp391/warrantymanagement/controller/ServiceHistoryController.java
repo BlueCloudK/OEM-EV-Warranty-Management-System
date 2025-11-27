@@ -71,7 +71,15 @@ public class ServiceHistoryController {
             @RequestParam(defaultValue = "DESC") String sortDir) {
         logger.info("Get all service histories request: page={}, size={}, search={}, sortBy={}, sortDir={}", page, size, search, sortBy, sortDir);
 
-        Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        // Map frontend sortBy to actual entity fields
+        String mappedSortBy = sortBy;
+        if ("vehicleVin".equals(sortBy)) {
+            mappedSortBy = "vehicle.vehicleVin";
+        } else if ("vehicleName".equals(sortBy)) {
+            mappedSortBy = "vehicle.vehicleName";
+        }
+
+        Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(mappedSortBy).ascending() : Sort.by(mappedSortBy).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
 
         PagedResponse<ServiceHistoryResponseDTO> historiesPage = serviceHistoryService.getAllServiceHistoriesPage(
